@@ -24,7 +24,7 @@ def patient_list(request):
 
     students = students.order_by('last_name', 'first_name')
 
-    return render(request, 'patients/list.html', {
+    return render(request, 'patients/patient_list.html', {
         'students': students,
         'query': query,
     })
@@ -39,7 +39,7 @@ def patient_detail(request, pk):
         patient=student
     ).select_related('triage', 'prescription').order_by('-created_at')
 
-    return render(request, 'patients/detail.html', {
+    return render(request, 'patients/patient_detail.html', {
         'student': student,
         'profile': profile,
         'consultations': consultations,

@@ -36,12 +36,13 @@ def dashboard(request):
         .order_by('-total_dispensed')[:5]
     )
 
+
     # Low stock medicines
     low_stock = Medicine.objects.filter(
         quantity__lte=F('low_stock_threshold')
     ).order_by('quantity')
 
-    return render(request, 'reports/dashboard.html', {
+    return render(request, 'reports/report_dashboard.html', {
         'total_consultations': total_consultations,
         'consultations_today': consultations_today,
         'total_students': total_students,

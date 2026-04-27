@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Patients — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Patients</h1>
+    <p style="color:var(--text-muted);font-size:13px;">Registered student patients</p>
+  </div>
+</div>
+
+<!-- Search Form -->
+<div class="card" style="margin-bottom:16px;padding:16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="form-control"
+             placeholder="Search by name, student ID, college..." autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if query %}
+      <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if students %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Student ID</th>
+          <th>College</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td style="font-weight:500;">{{ student.get_full_name|default:student.username }}</td>
+          <td style="color:var(--text-muted);font-size:13px;">
+            {{ student.student_profile.student_id|default:"—" }}
+          </td>
+          <td style="color:var(--text-muted);font-size:13px;">
+            {{ student.student_profile.college|default:"—" }}
+          </td>
+          <td>
+            <a href="{% url 'patients:patient_detail' student.pk %}" class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <div style="font-size:40px;margin-bottom:12px;">🧑‍🎓</div>
+  <p style="font-weight:600;margin-bottom:4px;">No patients found</p>
+  <p style="color:var(--text-muted);font-size:13px;">
+    {% if query %}No students match your search.{% else %}No student patients have been registered yet.{% endif %}
+  </p>
+</div>
+{% endif %}
+{% endblock %}
