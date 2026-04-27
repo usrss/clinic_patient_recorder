@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Medicine — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">{{ action }} Medicine{% if medicine %}: {{ medicine.name }}{% endif %}</h1>
+  </div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Medicine Name *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Generic Name</label>
+        {{ form.generic_name }}
+        {% if form.generic_name.errors %}<div class="form-error">{{ form.generic_name.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Quantity *</label>
+          {{ form.quantity }}
+          {% if form.quantity.errors %}<div class="form-error">{{ form.quantity.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Unit *</label>
+          {{ form.unit }}
+          {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Low Stock Threshold</label>
+          {{ form.low_stock_threshold }}
+          {% if form.low_stock_threshold.errors %}<div class="form-error">{{ form.low_stock_threshold.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Batch Number</label>
+          {{ form.batch_number }}
+          {% if form.batch_number.errors %}<div class="form-error">{{ form.batch_number.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          {{ form.expiry_date }}
+          {% if form.expiry_date.errors %}<div class="form-error">{{ form.expiry_date.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Supplier</label>
+          {{ form.supplier }}
+          {% if form.supplier.errors %}<div class="form-error">{{ form.supplier.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Cost per Unit</label>
+          {{ form.cost_per_unit }}
+          {% if form.cost_per_unit.errors %}<div class="form-error">{{ form.cost_per_unit.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error" style="margin-bottom:12px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="submit" class="btn btn-primary">{{ action }} Medicine</button>
+        <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

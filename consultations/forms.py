@@ -50,11 +50,14 @@ class QueueAssignForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # FIX 04: Removed 'Cancelled' from this dropdown. Cancellation is a
+        # deliberate action that should have its own confirmation step, not
+        # something that can be accidentally selected alongside Queue/Schedule.
+        # A separate cancel button/view should handle cancellation.
         self.fields['status'].choices = [
             ('', '— Choose action —'),
             (Consultation.Status.QUEUED, 'Queued — assign queue number'),
             (Consultation.Status.SCHEDULED, 'Scheduled — set appointment time'),
-            (Consultation.Status.CANCELLED, 'Cancelled'),
         ]
         self.fields['queue_number'].required = False
         self.fields['scheduled_at'].required = False
@@ -147,7 +150,7 @@ class PrescriptionItemForm(forms.Form):
         medicine = cleaned.get('medicine')
         quantity = cleaned.get('quantity')
         instructions = cleaned.get('instructions', '').strip()
-        # Partial fill → validation error
+        # Only validate if the row has any data — fully empty rows are fine (extra=3)
         if any([medicine, quantity, instructions]):
             if not medicine:
                 self.add_error('medicine', 'Select a medicine.')

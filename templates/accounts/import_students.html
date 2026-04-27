@@ -7,6 +7,7 @@
   .instruction h4 { margin:0 0 8px;font-size:14px; }
   .instruction ul { margin:0;padding-left:20px;font-size:13px;color:var(--text-muted); }
   .instruction li { margin:4px 0; }
+  .result-summary { padding:14px 16px;border-radius:6px;margin-bottom:16px;font-size:13px; }
 </style>
 {% endblock %}
 
@@ -17,8 +18,20 @@
     <h1 class="page-title" style="margin-bottom:0;">Import Students</h1>
   </div>
 
-  {# FIX: Render Django flash messages — import results (success/warnings/errors) were
-     silently lost because views.py redirects back here after import with messages attached. #}
+  {# Flash messages — shows import results (created/skipped counts) and per-row warnings/errors #}
+  {% if messages %}
+    {% for message in messages %}
+      <div style="
+        margin-bottom:10px;
+        padding:12px 16px;
+        border-radius:6px;
+        font-size:13px;
+        {% if message.tags == 'error' %}background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
+        {% elif message.tags == 'warning' %}background:#fff8e1;border-left:4px solid #f59e0b;color:#92400e;
+        {% else %}background:#f0fdf4;border-left:4px solid #22c55e;color:#166534;{% endif %}
+      ">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
 
   <div class="instruction">
     <h4>📋 Instructions</h4>
@@ -26,28 +39,34 @@
       <li>Upload an Excel (.xlsx) file with student data</li>
       <li>Required columns: <strong>student_id, first_name, last_name, age, gender</strong></li>
       <li>Optional columns: <strong>middle_name, college</strong></li>
-      <li>Gender values: M (Male), F (Female), O (Other)</li>
+      <li>Gender values: <strong>M</strong> (Male), <strong>F</strong> (Female), <strong>O</strong> (Other)</li>
       <li>Default password = student_id (student must change on first login)</li>
-      <li>Existing students will be skipped</li>
+      <li>Existing students (matched by student_id) will be skipped — not duplicated</li>
+      <li>Maximum file size: 5 MB</li>
     </ul>
   </div>
 
   <div class="card">
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
+
       <div class="form-group">
         <label for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
         {{ form.file }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.file.help_text }}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          {{ form.file.help_text }}
+        </div>
         {% if form.file.errors %}
           <div class="form-error">{{ form.file.errors.0 }}</div>
         {% endif %}
       </div>
+
       <div style="display:flex;gap:10px;margin-top:20px;">
         <button type="submit" class="btn btn-primary">📤 Upload & Import</button>
         <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
+
 </div>
 {% endblock %}

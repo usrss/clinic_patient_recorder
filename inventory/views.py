@@ -5,13 +5,14 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from accounts.decorators import nurse_required, admin_required
+# FIX 05: Added clinical_staff_required so doctors and front desk can view stock.
+from accounts.decorators import nurse_required, admin_required, clinical_staff_required
 from .models import Medicine, StockMovement
 from .forms import MedicineForm, MedicineRestockForm, MedicineSearchForm
 
 
 @login_required
-@nurse_required
+@clinical_staff_required  # FIX 05: was @nurse_required — doctors/frontdesk need read access
 def medicine_list(request):
     """List all medicines with search and filters."""
     form = MedicineSearchForm(request.GET or None)
@@ -42,7 +43,7 @@ def medicine_list(request):
 
 
 @login_required
-@nurse_required
+@clinical_staff_required  # FIX 05: was @nurse_required — doctors/frontdesk need read access
 def medicine_detail(request, pk):
     """View medicine details and stock history."""
     medicine = get_object_or_404(Medicine, pk=pk)
@@ -62,7 +63,6 @@ def medicine_create(request):
     if request.method == 'POST' and form.is_valid():
         medicine = form.save()
         messages.success(request, f'Medicine "{medicine.name}" created successfully.')
-        # FIX: Use correct named URL 'medicine_detail' (was 'detail')
         return redirect('inventory:medicine_detail', pk=medicine.pk)
     return render(request, 'inventory/medicine_form.html', {'form': form, 'action': 'Create'})
 
@@ -97,9 +97,6 @@ def medicine_restock(request, pk):
                 batch_number = form.cleaned_data.get('batch_number', '')
                 expiry_date = form.cleaned_data.get('expiry_date')
 
-                # FIX: add_stock() now uses F() and refresh_from_db internally.
-                # Removed the redundant medicine.save() call that was here before —
-                # add_stock() already persists the quantity change.
                 medicine.add_stock(quantity)
 
                 # Update batch/expiry metadata separately if provided
@@ -205,31 +202,3 @@ def stock_movements(request, medicine_pk=None):
         'title': title,
         'medicine': medicine,
     })
-
-
-# ─── UTILITY FUNCTION ─────────────────────────────────────────────────────────
-# FIX: Moved deduct_medicine_stock out of views.py (which is for HTTP handlers)
-# into a proper utility that can be safely imported by other apps.
-# Also replaced get_object_or_404 (view-only utility) with Medicine.objects.get()
-# so this can be called from management commands, tests, and signals too.
-
-def deduct_medicine_stock(medicine_id, quantity, reason, user=None):
-    """
-    Deduct stock and log a StockMovement. Called by the consultations app
-    when a doctor prescribes medicine. Must be called inside transaction.atomic().
-
-    Raises:
-        Medicine.DoesNotExist: if medicine_id is invalid
-        ValidationError: if insufficient stock
-    """
-    medicine = Medicine.objects.get(pk=medicine_id)
-    medicine.deduct_stock(quantity)
-    StockMovement.objects.create(
-        medicine=medicine,
-        movement_type=StockMovement.MovementType.OUT,
-        quantity=quantity,
-        reason=reason,
-        reference=reason,
-        created_by=user.username if user else 'system',
-    )
-    return True

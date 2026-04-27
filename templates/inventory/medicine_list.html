@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Inventory — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Medicine Inventory</h1>
+    <p style="color:var(--text-muted);font-size:13px;">
+      {{ medicines.count }} medicine{{ medicines.count|pluralize }} in stock
+      {% if low_stock_count %}
+        — <span style="color:#ef4444;font-weight:600;">⚠ {{ low_stock_count }} low stock</span>
+      {% endif %}
+    </p>
+  </div>
+  {% if user.role == 'admin' %}
+  <div style="display:flex;gap:10px;">
+    <a href="{% url 'inventory:create' %}" class="btn btn-primary">+ Add Medicine</a>
+    <a href="{% url 'inventory:movements' %}" class="btn btn-secondary">📋 Stock Log</a>
+  </div>
+  {% else %}
+  <a href="{% url 'inventory:movements' %}" class="btn btn-secondary">📋 Stock Log</a>
+  {% endif %}
+</div>
+
+<!-- Search Form -->
+<div class="card" style="margin-bottom:16px;padding:16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Search</label>
+      {{ form.query }}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding-bottom:2px;">
+      {{ form.low_stock_only }}
+      <label style="font-size:13px;cursor:pointer;">Low stock only</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if request.GET %}
+      <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if medicines %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Generic Name</th>
+          <th>Stock</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>Expiry</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for medicine in medicines %}
+        <tr>
+          <td>
+            <div style="font-weight:500;">{{ medicine.name }}</div>
+          </td>
+          <td style="color:var(--text-muted);font-size:13px;">{{ medicine.generic_name|default:"—" }}</td>
+          <td>
+            <span style="font-weight:600;{% if medicine.is_low_stock %}color:#ef4444;{% else %}color:#10b981;{% endif %}">
+              {{ medicine.quantity }}
+            </span>
+          </td>
+          <td style="font-size:13px;color:var(--text-muted);">{{ medicine.get_unit_display }}</td>
+          <td>
+            {% if medicine.is_low_stock %}
+              <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⚠ Low</span>
+            {% else %}
+              <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✓ OK</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if medicine.expiry_date %}
+              {{ medicine.expiry_date|date:"M d, Y" }}
+            {% else %}—{% endif %}
+          </td>
+          <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary btn-sm">View</a>
+            {% if user.role == 'nurse' or user.role == 'admin' %}
+              <a href="{% url 'inventory:restock' medicine.pk %}" class="btn btn-primary btn-sm">Restock</a>
+            {% endif %}
+            {% if user.role == 'admin' %}
+              <a href="{% url 'inventory:edit' medicine.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <div style="font-size:40px;margin-bottom:12px;">💊</div>
+  <p style="font-weight:600;margin-bottom:4px;">No medicines found</p>
+  <p style="color:var(--text-muted);font-size:13px;">
+    {% if request.GET %}No results match your search.{% else %}No medicines have been added yet.{% endif %}
+  </p>
+  {% if user.role == 'admin' %}
+    <a href="{% url 'inventory:create' %}" class="btn btn-primary" style="margin-top:16px;">+ Add Medicine</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Delete {{ medicine.name }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Delete Medicine</h1>
+  </div>
+
+  <div class="card">
+    <div style="text-align:center;padding:16px 0 24px;">
+      <div style="font-size:48px;margin-bottom:16px;">🗑</div>
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Delete "{{ medicine.name }}"?</p>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:4px;">
+        Current stock: <strong>{{ medicine.quantity }} {{ medicine.get_unit_display }}(s)</strong>
+      </p>
+      <p style="color:#ef4444;font-size:13px;">This action cannot be undone. All stock movement history will also be deleted.</p>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+      <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

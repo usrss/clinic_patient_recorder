@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Deduct Stock — {{ medicine.name }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Manual Deduct — {{ medicine.name }}</h1>
+  </div>
+
+  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#92400e;">
+    <strong>⚠ Manual deduction</strong> — use this only for adjustments, wastage, or expiry removal.
+    Prescription dispensing is handled automatically by the doctor's prescription form.
+  </div>
+
+  <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+    <div style="display:flex;justify-content:space-between;font-size:14px;">
+      <span style="color:var(--text-muted);">Current Stock</span>
+      <strong style="{% if medicine.is_low_stock %}color:#ef4444;{% else %}color:#10b981;{% endif %}">
+        {{ medicine.quantity }} {{ medicine.get_unit_display }}(s)
+      </strong>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Quantity to Deduct *</label>
+        {{ form.quantity }}
+        {% if form.quantity.errors %}<div class="form-error">{{ form.quantity.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Reason *</label>
+        {{ form.reason }}
+        {% if form.reason.errors %}<div class="form-error">{{ form.reason.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="submit" class="btn btn-danger">− Confirm Deduct</button>
+        <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -6,12 +6,14 @@ from .models import User, StudentProfile
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
         widget=forms.TextInput(attrs={
+            'class': 'form-control',
             'placeholder': 'Username or Student ID',
             'autofocus': True,
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
             'placeholder': 'Password',
         })
     )
@@ -64,7 +66,7 @@ class StudentBulkUploadForm(forms.Form):
 
 
 class StudentPasswordChangeForm(PasswordChangeForm):
-    """Password change form for students."""
+    """Password change form for all users."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():

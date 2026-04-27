@@ -13,10 +13,10 @@ from .forms import (
     PrescriptionForm, PrescriptionItemFormSet,
 )
 
-# FIX: Import at module level, not inside the function body.
-# deduct_medicine_stock lives in inventory/views.py for now; once inventory
-# has a utils.py it should move there.
-from inventory.views import deduct_medicine_stock
+# FIX 06: Import from inventory.utils, not inventory.views.
+# deduct_medicine_stock is a plain utility — not a view handler — and now
+# lives in inventory/utils.py so it can be imported without side-effects.
+from inventory.utils import deduct_medicine_stock
 
 
 # ─── STUDENT VIEWS ────────────────────────────────────────────────────────────
@@ -86,9 +86,6 @@ def queue(request):
 @login_required
 @frontdesk_required
 def queue_detail(request, pk):
-    # FIX: Fetch without status filter — the old code used
-    # get_object_or_404(..., status=PENDING) which causes a 404 if the front
-    # desk submits the form and then reloads the page (status is no longer PENDING).
     consultation = get_object_or_404(Consultation, pk=pk)
 
     # If already processed, redirect back with a message instead of crashing.
@@ -134,9 +131,6 @@ def triage_form(request, pk):
         status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED],
     )
 
-    # FIX: Guard against re-triage. The original code called triage.save()
-    # unconditionally — if the nurse revisited this URL after already triaging,
-    # the OneToOneField unique constraint would raise an IntegrityError crash.
     if hasattr(consultation, 'triage'):
         messages.info(
             request,
@@ -178,8 +172,6 @@ def doctor_list(request):
 def prescribe(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
-    # FIX: Guard against re-prescription. Without this, revisiting the URL after
-    # completing a prescription raises IntegrityError on the OneToOne Prescription field.
     if hasattr(consultation, 'prescription'):
         messages.info(
             request,
@@ -191,28 +183,13 @@ def prescribe(request, pk):
     formset = PrescriptionItemFormSet(request.POST or None, prefix='items')
 
     if request.method == 'POST':
-        # FIX: Validate prescription_form independently of formset.
-        # The original code required BOTH to be valid, meaning a diagnosis-only
-        # consultation (no medicines prescribed) could never be submitted because
-        # an empty formset with partial rows would fail validation.
         forms_valid = prescription_form.is_valid()
         formset_valid = formset.is_valid()
 
         if forms_valid and formset_valid:
             try:
                 with transaction.atomic():
-                    # FIX: Validate all stock BEFORE writing anything to the DB.
-                    # The original code saved the Prescription first, then deducted
-                    # stock — if stock was insufficient partway through, the prescription
-                    # record was already committed but stock was only partially deducted.
                     item_rows = [f for f in formset if f.has_data()]
-
-                    # Note: stock sufficiency is enforced atomically inside
-                    # deduct_stock() via select_for_update(). We do not pre-check
-                    # medicine.quantity here because that value could be stale by
-                    # the time deduct_stock() runs. The transaction.atomic() wrapper
-                    # ensures any ValidationError from deduct_stock() rolls back
-                    # the prescription and all previous items cleanly.
 
                     # Write prescription to DB
                     prescription = prescription_form.save(commit=False)
@@ -232,8 +209,6 @@ def prescribe(request, pk):
                             instructions=instructions,
                         )
 
-                        # FIX: deduct_medicine_stock now uses Medicine.objects.get()
-                        # instead of get_object_or_404(), so it's safe to call here.
                         deduct_medicine_stock(
                             medicine_id=medicine.pk,
                             quantity=quantity,
@@ -251,11 +226,9 @@ def prescribe(request, pk):
                     return redirect('consultations:doctor_list')
 
             except ValidationError as e:
-                # FIX: Catch ValidationError specifically (stock errors) with a clean message.
                 err = e.message if hasattr(e, 'message') else '; '.join(e.messages)
                 messages.error(request, f'Stock error — prescription not saved: {err}')
             except Exception:
-                # FIX: Don't expose internal exception details to the user.
                 messages.error(
                     request,
                     'An unexpected error occurred. Please try again or contact an administrator.'

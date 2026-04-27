@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}{{ medicine.name }} — Inventory — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">{{ medicine.name }}</h1>
+    {% if is_low_stock %}
+      <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">⚠ Low Stock</span>
+    {% endif %}
+  </div>
+
+  <!-- Stock Summary -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px;">
+    <div class="card" style="text-align:center;padding:20px 16px;">
+      <div style="font-size:32px;font-weight:700;{% if is_low_stock %}color:#ef4444;{% else %}color:#10b981;{% endif %}">
+        {{ medicine.quantity }}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Current Stock</div>
+    </div>
+    <div class="card" style="text-align:center;padding:20px 16px;">
+      <div style="font-size:32px;font-weight:700;color:var(--text-muted);">{{ medicine.low_stock_threshold }}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Low Stock Threshold</div>
+    </div>
+    <div class="card" style="text-align:center;padding:20px 16px;">
+      <div style="font-size:20px;font-weight:700;">{{ medicine.get_unit_display }}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Unit</div>
+    </div>
+  </div>
+
+  <!-- Medicine Info -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">Medicine Details</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Generic Name</div>
+        <div>{{ medicine.generic_name|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Supplier</div>
+        <div>{{ medicine.supplier|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Batch Number</div>
+        <div>{{ medicine.batch_number|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Expiry Date</div>
+        <div>{{ medicine.expiry_date|date:"F d, Y"|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Cost per Unit</div>
+        <div>{% if medicine.cost_per_unit %}₱{{ medicine.cost_per_unit }}{% else %}—{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Added</div>
+        <div>{{ medicine.created_at|date:"F d, Y" }}</div>
+      </div>
+    </div>
+    {% if medicine.description %}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Description</div>
+      <div style="font-size:14px;">{{ medicine.description }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    {% if user.role == 'nurse' or user.role == 'admin' %}
+      <a href="{% url 'inventory:restock' medicine.pk %}" class="btn btn-primary">+ Restock</a>
+      <a href="{% url 'inventory:deduct' medicine.pk %}" class="btn btn-secondary">− Manual Deduct</a>
+    {% endif %}
+    {% if user.role == 'admin' %}
+      <a href="{% url 'inventory:edit' medicine.pk %}" class="btn btn-secondary">✏ Edit</a>
+      <form method="post" action="{% url 'inventory:delete' medicine.pk %}" style="display:inline;"
+            onsubmit="return confirm('Delete {{ medicine.name }}? This cannot be undone.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">🗑 Delete</button>
+      </form>
+    {% endif %}
+    <a href="{% url 'inventory:movements_by_medicine' medicine.pk %}" class="btn btn-secondary">📋 Full Stock Log</a>
+  </div>
+
+  <!-- Recent Stock Movements -->
+  <div class="card" style="padding:0;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0;">Recent Stock Movements</h3>
+    </div>
+    {% if stock_movements %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Reason</th>
+            <th>By</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in stock_movements %}
+          <tr>
+            <td>
+              {% if m.movement_type == 'in' %}
+                <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📥 In</span>
+              {% elif m.movement_type == 'out' %}
+                <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📤 Out</span>
+              {% elif m.movement_type == 'expired' %}
+                <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">❌ Expired</span>
+              {% else %}
+                <span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⚙ Adj</span>
+              {% endif %}
+            </td>
+            <td style="font-weight:600;">{{ m.quantity }}</td>
+            <td style="font-size:13px;color:var(--text-muted);">{{ m.reason|default:"—" }}</td>
+            <td style="font-size:12px;color:var(--text-muted);">{{ m.created_by|default:"—" }}</td>
+            <td style="font-size:12px;color:var(--text-muted);">{{ m.created_at|date:"M d, Y H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">
+      No stock movements recorded yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

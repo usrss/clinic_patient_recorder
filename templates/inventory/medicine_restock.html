@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Restock {{ medicine.name }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Restock — {{ medicine.name }}</h1>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+    <div style="display:flex;justify-content:space-between;font-size:14px;">
+      <span style="color:var(--text-muted);">Current Stock</span>
+      <strong style="{% if medicine.is_low_stock %}color:#ef4444;{% else %}color:#10b981;{% endif %}">
+        {{ medicine.quantity }} {{ medicine.get_unit_display }}(s)
+      </strong>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Quantity to Add *</label>
+        {{ form.quantity }}
+        {% if form.quantity.errors %}<div class="form-error">{{ form.quantity.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Reason</label>
+        {{ form.reason }}
+        {% if form.reason.errors %}<div class="form-error">{{ form.reason.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Batch Number</label>
+          {{ form.batch_number }}
+          {% if form.batch_number.errors %}<div class="form-error">{{ form.batch_number.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          {{ form.expiry_date }}
+          {% if form.expiry_date.errors %}<div class="form-error">{{ form.expiry_date.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="submit" class="btn btn-primary">✅ Confirm Restock</button>
+        <a href="{% url 'inventory:medicine_detail' medicine.pk %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
