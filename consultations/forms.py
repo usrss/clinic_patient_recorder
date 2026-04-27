@@ -36,12 +36,17 @@ class ConsultationSubmitForm(forms.ModelForm):
 
 
 class QueueAssignForm(forms.ModelForm):
+    """
+    FIX: Removed queue_number from fields — it is now auto-generated in the view
+    via assign_next_queue_number(). Removed 'Cancelled' from status choices —
+    cancellation has its own dedicated view/button. Clears the unused field
+    (queue_number vs scheduled_at) in clean() to prevent stale data.
+    """
     class Meta:
         model = Consultation
-        fields = ['status', 'queue_number', 'scheduled_at']
+        fields = ['status', 'scheduled_at']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-control'}),
-            'queue_number': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'scheduled_at': forms.DateTimeInput(
                 attrs={'class': 'form-control', 'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M',
@@ -50,25 +55,21 @@ class QueueAssignForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # FIX 04: Removed 'Cancelled' from this dropdown. Cancellation is a
-        # deliberate action that should have its own confirmation step, not
-        # something that can be accidentally selected alongside Queue/Schedule.
-        # A separate cancel button/view should handle cancellation.
         self.fields['status'].choices = [
             ('', '— Choose action —'),
-            (Consultation.Status.QUEUED, 'Queued — assign queue number'),
+            (Consultation.Status.QUEUED, 'Queued — assign next queue number automatically'),
             (Consultation.Status.SCHEDULED, 'Scheduled — set appointment time'),
         ]
-        self.fields['queue_number'].required = False
         self.fields['scheduled_at'].required = False
 
     def clean(self):
         cleaned = super().clean()
         status = cleaned.get('status')
-        if status == Consultation.Status.QUEUED and not cleaned.get('queue_number'):
-            self.add_error('queue_number', 'Queue number is required when status is Queued.')
         if status == Consultation.Status.SCHEDULED and not cleaned.get('scheduled_at'):
             self.add_error('scheduled_at', 'Appointment time is required when status is Scheduled.')
+        # FIX: Clear scheduled_at when queuing so stale data is never saved
+        if status == Consultation.Status.QUEUED:
+            cleaned['scheduled_at'] = None
         return cleaned
 
 
@@ -92,6 +93,43 @@ class TriageForm(forms.ModelForm):
                 'class': 'form-control', 'rows': 3,
                 'placeholder': 'Additional clinical observations...',
             }),
+        }
+        labels = {
+            'blood_pressure': 'Blood Pressure (mmHg)',
+            'temperature': 'Temperature (°C)',
+            'pulse_rate': 'Pulse Rate (bpm)',
+        }
+
+
+class TriageEditForm(forms.ModelForm):
+    """
+    FIX GAP 3: Allows nurse (or admin) to amend a triage record.
+    Same fields as TriageForm but used in the edit view — separate form
+    class makes intent explicit and allows future divergence (e.g. audit note).
+    """
+    amendment_reason = forms.CharField(
+        required=True,
+        max_length=200,
+        label='Reason for amendment *',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Blood pressure re-measured, entered wrong value',
+        })
+    )
+
+    class Meta:
+        model = Triage
+        fields = ['blood_pressure', 'temperature', 'pulse_rate', 'urgency', 'notes']
+        widgets = {
+            'blood_pressure': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '120/80'}),
+            'temperature': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.1', 'min': '30', 'max': '45',
+            }),
+            'pulse_rate': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': '20', 'max': '300',
+            }),
+            'urgency': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
             'blood_pressure': 'Blood Pressure (mmHg)',
@@ -141,7 +179,6 @@ class PrescriptionItemForm(forms.Form):
     )
 
     def has_data(self):
-        """True if this form row carries meaningful input."""
         cd = getattr(self, 'cleaned_data', {})
         return bool(cd.get('medicine') and cd.get('quantity'))
 
@@ -150,7 +187,6 @@ class PrescriptionItemForm(forms.Form):
         medicine = cleaned.get('medicine')
         quantity = cleaned.get('quantity')
         instructions = cleaned.get('instructions', '').strip()
-        # Only validate if the row has any data — fully empty rows are fine (extra=3)
         if any([medicine, quantity, instructions]):
             if not medicine:
                 self.add_error('medicine', 'Select a medicine.')
@@ -158,6 +194,14 @@ class PrescriptionItemForm(forms.Form):
                 self.add_error('quantity', 'Enter a quantity.')
             if not instructions:
                 self.add_error('instructions', 'Enter dosage instructions.')
+            # FIX GAP 2: Warn doctor if stock is insufficient before saving
+            if medicine and quantity:
+                if quantity > medicine.quantity:
+                    self.add_error(
+                        'quantity',
+                        f'Insufficient stock — only {medicine.quantity} '
+                        f'{medicine.get_unit_display()}(s) available.'
+                    )
         return cleaned
 
 

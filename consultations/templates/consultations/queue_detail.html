@@ -59,8 +59,14 @@
   </div>
 
   <!-- Queue / Schedule Form -->
-  <div class="card">
+  <div class="card" style="margin-bottom:16px;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">Assign Queue / Schedule</h3>
+
+    {# FIX GAP 1: Queue number is now auto-assigned — no manual input shown #}
+    <div style="background:#f0f9f5;border-left:4px solid var(--primary);padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;">
+      💡 Selecting <strong>Queued</strong> will automatically assign the next available queue number for today.
+    </div>
+
     <form method="post" novalidate>
       {% csrf_token %}
 
@@ -70,17 +76,10 @@
         {% if form.status.errors %}<div class="form-error">{{ form.status.errors.0 }}</div>{% endif %}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Queue Number</label>
-          {{ form.queue_number }}
-          {% if form.queue_number.errors %}<div class="form-error">{{ form.queue_number.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>Appointment Time</label>
-          {{ form.scheduled_at }}
-          {% if form.scheduled_at.errors %}<div class="form-error">{{ form.scheduled_at.errors.0 }}</div>{% endif %}
-        </div>
+      <div class="form-group">
+        <label>Appointment Time <span style="color:var(--text-muted);font-weight:400;">(only for Scheduled)</span></label>
+        {{ form.scheduled_at }}
+        {% if form.scheduled_at.errors %}<div class="form-error">{{ form.scheduled_at.errors.0 }}</div>{% endif %}
       </div>
 
       <div style="display:flex;gap:10px;margin-top:8px;">
@@ -89,5 +88,19 @@
       </div>
     </form>
   </div>
+
+  {# FIX GAP 4: Cancel consultation button — separate from the queue form #}
+  <div class="card" style="border-color:#fca5a5;">
+    <h3 style="font-size:13px;font-weight:600;color:#991b1b;margin:0 0 8px;">Cancel Consultation</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+      Use this if the patient did not show up, submitted in error, or requested cancellation in person.
+    </p>
+    <form method="post" action="{% url 'consultations:frontdesk_cancel' consultation.pk %}"
+          onsubmit="return confirm('Cancel consultation #{{ consultation.pk }}? This cannot be undone.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm">✕ Cancel this consultation</button>
+    </form>
+  </div>
+
 </div>
 {% endblock %}

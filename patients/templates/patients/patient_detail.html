@@ -53,6 +53,7 @@
             <th>Status</th>
             <th>Symptoms (summary)</th>
             <th>Submitted</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -79,11 +80,10 @@
               {{ c.symptoms|truncatechars:60 }}
             </td>
             <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
-            {#
-              NOTE: No "View" link here. consultations:student_detail is decorated
-              with @student_required, so clinical staff would receive a 403 if linked.
-              If a clinical detail view is added in future, wire it here instead.
-            #}
+            <td>
+              <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
+            </td>
+
           </tr>
           {% endfor %}
         </tbody>

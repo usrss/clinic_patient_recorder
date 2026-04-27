@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="javascript:history.back()" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Consultation #{{ consultation.pk }}</h1>
+    <span style="
+      padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;
+      {% if consultation.status == 'completed' %}background:#d1fae5;color:#065f46;
+      {% elif consultation.status == 'triaged' %}background:#ffedd5;color:#9a3412;
+      {% elif consultation.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
+      {% else %}background:#f3f4f6;color:#374151;{% endif %}
+    ">{{ consultation.get_status_display }}</span>
+  </div>
+
+  <!-- Patient -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Full Name</div>
+        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Student ID</div>
+        {{ consultation.patient.student_profile.student_id|default:"—" }}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">College</div>
+        {{ consultation.patient.student_profile.college|default:"—" }}
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Age / Gender</div>
+        {{ consultation.patient.student_profile.age|default:"—" }}
+        {% if consultation.patient.student_profile.gender %}
+          / {{ consultation.patient.student_profile.get_gender_display }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Submission -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Submission</h3>
+    <div style="display:grid;gap:12px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Symptoms</div>
+        <div>{{ consultation.symptoms }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Severity (self-reported)</div>
+        <div>{{ consultation.severity_description }}</div>
+      </div>
+      {% if consultation.medical_history %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Medical History</div>
+        <div>{{ consultation.medical_history }}</div>
+      </div>
+      {% endif %}
+      {% if consultation.additional_notes %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Additional Notes</div>
+        <div>{{ consultation.additional_notes }}</div>
+      </div>
+      {% endif %}
+      <div style="font-size:12px;color:var(--text-muted);">Submitted: {{ consultation.created_at|date:"F d, Y H:i" }}</div>
+    </div>
+  </div>
+
+  <!-- Triage -->
+  {% with t=consultation.triage %}
+  {% if t %}
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">🩺 Triage Vitals</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;">
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">{{ t.blood_pressure }}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Blood Pressure</div>
+      </div>
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">{{ t.temperature }}°C</div>
+        <div style="font-size:11px;color:var(--text-muted);">Temperature</div>
+      </div>
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">{{ t.pulse_rate }} bpm</div>
+        <div style="font-size:11px;color:var(--text-muted);">Pulse Rate</div>
+      </div>
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">
+          {% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>
+          {% elif t.urgency == 'medium' %}<span style="color:#f97316;">Medium</span>
+          {% else %}<span style="color:#10b981;">Low</span>{% endif %}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);">Urgency</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);">
+      Triaged by {{ t.nurse.get_full_name|default:t.nurse.username }} at {{ t.triaged_at|date:"M d, Y H:i" }}
+    </div>
+    {% if t.notes %}
+    <div style="margin-top:10px;font-size:13px;color:var(--text-muted);white-space:pre-line;">{{ t.notes }}</div>
+    {% endif %}
+    {% if user.role == 'nurse' or user.role == 'admin' %}
+      {% if consultation.status != 'completed' %}
+      <div style="margin-top:12px;">
+        <a href="{% url 'consultations:triage_edit' consultation.pk %}" class="btn btn-secondary btn-sm">✏ Amend Triage</a>
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Prescription -->
+  {% with rx=consultation.prescription %}
+  {% if rx %}
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">💊 Prescription</h3>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Diagnosis</div>
+      <div>{{ rx.diagnosis }}</div>
+    </div>
+    {% if rx.treatment_plan %}
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Treatment Plan</div>
+      <div>{{ rx.treatment_plan }}</div>
+    </div>
+    {% endif %}
+    {% if rx.items.all %}
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Medicines Dispensed</div>
+      {% for item in rx.items.all %}
+      <div style="display:flex;gap:10px;padding:10px;background:#f0f9f5;border-radius:6px;margin-bottom:8px;font-size:13px;">
+        <div>
+          <span style="font-weight:600;">{{ item.medicine.name }}</span> × {{ item.quantity }}
+          <span style="color:var(--text-muted);font-size:12px;display:block;">{{ item.instructions }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="font-size:13px;color:var(--text-muted);">No medicines were prescribed.</p>
+    {% endif %}
+    <div style="font-size:12px;color:var(--text-muted);">
+      Prescribed by Dr. {{ rx.doctor.get_full_name }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Admin: Reopen cancelled consultations -->
+  {% if user.role == 'admin' and consultation.status == 'cancelled' %}
+  <div class="card" style="margin-top:16px;border-color:#bbf7d0;">
+    <h3 style="font-size:13px;font-weight:600;color:#065f46;margin:0 0 8px;">Reopen Consultation</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+      This will return the consultation to Pending status so front desk can process it again.
+    </p>
+    <form method="post" action="{% url 'consultations:admin_reopen' consultation.pk %}"
+          onsubmit="return confirm('Reopen consultation #{{ consultation.pk }}?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary btn-sm">↩ Reopen as Pending</button>
+    </form>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
