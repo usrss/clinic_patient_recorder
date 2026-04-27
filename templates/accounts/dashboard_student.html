@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:28px;">
+    <h1 class="page-title" style="margin-bottom:4px;">Welcome, {{ user.get_full_name|default:user.username }}</h1>
+    <p style="color:var(--text-muted);font-size:14px;margin:0;">Student Portal</p>
+</div>
+
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
+  <div class="card" style="padding:20px;opacity:.6;">
+    <div style="font-size:22px;margin-bottom:8px;">📋</div>
+    <div style="font-weight:600;font-size:14px;">My Consultations</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Coming soon</div>
+  </div>
+  <a href="{% url 'accounts:change_password' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;">
+    <div style="font-size:22px;margin-bottom:8px;">🔑</div>
+    <div style="font-weight:600;font-size:14px;">Change Password</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your login password</div>
+  </a>
+</div>
+
+<div class="card" style="padding:20px;">
+  <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;">How it works</h3>
+  <ol style="margin:0;padding-left:20px;font-size:13px;color:var(--text-muted);line-height:2;">
+    <li>Submit a consultation request describing your symptoms</li>
+    <li>Front desk will assign you a queue number or schedule</li>
+    <li>Proceed to the clinic at your assigned time</li>
+    <li>Nurse will record your vitals and assess urgency</li>
+    <li>Doctor will diagnose and prescribe medication</li>
+  </ol>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+from .models import User
+from .forms import LoginForm, UserCreateForm, UserEditForm, StudentBulkUploadForm, StudentPasswordChangeForm
+from .decorators import admin_required
+from .utils import import_students_from_excel, StudentImportError
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+
+    form = LoginForm(request, data=request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+            return redirect('accounts:dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
+
+    return render(request, 'accounts/login.html', {'form': form})
+
+
+def logout_view(request):
+    # FIX: Only allow POST to prevent CSRF logout attacks.
+    # A GET-based logout lets any external page silently log users out
+    # via a linked image or redirect (e.g. <img src="/accounts/logout/">).
+    if request.method != 'POST':
+        return redirect('accounts:dashboard')
+    logout(request)
+    messages.info(request, 'You have been logged out.')
+    return redirect('accounts:login')
+
+
+@login_required
+def dashboard(request):
+    """Role-based dashboard redirect. Forces password change on first login."""
+    user = request.user
+
+    # FIX: Force password change check happens before role routing
+    if user.force_password_change:
+        messages.warning(request, 'Please change your default password before continuing.')
+        return redirect('accounts:change_password')
+
+    # FIX: Use Role constants instead of raw strings to avoid typo bugs
+    role_template_map = {
+        User.Role.STUDENT: 'accounts/dashboard_student.html',
+        User.Role.NURSE: 'accounts/dashboard_nurse.html',
+        User.Role.DOCTOR: 'accounts/dashboard_doctor.html',
+        User.Role.FRONTDESK: 'accounts/dashboard_frontdesk.html',
+    }
+
+    if user.role in role_template_map:
+        return render(request, role_template_map[user.role], {'user': user})
+
+    if user.role == User.Role.ADMIN:
+        context = {
+            'user': user,
+            'total_users': User.objects.count(),
+            'students': User.objects.filter(role=User.Role.STUDENT).count(),
+            'nurses': User.objects.filter(role=User.Role.NURSE).count(),
+            'doctors': User.objects.filter(role=User.Role.DOCTOR).count(),
+        }
+        return render(request, 'accounts/dashboard_admin.html', context)
+
+    # Fallback: unknown role — log out and send back to login
+    messages.error(request, 'Your account has an unrecognised role. Please contact an administrator.')
+    logout(request)
+    return redirect('accounts:login')
+
+
+@login_required
+def change_password(request):
+    """Allow all users to change their password."""
+    form = StudentPasswordChangeForm(request.user, request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        # FIX: Clear the force_password_change flag after a successful change
+        user.force_password_change = False
+        user.save(update_fields=['force_password_change'])  # FIX: targeted save, not full re-save
+        update_session_auth_hash(request, user)
+        messages.success(request, 'Password changed successfully.')
+        return redirect('accounts:dashboard')
+    return render(request, 'accounts/change_password.html', {
+        'form': form,
+        'forced': request.user.force_password_change,
+    })
+
+
+@login_required
+@admin_required
+def user_list(request):
+    users = User.objects.all().order_by('role', 'username')
+    return render(request, 'accounts/user_list.html', {'users': users})
+
+
+@login_required
+@admin_required
+def user_create(request):
+    form = UserCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'User created successfully.')
+        return redirect('accounts:user_list')
+    return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Create'})
+
+
+@login_required
+@admin_required
+def user_edit(request, pk):
+    target = get_object_or_404(User, pk=pk)
+    form = UserEditForm(request.POST or None, instance=target)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'User updated successfully.')
+        return redirect('accounts:user_list')
+    return render(request, 'accounts/user_form.html', {
+        'form': form,
+        'action': 'Edit',
+        'target': target,
+    })
+
+
+@login_required
+@admin_required
+def user_toggle_active(request, pk):
+    # FIX: Only allow POST to prevent accidental activation via GET (e.g. prefetch)
+    if request.method != 'POST':
+        return redirect('accounts:user_list')
+
+    user = get_object_or_404(User, pk=pk)
+    if user == request.user:
+        messages.error(request, 'You cannot deactivate your own account.')
+    else:
+        user.is_active = not user.is_active
+        user.save(update_fields=['is_active'])  # FIX: targeted save
+        status = 'activated' if user.is_active else 'deactivated'
+        messages.success(request, f'User {user.username} {status}.')
+    return redirect('accounts:user_list')
+
+
+@login_required
+@admin_required
+def user_import(request):
+    """Bulk import students from Excel."""
+    form = StudentBulkUploadForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            results = import_students_from_excel(request.FILES['file'])
+            messages.success(
+                request,
+                f'✓ Import complete: {results["created"]} created, {results["skipped"]} skipped'
+            )
+            for warning in results['warnings']:
+                messages.warning(request, warning)
+            for error in results['errors']:
+                messages.error(request, error)
+            return redirect('accounts:user_import')
+        except StudentImportError as e:
+            messages.error(request, f'Import failed: {str(e)}')
+        except Exception as e:
+            messages.error(request, f'Unexpected error: {str(e)}')
+    return render(request, 'accounts/import_students.html', {'form': form})

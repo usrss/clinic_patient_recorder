@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Triage — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
+    <h1 class="page-title" style="margin-bottom:0;">Triage — Consultation #{{ consultation.pk }}</h1>
+  </div>
+
+  <!-- Patient Info -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:14px;">
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Name</span><br>
+        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Student ID</span><br>
+        <strong>{{ consultation.patient.student_profile.student_id|default:"—" }}</strong>
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">College</span><br>
+        {{ consultation.patient.student_profile.college|default:"—" }}
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Status</span><br>
+        {% if consultation.status == 'queued' %}
+          <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">🗂 Queue #{{ consultation.queue_number }}</span>
+        {% elif consultation.status == 'scheduled' %}
+          <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">📅 {{ consultation.scheduled_at|date:"M d, H:i" }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultation Details -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation Details</h3>
+    <div style="display:grid;gap:12px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Symptoms</div>
+        <div>{{ consultation.symptoms }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Severity (self-reported)</div>
+        <div>{{ consultation.severity_description }}</div>
+      </div>
+      {% if consultation.medical_history %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Medical History</div>
+        <div>{{ consultation.medical_history }}</div>
+      </div>
+      {% endif %}
+      {% if consultation.additional_notes %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Additional Notes</div>
+        <div>{{ consultation.additional_notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Triage Form -->
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🩺 Record Vitals</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>{{ form.blood_pressure.label }}</label>
+          {{ form.blood_pressure }}
+          {% if form.blood_pressure.errors %}
+            <div class="form-error">{{ form.blood_pressure.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.temperature.label }}</label>
+          {{ form.temperature }}
+          {% if form.temperature.errors %}
+            <div class="form-error">{{ form.temperature.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.pulse_rate.label }}</label>
+          {{ form.pulse_rate }}
+          {% if form.pulse_rate.errors %}
+            <div class="form-error">{{ form.pulse_rate.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Urgency Level</label>
+        {{ form.urgency }}
+        {% if form.urgency.errors %}
+          <div class="form-error">{{ form.urgency.errors.0 }}</div>
+        {% endif %}
+        <div style="display:flex;gap:10px;margin-top:8px;font-size:12px;">
+          <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-weight:600;">Low — stable, non-urgent</span>
+          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:10px;font-weight:600;">Medium — needs attention soon</span>
+          <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:10px;font-weight:600;">High — urgent, prioritise</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Clinical Notes (optional)</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}
+          <div class="form-error">{{ form.notes.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error" style="margin-bottom:12px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="submit" class="btn btn-primary">✅ Complete Triage → Forward to Doctor</button>
+        <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

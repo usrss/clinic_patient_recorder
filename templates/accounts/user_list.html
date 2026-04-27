@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Users — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <h1 class="page-title" style="margin-bottom:0;">Users</h1>
+  <div style="display:flex;gap:10px;">
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">+ Add user</a>
+    {# FIX: Was hardcoded to /admin/accounts/user/import-students/ — now uses the proper named URL #}
+    <a href="{% url 'accounts:user_import' %}" class="btn btn-secondary">📤 Import students</a>
+  </div>
+</div>
+
+{# Flash messages #}
+{% if messages %}
+  {% for message in messages %}
+    <div style="
+      margin-bottom:16px;
+      padding:12px 16px;
+      border-radius:6px;
+      font-size:13px;
+      {% if message.tags == 'error' %}background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
+      {% elif message.tags == 'warning' %}background:#fff8e1;border-left:4px solid #f59e0b;color:#92400e;
+      {% else %}background:#f0fdf4;border-left:4px solid #22c55e;color:#166534;{% endif %}
+    ">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            {{ u.get_full_name|default:"—" }}
+            {# FIX: Show a visual indicator when a user still has a temporary default password #}
+            {% if u.force_password_change %}
+              <span title="Temporary password — user has not logged in yet"
+                style="display:inline-block;margin-left:6px;background:#fef3c7;color:#92400e;
+                       font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;">
+                TEMP PW
+              </span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text-muted);">{{ u.username }}</td>
+          <td>
+            <span class="role-badge role-{{ u.role }}">{{ u.get_role_display }}</span>
+          </td>
+          <td style="color:var(--text-muted);font-size:12px;">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.is_active %}
+              <span class="status-active">● Active</span>
+            {% else %}
+              <span class="status-inactive">● Inactive</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:8px;align-items:center;">
+            <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            {% if u != request.user %}
+            <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}">
+                {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">No users found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

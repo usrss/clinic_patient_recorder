@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Nurse Dashboard — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:28px;">
+    <h1 class="page-title" style="margin-bottom:4px;">Nurse Dashboard</h1>
+    <p style="color:var(--text-muted);font-size:14px;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
+</div>
+
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
+  <div class="card" style="padding:20px;opacity:.6;">
+    <div style="font-size:22px;margin-bottom:8px;">🩺</div>
+    <div style="font-weight:600;font-size:14px;">Triage Queue</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Coming soon</div>
+  </div>
+  <a href="{% url 'inventory:medicine_list' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;">
+    <div style="font-size:22px;margin-bottom:8px;">💊</div>
+    <div style="font-weight:600;font-size:14px;">Inventory</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">View and restock medicine</div>
+  </a>
+  {# FIX: Added change password card — was missing from nurse/doctor/frontdesk dashboards #}
+  <a href="{% url 'accounts:change_password' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;">
+    <div style="font-size:22px;margin-bottom:8px;">🔑</div>
+    <div style="font-weight:600;font-size:14px;">Change Password</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your login password</div>
+  </a>
+</div>
+
+<div class="card" style="padding:20px;">
+  <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;">Your Responsibilities</h3>
+  <ul style="margin:0;padding-left:20px;font-size:13px;color:var(--text-muted);line-height:2;">
+    <li>Record patient vitals (blood pressure, temperature, pulse rate)</li>
+    <li>Assess condition severity: Low / Medium / High</li>
+    <li>Prepare patient for doctor consultation</li>
+    <li>Manage and restock medicine inventory</li>
+  </ul>
+</div>
+{% endblock %}

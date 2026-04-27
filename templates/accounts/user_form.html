@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} User — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">{{ action }} user{% if target %}: {{ target.username }}{% endif %}</h1>
+  </div>
+
+  {# FIX: Render non-field form errors (e.g. password mismatch summary) at the top #}
+  {% if form.non_field_errors %}
+    <div style="background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
+                padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;">
+      {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>First name</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}
+            <div class="form-error">{{ form.first_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>Last name</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}
+            <div class="form-error">{{ form.last_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <div class="form-error">{{ form.username.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <div class="form-error">{{ form.email.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Role</label>
+          {{ form.role }}
+          {% if form.role.errors %}
+            <div class="form-error">{{ form.role.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          {# FIX: Added type="tel" hint via label note; actual widget attr set in form #}
+          <label>Phone</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}
+            <div class="form-error">{{ form.phone.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if form.password1 %}
+      <div class="form-group">
+        <label>Password</label>
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+          <div class="form-error">{{ form.password1.errors.0 }}</div>
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label>Confirm password</label>
+        {{ form.password2 }}
+        {% if form.password2.errors %}
+          <div class="form-error">{{ form.password2.errors.0 }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if form.is_active %}
+      <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+        {{ form.is_active }}
+        <label for="{{ form.is_active.id_for_label }}"
+               style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);margin-bottom:0;">
+          Active account
+        </label>
+      </div>
+      {% endif %}
+
+      {# FIX: Note informing admins that student profiles (student_id, college, etc.)
+         are managed separately via the import tool or Django admin, since UserCreateForm
+         only creates the auth User — the StudentProfile requires its own form/flow. #}
+      {% if form.role %}
+        <p style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:0;">
+          💡 For student accounts, additional profile info (Student ID, college, gender)
+          is set via <a href="{% url 'accounts:user_import' %}" style="color:var(--primary);">bulk import</a>
+          or the <a href="/admin/" style="color:var(--primary);">Admin Panel</a>.
+        </p>
+      {% endif %}
+
+      <div style="display:flex;gap:10px;margin-top:24px;">
+        <button type="submit" class="btn btn-primary">{{ action }} user</button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

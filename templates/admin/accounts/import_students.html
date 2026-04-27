@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Import Students — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .instruction { background:#f0f9f5;border-left:4px solid #1D9E75;padding:14px 16px;border-radius:6px;margin-bottom:20px; }
+  .instruction h4 { margin:0 0 8px;font-size:14px; }
+  .instruction ul { margin:0;padding-left:20px;font-size:13px;color:var(--text-muted); }
+  .instruction li { margin:4px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Import Students</h1>
+  </div>
+
+  {# FIX: Render Django flash messages — import results (success/warnings/errors) were
+     silently lost because views.py redirects back here after import with messages attached. #}
+
+  <div class="instruction">
+    <h4>📋 Instructions</h4>
+    <ul>
+      <li>Upload an Excel (.xlsx) file with student data</li>
+      <li>Required columns: <strong>student_id, first_name, last_name, age, gender</strong></li>
+      <li>Optional columns: <strong>middle_name, college</strong></li>
+      <li>Gender values: M (Male), F (Female), O (Other)</li>
+      <li>Default password = student_id (student must change on first login)</li>
+      <li>Existing students will be skipped</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+        {{ form.file }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.file.help_text }}</div>
+        {% if form.file.errors %}
+          <div class="form-error">{{ form.file.errors.0 }}</div>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button type="submit" class="btn btn-primary">📤 Upload & Import</button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

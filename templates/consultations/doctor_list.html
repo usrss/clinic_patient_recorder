@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Triaged Patients — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Triaged Patients</h1>
+    <p style="color:var(--text-muted);font-size:13px;">
+      {{ consultations.count }} patient{{ consultations.count|pluralize }} waiting for consultation
+    </p>
+  </div>
+</div>
+
+{% if consultations %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Student ID</th>
+          <th>Urgency</th>
+          <th>Vitals</th>
+          <th>Symptoms (summary)</th>
+          <th>Triaged</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in consultations %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
+          <td>
+            <div style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">
+              {% if c.patient.student_profile.college %}{{ c.patient.student_profile.college }}{% endif %}
+            </div>
+          </td>
+          <td style="color:var(--text-muted);font-size:12px;">
+            {{ c.patient.student_profile.student_id|default:"—" }}
+          </td>
+          <td>
+            {% if c.triage %}
+              {% if c.triage.urgency == 'high' %}
+                <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🔴 High</span>
+              {% elif c.triage.urgency == 'medium' %}
+                <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🟡 Medium</span>
+              {% else %}
+                <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🟢 Low</span>
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if c.triage %}
+              BP: {{ c.triage.blood_pressure }}<br>
+              Temp: {{ c.triage.temperature }}°C<br>
+              Pulse: {{ c.triage.pulse_rate }} bpm
+            {% else %}—{% endif %}
+          </td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">
+            {{ c.symptoms|truncatechars:55 }}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if c.triage %}{{ c.triage.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'consultations:prescribe' c.pk %}" class="btn btn-primary btn-sm">Prescribe →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <div style="font-size:40px;margin-bottom:12px;">✅</div>
+  <p style="font-weight:600;margin-bottom:4px;">No patients waiting</p>
+  <p style="color:var(--text-muted);font-size:13px;">All triaged patients have been attended to.</p>
+</div>
+{% endif %}
+{% endblock %}

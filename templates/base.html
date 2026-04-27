@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Clinic Patient Recorder{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<nav class="nav">
+  <a href="{% url 'accounts:dashboard' %}" class="nav-brand">Clinic Recorder</a>
+  <div class="nav-links">
+
+    {% if user.role == 'student' %}
+      <a href="{% url 'consultations:student_home' %}" class="nav-link">My Consultations</a>
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
+    {% if user.role == 'frontdesk' %}
+      <a href="{% url 'consultations:queue' %}" class="nav-link">Queue</a>
+      {# FIX: Added change password for frontdesk — was missing, only students had it in nav #}
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
+    {% if user.role == 'nurse' %}
+      <a href="{% url 'consultations:triage_list' %}" class="nav-link">Triage</a>
+      <a href="{% url 'inventory:medicine_list' %}" class="nav-link">Inventory</a>
+      {# FIX: Added change password for nurse #}
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
+    {% if user.role == 'doctor' %}
+      <a href="{% url 'consultations:doctor_list' %}" class="nav-link">Patients</a>
+      {# prescribe requires a pk — link appears per-patient in doctor_list.html, not in nav #}
+      {# FIX: Added change password for doctor #}
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
+    {% if user.role == 'admin' %}
+      {# <a href="{% url 'reports:dashboard' %}" class="nav-link">Reports</a> #}
+      <a href="{% url 'accounts:user_list' %}" class="nav-link">Users</a>
+      <a href="{% url 'inventory:medicine_list' %}" class="nav-link">Inventory</a>
+      <a href="/admin/" class="nav-link">Admin Panel</a>
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
+  </div>
+  <div class="nav-user">
+    <span>{{ user.get_full_name|default:user.username }}</span>
+    <span class="role-badge role-{{ user.role }}">{{ user.get_role_display|default:user.role }}</span>
+    {# FIX: Logout must be a POST form, not a GET link.
+       A plain <a href="logout"> allows any external page to log users out silently
+       by embedding <img src="/accounts/logout/"> — a CSRF logout attack.
+       Using a POST form with {% csrf_token %} prevents this. #}
+    <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="btn-logout">Log out</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+<div class="container">
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="message message-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

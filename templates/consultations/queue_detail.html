@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Process Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
+    <h1 class="page-title" style="margin-bottom:0;">Consultation #{{ consultation.pk }}</h1>
+  </div>
+
+  <!-- Patient Info -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;">
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">Name</span><br>
+        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+      </div>
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">Student ID</span><br>
+        <strong>{{ consultation.patient.student_profile.student_id|default:"—" }}</strong>
+      </div>
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">College</span><br>
+        {{ consultation.patient.student_profile.college|default:"—" }}
+      </div>
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">Submitted</span><br>
+        {{ consultation.created_at|date:"F d, Y \a\t H:i" }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultation Details -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation Details</h3>
+    <div style="display:grid;gap:12px;font-size:14px;">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Symptoms</div>
+        <div>{{ consultation.symptoms }}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Severity Description</div>
+        <div>{{ consultation.severity_description }}</div>
+      </div>
+      {% if consultation.medical_history %}
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Medical History</div>
+        <div>{{ consultation.medical_history }}</div>
+      </div>
+      {% endif %}
+      {% if consultation.additional_notes %}
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Additional Notes</div>
+        <div>{{ consultation.additional_notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Queue / Schedule Form -->
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">Assign Queue / Schedule</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Action</label>
+        {{ form.status }}
+        {% if form.status.errors %}<div class="form-error">{{ form.status.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Queue Number</label>
+          {{ form.queue_number }}
+          {% if form.queue_number.errors %}<div class="form-error">{{ form.queue_number.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Appointment Time</label>
+          {{ form.scheduled_at }}
+          {% if form.scheduled_at.errors %}<div class="form-error">{{ form.scheduled_at.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="submit" class="btn btn-primary">Save & Route to Nurse</button>
+        <a href="{% url 'consultations:queue' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

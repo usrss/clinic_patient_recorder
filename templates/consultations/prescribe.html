@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}Prescribe — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .formset-row { background:#f8f9fa; border-radius:8px; padding:14px 16px; margin-bottom:10px; }
+  .formset-row:last-child { margin-bottom:0; }
+  .vitals-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .vital-box { background:#f0f9f5; border-radius:8px; padding:10px; text-align:center; }
+  .vital-value { font-size:17px; font-weight:700; }
+  .vital-label { font-size:11px; color:var(--text-muted); margin-top:2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'consultations:doctor_list' %}" class="btn btn-secondary btn-sm">← Back to Patients</a>
+    <h1 class="page-title" style="margin-bottom:0;">Prescribe — Consultation #{{ consultation.pk }}</h1>
+  </div>
+
+  <!-- Patient Summary -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:14px;">
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Name</span><br>
+        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Student ID</span><br>
+        <strong>{{ consultation.patient.student_profile.student_id|default:"—" }}</strong>
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">College</span><br>
+        {{ consultation.patient.student_profile.college|default:"—" }}
+      </div>
+      <div>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Age / Gender</span><br>
+        {{ consultation.patient.student_profile.age|default:"—" }}
+        {% if consultation.patient.student_profile.gender %}
+          / {{ consultation.patient.student_profile.get_gender_display }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultation & Symptoms -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Symptoms & History</h3>
+    <div style="display:grid;gap:12px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Symptoms</div>
+        <div>{{ consultation.symptoms }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Severity (self-reported)</div>
+        <div>{{ consultation.severity_description }}</div>
+      </div>
+      {% if consultation.medical_history %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Medical History</div>
+        <div>{{ consultation.medical_history }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Triage Vitals -->
+  {% with t=consultation.triage %}
+  {% if t %}
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">🩺 Triage Vitals</h3>
+    <div class="vitals-grid">
+      <div class="vital-box">
+        <div class="vital-value">{{ t.blood_pressure }}</div>
+        <div class="vital-label">Blood Pressure</div>
+      </div>
+      <div class="vital-box">
+        <div class="vital-value">{{ t.temperature }}°C</div>
+        <div class="vital-label">Temperature</div>
+      </div>
+      <div class="vital-box">
+        <div class="vital-value">{{ t.pulse_rate }} bpm</div>
+        <div class="vital-label">Pulse Rate</div>
+      </div>
+      <div class="vital-box">
+        <div class="vital-value">
+          {% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>
+          {% elif t.urgency == 'medium' %}<span style="color:#f97316;">Medium</span>
+          {% else %}<span style="color:#10b981;">Low</span>{% endif %}
+        </div>
+        <div class="vital-label">Urgency</div>
+      </div>
+    </div>
+    {% if t.notes %}
+    <p style="font-size:13px;color:var(--text-muted);margin:12px 0 0;">Nurse notes: {{ t.notes }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Prescription Form -->
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Diagnosis -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">👨‍⚕️ Diagnosis & Treatment</h3>
+
+      <div class="form-group">
+        <label>{{ prescription_form.diagnosis.label }}</label>
+        {{ prescription_form.diagnosis }}
+        {% if prescription_form.diagnosis.errors %}
+          <div class="form-error">{{ prescription_form.diagnosis.errors.0 }}</div>
+        {% endif %}
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>{{ prescription_form.treatment_plan.label }} <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+        {{ prescription_form.treatment_plan }}
+        {% if prescription_form.treatment_plan.errors %}
+          <div class="form-error">{{ prescription_form.treatment_plan.errors.0 }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Medicine Formset -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 4px;">💊 Medicines Prescribed</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 16px;">
+        Leave all rows empty if no medicines are being prescribed. Stock is deducted automatically on save.
+      </p>
+
+      {{ formset.management_form }}
+
+      {% for item_form in formset %}
+      <div class="formset-row">
+        <div style="display:grid;grid-template-columns:2fr 1fr 3fr;gap:12px;align-items:start;">
+          <div class="form-group" style="margin-bottom:0;">
+            {% if forloop.first %}<label style="font-size:12px;">Medicine</label>{% endif %}
+            {{ item_form.medicine }}
+            {% if item_form.medicine.errors %}
+              <div class="form-error">{{ item_form.medicine.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            {% if forloop.first %}<label style="font-size:12px;">Qty</label>{% endif %}
+            {{ item_form.quantity }}
+            {% if item_form.quantity.errors %}
+              <div class="form-error">{{ item_form.quantity.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            {% if forloop.first %}<label style="font-size:12px;">Instructions</label>{% endif %}
+            {{ item_form.instructions }}
+            {% if item_form.instructions.errors %}
+              <div class="form-error">{{ item_form.instructions.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if item_form.non_field_errors %}
+          <div class="form-error" style="margin-top:6px;">
+            {% for error in item_form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if prescription_form.non_field_errors %}
+      <div class="form-error" style="margin-bottom:12px;">
+        {% for error in prescription_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+    {% endif %
+
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn btn-primary">💾 Save Prescription & Complete</button>
+      <a href="{% url 'consultations:doctor_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

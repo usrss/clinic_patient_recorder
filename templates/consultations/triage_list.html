@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Triage Queue — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin-bottom:4px;">Triage Queue</h1>
+    <p style="color:var(--text-muted);font-size:13px;">
+      {{ consultations.count }} patient{{ consultations.count|pluralize }} awaiting triage
+    </p>
+  </div>
+</div>
+
+{% if consultations %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Student ID</th>
+          <th>Status</th>
+          <th>Queue / Schedule</th>
+          <th>Urgency (self-reported)</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in consultations %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
+          <td>
+            <div style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</div>
+          </td>
+          <td style="color:var(--text-muted);font-size:12px;">
+            {{ c.patient.student_profile.student_id|default:"—" }}
+          </td>
+          <td>
+            {% if c.status == 'queued' %}
+              <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🗂 Queued</span>
+            {% elif c.status == 'scheduled' %}
+              <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📅 Scheduled</span>
+            {% endif %}
+          </td>
+          <td style="font-size:13px;color:var(--text-muted);">
+            {% if c.queue_number %}#{{ c.queue_number }}
+            {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ c.severity_description|truncatechars:45 }}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, H:i" }}</td>
+          <td>
+            <a href="{% url 'consultations:triage_form' c.pk %}" class="btn btn-primary btn-sm">Triage →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <div style="font-size:40px;margin-bottom:12px;">✅</div>
+  <p style="font-weight:600;margin-bottom:4px;">Triage queue is clear</p>
+  <p style="color:var(--text-muted);font-size:13px;">No patients are waiting to be triaged.</p>
+</div>
+{% endif %}
+{% endblock %}
