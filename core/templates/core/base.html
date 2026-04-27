@@ -15,40 +15,32 @@
   <a href="{% url 'accounts:dashboard' %}" class="nav-brand">Clinic Recorder</a>
   <div class="nav-links">
 
-    {% if user.role == 'student' %}
-      <a href="{% url 'consultations:student_home' %}" class="nav-link">My Consultations</a>
-      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
-    {% endif %}
-
     {% if user.role == 'frontdesk' %}
       <a href="{% url 'consultations:queue' %}" class="nav-link">Queue</a>
+      <a href="{% url 'consultations:consultation_create' %}" class="nav-link">+ New Consultation</a>
+      <a href="{% url 'patients:patient_list' %}" class="nav-link">Patients</a>
       <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
     {% endif %}
 
     {% if user.role == 'nurse' %}
       <a href="{% url 'consultations:triage_list' %}" class="nav-link">Triage</a>
-      {# FIX 07: Added Patients link for nurse — can now view patient records #}
       <a href="{% url 'patients:patient_list' %}" class="nav-link">Patients</a>
       <a href="{% url 'inventory:medicine_list' %}" class="nav-link">Inventory</a>
       <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
     {% endif %}
 
     {% if user.role == 'doctor' %}
-      {# "Patients" here = active triaged work queue (consultations:doctor_list) #}
       <a href="{% url 'consultations:doctor_list' %}" class="nav-link">Patients</a>
-      {# FIX 07: Added Records link — full patient history via patients app #}
       <a href="{% url 'patients:patient_list' %}" class="nav-link">Records</a>
-      {# FIX 05 (retained): Inventory link so doctors can check stock before prescribing #}
       <a href="{% url 'inventory:medicine_list' %}" class="nav-link">Inventory</a>
       <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
     {% endif %}
 
     {% if user.role == 'admin' %}
-      {# FIX 09: Uncommented — reports app and template are complete #}
       <a href="{% url 'reports:report_dashboard' %}" class="nav-link">Reports</a>
-      <a href="{% url 'accounts:user_list' %}" class="nav-link">Users</a>
-      {# FIX 07: Added Patients link for admin #}
+      <a href="{% url 'accounts:user_list' %}" class="nav-link">Staff</a>
       <a href="{% url 'patients:patient_list' %}" class="nav-link">Patients</a>
+      <a href="{% url 'consultations:queue' %}" class="nav-link">Queue</a>
       <a href="{% url 'inventory:medicine_list' %}" class="nav-link">Inventory</a>
       <a href="/admin/" class="nav-link">Admin Panel</a>
       <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>

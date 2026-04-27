@@ -19,10 +19,10 @@
         <tr>
           <th>#</th>
           <th>Patient</th>
-          <th>Student ID</th>
+          <th>Patient ID</th>
           <th>Status</th>
           <th>Queue / Schedule</th>
-          <th>Urgency (self-reported)</th>
+          <th>Severity</th>
           <th>Submitted</th>
           <th>Actions</th>
         </tr>
@@ -32,11 +32,12 @@
         <tr>
           <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
           <td>
-            <div style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</div>
+            <div style="font-weight:500;">{{ c.patient.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">
+              {% if c.patient.college %}{{ c.patient.college.abbreviation }}{% endif %}
+            </div>
           </td>
-          <td style="color:var(--text-muted);font-size:12px;">
-            {{ c.patient.student_profile.student_id|default:"—" }}
-          </td>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.patient.patient_id }}</td>
           <td>
             {% if c.status == 'queued' %}
               <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🗂 Queued</span>
@@ -53,7 +54,7 @@
             {{ c.severity_description|truncatechars:45 }}
           </td>
           <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, H:i" }}</td>
-          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+          <td>
             <a href="{% url 'consultations:triage_form' c.pk %}" class="btn btn-primary btn-sm">Triage →</a>
           </td>
         </tr>
@@ -69,46 +70,4 @@
   <p style="color:var(--text-muted);font-size:13px;">No patients are waiting to be triaged.</p>
 </div>
 {% endif %}
-
-{# FIX GAP 3: Triaged consultations — show Edit button for amendments #}
-{% if triaged_consultations %}
-<h2 style="font-size:15px;font-weight:600;margin:28px 0 14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Recently Triaged</h2>
-<div class="card" style="padding:0;">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Patient</th>
-          <th>Urgency</th>
-          <th>Triaged at</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in triaged_consultations %}
-        <tr>
-          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
-          <td style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</td>
-          <td>
-            {% if c.triage.urgency == 'high' %}
-              <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🔴 High</span>
-            {% elif c.triage.urgency == 'medium' %}
-              <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🟡 Medium</span>
-            {% else %}
-              <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🟢 Low</span>
-            {% endif %}
-          </td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ c.triage.triaged_at|date:"M d, H:i" }}</td>
-          <td>
-            <a href="{% url 'consultations:triage_edit' c.pk %}" class="btn btn-secondary btn-sm">✏ Amend</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{% endif %}
-
 {% endblock %}

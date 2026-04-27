@@ -1,13 +1,13 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm
-from .models import User, StudentProfile
+from .models import User
 
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Username or Student ID',
+            'placeholder': 'Username',
             'autofocus': True,
         })
     )
@@ -20,7 +20,7 @@ class LoginForm(AuthenticationForm):
 
 
 class UserCreateForm(UserCreationForm):
-    """Used by admin to create new users."""
+    """Admin creates a staff user account."""
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
@@ -33,7 +33,7 @@ class UserCreateForm(UserCreationForm):
 
 
 class UserEditForm(forms.ModelForm):
-    """Used by admin to edit existing users."""
+    """Admin edits an existing staff user."""
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
@@ -45,11 +45,14 @@ class UserEditForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'form-control')
 
 
-class StudentBulkUploadForm(forms.Form):
-    """Form for uploading Excel file with student data."""
+class PatientBulkUploadForm(forms.Form):
+    """Upload an Excel file to bulk-create Patient records."""
     file = forms.FileField(
         label='Upload Excel File (.xlsx)',
-        help_text='File should contain columns: student_id, first_name, last_name, age, gender. Optional: middle_name, college',
+        help_text=(
+            'Required columns: id, first_name, last_name, sex. '
+            'Optional: middle_name, college (abbreviation).'
+        ),
         widget=forms.FileInput(attrs={
             'accept': '.xlsx',
             'class': 'form-control',
@@ -60,13 +63,12 @@ class StudentBulkUploadForm(forms.Form):
         file = self.cleaned_data['file']
         if not file.name.endswith('.xlsx'):
             raise forms.ValidationError('Please upload a valid Excel (.xlsx) file.')
-        if file.size > 5 * 1024 * 1024:  # 5MB limit
+        if file.size > 5 * 1024 * 1024:
             raise forms.ValidationError('File size must be less than 5MB.')
         return file
 
 
-class StudentPasswordChangeForm(PasswordChangeForm):
-    """Password change form for all users."""
+class StaffPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():

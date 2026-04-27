@@ -1,43 +1,34 @@
 """
-Utility functions for bulk importing students from Excel files.
+Utility functions for bulk importing Patient records from Excel files.
+
+Key differences from the old StudentProfile import:
+- Creates patients.Patient records (not auth Users)
+- birthday is NOT in the import — patients enter it themselves via profile setup
+- college is matched by abbreviation against the colleges.College table
+- patient_id uniqueness is enforced; existing records are skipped
 """
 import pandas as pd
 from django.db import transaction
-from django.contrib.auth import get_user_model
-from accounts.models import StudentProfile
 
-User = get_user_model()
+from patients.models import Patient, PatientProfile
+from colleges.models import College
 
 
-class StudentImportError(Exception):
-    """Custom exception for student import errors."""
+class PatientImportError(Exception):
     pass
 
 
 def validate_excel_structure(df):
-    """
-    Validate that the Excel file has required columns.
-    Required: student_id, first_name, last_name, age, gender
-    Optional: middle_name, college
-    """
-    required_columns = {'student_id', 'first_name', 'last_name', 'age', 'gender'}
-    missing = required_columns - set(df.columns)
-
+    required = {'id', 'first_name', 'last_name', 'sex'}
+    missing = required - set(df.columns)
     if missing:
-        raise StudentImportError(
+        raise PatientImportError(
             f'Missing required columns: {", ".join(sorted(missing))}'
         )
-
     return True
 
 
 def _str_or_empty(value):
-    """
-    FIX: Safely convert a cell value to a stripped string.
-    Returns '' for None, NaN, or the literal string 'nan'.
-    This prevents falsy-value bugs where valid data like '0' or 'False'
-    would be silently dropped by a plain `if row.get('field')` check.
-    """
     if value is None:
         return ''
     try:
@@ -49,125 +40,88 @@ def _str_or_empty(value):
     return '' if result.lower() == 'nan' else result
 
 
-def clean_row_data(row):
-    """
-    Clean and validate a single student row.
-    Returns a dict with cleaned data or raises StudentImportError.
-    """
-    student_id = _str_or_empty(row.get('student_id'))
+def clean_row_data(row, college_cache):
+    patient_id = _str_or_empty(row.get('id'))
     first_name = _str_or_empty(row.get('first_name'))
-    # FIX: Use _str_or_empty for optional fields instead of `if row.get(...)`,
-    # which would silently drop falsy-but-valid strings like '0'.
     middle_name = _str_or_empty(row.get('middle_name'))
     last_name = _str_or_empty(row.get('last_name'))
-    age = row.get('age')
-    gender = _str_or_empty(row.get('gender')).upper()
-    college = _str_or_empty(row.get('college'))
+    sex = _str_or_empty(row.get('sex')).upper()
+    college_abbr = _str_or_empty(row.get('college')).upper()
 
-    # Validation
-    if not student_id:
-        raise StudentImportError('student_id is required and cannot be empty')
-
+    if not patient_id:
+        raise PatientImportError('id is required and cannot be empty')
     if not first_name:
-        raise StudentImportError(f'first_name is required for {student_id}')
-
+        raise PatientImportError(f'first_name is required for {patient_id}')
     if not last_name:
-        raise StudentImportError(f'last_name is required for {student_id}')
+        raise PatientImportError(f'last_name is required for {patient_id}')
 
-    # Validate age
-    try:
-        if age is not None and not pd.isna(age):
-            age = int(age)
-            if age < 10 or age > 120:
-                raise StudentImportError(f'Age {age} for {student_id} is out of range (10–120)')
-        else:
-            age = None
-    except (ValueError, TypeError):
-        age = None
+    sex_map = {'M': 'M', 'MALE': 'M', 'F': 'F', 'FEMALE': 'F'}
+    sex = sex_map.get(sex, '')
+    if not sex:
+        raise PatientImportError(f'sex must be M or F for {patient_id}')
 
-    # Normalize gender
-    gender_map = {
-        'M': 'M', 'MALE': 'M',
-        'F': 'F', 'FEMALE': 'F',
-        'O': 'O', 'OTHER': 'O',
-    }
-    gender = gender_map.get(gender, '')
+    college = None
+    if college_abbr:
+        if college_abbr not in college_cache:
+            try:
+                college_cache[college_abbr] = College.objects.get(abbreviation__iexact=college_abbr)
+            except College.DoesNotExist:
+                college_cache[college_abbr] = None
+        college = college_cache[college_abbr]
 
     return {
-        'student_id': student_id,
+        'patient_id': patient_id,
         'first_name': first_name,
         'middle_name': middle_name,
         'last_name': last_name,
-        'age': age,
-        'gender': gender,
+        'sex': sex,
         'college': college,
     }
 
 
 @transaction.atomic
-def import_students_from_excel(file_obj):
+def import_patients_from_excel(file_obj):
     """
-    Read Excel file and create User + StudentProfile for each student.
+    Read Excel file and create Patient records.
+    birthday is NOT imported; patients enter it via profile setup.
 
-    Returns a dict with:
-    - created: count of newly created users
-    - skipped: count of existing users (not recreated)
-    - errors: list of error messages
-    - warnings: list of warnings
+    Returns dict: created, skipped, errors, warnings.
     """
-    results = {
-        'created': 0,
-        'skipped': 0,
-        'errors': [],
-        'warnings': [],
-    }
+    results = {'created': 0, 'skipped': 0, 'errors': [], 'warnings': []}
+    college_cache = {}
 
     try:
         df = pd.read_excel(file_obj, sheet_name=0)
-        # FIX: Normalise column names to lowercase/stripped to be tolerant of
-        # Excel files where the header row has inconsistent casing or spacing.
         df.columns = [str(c).strip().lower() for c in df.columns]
         validate_excel_structure(df)
 
         for idx, row in df.iterrows():
-            row_num = idx + 2  # Account for header row
-
+            row_num = idx + 2
             try:
-                data = clean_row_data(row)
-                student_id = data['student_id']
+                data = clean_row_data(row, college_cache)
+                patient_id = data['patient_id']
 
-                # Skip if user already exists
-                if User.objects.filter(username=student_id).exists():
+                if Patient.objects.filter(patient_id=patient_id).exists():
                     results['skipped'] += 1
                     results['warnings'].append(
-                        f'Row {row_num}: User {student_id} already exists (skipped)'
+                        f'Row {row_num}: Patient {patient_id} already exists (skipped)'
                     )
                     continue
 
-                # Create User account
-                user = User.objects.create_user(
-                    username=student_id,
+                patient = Patient.objects.create(
+                    patient_id=patient_id,
                     first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    password=student_id,        # Default password = student_id
-                    role=User.Role.STUDENT,
-                    is_active=True,
-                    force_password_change=True,  # Force change on first login
-                )
-
-                # Create StudentProfile
-                StudentProfile.objects.create(
-                    user=user,
-                    student_id=student_id,
                     middle_name=data['middle_name'],
-                    age=data['age'],
-                    gender=data['gender'],
+                    last_name=data['last_name'],
+                    sex=data['sex'],
                     college=data['college'],
                 )
+                # Create empty profile — birthday set by patient separately
+                PatientProfile.objects.create(patient=patient)
 
                 results['created'] += 1
 
-            except StudentImportError as e:
+            except PatientImportError as e:
                 results['errors'].append(f'Row {row_num}: {str(e)}')
             except Exception as e:
                 results['errors'].append(f'Row {row_num}: Unexpected error — {str(e)}')
@@ -175,8 +129,8 @@ def import_students_from_excel(file_obj):
         return results
 
     except pd.errors.EmptyDataError:
-        raise StudentImportError('Excel file is empty')
-    except StudentImportError:
+        raise PatientImportError('Excel file is empty')
+    except PatientImportError:
         raise
     except Exception as e:
-        raise StudentImportError(f'Failed to read Excel file: {str(e)}')
+        raise PatientImportError(f'Failed to read Excel file: {str(e)}')

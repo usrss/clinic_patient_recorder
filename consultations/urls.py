@@ -4,16 +4,12 @@ from . import views
 app_name = 'consultations'
 
 urlpatterns = [
-    # Student
-    path('', views.student_home, name='student_home'),
-    path('submit/', views.student_submit, name='student_submit'),
-    path('<int:pk>/', views.student_detail, name='student_detail'),
-    path('<int:pk>/cancel/', views.student_cancel, name='student_cancel'),
-
     # Front desk
-    path('queue/', views.queue, name='queue'),
+    path('', views.queue, name='queue'),
+    path('create/', views.consultation_create, name='consultation_create'),
     path('queue/<int:pk>/', views.queue_detail, name='queue_detail'),
     path('queue/<int:pk>/cancel/', views.frontdesk_cancel, name='frontdesk_cancel'),
+
     # Admin
     path('<int:pk>/reopen/', views.admin_reopen, name='admin_reopen'),
 
@@ -27,5 +23,5 @@ urlpatterns = [
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
 
     # Clinical staff shared
-    path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'), 
+    path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'),
 ]

@@ -11,11 +11,11 @@ class Consultation(models.Model):
         COMPLETED = 'completed', 'Completed'
         CANCELLED = 'cancelled', 'Cancelled'
 
+    # Patient is now a unified Patient model, not an auth User
     patient = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'patients.Patient',
         on_delete=models.CASCADE,
         related_name='consultations',
-        limit_choices_to={'role': 'student'},
     )
     status = models.CharField(
         max_length=20,
@@ -26,7 +26,7 @@ class Consultation(models.Model):
     symptoms = models.TextField()
     medical_history = models.TextField(blank=True)
     severity_description = models.TextField(
-        help_text='Self-reported severity description by the student'
+        help_text='Self-reported severity description by the patient'
     )
     additional_notes = models.TextField(blank=True)
     queue_number = models.PositiveIntegerField(null=True, blank=True)
@@ -35,7 +35,10 @@ class Consultation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'Consultation #{self.pk} — {self.patient.get_full_name()} ({self.get_status_display()})'
+        return (
+            f'Consultation #{self.pk} — {self.patient.get_full_name()} '
+            f'({self.get_status_display()})'
+        )
 
     class Meta:
         verbose_name = 'Consultation'
@@ -61,8 +64,7 @@ class Triage(models.Model):
     nurse = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         related_name='triages_performed',
     )
     blood_pressure = models.CharField(max_length=20, help_text='e.g. 120/80')
@@ -91,8 +93,7 @@ class Prescription(models.Model):
     doctor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         related_name='prescriptions_made',
     )
     diagnosis = models.TextField()
@@ -120,7 +121,8 @@ class PrescriptionItem(models.Model):
     )
     quantity = models.PositiveIntegerField()
     instructions = models.CharField(
-        max_length=200, help_text='e.g. Take 1 tablet 3x a day after meals'
+        max_length=200,
+        help_text='e.g. Take 1 tablet 3x a day after meals'
     )
 
     def __str__(self):

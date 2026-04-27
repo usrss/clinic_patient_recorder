@@ -8,21 +8,30 @@
     <h1 class="page-title" style="margin-bottom:0;">Consultation #{{ consultation.pk }}</h1>
   </div>
 
-  <!-- Patient Info -->
   <div class="card" style="margin-bottom:16px;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;">
       <div>
         <span style="color:var(--text-muted);font-size:12px;">Name</span><br>
-        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+        <strong>{{ consultation.patient.get_full_name }}</strong>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Student ID</span><br>
-        <strong>{{ consultation.patient.student_profile.student_id|default:"—" }}</strong>
+        <span style="color:var(--text-muted);font-size:12px;">Patient ID</span><br>
+        <strong>{{ consultation.patient.patient_id }}</strong>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">College</span><br>
-        {{ consultation.patient.student_profile.college|default:"—" }}
+        <span style="color:var(--text-muted);font-size:12px;">Sex</span><br>
+        {{ consultation.patient.get_sex_display }}
+      </div>
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">Age</span><br>
+        {{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}
+      </div>
+      <div>
+        <span style="color:var(--text-muted);font-size:12px;">College / Dept</span><br>
+        {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
+        {% elif consultation.patient.department %}{{ consultation.patient.department }}
+        {% else %}—{% endif %}
       </div>
       <div>
         <span style="color:var(--text-muted);font-size:12px;">Submitted</span><br>
@@ -31,7 +40,6 @@
     </div>
   </div>
 
-  <!-- Consultation Details -->
   <div class="card" style="margin-bottom:16px;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation Details</h3>
     <div style="display:grid;gap:12px;font-size:14px;">
@@ -49,39 +57,26 @@
         <div>{{ consultation.medical_history }}</div>
       </div>
       {% endif %}
-      {% if consultation.additional_notes %}
-      <div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Additional Notes</div>
-        <div>{{ consultation.additional_notes }}</div>
-      </div>
-      {% endif %}
     </div>
   </div>
 
-  <!-- Queue / Schedule Form -->
   <div class="card" style="margin-bottom:16px;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">Assign Queue / Schedule</h3>
-
-    {# FIX GAP 1: Queue number is now auto-assigned — no manual input shown #}
     <div style="background:#f0f9f5;border-left:4px solid var(--primary);padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;">
       💡 Selecting <strong>Queued</strong> will automatically assign the next available queue number for today.
     </div>
-
     <form method="post" novalidate>
       {% csrf_token %}
-
       <div class="form-group">
         <label>Action</label>
         {{ form.status }}
         {% if form.status.errors %}<div class="form-error">{{ form.status.errors.0 }}</div>{% endif %}
       </div>
-
       <div class="form-group">
         <label>Appointment Time <span style="color:var(--text-muted);font-weight:400;">(only for Scheduled)</span></label>
         {{ form.scheduled_at }}
         {% if form.scheduled_at.errors %}<div class="form-error">{{ form.scheduled_at.errors.0 }}</div>{% endif %}
       </div>
-
       <div style="display:flex;gap:10px;margin-top:8px;">
         <button type="submit" class="btn btn-primary">Save & Route to Nurse</button>
         <a href="{% url 'consultations:queue' %}" class="btn btn-secondary">Cancel</a>
@@ -89,18 +84,16 @@
     </form>
   </div>
 
-  {# FIX GAP 4: Cancel consultation button — separate from the queue form #}
   <div class="card" style="border-color:#fca5a5;">
     <h3 style="font-size:13px;font-weight:600;color:#991b1b;margin:0 0 8px;">Cancel Consultation</h3>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
       Use this if the patient did not show up, submitted in error, or requested cancellation in person.
     </p>
     <form method="post" action="{% url 'consultations:frontdesk_cancel' consultation.pk %}"
-          onsubmit="return confirm('Cancel consultation #{{ consultation.pk }}? This cannot be undone.');">
+          onsubmit="return confirm('Cancel consultation #{{ consultation.pk }}?');">
       {% csrf_token %}
       <button type="submit" class="btn btn-danger btn-sm">✕ Cancel this consultation</button>
     </form>
   </div>
-
 </div>
 {% endblock %}

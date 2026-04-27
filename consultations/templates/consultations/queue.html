@@ -7,6 +7,7 @@
     <h1 class="page-title" style="margin-bottom:4px;">Consultation Queue</h1>
     <p style="color:var(--text-muted);font-size:13px;">{{ consultations.count }} pending request{{ consultations.count|pluralize }}</p>
   </div>
+  <a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary">+ New Consultation</a>
 </div>
 
 {% if consultations %}
@@ -17,7 +18,7 @@
         <tr>
           <th>#</th>
           <th>Patient</th>
-          <th>Student ID</th>
+          <th>Patient ID</th>
           <th>Symptoms (summary)</th>
           <th>Severity</th>
           <th>Submitted</th>
@@ -29,11 +30,12 @@
         <tr>
           <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
           <td>
-            <div style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</div>
+            <div style="font-weight:500;">{{ c.patient.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">
+              {% if c.patient.college %}{{ c.patient.college.abbreviation }}{% endif %}
+            </div>
           </td>
-          <td style="color:var(--text-muted);font-size:12px;">
-            {{ c.patient.student_profile.student_id|default:"—" }}
-          </td>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.patient.patient_id }}</td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">
             {{ c.symptoms|truncatechars:55 }}
           </td>
