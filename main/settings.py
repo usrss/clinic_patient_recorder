@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'certificates',
     'reports',
     'colleges',
+    'core',
 ]
 
 MIDDLEWARE = [
