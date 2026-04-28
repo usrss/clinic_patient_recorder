@@ -1,0 +1,185 @@
+{% extends 'core/base.html' %}
+{% block title %}Summary Report — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:24px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary btn-sm">← Reports</a>
+    <h1 class="page-title" style="margin-bottom:0;">Summary Report</h1>
+  </div>
+  <p style="color:var(--text-muted);font-size:13px;">Monthly trends, top diagnoses, and patient frequency overview.</p>
+</div>
+
+<!-- Key metrics -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;">
+  <div class="card" style="text-align:center;padding:20px 16px;">
+    <div style="font-size:26px;font-weight:700;color:var(--primary);">{{ total_completed }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Completed Consultations</div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px 16px;">
+    <div style="font-size:26px;font-weight:700;color:#ef4444;">{{ total_cancelled }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Cancelled</div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px 16px;">
+    <div style="font-size:26px;font-weight:700;color:#3b82f6;">{{ avg_per_day }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Avg / Day (last 30 days)</div>
+  </div>
+  <div class="card" style="text-align:center;padding:20px 16px;">
+    <div style="font-size:26px;font-weight:700;color:#8b5cf6;">{{ today|date:"M d" }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Report Date</div>
+  </div>
+</div>
+
+<!-- Monthly trend table -->
+<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Monthly Consultation Volume (Last 12 Months)</h2>
+<div class="card" style="margin-bottom:28px;padding:20px 24px;">
+  {% if monthly_data %}
+  <!-- Bar chart using CSS -->
+  {% with max_count=monthly_data|last %}
+  <div style="display:flex;align-items:flex-end;gap:6px;height:140px;margin-bottom:12px;">
+    {% for m in monthly_data %}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;">
+      <div style="font-size:10px;color:var(--text-muted);font-weight:600;">
+        {% if m.count %}{{ m.count }}{% endif %}
+      </div>
+      <div style="
+        width:100%;
+        background:var(--primary);
+        opacity:{% if m.count %}0.85{% else %}0.15{% endif %};
+        border-radius:4px 4px 0 0;
+        min-height:4px;
+        {% with total=monthly_data %}
+        {% endwith %}
+      " title="{{ m.label }}: {{ m.count }}">
+        <!-- height set by inline style below -->
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endwith %}
+  <!-- Simpler table view as fallback -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {% for m in monthly_data %}
+          <th style="text-align:center;font-size:10px;white-space:nowrap;">{{ m.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {% for m in monthly_data %}
+          <td style="text-align:center;font-weight:{% if m.count %}600{% else %}400{% endif %};color:{% if m.count %}var(--primary){% else %}var(--text-muted){% endif %};">
+            {{ m.count|default:"—" }}
+          </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;">No consultation data available.</p>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+
+  <!-- Top diagnoses -->
+  <div>
+    <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Top Diagnoses</h2>
+    {% if top_diagnoses %}
+    <div class="card" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Diagnosis</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in top_diagnoses %}
+            <tr>
+              <td style="color:var(--text-muted);font-size:12px;">#{{ forloop.counter }}</td>
+              <td style="font-size:13px;">{{ d.diagnosis|truncatechars:50 }}</td>
+              <td style="font-weight:600;color:var(--primary);">{{ d.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:32px 24px;">
+      <p style="color:var(--text-muted);font-size:13px;">No diagnosis data yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Frequent patients -->
+  <div>
+    <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Most Frequent Patients</h2>
+    {% if frequent_patients %}
+    <div class="card" style="padding:0;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>ID</th>
+              <th>College</th>
+              <th>Visits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in frequent_patients %}
+            <tr>
+              <td style="font-weight:500;font-size:13px;">{{ p.patient__first_name }} {{ p.patient__last_name }}</td>
+              <td style="color:var(--text-muted);font-size:12px;">{{ p.patient__patient_id }}</td>
+              <td style="color:var(--text-muted);font-size:12px;">{{ p.patient__college__abbreviation|default:"—" }}</td>
+              <td style="font-weight:600;color:var(--primary);">{{ p.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align:center;padding:32px 24px;">
+      <p style="color:var(--text-muted);font-size:13px;">No patient data yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Top diagnosis per college -->
+{% if top_per_college %}
+<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Top Diagnosis per College</h2>
+<div class="card" style="padding:0;margin-bottom:28px;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>College</th>
+          <th>Top Diagnosis</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in top_per_college %}
+        <tr>
+          <td style="font-weight:600;font-size:13px;">{{ row.college }}</td>
+          <td style="font-size:13px;">{{ row.diagnosis|truncatechars:60 }}</td>
+          <td style="font-weight:600;color:var(--primary);">{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

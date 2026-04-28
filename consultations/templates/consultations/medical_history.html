@@ -1,0 +1,233 @@
+{% extends 'core/base.html' %}
+{% block title %}Medical History — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .timeline-entry {
+    border-left: 3px solid var(--border);
+    padding-left: 20px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 4px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+  }
+  .timeline-entry.status-completed::before { border-color: var(--primary); background: var(--primary); }
+  .timeline-entry.status-cancelled::before { border-color: var(--danger); }
+  .timeline-entry.status-triaged::before   { border-color: #f97316; }
+  .medicine-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0fdf4;
+    border: 0.5px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 4px 4px 4px 0;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:820px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="{% url 'consultations:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+      <div>
+        <h1 class="page-title" style="margin-bottom:2px;">Medical History</h1>
+        <p style="color:var(--text-muted);font-size:13px;margin:0;">{{ patient.get_full_name }} — {{ patient.patient_id }}</p>
+      </div>
+    </div>
+    <a href="{% url 'consultations:medical_history_pdf' patient.pk %}" class="btn btn-secondary btn-sm">
+      ⬇ Export PDF
+    </a>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid">
+    <div class="card" style="text-align:center;padding:18px 14px;">
+      <div style="font-size:26px;font-weight:700;color:var(--primary);">{{ total_count }}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Total Visits</div>
+    </div>
+    <div class="card" style="text-align:center;padding:18px 14px;">
+      <div style="font-size:14px;font-weight:600;">
+        {% if first_visit %}{{ first_visit|date:"M d, Y" }}{% else %}—{% endif %}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">First Visit</div>
+    </div>
+    <div class="card" style="text-align:center;padding:18px 14px;">
+      <div style="font-size:14px;font-weight:600;">
+        {% if last_visit %}{{ last_visit|date:"M d, Y" }}{% else %}—{% endif %}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Most Recent Visit</div>
+    </div>
+    <div class="card" style="padding:18px 14px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Most Frequent Diagnosis</div>
+      <div style="font-size:13px;font-weight:600;">
+        {% if top_diagnosis %}{{ top_diagnosis.diagnosis|truncatechars:50 }}
+          <span style="font-weight:400;color:var(--text-muted);">({{ top_diagnosis.cnt }}×)</span>
+        {% else %}—{% endif %}
+      </div>
+    </div>
+    <div class="card" style="padding:18px 14px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Most Prescribed Medicine</div>
+      <div style="font-size:13px;font-weight:600;">
+        {% if top_medicine %}{{ top_medicine.medicine_name|truncatechars:40 }}
+          <span style="font-weight:400;color:var(--text-muted);">({{ top_medicine.cnt }}×)</span>
+        {% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="margin-bottom:24px;padding:16px 20px;">
+    <form method="get">
+      <div class="filter-bar">
+        <div class="form-group" style="margin-bottom:0;flex:0 0 auto;">
+          <label>From</label>
+          <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width:160px;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;flex:0 0 auto;">
+          <label>To</label>
+          <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width:160px;">
+        </div>
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px;">
+          <label>Search diagnosis or medicine</label>
+          <input type="text" name="keyword" value="{{ keyword }}" class="form-control" placeholder="e.g. fever, Paracetamol">
+        </div>
+        <div style="display:flex;gap:8px;padding-bottom:1px;">
+          <button type="submit" class="btn btn-primary">Filter</button>
+          {% if date_from or date_to or keyword %}
+          <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-secondary">Clear</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Timeline -->
+  {% if consultations %}
+  <div style="padding-left:8px;">
+    {% for c in consultations %}
+    <div class="timeline-entry status-{{ c.status }}">
+
+      <!-- Entry header -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <span style="font-weight:600;font-size:14px;">{{ c.created_at|date:"F d, Y" }}</span>
+        <span style="font-size:12px;color:var(--text-muted);">Consultation #{{ c.pk }}</span>
+        {% if c.status == 'completed' %}
+          <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">✅ Completed</span>
+        {% elif c.status == 'cancelled' %}
+          <span style="background:#fee2e2;color:#991b1b;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">✕ Cancelled</span>
+        {% elif c.status == 'triaged' %}
+          <span style="background:#ffedd5;color:#9a3412;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">🩺 Triaged</span>
+        {% else %}
+          <span style="background:#f3f4f6;color:#374151;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">{{ c.get_status_display }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Complaint -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Chief Complaint</div>
+        <div style="font-size:13px;">{{ c.symptoms }}</div>
+      </div>
+
+      <!-- Triage vitals (compact) -->
+      {% if c.triage %}
+      <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted);">
+        🩺 BP {{ c.triage.blood_pressure }} &nbsp;·&nbsp;
+        Temp {{ c.triage.temperature }}°C &nbsp;·&nbsp;
+        Pulse {{ c.triage.pulse_rate }} bpm &nbsp;·&nbsp;
+        Urgency:
+        {% if c.triage.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">High</span>
+        {% elif c.triage.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">Medium</span>
+        {% else %}<span style="color:#10b981;font-weight:600;">Low</span>{% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Prescription -->
+      {% if c.prescription %}
+      <div style="background:#f8fafb;border:0.5px solid var(--border);border-radius:8px;padding:12px 16px;margin-top:8px;">
+
+        <!-- Diagnosis -->
+        <div style="margin-bottom:8px;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Diagnosis</div>
+          <div style="font-size:13px;font-weight:500;">{{ c.prescription.diagnosis }}</div>
+        </div>
+
+        <!-- Treatment plan -->
+        {% if c.prescription.treatment_plan %}
+        <div style="margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Treatment Plan</div>
+          <div style="font-size:13px;">{{ c.prescription.treatment_plan }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Medicines -->
+        {% if c.prescription.items.all %}
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Medicines Prescribed</div>
+        <div>
+          {% for item in c.prescription.items.all %}
+          <div class="medicine-pill">
+            <span style="font-weight:600;">{{ item.get_display_name }}</span>
+            {% if item.dosage %}<span style="color:var(--text-muted);">{{ item.dosage }}</span>{% endif %}
+            {% if item.frequency %}<span style="color:var(--text-muted);">· {{ item.frequency }}</span>{% endif %}
+            {% if item.duration %}<span style="color:var(--text-muted);">for {{ item.duration }}</span>{% endif %}
+            {% if item.instructions %}<span style="color:var(--text-muted);font-style:italic;">· {{ item.instructions }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Doctor -->
+        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+          Prescribed by Dr. {{ c.prescription.doctor.get_full_name|default:c.prescription.doctor.username }}
+          on {{ c.prescription.prescribed_at|date:"M d, Y H:i" }}
+        </div>
+
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:48px 24px;">
+    <div style="font-size:40px;margin-bottom:12px;">📋</div>
+    {% if date_from or date_to or keyword %}
+    <p style="font-weight:600;margin-bottom:4px;">No results match your filters</p>
+    <p style="color:var(--text-muted);font-size:13px;">Try adjusting the date range or keyword.</p>
+    <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-secondary" style="margin-top:16px;">Clear filters</a>
+    {% else %}
+    <p style="font-weight:600;margin-bottom:4px;">No consultation history</p>
+    <p style="color:var(--text-muted);font-size:13px;">This patient has no recorded consultations.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

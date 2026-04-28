@@ -4,7 +4,7 @@
 {% block content %}
 <div style="margin-bottom:28px;">
   <h1 class="page-title" style="margin-bottom:4px;">Reports</h1>
-  <p style="color:var(--text-muted);font-size:14px;margin:0;">Clinic activity overview</p>
+  <p style="color:var(--text-muted);font-size:14px;margin:0;">Clinic activity overview and analytics</p>
 </div>
 
 <!-- Top stat cards -->
@@ -18,21 +18,29 @@
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Today</div>
   </div>
   <div class="card" style="text-align:center;padding:20px 16px;">
-    {# FIX: was total_students — now total_patients to match Patient model #}
     <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ total_patients }}</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Patients</div>
   </div>
 </div>
 
-<!-- Consultations by status -->
-<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Consultations by Status</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:28px;">
-  {% for s in status_breakdown %}
-  <div class="card" style="text-align:center;padding:16px 12px;">
-    <div style="font-size:22px;font-weight:700;">{{ s.count }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ s.label }}</div>
-  </div>
-  {% endfor %}
+<!-- Report navigation -->
+<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Report Modules</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:28px;">
+  <a href="{% url 'reports:disease_report' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #ef4444;">
+    <div style="font-size:22px;margin-bottom:8px;">🔬</div>
+    <div style="font-weight:600;font-size:14px;">Disease Report</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Filter completed consultations by diagnosis, date range, and patient type</div>
+  </a>
+  <a href="{% url 'reports:summary_report' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #3b82f6;">
+    <div style="font-size:22px;margin-bottom:8px;">📈</div>
+    <div style="font-weight:600;font-size:14px;">Summary Report</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Monthly trends, top diagnoses, frequent patients, and college breakdowns</div>
+  </a>
+  <a href="{% url 'reports:report_builder' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid var(--primary);">
+    <div style="font-size:22px;margin-bottom:8px;">🛠</div>
+    <div style="font-weight:600;font-size:14px;">Custom Report Builder</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Build any report with custom filters, groupings, and metrics — export to CSV, Excel, or PDF</div>
+  </a>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">

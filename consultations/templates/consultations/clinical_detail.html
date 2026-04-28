@@ -111,7 +111,8 @@
   {% endif %}
   {% endwith %}
 
-  <!-- Prescription -->
+  <!-- Prescription — hidden from frontdesk per access control spec -->
+  {% if user.role != 'frontdesk' %}
   {% with rx=consultation.prescription %}
   {% if rx %}
   <div class="card">
@@ -128,12 +129,15 @@
     {% endif %}
     {% if rx.items.all %}
     <div style="margin-bottom:12px;">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Medicines Dispensed</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Medicines Prescribed</div>
       {% for item in rx.items.all %}
-      <div style="display:flex;gap:10px;padding:10px;background:#f0f9f5;border-radius:6px;margin-bottom:8px;font-size:13px;">
-        <div>
-          <span style="font-weight:600;">{{ item.medicine.name }}</span> × {{ item.quantity }}
-          <span style="color:var(--text-muted);font-size:12px;display:block;">{{ item.instructions }}</span>
+      <div style="padding:10px 14px;background:#f0f9f5;border-radius:6px;margin-bottom:8px;font-size:13px;">
+        <div style="font-weight:600;">{{ item.get_display_name }}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:12px;">
+          {% if item.dosage %}<span>Dosage: {{ item.dosage }}</span>{% endif %}
+          {% if item.frequency %}<span>Frequency: {{ item.frequency }}</span>{% endif %}
+          {% if item.duration %}<span>Duration: {{ item.duration }}</span>{% endif %}
+          {% if item.instructions %}<span>Instructions: {{ item.instructions }}</span>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -142,11 +146,12 @@
     <p style="font-size:13px;color:var(--text-muted);">No medicines were prescribed.</p>
     {% endif %}
     <div style="font-size:12px;color:var(--text-muted);">
-      Prescribed by Dr. {{ rx.doctor.get_full_name }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}
+      Prescribed by Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}
     </div>
   </div>
   {% endif %}
   {% endwith %}
+  {% endif %}
 
   <!-- Admin: Reopen cancelled consultations -->
   {% if user.role == 'admin' and consultation.status == 'cancelled' %}
