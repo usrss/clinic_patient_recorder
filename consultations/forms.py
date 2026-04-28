@@ -5,6 +5,37 @@ from .models import Consultation, Triage, Prescription, PrescriptionItem
 from inventory.models import Medicine
 
 
+class PatientConsultationForm(forms.ModelForm):
+    """Used by a logged-in patient to submit their own consultation request."""
+    class Meta:
+        model = Consultation
+        fields = ['symptoms', 'medical_history', 'severity_description', 'additional_notes']
+        widgets = {
+            'symptoms': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 4,
+                'placeholder': 'Describe your symptoms in detail...',
+            }),
+            'medical_history': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Existing conditions, allergies, medications... (optional)',
+            }),
+            'severity_description': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+                'placeholder': 'e.g. Mild headache since yesterday, moderate fever...',
+            }),
+            'additional_notes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+                'placeholder': 'Anything else the clinic should know... (optional)',
+            }),
+        }
+        labels = {
+            'symptoms': 'Symptoms *',
+            'medical_history': 'Medical History',
+            'severity_description': 'Severity Description *',
+            'additional_notes': 'Additional Notes',
+        }
+
+
 class ConsultationSubmitForm(forms.ModelForm):
     """Used by front desk staff to create a consultation on behalf of a patient."""
     class Meta:
@@ -177,8 +208,8 @@ class PrescriptionItemForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        medicine = cleaned.get('medicine')
-        quantity = cleaned.get('quantity')
+        medicine     = cleaned.get('medicine')
+        quantity     = cleaned.get('quantity')
         instructions = cleaned.get('instructions', '').strip()
         if any([medicine, quantity, instructions]):
             if not medicine:

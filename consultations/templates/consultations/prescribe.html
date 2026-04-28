@@ -25,22 +25,20 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:14px;">
       <div>
         <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Name</span><br>
-        <strong>{{ consultation.patient.get_full_name|default:consultation.patient.username }}</strong>
+        <strong>{{ consultation.patient.get_full_name }}</strong>
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Student ID</span><br>
-        <strong>{{ consultation.patient.student_profile.student_id|default:"—" }}</strong>
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Patient ID</span><br>
+        <strong>{{ consultation.patient.patient_id }}</strong>
       </div>
       <div>
         <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">College</span><br>
-        {{ consultation.patient.student_profile.college|default:"—" }}
+        {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Age / Gender</span><br>
-        {{ consultation.patient.student_profile.age|default:"—" }}
-        {% if consultation.patient.student_profile.gender %}
-          / {{ consultation.patient.student_profile.get_gender_display }}
-        {% endif %}
+        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Age / Sex</span><br>
+        {{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}
+        / {{ consultation.patient.get_sex_display }}
       </div>
     </div>
   </div>

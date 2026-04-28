@@ -6,15 +6,94 @@ from django.core.exceptions import ValidationError
 
 from accounts.decorators import (
     frontdesk_required, nurse_required, doctor_required,
-    admin_required, clinical_staff_required,
+    admin_required, clinical_staff_required, patient_required,
 )
 from .models import Consultation, Triage, Prescription, PrescriptionItem
 from .forms import (
     ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
-    PrescriptionForm, PrescriptionItemFormSet,
+    PrescriptionForm, PrescriptionItemFormSet, PatientConsultationForm,
 )
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
+
+
+# ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
+
+@login_required
+@patient_required
+def student_home(request):
+    """Patient's own consultation history."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultations = Consultation.objects.filter(
+        patient=patient
+    ).order_by('-created_at')
+
+    return render(request, 'consultations/student_home.html', {
+        'consultations': consultations,
+        'patient': patient,
+    })
+
+
+@login_required
+@patient_required
+def student_submit(request):
+    """Patient submits a new consultation request."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    form = PatientConsultationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        consultation = form.save(commit=False)
+        consultation.patient = patient
+        consultation.status = Consultation.Status.PENDING
+        consultation.save()
+        messages.success(request, 'Your consultation request has been submitted.')
+        return redirect('consultations:student_home')
+
+    return render(request, 'consultations/student_submit.html', {'form': form})
+
+
+@login_required
+@patient_required
+def student_detail(request, pk):
+    """Patient views one of their own consultations."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultation = get_object_or_404(Consultation, pk=pk, patient=patient)
+    return render(request, 'consultations/student_detail.html', {
+        'consultation': consultation,
+    })
+
+
+@login_required
+@patient_required
+def student_cancel(request, pk):
+    """Patient cancels a pending consultation."""
+    if request.method != 'POST':
+        return redirect('consultations:student_home')
+
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultation = get_object_or_404(
+        Consultation, pk=pk, patient=patient,
+        status=Consultation.Status.PENDING,
+    )
+    consultation.status = Consultation.Status.CANCELLED
+    consultation.save(update_fields=['status'])
+    messages.success(request, f'Consultation #{pk} has been cancelled.')
+    return redirect('consultations:student_home')
 
 
 # ─── FRONT DESK VIEWS ─────────────────────────────────────────────────────────
@@ -34,10 +113,7 @@ def queue(request):
 @login_required
 @frontdesk_required
 def consultation_create(request):
-    """
-    Front desk creates a consultation on behalf of a walk-in patient.
-    Replaces the old student self-submit flow.
-    """
+    """Front desk creates a consultation on behalf of a walk-in patient."""
     form = ConsultationSubmitForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         consultation = form.save(commit=False)
@@ -251,8 +327,8 @@ def prescribe(request, pk):
                     prescription.save()
 
                     for form in item_rows:
-                        medicine = form.cleaned_data['medicine']
-                        quantity = form.cleaned_data['quantity']
+                        medicine    = form.cleaned_data['medicine']
+                        quantity    = form.cleaned_data['quantity']
                         instructions = form.cleaned_data['instructions']
 
                         PrescriptionItem.objects.create(
@@ -261,7 +337,6 @@ def prescribe(request, pk):
                             quantity=quantity,
                             instructions=instructions,
                         )
-
                         deduct_medicine_stock(
                             medicine_id=medicine.pk,
                             quantity=quantity,

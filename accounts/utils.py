@@ -1,17 +1,22 @@
 """
 Utility functions for bulk importing Patient records from Excel files.
 
-Key differences from the old StudentProfile import:
-- Creates patients.Patient records (not auth Users)
-- birthday is NOT in the import — patients enter it themselves via profile setup
-- college is matched by abbreviation against the colleges.College table
-- patient_id uniqueness is enforced; existing records are skipped
+For every Patient created we also create a linked Django auth User:
+  username  = patient_id
+  password  = patient_id  (hashed; must be changed on first login)
+  role      = 'patient'
+  force_password_change = True
+
+Birthday is NOT imported — patients enter it themselves via profile setup.
 """
 import pandas as pd
 from django.db import transaction
+from django.contrib.auth import get_user_model
 
 from patients.models import Patient, PatientProfile
 from colleges.models import College
+
+User = get_user_model()
 
 
 class PatientImportError(Exception):
@@ -41,11 +46,11 @@ def _str_or_empty(value):
 
 
 def clean_row_data(row, college_cache):
-    patient_id = _str_or_empty(row.get('id'))
-    first_name = _str_or_empty(row.get('first_name'))
+    patient_id  = _str_or_empty(row.get('id'))
+    first_name  = _str_or_empty(row.get('first_name'))
     middle_name = _str_or_empty(row.get('middle_name'))
-    last_name = _str_or_empty(row.get('last_name'))
-    sex = _str_or_empty(row.get('sex')).upper()
+    last_name   = _str_or_empty(row.get('last_name'))
+    sex         = _str_or_empty(row.get('sex')).upper()
     college_abbr = _str_or_empty(row.get('college')).upper()
 
     if not patient_id:
@@ -64,25 +69,45 @@ def clean_row_data(row, college_cache):
     if college_abbr:
         if college_abbr not in college_cache:
             try:
-                college_cache[college_abbr] = College.objects.get(abbreviation__iexact=college_abbr)
+                college_cache[college_abbr] = College.objects.get(
+                    abbreviation__iexact=college_abbr
+                )
             except College.DoesNotExist:
                 college_cache[college_abbr] = None
         college = college_cache[college_abbr]
 
     return {
-        'patient_id': patient_id,
-        'first_name': first_name,
+        'patient_id':  patient_id,
+        'first_name':  first_name,
         'middle_name': middle_name,
-        'last_name': last_name,
-        'sex': sex,
-        'college': college,
+        'last_name':   last_name,
+        'sex':         sex,
+        'college':     college,
     }
 
+
+def _create_patient_auth_user(patient_id, first_name, last_name):
+    user, created = User.objects.get_or_create(
+        username=patient_id,
+        defaults={
+            'first_name': first_name,
+            'last_name': last_name,
+            'role': User.Role.PATIENT,
+            'force_password_change': True,
+            'is_active': True,
+        }
+    )
+
+    if created:
+        user.set_password(patient_id)
+        user.save()  # ❗ IMPORTANT: REMOVE update_fields
+
+    return user, created
 
 @transaction.atomic
 def import_patients_from_excel(file_obj):
     """
-    Read Excel file and create Patient records.
+    Read Excel file and create Patient + linked auth User records.
     birthday is NOT imported; patients enter it via profile setup.
 
     Returns dict: created, skipped, errors, warnings.
@@ -108,8 +133,9 @@ def import_patients_from_excel(file_obj):
                     )
                     continue
 
+                # Create Patient record
                 patient = Patient.objects.create(
-                    patient_id=patient_id,
+                    patient_id=data['patient_id'],
                     first_name=data['first_name'],
                     middle_name=data['middle_name'],
                     last_name=data['last_name'],
@@ -119,12 +145,21 @@ def import_patients_from_excel(file_obj):
                 # Create empty profile — birthday set by patient separately
                 PatientProfile.objects.create(patient=patient)
 
+                # Create linked auth user (username=patient_id, pw=patient_id)
+                _create_patient_auth_user(
+                    patient_id=patient_id,
+                    first_name=data['first_name'],
+                    last_name=data['last_name'],
+                )
+
                 results['created'] += 1
 
             except PatientImportError as e:
                 results['errors'].append(f'Row {row_num}: {str(e)}')
             except Exception as e:
-                results['errors'].append(f'Row {row_num}: Unexpected error — {str(e)}')
+                results['errors'].append(
+                    f'Row {row_num}: Unexpected error — {str(e)}'
+                )
 
         return results
 
@@ -134,3 +169,5 @@ def import_patients_from_excel(file_obj):
         raise
     except Exception as e:
         raise PatientImportError(f'Failed to read Excel file: {str(e)}')
+
+

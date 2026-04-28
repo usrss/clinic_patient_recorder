@@ -8,18 +8,28 @@ from .forms import LoginForm, UserCreateForm, UserEditForm, PatientBulkUploadFor
 from .decorators import admin_required
 from .utils import import_patients_from_excel, PatientImportError
 
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
 
     form = LoginForm(request, data=request.POST or None)
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.get_user()
+
             login(request, user)
-            messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+
+            # 🔥 ONLY RELIABLE FIRST LOGIN LOGIC
+            if user.force_password_change:
+                return redirect('accounts:change_password')
+
+            messages.success(
+                request,
+                f'Welcome back, {user.first_name or user.username}!'
+            )
             return redirect('accounts:dashboard')
+
         else:
             messages.error(request, 'Invalid username or password.')
 
@@ -39,12 +49,38 @@ def dashboard(request):
     user = request.user
 
     if user.force_password_change:
-        messages.warning(request, 'Please change your default password before continuing.')
         return redirect('accounts:change_password')
 
+    # ── Patient portal ────────────────────────────────────────────────
+    if user.role == User.Role.PATIENT:
+        patient = user.get_patient_record()
+
+        if patient is None:
+            messages.error(
+                request,
+                'Your patient record could not be found. Please contact the clinic.'
+            )
+            logout(request)
+            return redirect('accounts:login')
+
+        # Redirect to profile setup if birthday not set
+        try:
+            birthday_set = patient.profile.birthday is not None
+        except Exception:
+            birthday_set = False
+
+        if not birthday_set:
+            messages.info(request, 'Please complete your profile by setting your birthday.')
+            return redirect('patients:patient_profile_setup', pk=patient.pk)
+
+        return render(request, 'patients/patient_dashboard.html', {
+            'patient': patient
+        })
+
+    # ── Staff roles ───────────────────────────────────────────────────
     role_template_map = {
-        User.Role.NURSE: 'accounts/dashboard_nurse.html',
-        User.Role.DOCTOR: 'accounts/dashboard_doctor.html',
+        User.Role.NURSE:     'accounts/dashboard_nurse.html',
+        User.Role.DOCTOR:    'accounts/dashboard_doctor.html',
         User.Role.FRONTDESK: 'accounts/dashboard_frontdesk.html',
     }
 
@@ -56,8 +92,8 @@ def dashboard(request):
         from consultations.models import Consultation
         context = {
             'user': user,
-            'total_staff': User.objects.count(),
-            'total_patients': Patient.objects.count(),
+            'total_staff': User.objects.exclude(role=User.Role.PATIENT).count(),
+            'total_patients': Patient.objects.filter(is_active=True).count(),
             'nurses': User.objects.filter(role=User.Role.NURSE).count(),
             'doctors': User.objects.filter(role=User.Role.DOCTOR).count(),
             'pending_consultations': Consultation.objects.filter(
@@ -73,24 +109,29 @@ def dashboard(request):
 
 @login_required
 def change_password(request):
-    form = StaffPasswordChangeForm(request.user, request.POST or None)
+    user = request.user
+    form = StaffPasswordChangeForm(user, request.POST or None)
+
     if request.method == 'POST' and form.is_valid():
         user = form.save()
+
         user.force_password_change = False
         user.save(update_fields=['force_password_change'])
+
         update_session_auth_hash(request, user)
-        messages.success(request, 'Password changed successfully.')
+
         return redirect('accounts:dashboard')
+
     return render(request, 'accounts/change_password.html', {
         'form': form,
-        'forced': request.user.force_password_change,
+        'forced': user.force_password_change,
     })
 
 
 @login_required
 @admin_required
 def user_list(request):
-    users = User.objects.all().order_by('role', 'username')
+    users = User.objects.exclude(role=User.Role.PATIENT).order_by('role', 'username')
     return render(request, 'accounts/user_list.html', {'users': users})
 
 
@@ -138,7 +179,7 @@ def user_toggle_active(request, pk):
 @login_required
 @admin_required
 def patient_import(request):
-    """Bulk import Patient records from Excel (no birthday — staff only)."""
+    """Bulk import Patient records from Excel (no birthday — creates auth user per patient)."""
     form = PatientBulkUploadForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         try:

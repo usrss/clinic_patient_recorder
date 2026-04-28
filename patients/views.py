@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 
 from accounts.decorators import clinical_staff_required
+from accounts.models import User
 from consultations.models import Consultation
 from .models import Patient, PatientProfile
 from .forms import PatientProfileSetupForm, PatientSearchForm
@@ -55,12 +56,20 @@ def patient_detail(request, pk):
 
 
 @login_required
-@clinical_staff_required
 def patient_profile_setup(request, pk):
-    """
-    Staff-assisted (or self-service) birthday setup for a patient.
-    Birthday is never imported; it is entered here.
-    """
+    user = request.user
+
+    # Patients can only access their own profile setup
+    if user.role == User.Role.PATIENT:
+        patient_record = user.get_patient_record()
+        if patient_record is None or patient_record.pk != pk:
+            messages.error(request, 'You do not have permission to access that page.')
+            return redirect('accounts:dashboard')
+    elif not user.is_clinical_staff:
+        # Any other non-staff role is rejected
+        messages.error(request, 'You do not have permission to access that page.')
+        return redirect('accounts:dashboard')
+
     patient = get_object_or_404(Patient, pk=pk)
     profile, _ = PatientProfile.objects.get_or_create(patient=patient)
     form = PatientProfileSetupForm(request.POST or None, instance=profile)
@@ -68,6 +77,9 @@ def patient_profile_setup(request, pk):
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, f'Profile updated for {patient.get_full_name()}.')
+        # Patients go back to dashboard; staff go to patient detail
+        if user.role == User.Role.PATIENT:
+            return redirect('accounts:dashboard')
         return redirect('patients:patient_detail', pk=pk)
 
     return render(request, 'patients/patient_profile_setup.html', {

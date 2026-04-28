@@ -18,6 +18,10 @@ def role_required(*roles):
     return decorator
 
 
+def patient_required(view_func):
+    return role_required('patient')(view_func)
+
+
 def nurse_required(view_func):
     return role_required('nurse', 'admin')(view_func)
 
