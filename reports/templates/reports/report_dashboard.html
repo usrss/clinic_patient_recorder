@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Reports — Clinic Recorder{% endblock %}
 
 {% block content %}
@@ -18,8 +18,9 @@
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Today</div>
   </div>
   <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ total_students }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Students</div>
+    {# FIX: was total_students — now total_patients to match Patient model #}
+    <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ total_patients }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Patients</div>
   </div>
 </div>
 
@@ -36,8 +37,7 @@
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
 
-  <!-- Most dispensed medicines — top_medicines is a .values().annotate() queryset
-       so each row is a dict accessed as m.medicine__name and m.total_dispensed -->
+  <!-- Most dispensed medicines -->
   <div>
     <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Most Dispensed Medicines</h2>
     {% if top_medicines %}
@@ -68,7 +68,7 @@
     {% endif %}
   </div>
 
-  <!-- Low stock medicines — low_stock is a Medicine queryset filtered by threshold -->
+  <!-- Low stock medicines -->
   <div>
     <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
       Low Stock Medicines

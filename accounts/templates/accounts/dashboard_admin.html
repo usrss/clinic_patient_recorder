@@ -1,22 +1,20 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Admin Dashboard — Clinic Recorder{% endblock %}
 
 {% block content %}
 <div style="margin-bottom:28px;">
-    <h1 class="page-title" style="margin-bottom:4px;">Admin Dashboard</h1>
-    <p style="color:var(--text-muted);font-size:14px;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
+  <h1 class="page-title" style="margin-bottom:4px;">Admin Dashboard</h1>
+  <p style="color:var(--text-muted);font-size:14px;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
 </div>
 
-
-<!-- Stats Row -->
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
   <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:var(--primary);">{{ total_users }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Total Users</div>
+    <div style="font-size:28px;font-weight:700;color:var(--primary);">{{ total_staff }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Staff Users</div>
   </div>
   <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#3b82f6;">{{ students }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Students</div>
+    <div style="font-size:28px;font-weight:700;color:#3b82f6;">{{ total_patients }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Patients</div>
   </div>
   <div class="card" style="text-align:center;padding:20px 16px;">
     <div style="font-size:28px;font-weight:700;color:#10b981;">{{ nurses }}</div>
@@ -26,30 +24,38 @@
     <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ doctors }}</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Doctors</div>
   </div>
+  <div class="card" style="text-align:center;padding:20px 16px;">
+    <div style="font-size:28px;font-weight:700;color:#f97316;">{{ pending_consultations }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pending</div>
+  </div>
 </div>
 
-<!-- Quick Actions -->
 <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Quick Actions</h2>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
   <a href="{% url 'accounts:user_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
     <div style="font-size:22px;margin-bottom:8px;">👥</div>
-    <div style="font-weight:600;font-size:14px;">Manage Users</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Create, edit, activate users</div>
+    <div style="font-weight:600;font-size:14px;">Manage Staff</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Create, edit, activate staff users</div>
   </a>
-  <a href="{% url 'accounts:user_import' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
+  <a href="{% url 'accounts:patient_import' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
     <div style="font-size:22px;margin-bottom:8px;">📤</div>
-    <div style="font-weight:600;font-size:14px;">Import Students</div>
+    <div style="font-weight:600;font-size:14px;">Import Patients</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Bulk upload from Excel</div>
+  </a>
+  <a href="{% url 'patients:patient_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
+    <div style="font-size:22px;margin-bottom:8px;">🧑‍⚕️</div>
+    <div style="font-weight:600;font-size:14px;">Patients</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">View all patient records</div>
   </a>
   <a href="{% url 'inventory:medicine_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
     <div style="font-size:22px;margin-bottom:8px;">💊</div>
     <div style="font-weight:600;font-size:14px;">Inventory</div>
     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Manage medicine stock</div>
   </a>
-  <a href="{% url 'accounts:change_password' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">🔑</div>
-    <div style="font-weight:600;font-size:14px;">Change Password</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your login password</div>
+  <a href="{% url 'reports:report_dashboard' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
+    <div style="font-size:22px;margin-bottom:8px;">📊</div>
+    <div style="font-weight:600;font-size:14px;">Reports</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Clinic activity overview</div>
   </a>
   <a href="/admin/" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
     <div style="font-size:22px;margin-bottom:8px;">⚙️</div>
@@ -58,13 +64,10 @@
   </a>
 </div>
 
-<!-- Workflow Info -->
 <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">System Workflow</h2>
 <div class="card" style="padding:20px;">
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-    <span style="background:#e0f2fe;color:#0369a1;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">📝 Student submits</span>
-    <span style="color:var(--text-muted);">→</span>
-    <span style="background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">🗂 Front Desk queues</span>
+    <span style="background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">🗂 Front Desk creates</span>
     <span style="color:var(--text-muted);">→</span>
     <span style="background:#d1fae5;color:#065f46;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">🩺 Nurse triages</span>
     <span style="color:var(--text-muted);">→</span>

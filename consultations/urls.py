@@ -4,28 +4,30 @@ from . import views
 app_name = 'consultations'
 
 urlpatterns = [
-    # Student
-    path('', views.student_home, name='student_home'),
-    path('submit/', views.student_submit, name='student_submit'),
-    path('<int:pk>/', views.student_detail, name='student_detail'),
-    path('<int:pk>/cancel/', views.student_cancel, name='student_cancel'),
+    # ── Patient portal ────────────────────────────────────────────────
+    path('my/', views.patient_home, name='patient_home'),
+    path('my/submit/', views.patient_submit, name='patient_submit'),
+    path('my/<int:pk>/', views.patient_detail, name='patient_detail'),
+    path('my/<int:pk>/cancel/', views.patient_cancel, name='patient_cancel'),
 
-    # Front desk
-    path('queue/', views.queue, name='queue'),
+    # ── Front desk ────────────────────────────────────────────────────
+    path('', views.queue, name='queue'),
+    path('create/', views.consultation_create, name='consultation_create'),
     path('queue/<int:pk>/', views.queue_detail, name='queue_detail'),
     path('queue/<int:pk>/cancel/', views.frontdesk_cancel, name='frontdesk_cancel'),
-    # Admin
+
+    # ── Admin ─────────────────────────────────────────────────────────
     path('<int:pk>/reopen/', views.admin_reopen, name='admin_reopen'),
 
-    # Nurse
+    # ── Nurse ─────────────────────────────────────────────────────────
     path('triage/', views.triage_list, name='triage_list'),
     path('triage/<int:pk>/', views.triage_form, name='triage_form'),
     path('triage/<int:pk>/edit/', views.triage_edit, name='triage_edit'),
 
-    # Doctor
+    # ── Doctor ────────────────────────────────────────────────────────
     path('doctor/', views.doctor_list, name='doctor_list'),
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
 
-    # Clinical staff shared
-    path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'), 
+    # ── Clinical staff shared ─────────────────────────────────────────
+    path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'),
 ]

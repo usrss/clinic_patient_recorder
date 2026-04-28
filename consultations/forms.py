@@ -5,7 +5,8 @@ from .models import Consultation, Triage, Prescription, PrescriptionItem
 from inventory.models import Medicine
 
 
-class ConsultationSubmitForm(forms.ModelForm):
+class PatientConsultationForm(forms.ModelForm):
+    """Used by a logged-in patient to submit their own consultation request."""
     class Meta:
         model = Consultation
         fields = ['symptoms', 'medical_history', 'severity_description', 'additional_notes']
@@ -16,7 +17,7 @@ class ConsultationSubmitForm(forms.ModelForm):
             }),
             'medical_history': forms.Textarea(attrs={
                 'class': 'form-control', 'rows': 3,
-                'placeholder': 'Existing conditions, allergies, current medications... (optional)',
+                'placeholder': 'Existing conditions, allergies, medications... (optional)',
             }),
             'severity_description': forms.Textarea(attrs={
                 'class': 'form-control', 'rows': 2,
@@ -35,13 +36,48 @@ class ConsultationSubmitForm(forms.ModelForm):
         }
 
 
+class ConsultationSubmitForm(forms.ModelForm):
+    """Used by front desk staff to create a consultation on behalf of a patient."""
+    class Meta:
+        model = Consultation
+        fields = ['patient', 'symptoms', 'medical_history',
+                  'severity_description', 'additional_notes']
+        widgets = {
+            'patient': forms.Select(attrs={'class': 'form-control'}),
+            'symptoms': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 4,
+                'placeholder': 'Describe symptoms in detail...',
+            }),
+            'medical_history': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Existing conditions, allergies, medications... (optional)',
+            }),
+            'severity_description': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+                'placeholder': 'e.g. Mild headache since yesterday, moderate fever...',
+            }),
+            'additional_notes': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 2,
+                'placeholder': 'Anything else the clinic should know... (optional)',
+            }),
+        }
+        labels = {
+            'patient': 'Patient *',
+            'symptoms': 'Symptoms *',
+            'medical_history': 'Medical History',
+            'severity_description': 'Severity Description *',
+            'additional_notes': 'Additional Notes',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from patients.models import Patient
+        self.fields['patient'].queryset = Patient.objects.filter(
+            is_active=True
+        ).order_by('last_name', 'first_name')
+
+
 class QueueAssignForm(forms.ModelForm):
-    """
-    FIX: Removed queue_number from fields — it is now auto-generated in the view
-    via assign_next_queue_number(). Removed 'Cancelled' from status choices —
-    cancellation has its own dedicated view/button. Clears the unused field
-    (queue_number vs scheduled_at) in clean() to prevent stale data.
-    """
     class Meta:
         model = Consultation
         fields = ['status', 'scheduled_at']
@@ -67,7 +103,6 @@ class QueueAssignForm(forms.ModelForm):
         status = cleaned.get('status')
         if status == Consultation.Status.SCHEDULED and not cleaned.get('scheduled_at'):
             self.add_error('scheduled_at', 'Appointment time is required when status is Scheduled.')
-        # FIX: Clear scheduled_at when queuing so stale data is never saved
         if status == Consultation.Status.QUEUED:
             cleaned['scheduled_at'] = None
         return cleaned
@@ -78,9 +113,7 @@ class TriageForm(forms.ModelForm):
         model = Triage
         fields = ['blood_pressure', 'temperature', 'pulse_rate', 'urgency', 'notes']
         widgets = {
-            'blood_pressure': forms.TextInput(attrs={
-                'class': 'form-control', 'placeholder': '120/80',
-            }),
+            'blood_pressure': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '120/80'}),
             'temperature': forms.NumberInput(attrs={
                 'class': 'form-control', 'step': '0.1',
                 'placeholder': '36.5', 'min': '30', 'max': '45',
@@ -102,14 +135,8 @@ class TriageForm(forms.ModelForm):
 
 
 class TriageEditForm(forms.ModelForm):
-    """
-    FIX GAP 3: Allows nurse (or admin) to amend a triage record.
-    Same fields as TriageForm but used in the edit view — separate form
-    class makes intent explicit and allows future divergence (e.g. audit note).
-    """
     amendment_reason = forms.CharField(
-        required=True,
-        max_length=200,
+        required=True, max_length=200,
         label='Reason for amendment *',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -155,7 +182,6 @@ class PrescriptionForm(forms.ModelForm):
 
 
 class PrescriptionItemForm(forms.Form):
-    """Single medicine row in the prescription formset."""
     medicine = forms.ModelChoiceField(
         queryset=Medicine.objects.all().order_by('name'),
         required=False,
@@ -163,15 +189,13 @@ class PrescriptionItemForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
     quantity = forms.IntegerField(
-        required=False,
-        min_value=1,
+        required=False, min_value=1,
         widget=forms.NumberInput(attrs={
             'class': 'form-control', 'min': 1, 'placeholder': 'Qty',
         }),
     )
     instructions = forms.CharField(
-        required=False,
-        max_length=200,
+        required=False, max_length=200,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'e.g. Take 1 tablet 3x a day after meals',
@@ -184,8 +208,8 @@ class PrescriptionItemForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        medicine = cleaned.get('medicine')
-        quantity = cleaned.get('quantity')
+        medicine     = cleaned.get('medicine')
+        quantity     = cleaned.get('quantity')
         instructions = cleaned.get('instructions', '').strip()
         if any([medicine, quantity, instructions]):
             if not medicine:
@@ -194,14 +218,12 @@ class PrescriptionItemForm(forms.Form):
                 self.add_error('quantity', 'Enter a quantity.')
             if not instructions:
                 self.add_error('instructions', 'Enter dosage instructions.')
-            # FIX GAP 2: Warn doctor if stock is insufficient before saving
-            if medicine and quantity:
-                if quantity > medicine.quantity:
-                    self.add_error(
-                        'quantity',
-                        f'Insufficient stock — only {medicine.quantity} '
-                        f'{medicine.get_unit_display()}(s) available.'
-                    )
+            if medicine and quantity and quantity > medicine.quantity:
+                self.add_error(
+                    'quantity',
+                    f'Insufficient stock — only {medicine.quantity} '
+                    f'{medicine.get_unit_display()}(s) available.'
+                )
         return cleaned
 
 

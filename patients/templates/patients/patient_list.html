@@ -1,21 +1,22 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Patients — Clinic Recorder{% endblock %}
 
 {% block content %}
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
   <div>
     <h1 class="page-title" style="margin-bottom:4px;">Patients</h1>
-    <p style="color:var(--text-muted);font-size:13px;">Registered student patients</p>
+    <p style="color:var(--text-muted);font-size:13px;">Registered clinic patients</p>
   </div>
+  {% if user.role == 'admin' %}
+  <a href="{% url 'accounts:patient_import' %}" class="btn btn-secondary">📤 Import</a>
+  {% endif %}
 </div>
 
-<!-- Search Form -->
 <div class="card" style="margin-bottom:16px;padding:16px;">
   <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
     <div style="flex:1;min-width:200px;">
       <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Search</label>
-      <input type="text" name="q" value="{{ query }}" class="form-control"
-             placeholder="Search by name, student ID, college..." autofocus>
+      {{ form.query }}
     </div>
     <button type="submit" class="btn btn-primary">Search</button>
     {% if query %}
@@ -24,30 +25,36 @@
   </form>
 </div>
 
-{% if students %}
+{% if patients %}
 <div class="card" style="padding:0;">
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Full Name</th>
-          <th>Student ID</th>
-          <th>College</th>
+          <th>Patient ID</th>
+          <th>Sex</th>
+          <th>Age</th>
+          <th>College / Dept</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% for student in students %}
+        {% for patient in patients %}
         <tr>
-          <td style="font-weight:500;">{{ student.get_full_name|default:student.username }}</td>
-          <td style="color:var(--text-muted);font-size:13px;">
-            {{ student.student_profile.student_id|default:"—" }}
+          <td style="font-weight:500;">{{ patient.get_full_name }}</td>
+          <td style="color:var(--text-muted);font-size:13px;">{{ patient.patient_id }}</td>
+          <td style="font-size:13px;">{{ patient.get_sex_display }}</td>
+          <td style="font-size:13px;">
+            {% if patient.age %}{{ patient.age }} yrs{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
           </td>
           <td style="color:var(--text-muted);font-size:13px;">
-            {{ student.student_profile.college|default:"—" }}
+            {% if patient.college %}{{ patient.college.abbreviation }}
+            {% elif patient.department %}{{ patient.department }}
+            {% else %}—{% endif %}
           </td>
           <td>
-            <a href="{% url 'patients:patient_detail' student.pk %}" class="btn btn-secondary btn-sm">View</a>
+            <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">View</a>
           </td>
         </tr>
         {% endfor %}
@@ -57,10 +64,10 @@
 </div>
 {% else %}
 <div class="card" style="text-align:center;padding:48px 24px;">
-  <div style="font-size:40px;margin-bottom:12px;">🧑‍🎓</div>
+  <div style="font-size:40px;margin-bottom:12px;">🧑‍⚕️</div>
   <p style="font-weight:600;margin-bottom:4px;">No patients found</p>
   <p style="color:var(--text-muted);font-size:13px;">
-    {% if query %}No students match your search.{% else %}No student patients have been registered yet.{% endif %}
+    {% if query %}No patients match your search.{% else %}No patients have been registered yet.{% endif %}
   </p>
 </div>
 {% endif %}

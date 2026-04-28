@@ -1,42 +1,66 @@
-{% extends 'base.html' %}
-{% block title %}{{ student.get_full_name|default:student.username }} — Patients — Clinic Recorder{% endblock %}
+{% extends 'core/base.html' %}
+{% block title %}{{ patient.get_full_name }} — Patients — Clinic Recorder{% endblock %}
 
 {% block content %}
 <div style="max-width:760px;">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
     <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">{{ student.get_full_name|default:student.username }}</h1>
+    <h1 class="page-title" style="margin-bottom:0;">{{ patient.get_full_name }}</h1>
   </div>
 
   <!-- Patient Info Card -->
   <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">Patient Information</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0;">Patient Information</h3>
+      {% if user.role == 'admin' or user.role == 'frontdesk' %}
+      <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm">✏ Edit Profile</a>
+      {% endif %}
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
       <div>
         <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Full Name</div>
-        <div style="font-weight:600;">{{ student.get_full_name|default:"—" }}</div>
+        <div style="font-weight:600;">{{ patient.get_full_name }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Student ID</div>
-        <div>{{ profile.student_id|default:"—" }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Patient ID</div>
+        <div>{{ patient.patient_id }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Sex</div>
+        <div>{{ patient.get_sex_display }}</div>
       </div>
       <div>
         <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Age</div>
-        <div>{{ profile.age|default:"—" }}</div>
+        <div>
+          {% if patient.age %}{{ patient.age }} years old
+          {% elif profile and profile.birthday is None %}
+            <span style="color:var(--text-muted);font-size:12px;">Birthday not set</span>
+          {% else %}—{% endif %}
+        </div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Gender</div>
-        {# FIX: profile may be None — guard before calling get_gender_display #}
-        <div>{% if profile %}{{ profile.get_gender_display|default:"—" }}{% else %}—{% endif %}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Birthday</div>
+        <div>
+          {% if profile and profile.birthday %}{{ profile.birthday|date:"F d, Y" }}
+          {% else %}<span style="color:var(--text-muted);font-size:12px;">Not set</span>{% endif %}
+        </div>
       </div>
       <div>
         <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">College</div>
-        <div>{{ profile.college|default:"—" }}</div>
+        <div>{% if patient.college %}{{ patient.college.abbreviation }} — {{ patient.college.name }}{% else %}—{% endif %}</div>
       </div>
+      {% if patient.department %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Username</div>
-        <div style="color:var(--text-muted);">{{ student.username }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Department</div>
+        <div>{{ patient.department }}</div>
       </div>
+      {% endif %}
+      {% if patient.position %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Position</div>
+        <div>{{ patient.position }}</div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -61,7 +85,6 @@
           <tr>
             <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
             <td>
-              {# Status badge — matches style used across all other consultation templates #}
               {% if c.status == 'pending' %}
                 <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pending</span>
               {% elif c.status == 'queued' %}
@@ -83,7 +106,6 @@
             <td>
               <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
             </td>
-
           </tr>
           {% endfor %}
         </tbody>
@@ -94,7 +116,7 @@
   <div class="card" style="text-align:center;padding:32px 24px;">
     <div style="font-size:36px;margin-bottom:10px;">📋</div>
     <p style="font-weight:600;margin-bottom:4px;">No consultations yet</p>
-    <p style="color:var(--text-muted);font-size:13px;">This student has not submitted any consultation requests.</p>
+    <p style="color:var(--text-muted);font-size:13px;">This patient has not had any consultations recorded.</p>
   </div>
   {% endif %}
 </div>

@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+{% block title %}Profile Setup — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Profile Setup</h1>
+  </div>
+
+  <div style="background:#e0f2fe;border-left:4px solid #0369a1;padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#0c4a6e;">
+    <strong>ℹ️ Birthday</strong> — birthday is entered here, not imported. It is used to compute the patient's age in clinic records.
+  </div>
+
+  <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+    <div style="font-size:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Patient</div>
+      <strong>{{ patient.get_full_name }}</strong> — {{ patient.patient_id }}
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="form-group">
+        <label>{{ form.birthday.label }}</label>
+        {{ form.birthday }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.birthday.help_text }}</div>
+        {% if form.birthday.errors %}
+          <div class="form-error">{{ form.birthday.errors.0 }}</div>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="submit" class="btn btn-primary">Save Profile</button>
+        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

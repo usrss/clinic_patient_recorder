@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Users — Clinic Recorder{% endblock %}
 
 {% block content %}
@@ -6,8 +6,8 @@
   <h1 class="page-title" style="margin-bottom:0;">Users</h1>
   <div style="display:flex;gap:10px;">
     <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">+ Add user</a>
-    {# FIX: Was hardcoded to /admin/accounts/user/import-students/ — now uses the proper named URL #}
-    <a href="{% url 'accounts:user_import' %}" class="btn btn-secondary">📤 Import students</a>
+    {# FIX: Was 'accounts:user_import' — correct name is 'accounts:patient_import' #}
+    <a href="{% url 'accounts:patient_import' %}" class="btn btn-secondary">📤 Import patients</a>
   </div>
 </div>
 
@@ -44,7 +44,6 @@
         <tr>
           <td>
             {{ u.get_full_name|default:"—" }}
-            {# FIX: Show a visual indicator when a user still has a temporary default password #}
             {% if u.force_password_change %}
               <span title="Temporary password — user has not logged in yet"
                 style="display:inline-block;margin-left:6px;background:#fef3c7;color:#92400e;

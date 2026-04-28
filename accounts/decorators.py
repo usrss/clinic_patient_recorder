@@ -4,13 +4,7 @@ from django.contrib import messages
 
 
 def role_required(*roles):
-    """
-    Restrict a view to users with one of the given roles.
-
-    Usage:
-        @role_required('nurse', 'admin')
-        def my_view(request): ...
-    """
+    """Restrict a view to users with one of the given roles."""
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
@@ -24,9 +18,8 @@ def role_required(*roles):
     return decorator
 
 
-def student_required(view_func):
-    # FIX: Added 'admin' so admins can access student views too (e.g. for testing/support).
-    return role_required('student', 'admin')(view_func)
+def patient_required(view_func):
+    return role_required('patient')(view_func)
 
 
 def nurse_required(view_func):
@@ -46,5 +39,5 @@ def admin_required(view_func):
 
 
 def clinical_staff_required(view_func):
-    """Any non-student role."""
+    """Any staff role (nurse, doctor, frontdesk, admin)."""
     return role_required('nurse', 'doctor', 'frontdesk', 'admin')(view_func)

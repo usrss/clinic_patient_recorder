@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}Triaged Patients — Clinic Recorder{% endblock %}
 
 {% block content %}
@@ -19,7 +19,7 @@
         <tr>
           <th>#</th>
           <th>Patient</th>
-          <th>Student ID</th>
+          <th>Patient ID</th>
           <th>Urgency</th>
           <th>Vitals</th>
           <th>Symptoms (summary)</th>
@@ -32,13 +32,15 @@
         <tr>
           <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
           <td>
-            <div style="font-weight:500;">{{ c.patient.get_full_name|default:c.patient.username }}</div>
+            <div style="font-weight:500;">{{ c.patient.get_full_name }}</div>
             <div style="font-size:11px;color:var(--text-muted);">
-              {% if c.patient.student_profile.college %}{{ c.patient.student_profile.college }}{% endif %}
+              {% if c.patient.college %}{{ c.patient.college.abbreviation }}
+              {% elif c.patient.department %}{{ c.patient.department }}
+              {% endif %}
             </div>
           </td>
           <td style="color:var(--text-muted);font-size:12px;">
-            {{ c.patient.student_profile.student_id|default:"—" }}
+            {{ c.patient.patient_id }}
           </td>
           <td>
             {% if c.triage %}

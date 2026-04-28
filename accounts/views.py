@@ -4,22 +4,32 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from .models import User
-from .forms import LoginForm, UserCreateForm, UserEditForm, StudentBulkUploadForm, StudentPasswordChangeForm
+from .forms import LoginForm, UserCreateForm, UserEditForm, PatientBulkUploadForm, StaffPasswordChangeForm
 from .decorators import admin_required
-from .utils import import_students_from_excel, StudentImportError
-
+from .utils import import_patients_from_excel, PatientImportError
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
 
     form = LoginForm(request, data=request.POST or None)
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.get_user()
+
             login(request, user)
-            messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+
+            # 🔥 ONLY RELIABLE FIRST LOGIN LOGIC
+            if user.force_password_change:
+                return redirect('accounts:change_password')
+
+            messages.success(
+                request,
+                f'Welcome back, {user.first_name or user.username}!'
+            )
             return redirect('accounts:dashboard')
+
         else:
             messages.error(request, 'Invalid username or password.')
 
@@ -27,9 +37,6 @@ def login_view(request):
 
 
 def logout_view(request):
-    # FIX: Only allow POST to prevent CSRF logout attacks.
-    # A GET-based logout lets any external page silently log users out
-    # via a linked image or redirect (e.g. <img src="/accounts/logout/">).
     if request.method != 'POST':
         return redirect('accounts:dashboard')
     logout(request)
@@ -39,19 +46,41 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    """Role-based dashboard redirect. Forces password change on first login."""
     user = request.user
 
-    # FIX: Force password change check happens before role routing
     if user.force_password_change:
-        messages.warning(request, 'Please change your default password before continuing.')
         return redirect('accounts:change_password')
 
-    # FIX: Use Role constants instead of raw strings to avoid typo bugs
+    # ── Patient portal ────────────────────────────────────────────────
+    if user.role == User.Role.PATIENT:
+        patient = user.get_patient_record()
+
+        if patient is None:
+            messages.error(
+                request,
+                'Your patient record could not be found. Please contact the clinic.'
+            )
+            logout(request)
+            return redirect('accounts:login')
+
+        # Redirect to profile setup if birthday not set
+        try:
+            birthday_set = patient.profile.birthday is not None
+        except Exception:
+            birthday_set = False
+
+        if not birthday_set:
+            messages.info(request, 'Please complete your profile by setting your birthday.')
+            return redirect('patients:patient_profile_setup', pk=patient.pk)
+
+        return render(request, 'patients/patient_dashboard.html', {
+            'patient': patient
+        })
+
+    # ── Staff roles ───────────────────────────────────────────────────
     role_template_map = {
-        User.Role.STUDENT: 'accounts/dashboard_student.html',
-        User.Role.NURSE: 'accounts/dashboard_nurse.html',
-        User.Role.DOCTOR: 'accounts/dashboard_doctor.html',
+        User.Role.NURSE:     'accounts/dashboard_nurse.html',
+        User.Role.DOCTOR:    'accounts/dashboard_doctor.html',
         User.Role.FRONTDESK: 'accounts/dashboard_frontdesk.html',
     }
 
@@ -59,16 +88,20 @@ def dashboard(request):
         return render(request, role_template_map[user.role], {'user': user})
 
     if user.role == User.Role.ADMIN:
+        from patients.models import Patient
+        from consultations.models import Consultation
         context = {
             'user': user,
-            'total_users': User.objects.count(),
-            'students': User.objects.filter(role=User.Role.STUDENT).count(),
+            'total_staff': User.objects.exclude(role=User.Role.PATIENT).count(),
+            'total_patients': Patient.objects.filter(is_active=True).count(),
             'nurses': User.objects.filter(role=User.Role.NURSE).count(),
             'doctors': User.objects.filter(role=User.Role.DOCTOR).count(),
+            'pending_consultations': Consultation.objects.filter(
+                status=Consultation.Status.PENDING
+            ).count(),
         }
         return render(request, 'accounts/dashboard_admin.html', context)
 
-    # Fallback: unknown role — log out and send back to login
     messages.error(request, 'Your account has an unrecognised role. Please contact an administrator.')
     logout(request)
     return redirect('accounts:login')
@@ -76,26 +109,29 @@ def dashboard(request):
 
 @login_required
 def change_password(request):
-    """Allow all users to change their password."""
-    form = StudentPasswordChangeForm(request.user, request.POST or None)
+    user = request.user
+    form = StaffPasswordChangeForm(user, request.POST or None)
+
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        # FIX: Clear the force_password_change flag after a successful change
+
         user.force_password_change = False
-        user.save(update_fields=['force_password_change'])  # FIX: targeted save, not full re-save
+        user.save(update_fields=['force_password_change'])
+
         update_session_auth_hash(request, user)
-        messages.success(request, 'Password changed successfully.')
+
         return redirect('accounts:dashboard')
+
     return render(request, 'accounts/change_password.html', {
         'form': form,
-        'forced': request.user.force_password_change,
+        'forced': user.force_password_change,
     })
 
 
 @login_required
 @admin_required
 def user_list(request):
-    users = User.objects.all().order_by('role', 'username')
+    users = User.objects.exclude(role=User.Role.PATIENT).order_by('role', 'username')
     return render(request, 'accounts/user_list.html', {'users': users})
 
 
@@ -105,7 +141,7 @@ def user_create(request):
     form = UserCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         form.save()
-        messages.success(request, 'User created successfully.')
+        messages.success(request, 'Staff user created successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Create'})
 
@@ -120,25 +156,21 @@ def user_edit(request, pk):
         messages.success(request, 'User updated successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {
-        'form': form,
-        'action': 'Edit',
-        'target': target,
+        'form': form, 'action': 'Edit', 'target': target,
     })
 
 
 @login_required
 @admin_required
 def user_toggle_active(request, pk):
-    # FIX: Only allow POST to prevent accidental activation via GET (e.g. prefetch)
     if request.method != 'POST':
         return redirect('accounts:user_list')
-
     user = get_object_or_404(User, pk=pk)
     if user == request.user:
         messages.error(request, 'You cannot deactivate your own account.')
     else:
         user.is_active = not user.is_active
-        user.save(update_fields=['is_active'])  # FIX: targeted save
+        user.save(update_fields=['is_active'])
         status = 'activated' if user.is_active else 'deactivated'
         messages.success(request, f'User {user.username} {status}.')
     return redirect('accounts:user_list')
@@ -146,12 +178,12 @@ def user_toggle_active(request, pk):
 
 @login_required
 @admin_required
-def user_import(request):
-    """Bulk import students from Excel."""
-    form = StudentBulkUploadForm(request.POST or None, request.FILES or None)
+def patient_import(request):
+    """Bulk import Patient records from Excel (no birthday — creates auth user per patient)."""
+    form = PatientBulkUploadForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            results = import_students_from_excel(request.FILES['file'])
+            results = import_patients_from_excel(request.FILES['file'])
             messages.success(
                 request,
                 f'✓ Import complete: {results["created"]} created, {results["skipped"]} skipped'
@@ -160,9 +192,9 @@ def user_import(request):
                 messages.warning(request, warning)
             for error in results['errors']:
                 messages.error(request, error)
-            return redirect('accounts:user_import')
-        except StudentImportError as e:
+            return redirect('accounts:patient_import')
+        except PatientImportError as e:
             messages.error(request, f'Import failed: {str(e)}')
         except Exception as e:
             messages.error(request, f'Unexpected error: {str(e)}')
-    return render(request, 'accounts/import_students.html', {'form': form})
+    return render(request, 'accounts/import_patients.html', {'form': form})

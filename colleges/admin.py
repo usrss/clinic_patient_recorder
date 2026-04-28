@@ -1,3 +1,9 @@
 from django.contrib import admin
+from .models import College
 
-# Register your models here.
+
+@admin.register(College)
+class CollegeAdmin(admin.ModelAdmin):
+    list_display = ('abbreviation', 'name', 'created_at')
+    search_fields = ('name', 'abbreviation')
+    ordering = ('name',)

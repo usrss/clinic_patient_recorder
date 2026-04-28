@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'core/base.html' %}
 {% block title %}{{ action }} User — Clinic Recorder{% endblock %}
 
 {% block content %}
@@ -8,7 +8,6 @@
     <h1 class="page-title" style="margin-bottom:0;">{{ action }} user{% if target %}: {{ target.username }}{% endif %}</h1>
   </div>
 
-  {# FIX: Render non-field form errors (e.g. password mismatch summary) at the top #}
   {% if form.non_field_errors %}
     <div style="background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
                 padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;">
@@ -64,7 +63,6 @@
           {% endif %}
         </div>
         <div class="form-group">
-          {# FIX: Added type="tel" hint via label note; actual widget attr set in form #}
           <label>Phone</label>
           {{ form.phone }}
           {% if form.phone.errors %}
@@ -100,13 +98,11 @@
       </div>
       {% endif %}
 
-      {# FIX: Note informing admins that student profiles (student_id, college, etc.)
-         are managed separately via the import tool or Django admin, since UserCreateForm
-         only creates the auth User — the StudentProfile requires its own form/flow. #}
+      {# FIX: Changed 'accounts:user_import' → 'accounts:patient_import' (correct URL name) #}
       {% if form.role %}
         <p style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:0;">
-          💡 For student accounts, additional profile info (Student ID, college, gender)
-          is set via <a href="{% url 'accounts:user_import' %}" style="color:var(--primary);">bulk import</a>
+          💡 Patient records are registered separately via
+          <a href="{% url 'accounts:patient_import' %}" style="color:var(--primary);">bulk import</a>
           or the <a href="/admin/" style="color:var(--primary);">Admin Panel</a>.
         </p>
       {% endif %}

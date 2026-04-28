@@ -1,0 +1,173 @@
+{% extends 'core/base.html' %}
+{% block title %}Disease Report — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:24px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary btn-sm">← Reports</a>
+    <h1 class="page-title" style="margin-bottom:0;">Disease Report</h1>
+  </div>
+  <p style="color:var(--text-muted);font-size:13px;">Filter completed consultations by diagnosis keyword, date range, and patient type.</p>
+</div>
+
+<!-- Filter Form -->
+<div class="card" style="margin-bottom:20px;padding:20px;">
+  <form method="get" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:flex-end;">
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Diagnosis keyword</label>
+      <input type="text" name="keyword" value="{{ keyword }}"
+             class="form-control" placeholder="e.g. fever, UTI, hypertension">
+    </div>
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Date from</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+    </div>
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Date to</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+    </div>
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Patient type</label>
+      <select name="patient_type" class="form-control">
+        <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All</option>
+        <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
+        <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
+        <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom:0;">
+      <label>College <span style="font-weight:400;color:var(--text-muted);">(students only)</span></label>
+      <select name="college_id" class="form-control">
+        <option value="">All colleges</option>
+        {% for c in colleges %}
+          <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.abbreviation }} — {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <button type="submit" class="btn btn-primary">Search</button>
+      {% if has_filters %}
+        <a href="{% url 'reports:disease_report' %}" class="btn btn-secondary">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if has_filters %}
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px;">
+  <div class="card" style="text-align:center;padding:18px 12px;">
+    <div style="font-size:26px;font-weight:700;color:var(--primary);">{{ total_affected }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Affected Patients</div>
+  </div>
+  <div class="card" style="text-align:center;padding:18px 12px;">
+    <div style="font-size:26px;font-weight:700;color:#3b82f6;">{{ by_type.student }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Students</div>
+  </div>
+  <div class="card" style="text-align:center;padding:18px 12px;">
+    <div style="font-size:26px;font-weight:700;color:#8b5cf6;">{{ by_type.staff }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Staff</div>
+  </div>
+  <div class="card" style="text-align:center;padding:18px 12px;">
+    <div style="font-size:26px;font-weight:700;color:#f97316;">{{ by_type.instructor }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Instructors</div>
+  </div>
+  <div class="card" style="text-align:center;padding:18px 12px;">
+    <div style="font-size:26px;font-weight:700;">{{ consultations.count }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Consultations</div>
+  </div>
+</div>
+
+<!-- Breakdown by College -->
+{% if by_college %}
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Breakdown by College</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    {% for row in by_college %}
+    <span style="background:#f0f9f5;border:1px solid #bbf7d0;padding:5px 12px;border-radius:20px;font-size:13px;">
+      <strong>{{ row.patient__college__abbreviation }}</strong> — {{ row.count }} patient{{ row.count|pluralize }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Export + Results -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <p style="font-size:13px;color:var(--text-muted);margin:0;">
+    {{ consultations.count }} consultation{{ consultations.count|pluralize }} found
+  </p>
+  <a href="?keyword={{ keyword }}&date_from={{ date_from }}&date_to={{ date_to }}&patient_type={{ patient_type }}&college_id={{ college_id }}&export=csv"
+     class="btn btn-secondary btn-sm">⬇ Export CSV</a>
+</div>
+
+{% if consultations %}
+<div class="card" style="padding:0;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Patient</th>
+          <th>Patient ID</th>
+          <th>Type</th>
+          <th>College / Dept</th>
+          <th>Diagnosis</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in consultations %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
+          <td style="font-weight:500;">{{ c.patient.get_full_name }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ c.patient.patient_id }}</td>
+          <td style="font-size:12px;">
+            {% if c.patient.college %}
+              <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Student</span>
+            {% elif c.patient.department %}
+              <span style="background:#f3e8ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Staff</span>
+            {% else %}
+              <span style="background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Instructor</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {% if c.patient.college %}{{ c.patient.college.abbreviation }}
+            {% elif c.patient.department %}{{ c.patient.department }}
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {% if c.prescription %}{{ c.prescription.diagnosis|truncatechars:60 }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:40px 24px;">
+  <div style="font-size:36px;margin-bottom:10px;">🔍</div>
+  <p style="font-weight:600;margin-bottom:4px;">No results found</p>
+  <p style="color:var(--text-muted);font-size:13px;">Try adjusting your filters.</p>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <div style="font-size:40px;margin-bottom:12px;">🔬</div>
+  <p style="font-weight:600;margin-bottom:4px;">Use the filters above to search</p>
+  <p style="color:var(--text-muted);font-size:13px;">Enter a diagnosis keyword, date range, or patient type to get started.</p>
+</div>
+{% endif %}
+
+{% endblock %}

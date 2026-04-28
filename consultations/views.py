@@ -5,91 +5,95 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from accounts.decorators import (
-    student_required, frontdesk_required, nurse_required, doctor_required,
-    admin_required, clinical_staff_required,
+    frontdesk_required, nurse_required, doctor_required,
+    admin_required, clinical_staff_required, patient_required,
 )
 from .models import Consultation, Triage, Prescription, PrescriptionItem
 from .forms import (
     ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
-    PrescriptionForm, PrescriptionItemFormSet,
+    PrescriptionForm, PrescriptionItemFormSet, PatientConsultationForm,
 )
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
 
 
-# ─── STUDENT VIEWS ────────────────────────────────────────────────────────────
+# ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
-def student_home(request):
-    consultations = Consultation.objects.filter(patient=request.user)
-    return render(request, 'consultations/student_home.html', {
+@patient_required
+def patient_home(request):
+    """Patient's own consultation history."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultations = Consultation.objects.filter(
+        patient=patient
+    ).order_by('-created_at')
+
+    return render(request, 'consultations/patient_home.html', {
         'consultations': consultations,
+        'patient': patient,
     })
 
 
 @login_required
-@student_required
-def student_submit(request):
-    active_statuses = [
-        Consultation.Status.PENDING,
-        Consultation.Status.QUEUED,
-        Consultation.Status.SCHEDULED,
-        Consultation.Status.TRIAGED,
-    ]
-    if Consultation.objects.filter(patient=request.user, status__in=active_statuses).exists():
-        messages.warning(
-            request,
-            'You already have an active consultation in progress. '
-            'Please wait for it to be completed before submitting a new one.'
-        )
-        return redirect('consultations:student_home')
+@patient_required
+def patient_submit(request):
+    """Patient submits a new consultation request."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
 
-    form = ConsultationSubmitForm(request.POST or None)
+    form = PatientConsultationForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         consultation = form.save(commit=False)
-        consultation.patient = request.user
+        consultation.patient = patient
         consultation.status = Consultation.Status.PENDING
         consultation.save()
-        messages.success(request, 'Your consultation request has been submitted successfully.')
-        return redirect('consultations:student_home')
-    return render(request, 'consultations/student_submit.html', {'form': form})
+        messages.success(request, 'Your consultation request has been submitted.')
+        return redirect('consultations:patient_home')
+
+    return render(request, 'consultations/patient_submit.html', {'form': form})
 
 
 @login_required
-@student_required
-def student_detail(request, pk):
-    consultation = get_object_or_404(Consultation, pk=pk, patient=request.user)
-    return render(request, 'consultations/student_detail.html', {
+@patient_required
+def patient_detail(request, pk):
+    """Patient views one of their own consultations."""
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultation = get_object_or_404(Consultation, pk=pk, patient=patient)
+    return render(request, 'consultations/patient_detail.html', {
         'consultation': consultation,
     })
 
 
 @login_required
-@student_required
-def student_cancel(request, pk):
-    """
-    FIX GAP 6: Students can cancel their own PENDING consultation.
-    Only PENDING is allowed — once queued, the front desk owns it.
-    POST-only to prevent accidental cancellation via GET.
-    """
-    consultation = get_object_or_404(Consultation, pk=pk, patient=request.user)
-
+@patient_required
+def patient_cancel(request, pk):
+    """Patient cancels a pending consultation."""
     if request.method != 'POST':
-        return redirect('consultations:student_detail', pk=pk)
+        return redirect('consultations:patient_home')
 
-    if consultation.status != Consultation.Status.PENDING:
-        messages.error(
-            request,
-            'Only pending consultations can be cancelled. '
-            'Please contact the front desk if you need to cancel a queued or scheduled appointment.'
-        )
-        return redirect('consultations:student_detail', pk=pk)
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
 
+    consultation = get_object_or_404(
+        Consultation, pk=pk, patient=patient,
+        status=Consultation.Status.PENDING,
+    )
     consultation.status = Consultation.Status.CANCELLED
     consultation.save(update_fields=['status'])
-    messages.success(request, f'Consultation #{consultation.pk} has been cancelled.')
-    return redirect('consultations:student_home')
+    messages.success(request, f'Consultation #{pk} has been cancelled.')
+    return redirect('consultations:patient_home')
 
 
 # ─── FRONT DESK VIEWS ─────────────────────────────────────────────────────────
@@ -97,12 +101,30 @@ def student_cancel(request, pk):
 @login_required
 @frontdesk_required
 def queue(request):
+    """List pending consultation requests for front desk to process."""
     consultations = Consultation.objects.filter(
         status=Consultation.Status.PENDING
-    ).select_related('patient', 'patient__student_profile').order_by('created_at')
+    ).select_related('patient', 'patient__college').order_by('created_at')
     return render(request, 'consultations/queue.html', {
         'consultations': consultations,
     })
+
+
+@login_required
+@frontdesk_required
+def consultation_create(request):
+    """Front desk creates a consultation on behalf of a walk-in patient."""
+    form = ConsultationSubmitForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        consultation = form.save(commit=False)
+        consultation.status = Consultation.Status.PENDING
+        consultation.save()
+        messages.success(
+            request,
+            f'Consultation created for {consultation.patient.get_full_name()}.'
+        )
+        return redirect('consultations:queue')
+    return render(request, 'consultations/consultation_create.html', {'form': form})
 
 
 @login_required
@@ -121,7 +143,6 @@ def queue_detail(request, pk):
     form = QueueAssignForm(request.POST or None, instance=consultation)
     if request.method == 'POST' and form.is_valid():
         instance = form.save(commit=False)
-        # FIX GAP 1: Auto-assign queue number — no manual input, no duplicates
         if instance.status == Consultation.Status.QUEUED:
             with transaction.atomic():
                 instance.queue_number = assign_next_queue_number()
@@ -144,10 +165,6 @@ def queue_detail(request, pk):
 @login_required
 @frontdesk_required
 def frontdesk_cancel(request, pk):
-    """
-    FIX GAP 4 (partial): Front desk can cancel PENDING or QUEUED/SCHEDULED
-    consultations. POST-only with a required reason.
-    """
     if request.method != 'POST':
         return redirect('consultations:queue')
 
@@ -171,15 +188,11 @@ def frontdesk_cancel(request, pk):
     return redirect('consultations:queue')
 
 
-# ─── ADMIN REOPEN VIEW ────────────────────────────────────────────────────────
+# ─── ADMIN REOPEN ─────────────────────────────────────────────────────────────
 
 @login_required
 @admin_required
 def admin_reopen(request, pk):
-    """
-    FIX GAP 4: Admin can reopen a CANCELLED consultation back to PENDING.
-    POST-only. This is the escape hatch for accidental cancellations.
-    """
     if request.method != 'POST':
         return redirect('accounts:dashboard')
 
@@ -192,10 +205,7 @@ def admin_reopen(request, pk):
     consultation.queue_number = None
     consultation.scheduled_at = None
     consultation.save(update_fields=['status', 'queue_number', 'scheduled_at'])
-    messages.success(
-        request,
-        f'Consultation #{pk} has been reopened and returned to Pending.'
-    )
+    messages.success(request, f'Consultation #{pk} has been reopened and returned to Pending.')
     return redirect('consultations:queue')
 
 
@@ -206,7 +216,7 @@ def admin_reopen(request, pk):
 def triage_list(request):
     consultations = Consultation.objects.filter(
         status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED]
-    ).select_related('patient', 'patient__student_profile').order_by(
+    ).select_related('patient', 'patient__college').order_by(
         'queue_number', 'scheduled_at', 'created_at'
     )
     return render(request, 'consultations/triage_list.html', {
@@ -223,11 +233,7 @@ def triage_form(request, pk):
     )
 
     if hasattr(consultation, 'triage'):
-        messages.info(
-            request,
-            f'Consultation #{consultation.pk} has already been triaged. '
-            f'Use the edit option to amend the record.'
-        )
+        messages.info(request, f'Consultation #{consultation.pk} has already been triaged.')
         return redirect('consultations:triage_list')
 
     form = TriageForm(request.POST or None)
@@ -250,37 +256,27 @@ def triage_form(request, pk):
 @login_required
 @nurse_required
 def triage_edit(request, pk):
-    """
-    FIX GAP 3: Allow nurse/admin to amend a triage record after the fact.
-    Requires a mandatory amendment reason for accountability.
-    The original nurse and triaged_at timestamp are preserved.
-    """
     consultation = get_object_or_404(Consultation, pk=pk)
 
     if not hasattr(consultation, 'triage'):
         messages.error(request, f'Consultation #{pk} has not been triaged yet.')
         return redirect('consultations:triage_list')
 
-    # Only allow amendment if consultation hasn't been completed
     if consultation.status == Consultation.Status.COMPLETED:
-        messages.error(
-            request,
-            'Triage records cannot be amended after a consultation is completed.'
-        )
+        messages.error(request, 'Triage records cannot be amended after a consultation is completed.')
         return redirect('consultations:triage_list')
 
     triage = consultation.triage
     form = TriageEditForm(request.POST or None, instance=triage)
 
     if request.method == 'POST' and form.is_valid():
-        amended_triage = form.save(commit=False)
-        # Append amendment reason to notes for audit trail
+        amended = form.save(commit=False)
         reason = form.cleaned_data['amendment_reason']
-        amended_triage.notes = (
+        amended.notes = (
             f"{triage.notes}\n\n[Amended by {request.user.username}: {reason}]"
             if triage.notes else f"[Amended by {request.user.username}: {reason}]"
         )
-        amended_triage.save()
+        amended.save()
         messages.success(request, f'Triage record for Consultation #{pk} has been updated.')
         return redirect('consultations:triage_list')
 
@@ -298,7 +294,7 @@ def triage_edit(request, pk):
 def doctor_list(request):
     consultations = Consultation.objects.filter(
         status=Consultation.Status.TRIAGED
-    ).select_related('patient', 'triage', 'patient__student_profile').order_by('created_at')
+    ).select_related('patient', 'triage', 'patient__college').order_by('created_at')
     return render(request, 'consultations/doctor_list.html', {
         'consultations': consultations,
     })
@@ -310,10 +306,7 @@ def prescribe(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
     if hasattr(consultation, 'prescription'):
-        messages.info(
-            request,
-            f'Consultation #{consultation.pk} already has a prescription.'
-        )
+        messages.info(request, f'Consultation #{consultation.pk} already has a prescription.')
         return redirect('consultations:doctor_list')
 
     prescription_form = PrescriptionForm(request.POST or None)
@@ -334,8 +327,8 @@ def prescribe(request, pk):
                     prescription.save()
 
                     for form in item_rows:
-                        medicine = form.cleaned_data['medicine']
-                        quantity = form.cleaned_data['quantity']
+                        medicine     = form.cleaned_data['medicine']
+                        quantity     = form.cleaned_data['quantity']
                         instructions = form.cleaned_data['instructions']
 
                         PrescriptionItem.objects.create(
@@ -344,7 +337,6 @@ def prescribe(request, pk):
                             quantity=quantity,
                             instructions=instructions,
                         )
-
                         deduct_medicine_stock(
                             medicine_id=medicine.pk,
                             quantity=quantity,
@@ -365,10 +357,7 @@ def prescribe(request, pk):
                 err = e.message if hasattr(e, 'message') else '; '.join(e.messages)
                 messages.error(request, f'Stock error — prescription not saved: {err}')
             except Exception:
-                messages.error(
-                    request,
-                    'An unexpected error occurred. Please try again or contact an administrator.'
-                )
+                messages.error(request, 'An unexpected error occurred. Please try again.')
 
     return render(request, 'consultations/prescribe.html', {
         'consultation': consultation,
@@ -377,16 +366,11 @@ def prescribe(request, pk):
     })
 
 
-# ─── CLINICAL STAFF — SHARED DETAIL VIEW ──────────────────────────────────────
+# ─── CLINICAL STAFF SHARED VIEWS ──────────────────────────────────────────────
 
 @login_required
 @clinical_staff_required
 def clinical_detail(request, pk):
-    """
-    FIX GAP (bonus): Full consultation detail for clinical staff.
-    Nurses and doctors can view any consultation's full history —
-    triage vitals, prescription, medicines dispensed.
-    """
     consultation = get_object_or_404(Consultation, pk=pk)
     return render(request, 'consultations/clinical_detail.html', {
         'consultation': consultation,

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'certificates',
     'reports',
     'colleges',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'clinic_db',
         'USER': 'root',
-        'PASSWORD': '8314',
+        'PASSWORD': 'bradi8314',
         'HOST': 'localhost',
         'PORT': '3306',
     }
