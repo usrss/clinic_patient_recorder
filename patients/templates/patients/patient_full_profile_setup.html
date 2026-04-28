@@ -1,0 +1,189 @@
+{% extends 'core/base.html' %}
+{% block title %}Profile Setup — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-divider {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 24px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 99px;
+    height: 6px;
+    margin-bottom: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+
+  {% if is_forced %}
+  <!-- Forced setup banner -->
+  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:8px;margin-bottom:24px;">
+    <div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:4px;">⚠ Profile Setup Required</div>
+    <p style="font-size:13px;color:#92400e;margin:0;">
+      Before you can use the Clinic Portal, you must complete your profile.
+      This information is used by clinic staff to provide you with proper care.
+      All fields marked <strong>*</strong> are required.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    {% if not is_forced %}
+    <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+    {% endif %}
+    <div>
+      <h1 class="page-title" style="margin-bottom:2px;">
+        {% if is_forced %}Complete Your Profile{% else %}Edit Profile{% endif %}
+      </h1>
+      <p style="color:var(--text-muted);font-size:13px;margin:0;">{{ patient.get_full_name }} — {{ patient.patient_id }}</p>
+    </div>
+  </div>
+
+  <!-- Patient Identity (read-only, from import) -->
+  <div class="card" style="margin-bottom:20px;padding:16px 20px;background:#f8fafb;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Your Information (from clinic records)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;font-size:13px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Full Name</div>
+        <strong>{{ patient.get_full_name }}</strong>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Patient ID</div>
+        <strong>{{ patient.patient_id }}</strong>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Sex</div>
+        <strong>{{ patient.get_sex_display }}</strong>
+      </div>
+      {% if patient.college %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">College</div>
+        <strong>{{ patient.college.abbreviation }}</strong>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <div class="card">
+    <form method="post" novalidate id="profile-form">
+      {% csrf_token %}
+
+      <!-- Section 1: Health Info -->
+      <div class="section-divider">🩺 Health Information</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>{{ form.birthday.label }}</label>
+          {{ form.birthday }}
+          {% if form.birthday.errors %}<div class="form-error">{{ form.birthday.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.blood_type.label }}</label>
+          {{ form.blood_type }}
+          {% if form.blood_type.errors %}<div class="form-error">{{ form.blood_type.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.known_allergies.label }}</label>
+        {{ form.known_allergies }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          Write "None" if you have no known allergies.
+        </div>
+        {% if form.known_allergies.errors %}<div class="form-error">{{ form.known_allergies.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.existing_conditions.label }}</label>
+        {{ form.existing_conditions }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          Write "None" if you have no existing conditions.
+        </div>
+        {% if form.existing_conditions.errors %}<div class="form-error">{{ form.existing_conditions.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 2: Contact Info -->
+      <div class="section-divider">📞 Contact Information</div>
+
+      <div class="form-group">
+        <label>{{ form.phone.label }}</label>
+        {{ form.phone }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.phone.help_text }}</div>
+        {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.email.label }}</label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.address.label }}</label>
+        {{ form.address }}
+        {% if form.address.errors %}<div class="form-error">{{ form.address.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 3: Emergency Contact -->
+      <div class="section-divider">🆘 Emergency Contact</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>{{ form.emergency_contact_name.label }}</label>
+          {{ form.emergency_contact_name }}
+          {% if form.emergency_contact_name.errors %}<div class="form-error">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.emergency_contact_phone.label }}</label>
+          {{ form.emergency_contact_phone }}
+          {% if form.emergency_contact_phone.errors %}<div class="form-error">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error" style="margin-bottom:12px;padding:10px 14px;background:#fef2f2;border-radius:6px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">
+          {% if is_forced %}✅ Complete Profile & Continue{% else %}💾 Save Profile{% endif %}
+        </button>
+        {% if not is_forced %}
+        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary">Cancel</a>
+        {% endif %}
+      </div>
+
+      {% if is_forced %}
+      <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:12px;">
+        You cannot skip this step. All required fields must be filled before accessing the portal.
+      </p>
+      {% endif %}
+
+    </form>
+  </div>
+</div>
+{% endblock %}

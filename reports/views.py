@@ -1,11 +1,12 @@
 import csv
 import io
 from datetime import date, timedelta
+from collections import defaultdict
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, F, Count, Q, Avg
+from django.db.models import Sum, F, Count, Q, Avg, FloatField, ExpressionWrapper
 from django.utils import timezone
 
 from accounts.decorators import admin_required
@@ -22,17 +23,12 @@ from colleges.models import College
 def dashboard(request):
     today = timezone.now().date()
 
-    total_consultations = Consultation.objects.count()
-    consultations_today = Consultation.objects.filter(created_at__date=today).count()
-    total_patients      = Patient.objects.filter(is_active=True).count()
-
-    status_breakdown = []
-    for status in Consultation.Status:
-        status_breakdown.append({
-            'label': status.label,
-            'value': status.value,
-            'count': Consultation.objects.filter(status=status.value).count(),
-        })
+    # Only count patients who have logged in (active in system)
+    total_consultations     = Consultation.objects.count()
+    consultations_today     = Consultation.objects.filter(created_at__date=today).count()
+    total_patients_active   = Patient.objects.filter(is_active=True, has_logged_in=True).count()
+    total_patients_all      = Patient.objects.filter(is_active=True).count()
+    total_patients_pending  = total_patients_all - total_patients_active
 
     top_medicines = (
         StockMovement.objects
@@ -47,12 +43,12 @@ def dashboard(request):
     ).order_by('quantity')
 
     return render(request, 'reports/report_dashboard.html', {
-        'total_consultations': total_consultations,
-        'consultations_today': consultations_today,
-        'total_patients':      total_patients,
-        'status_breakdown':    status_breakdown,
-        'top_medicines':       top_medicines,
-        'low_stock':           low_stock,
+        'total_consultations':    total_consultations,
+        'consultations_today':    consultations_today,
+        'total_patients':         total_patients_active,
+        'total_patients_pending': total_patients_pending,
+        'top_medicines':          top_medicines,
+        'low_stock':              low_stock,
     })
 
 
@@ -191,21 +187,41 @@ def _disease_csv(consultations):
 def summary_report(request):
     today = timezone.now().date()
 
-    monthly_data = []
-    for i in range(11, -1, -1):
-        year  = today.year
-        month = today.month - i
-        while month <= 0:
-            month += 12
-            year  -= 1
-        count = Consultation.objects.filter(
-            created_at__year=year,
-            created_at__month=month,
-        ).count()
-        monthly_data.append({
-            'label': date(year, month, 1).strftime('%b %Y'),
-            'count': count,
-        })
+    # ── Period selector: daily (30d), monthly (12m), annually (5y) ──────────
+    period = request.GET.get('period', 'monthly')
+
+    if period == 'daily':
+        trend_data = []
+        for i in range(29, -1, -1):
+            d = today - timedelta(days=i)
+            trend_data.append({
+                'label': d.strftime('%b %d'),
+                'count': Consultation.objects.filter(created_at__date=d).count(),
+            })
+    elif period == 'annually':
+        trend_data = []
+        for i in range(4, -1, -1):
+            yr = today.year - i
+            trend_data.append({
+                'label': str(yr),
+                'count': Consultation.objects.filter(created_at__year=yr).count(),
+            })
+    else:  # monthly (default)
+        trend_data = []
+        for i in range(11, -1, -1):
+            year  = today.year
+            month = today.month - i
+            while month <= 0:
+                month += 12
+                year  -= 1
+            count = Consultation.objects.filter(
+                created_at__year=year,
+                created_at__month=month,
+            ).count()
+            trend_data.append({
+                'label': date(year, month, 1).strftime('%b %Y'),
+                'count': count,
+            })
 
     top_diagnoses = (
         Prescription.objects
@@ -241,34 +257,61 @@ def summary_report(request):
         .order_by('-count')[:5]
     )
 
-    thirty_days_ago = today - timedelta(days=30)
-    recent_count    = Consultation.objects.filter(
-        created_at__date__gte=thirty_days_ago
-    ).count()
-    avg_per_day = round(recent_count / 30, 1)
+    thirty_days_ago  = today - timedelta(days=30)
+    recent_count     = Consultation.objects.filter(created_at__date__gte=thirty_days_ago).count()
+    avg_per_day      = round(recent_count / 30, 1)
 
-    total_completed = Consultation.objects.filter(
-        status=Consultation.Status.COMPLETED
-    ).count()
-    total_cancelled = Consultation.objects.filter(
-        status=Consultation.Status.CANCELLED
-    ).count()
+    total_completed  = Consultation.objects.filter(status=Consultation.Status.COMPLETED).count()
+    total_cancelled  = Consultation.objects.filter(status=Consultation.Status.CANCELLED).count()
+    total_all        = Consultation.objects.count()
+
+    # Completion & cancellation rates
+    completion_rate  = round(total_completed / total_all * 100, 1) if total_all else 0
+    cancellation_rate = round(total_cancelled / total_all * 100, 1) if total_all else 0
+
+    # Top medicines dispensed
+    top_medicines = (
+        StockMovement.objects
+        .filter(movement_type=StockMovement.MovementType.OUT)
+        .values('medicine__name')
+        .annotate(total=Sum('quantity'))
+        .order_by('-total')[:5]
+    )
+
+    # Cases by sex (from patients with consultations)
+    cases_by_sex = (
+        Consultation.objects
+        .values('patient__sex')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    # Low stock medicines
+    low_stock = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
 
     return render(request, 'reports/summary_report.html', {
-        'monthly_data':      monthly_data,
-        'top_diagnoses':     top_diagnoses,
-        'top_per_college':   top_per_college,
-        'frequent_patients': frequent_patients,
-        'avg_per_day':       avg_per_day,
-        'total_completed':   total_completed,
-        'total_cancelled':   total_cancelled,
-        'today':             today,
+        'trend_data':         trend_data,
+        'period':             period,
+        # Keep legacy key for template
+        'monthly_data':       trend_data,
+        'top_diagnoses':      top_diagnoses,
+        'top_per_college':    top_per_college,
+        'frequent_patients':  frequent_patients,
+        'avg_per_day':        avg_per_day,
+        'total_completed':    total_completed,
+        'total_cancelled':    total_cancelled,
+        'total_all':          total_all,
+        'completion_rate':    completion_rate,
+        'cancellation_rate':  cancellation_rate,
+        'top_medicines':      top_medicines,
+        'cases_by_sex':       cases_by_sex,
+        'low_stock':          low_stock,
+        'today':              today,
     })
 
 
-# ─── MODULE 4: CUSTOM REPORT BUILDER ─────────────────────────────────────────
+# ─── CUSTOM REPORT BUILDER ────────────────────────────────────────────────────
 
-# Period choices exposed to the template
 PERIOD_CHOICES = [
     ('daily',   'Daily'),
     ('weekly',  'Weekly'),
@@ -277,18 +320,22 @@ PERIOD_CHOICES = [
 ]
 
 ALL_METRICS = [
-    ('total_consultations',  'Total Consultations'),
-    ('total_patients',       'Total Unique Patients'),
-    ('completion_rate',      'Completion Rate'),
-    ('cancellation_rate',    'Cancellation Rate'),
-    ('avg_per_day',          'Average Consultations / Day'),
-    ('top_diagnoses',        'Top Diagnoses'),
-    ('top_medicines',        'Most Prescribed Medicines'),
-    ('cases_per_college',    'Cases per College'),
-    ('cases_by_sex',         'Cases by Sex'),
-    ('cases_by_patient_type','Cases by Patient Type'),
-    ('trend',                'Trend Over Time'),
-    ('low_stock',            'Low Stock Medicines'),
+    ('total_consultations',   'Total Consultations'),
+    ('total_patients',        'Total Unique Patients'),
+    ('completion_rate',       'Completion Rate (%)'),
+    ('cancellation_rate',     'Cancellation Rate (%)'),
+    ('avg_per_day',           'Average Consultations / Day'),
+    ('top_diagnoses',         'Top Diagnoses'),
+    ('top_medicines',         'Most Prescribed Medicines'),
+    ('cases_per_college',     'Cases per College'),
+    ('cases_by_sex',          'Cases by Sex'),
+    ('cases_by_patient_type', 'Cases by Patient Type'),
+    ('urgency_breakdown',     'Urgency Breakdown (Triage)'),
+    ('medicine_dispensed',    'Medicine Dispensing Summary'),
+    ('trend',                 'Trend Over Time'),
+    ('low_stock',             'Low Stock Medicines'),
+    ('new_patients',          'New Patients in Period'),
+    ('repeat_patients',       'Repeat vs. New Patient Ratio'),
 ]
 
 
@@ -404,7 +451,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         results['avg_per_day'] = round(total_count / days, 1)
 
     if 'top_diagnoses' in metrics:
-        results['top_diagnoses'] = (
+        results['top_diagnoses'] = list(
             Prescription.objects
             .filter(consultation__in=completed_qs)
             .values('diagnosis')
@@ -413,7 +460,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         )
 
     if 'top_medicines' in metrics:
-        results['top_medicines'] = (
+        results['top_medicines'] = list(
             PrescriptionItem.objects
             .filter(prescription__consultation__in=completed_qs)
             .exclude(medicine_name='')
@@ -423,7 +470,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         )
 
     if 'cases_per_college' in metrics:
-        results['cases_per_college'] = (
+        results['cases_per_college'] = list(
             base_qs
             .filter(patient__college__isnull=False)
             .values('patient__college__abbreviation', 'patient__college__name')
@@ -432,7 +479,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         )
 
     if 'cases_by_sex' in metrics:
-        results['cases_by_sex'] = (
+        results['cases_by_sex'] = list(
             base_qs
             .values('patient__sex')
             .annotate(count=Count('id'))
@@ -448,11 +495,65 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
                                           patient__position__gt='').count(),
         }
 
+    if 'urgency_breakdown' in metrics:
+        from consultations.models import Triage
+        results['urgency_breakdown'] = list(
+            Triage.objects
+            .filter(consultation__in=base_qs)
+            .values('urgency')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+    if 'medicine_dispensed' in metrics:
+        # Aggregate quantity dispensed from StockMovement within date range
+        results['medicine_dispensed'] = list(
+            StockMovement.objects
+            .filter(
+                movement_type=StockMovement.MovementType.OUT,
+                created_at__date__gte=date_from,
+                created_at__date__lte=date_to,
+            )
+            .values('medicine__name', 'medicine__unit')
+            .annotate(total_dispensed=Sum('quantity'))
+            .order_by('-total_dispensed')[:15]
+        )
+
+    if 'new_patients' in metrics:
+        # Patients whose first-ever consultation is in this period
+        results['new_patients'] = (
+            Patient.objects
+            .filter(
+                has_logged_in=True,
+                is_active=True,
+                created_at__date__gte=date_from,
+                created_at__date__lte=date_to,
+            )
+            .count()
+        )
+
+    if 'repeat_patients' in metrics:
+        # Patients with more than one consultation in the period
+        patient_counts = (
+            base_qs
+            .values('patient')
+            .annotate(count=Count('id'))
+        )
+        repeat_count = sum(1 for p in patient_counts if p['count'] > 1)
+        new_count    = sum(1 for p in patient_counts if p['count'] == 1)
+        total_unique = repeat_count + new_count
+        results['repeat_patients'] = {
+            'repeat': repeat_count,
+            'new':    new_count,
+            'total':  total_unique,
+            'repeat_pct': round(repeat_count / total_unique * 100, 1) if total_unique else 0,
+        }
+
     if 'trend' in metrics:
         results['trend'] = _build_trend(base_qs, date_from, date_to, period)
 
     if 'low_stock' in metrics:
-        results['low_stock'] = (
+        results['low_stock'] = list(
             Medicine.objects
             .filter(quantity__lte=F('low_stock_threshold'))
             .order_by('quantity')
@@ -461,14 +562,14 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
 
     # Grouped summary
     if grouping == 'college':
-        results['grouped'] = (
+        results['grouped'] = list(
             base_qs
             .values('patient__college__abbreviation')
             .annotate(count=Count('id'))
             .order_by('-count')
         )
     elif grouping == 'diagnosis':
-        results['grouped'] = (
+        results['grouped'] = list(
             completed_qs
             .values('prescription__diagnosis')
             .annotate(count=Count('id'))
@@ -479,7 +580,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
 
 
 def _build_trend(base_qs, date_from, date_to, period):
-    """Build time-series data using the selected period granularity."""
+    """Build accurate time-series data for the selected period granularity."""
     trend = []
     delta = (date_to - date_from).days + 1
 
@@ -505,7 +606,6 @@ def _build_trend(base_qs, date_from, date_to, period):
             current = week_end + timedelta(days=1)
 
     elif period == 'monthly':
-        # Collect unique year-month combos in range
         seen = set()
         for i in range(delta):
             d = date_from + timedelta(days=i)
@@ -545,17 +645,26 @@ def _report_csv(results, date_from, date_to):
     writer.writerow(['Clinic Report', f'{date_from} to {date_to}'])
     writer.writerow([])
 
-    if 'total_consultations' in results:
-        writer.writerow(['Total Consultations', results['total_consultations']])
-    if 'total_patients' in results:
-        writer.writerow(['Total Unique Patients', results['total_patients']])
-    if 'completion_rate' in results:
-        writer.writerow(['Completion Rate (%)', results['completion_rate']])
-    if 'cancellation_rate' in results:
-        writer.writerow(['Cancellation Rate (%)', results['cancellation_rate']])
-    if 'avg_per_day' in results:
-        writer.writerow(['Avg Consultations / Day', results['avg_per_day']])
+    kv_map = [
+        ('total_consultations',  'Total Consultations'),
+        ('total_patients',       'Total Unique Patients'),
+        ('completion_rate',      'Completion Rate (%)'),
+        ('cancellation_rate',    'Cancellation Rate (%)'),
+        ('avg_per_day',          'Avg Consultations / Day'),
+        ('new_patients',         'New Patients in Period'),
+    ]
+    for key, label in kv_map:
+        if key in results:
+            writer.writerow([label, results[key]])
     writer.writerow([])
+
+    if 'repeat_patients' in results:
+        rp = results['repeat_patients']
+        writer.writerow(['Patient Frequency', ''])
+        writer.writerow(['New Patients', rp['new']])
+        writer.writerow(['Repeat Patients', rp['repeat']])
+        writer.writerow(['Repeat %', f"{rp['repeat_pct']}%"])
+        writer.writerow([])
 
     if 'top_diagnoses' in results:
         writer.writerow(['Top Diagnoses', ''])
@@ -565,10 +674,24 @@ def _report_csv(results, date_from, date_to):
         writer.writerow([])
 
     if 'top_medicines' in results:
-        writer.writerow(['Top Medicines', ''])
+        writer.writerow(['Top Medicines Prescribed', ''])
         writer.writerow(['Medicine', 'Count'])
         for row in results['top_medicines']:
             writer.writerow([row['medicine_name'], row['count']])
+        writer.writerow([])
+
+    if 'medicine_dispensed' in results:
+        writer.writerow(['Medicine Dispensing Summary', ''])
+        writer.writerow(['Medicine', 'Unit', 'Total Dispensed'])
+        for row in results['medicine_dispensed']:
+            writer.writerow([row['medicine__name'], row['medicine__unit'], row['total_dispensed']])
+        writer.writerow([])
+
+    if 'urgency_breakdown' in results:
+        writer.writerow(['Urgency Breakdown (Triage)', ''])
+        writer.writerow(['Urgency', 'Count'])
+        for row in results['urgency_breakdown']:
+            writer.writerow([row['urgency'].capitalize(), row['count']])
         writer.writerow([])
 
     if 'cases_per_college' in results:
@@ -631,38 +754,53 @@ def _report_excel(results, date_from, date_to):
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal='center')
 
-    current_row = 1
-    ws.cell(row=current_row, column=1,
-            value=f'Clinic Report: {date_from} to {date_to}').font = Font(bold=True, size=14)
-    current_row += 2
+    current_row = [1]  # mutable for nested closure
+
+    def next_row():
+        r = current_row[0]
+        current_row[0] += 1
+        return r
+
+    def set_cell(col, value):
+        ws.cell(row=current_row[0], column=col, value=value)
+
+    r = next_row()
+    ws.cell(row=r, column=1, value=f'Clinic Report: {date_from} to {date_to}').font = Font(bold=True, size=14)
+    next_row()  # blank
 
     def add_kv(label, value):
-        nonlocal current_row
-        ws.cell(row=current_row, column=1, value=label)
-        ws.cell(row=current_row, column=2, value=value)
-        current_row += 1
+        r = next_row()
+        ws.cell(row=r, column=1, value=label)
+        ws.cell(row=r, column=2, value=value)
 
-    if 'total_consultations' in results:
-        add_kv('Total Consultations', results['total_consultations'])
-    if 'total_patients' in results:
-        add_kv('Total Unique Patients', results['total_patients'])
-    if 'completion_rate' in results:
-        add_kv('Completion Rate (%)', results['completion_rate'])
-    if 'cancellation_rate' in results:
-        add_kv('Cancellation Rate (%)', results['cancellation_rate'])
-    if 'avg_per_day' in results:
-        add_kv('Avg Consultations / Day', results['avg_per_day'])
-    current_row += 1
+    kv_map = [
+        ('total_consultations',  'Total Consultations'),
+        ('total_patients',       'Total Unique Patients'),
+        ('completion_rate',      'Completion Rate (%)'),
+        ('cancellation_rate',    'Cancellation Rate (%)'),
+        ('avg_per_day',          'Avg Consultations / Day'),
+        ('new_patients',         'New Patients in Period'),
+    ]
+    for key, label in kv_map:
+        if key in results:
+            add_kv(label, results[key])
+
+    if 'repeat_patients' in results:
+        rp = results['repeat_patients']
+        add_kv('New Patients', rp['new'])
+        add_kv('Repeat Patients', rp['repeat'])
+        add_kv('Repeat %', f"{rp['repeat_pct']}%")
+
+    next_row()  # blank
 
     def add_table(headers, rows_data):
-        nonlocal current_row
-        write_header(ws, current_row, headers)
-        current_row += 1
+        r = next_row()
+        write_header(ws, r, headers)
         for row in rows_data:
+            r = next_row()
             for col_idx, val in enumerate(row, start=1):
-                ws.cell(row=current_row, column=col_idx, value=val)
-            current_row += 1
-        current_row += 1
+                ws.cell(row=r, column=col_idx, value=val)
+        next_row()  # blank after table
 
     if 'top_diagnoses' in results and results['top_diagnoses']:
         add_table(['Diagnosis', 'Count'],
@@ -671,6 +809,15 @@ def _report_excel(results, date_from, date_to):
     if 'top_medicines' in results and results['top_medicines']:
         add_table(['Medicine', 'Count'],
                   [[r['medicine_name'], r['count']] for r in results['top_medicines']])
+
+    if 'medicine_dispensed' in results and results['medicine_dispensed']:
+        add_table(['Medicine', 'Unit', 'Total Dispensed'],
+                  [[r['medicine__name'], r['medicine__unit'], r['total_dispensed']]
+                   for r in results['medicine_dispensed']])
+
+    if 'urgency_breakdown' in results and results['urgency_breakdown']:
+        add_table(['Urgency', 'Count'],
+                  [[r['urgency'].capitalize(), r['count']] for r in results['urgency_breakdown']])
 
     if 'cases_per_college' in results and results['cases_per_college']:
         add_table(['College', 'Cases'],
@@ -729,11 +876,10 @@ def _report_pdf(results, date_from, date_to):
                             rightMargin=2*cm, leftMargin=2*cm,
                             topMargin=2*cm, bottomMargin=2*cm)
     styles = getSampleStyleSheet()
-    h1    = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=16, spaceAfter=6)
-    h2    = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12,
-                           spaceAfter=4, spaceBefore=12)
-    small = ParagraphStyle('Small', parent=styles['Normal'], fontSize=9,
-                           textColor=colors.grey)
+    h1      = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=16, spaceAfter=6)
+    h2      = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12,
+                             spaceAfter=4, spaceBefore=12)
+    small   = ParagraphStyle('Small', parent=styles['Normal'], fontSize=9, textColor=colors.grey)
     primary = colors.HexColor('#1D9E75')
 
     story = []
@@ -747,34 +893,49 @@ def _report_pdf(results, date_from, date_to):
         data = [headers] + rows
         t = Table(data, hAlign='LEFT')
         t.setStyle(TableStyle([
-            ('BACKGROUND',    (0, 0), (-1, 0), primary),
-            ('TEXTCOLOR',     (0, 0), (-1, 0), colors.white),
-            ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',      (0, 0), (-1, -1), 9),
-            ('ROWBACKGROUNDS',(0, 1), (-1, -1),
-             [colors.white, colors.HexColor('#f5f5f3')]),
-            ('GRID',          (0, 0), (-1, -1), 0.3, colors.lightgrey),
-            ('LEFTPADDING',   (0, 0), (-1, -1), 8),
-            ('RIGHTPADDING',  (0, 0), (-1, -1), 8),
-            ('TOPPADDING',    (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('BACKGROUND',     (0, 0), (-1, 0), primary),
+            ('TEXTCOLOR',      (0, 0), (-1, 0), colors.white),
+            ('FONTNAME',       (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE',       (0, 0), (-1, -1), 9),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f5f3')]),
+            ('GRID',           (0, 0), (-1, -1), 0.3, colors.lightgrey),
+            ('LEFTPADDING',    (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING',   (0, 0), (-1, -1), 8),
+            ('TOPPADDING',     (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING',  (0, 0), (-1, -1), 5),
         ]))
         story.append(t)
 
-    # Summary KV table
+    # Summary KV section
     summary_rows = []
-    if 'total_consultations' in results:
-        summary_rows.append(['Total Consultations', str(results['total_consultations'])])
-    if 'total_patients' in results:
-        summary_rows.append(['Total Unique Patients', str(results['total_patients'])])
-    if 'completion_rate' in results:
-        summary_rows.append(['Completion Rate', f"{results['completion_rate']}%"])
-    if 'cancellation_rate' in results:
-        summary_rows.append(['Cancellation Rate', f"{results['cancellation_rate']}%"])
-    if 'avg_per_day' in results:
-        summary_rows.append(['Avg Consultations / Day', str(results['avg_per_day'])])
+    kv_map = [
+        ('total_consultations',  'Total Consultations'),
+        ('total_patients',       'Total Unique Patients'),
+        ('completion_rate',      'Completion Rate (%)'),
+        ('cancellation_rate',    'Cancellation Rate (%)'),
+        ('avg_per_day',          'Avg Consultations / Day'),
+        ('new_patients',         'New Patients in Period'),
+    ]
+    for key, label in kv_map:
+        if key in results:
+            val = results[key]
+            if key in ('completion_rate', 'cancellation_rate'):
+                val = f'{val}%'
+            summary_rows.append([label, str(val)])
+
+    if 'repeat_patients' in results:
+        rp = results['repeat_patients']
+        summary_rows.append(['New Patients (single visit)', str(rp['new'])])
+        summary_rows.append(['Repeat Patients', str(rp['repeat'])])
+        summary_rows.append(['Repeat Patient %', f"{rp['repeat_pct']}%"])
+
     if summary_rows:
         table_section('Summary', ['Metric', 'Value'], summary_rows)
+
+    if 'urgency_breakdown' in results and results['urgency_breakdown']:
+        table_section('Urgency Breakdown (Triage)', ['Urgency', 'Count'],
+                      [[r['urgency'].capitalize(), str(r['count'])]
+                       for r in results['urgency_breakdown']])
 
     if 'top_diagnoses' in results and results['top_diagnoses']:
         table_section('Top Diagnoses', ['Diagnosis', 'Count'],
@@ -785,6 +946,11 @@ def _report_pdf(results, date_from, date_to):
         table_section('Most Prescribed Medicines', ['Medicine', 'Count'],
                       [[r['medicine_name'][:60], str(r['count'])]
                        for r in results['top_medicines']])
+
+    if 'medicine_dispensed' in results and results['medicine_dispensed']:
+        table_section('Medicine Dispensing Summary', ['Medicine', 'Unit', 'Total Dispensed'],
+                      [[r['medicine__name'][:50], r['medicine__unit'], str(r['total_dispensed'])]
+                       for r in results['medicine_dispensed']])
 
     if 'cases_per_college' in results and results['cases_per_college']:
         table_section('Cases per College', ['College', 'Cases'],

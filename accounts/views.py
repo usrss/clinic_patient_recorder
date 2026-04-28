@@ -8,6 +8,7 @@ from .forms import LoginForm, UserCreateForm, UserEditForm, PatientBulkUploadFor
 from .decorators import admin_required
 from .utils import import_patients_from_excel, PatientImportError
 
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
@@ -17,10 +18,16 @@ def login_view(request):
     if request.method == 'POST':
         if form.is_valid():
             user = form.get_user()
-
             login(request, user)
 
-            # 🔥 ONLY RELIABLE FIRST LOGIN LOGIC
+            # ── Patient: mark first-ever login ──────────────────────────────
+            if user.role == User.Role.PATIENT:
+                patient = user.get_patient_record()
+                if patient is not None and not patient.has_logged_in:
+                    patient.has_logged_in = True
+                    patient.save(update_fields=['has_logged_in'])
+
+            # ── Force password change (first login) ─────────────────────────
             if user.force_password_change:
                 return redirect('accounts:change_password')
 
@@ -63,15 +70,13 @@ def dashboard(request):
             logout(request)
             return redirect('accounts:login')
 
-        # Redirect to profile setup if birthday not set
-        try:
-            birthday_set = patient.profile.birthday is not None
-        except Exception:
-            birthday_set = False
-
-        if not birthday_set:
-            messages.info(request, 'Please complete your profile by setting your birthday.')
-            return redirect('patients:patient_profile_setup', pk=patient.pk)
+        # Gate 1: Force profile setup (birthday + contact info)
+        if not patient.is_profile_complete:
+            messages.info(
+                request,
+                'Please complete your profile before continuing. All fields marked * are required.'
+            )
+            return redirect('patients:patient_full_profile_setup', pk=patient.pk)
 
         return render(request, 'patients/patient_dashboard.html', {
             'patient': patient
@@ -120,6 +125,13 @@ def change_password(request):
 
         update_session_auth_hash(request, user)
 
+        # After password change, patient still needs profile setup if incomplete
+        if user.role == User.Role.PATIENT:
+            patient = user.get_patient_record()
+            if patient and not patient.is_profile_complete:
+                return redirect('patients:patient_full_profile_setup', pk=patient.pk)
+
+        messages.success(request, 'Password changed successfully.')
         return redirect('accounts:dashboard')
 
     return render(request, 'accounts/change_password.html', {

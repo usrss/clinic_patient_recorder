@@ -34,7 +34,7 @@ class Patient(models.Model):
     last_name = models.CharField(max_length=150)
     sex = models.CharField(max_length=1, choices=Sex.choices)
 
-    # ── Contact information (Module 1) ──────────────────────────────────────
+    # ── Contact information ──────────────────────────────────────────────────
     phone = models.CharField(
         max_length=30,
         blank=True,
@@ -71,6 +71,14 @@ class Patient(models.Model):
     position = models.CharField(max_length=150, blank=True)
 
     is_active = models.BooleanField(default=True)
+
+    # ── Login tracking ───────────────────────────────────────────────────────
+    has_logged_in = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='True once the patient has successfully logged into the system at least once.',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -93,6 +101,14 @@ class Patient(models.Model):
             - ((today.month, today.day) < (birthday.month, birthday.day))
         )
 
+    @property
+    def is_profile_complete(self):
+        """Check if the patient has completed mandatory profile setup."""
+        try:
+            return self.profile.profile_completed
+        except PatientProfile.DoesNotExist:
+            return False
+
     def __str__(self):
         return f'{self.patient_id} — {self.get_full_name()}'
 
@@ -103,6 +119,7 @@ class Patient(models.Model):
         indexes = [
             models.Index(fields=['patient_id']),
             models.Index(fields=['last_name', 'first_name']),
+            models.Index(fields=['has_logged_in']),
         ]
 
 
@@ -110,6 +127,7 @@ class PatientProfile(models.Model):
     """
     User-managed profile data for a patient.
     Birthday is entered by the patient (not imported) and is used to compute age.
+    profile_completed is set True once the patient finishes mandatory setup.
     """
     patient = models.OneToOneField(
         Patient,
@@ -118,6 +136,32 @@ class PatientProfile(models.Model):
         related_name='profile',
     )
     birthday = models.DateField(null=True, blank=True)
+    # Additional self-reported fields
+    address = models.CharField(max_length=300, blank=True, help_text='Home address')
+    blood_type = models.CharField(
+        max_length=10,
+        blank=True,
+        choices=[
+            ('A+', 'A+'), ('A-', 'A-'),
+            ('B+', 'B+'), ('B-', 'B-'),
+            ('AB+', 'AB+'), ('AB-', 'AB-'),
+            ('O+', 'O+'), ('O-', 'O-'),
+            ('Unknown', 'Unknown'),
+        ],
+        help_text='Blood type'
+    )
+    known_allergies = models.TextField(
+        blank=True,
+        help_text='List any known allergies (medications, food, etc.)'
+    )
+    existing_conditions = models.TextField(
+        blank=True,
+        help_text='Existing medical conditions (e.g. diabetes, hypertension)'
+    )
+    profile_completed = models.BooleanField(
+        default=False,
+        help_text='True once the patient has completed the mandatory profile setup.',
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
