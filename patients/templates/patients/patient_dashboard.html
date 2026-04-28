@@ -1,0 +1,121 @@
+{% extends 'core/base.html' %}
+{% block title %}My Dashboard — Clinic Recorder{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:28px;">
+  <h1 class="page-title" style="margin-bottom:4px;">Patient Portal</h1>
+  <p style="color:var(--text-muted);font-size:14px;margin:0;">
+    Welcome, {{ patient.get_full_name }}
+  </p>
+</div>
+
+<!-- Patient Info Card -->
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">Your Information</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Patient ID</div>
+      <div style="font-weight:600;">{{ patient.patient_id }}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Sex</div>
+      <div>{{ patient.get_sex_display }}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Age</div>
+      <div>{{ patient.age|default:"—" }}{% if patient.age %} yrs{% endif %}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">College</div>
+      <div>
+        {% if patient.college %}{{ patient.college.abbreviation }}
+        {% elif patient.department %}{{ patient.department }}
+        {% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
+  <a href="{% url 'consultations:patient_submit' %}" class="card"
+     style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid var(--primary);">
+    <div style="font-size:22px;margin-bottom:8px;">📋</div>
+    <div style="font-weight:600;font-size:14px;">Request Consultation</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Submit a new consultation request to the clinic</div>
+  </a>
+
+  <a href="{% url 'consultations:patient_home' %}" class="card"
+     style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #8b5cf6;">
+    <div style="font-size:22px;margin-bottom:8px;">🗂</div>
+    <div style="font-weight:600;font-size:14px;">My Consultations</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">View your consultation history and status</div>
+  </a>
+
+  <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="card"
+     style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #f97316;">
+    <div style="font-size:22px;margin-bottom:8px;">👤</div>
+    <div style="font-weight:600;font-size:14px;">My Profile</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your birthday and contact information</div>
+  </a>
+
+  <a href="{% url 'accounts:change_password' %}" class="card"
+     style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #6b7280;">
+    <div style="font-size:22px;margin-bottom:8px;">🔑</div>
+    <div style="font-weight:600;font-size:14px;">Change Password</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your login password</div>
+  </a>
+</div>
+
+<!-- Recent Consultations -->
+{% with recent=patient.consultations.all|slice:":3" %}
+{% if recent %}
+<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
+  Recent Consultations
+</h2>
+<div class="card" style="padding:0;margin-bottom:16px;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Status</th>
+          <th>Symptoms</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in recent %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
+          <td>
+            {% if c.status == 'pending' %}
+              <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pending</span>
+            {% elif c.status == 'queued' %}
+              <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🗂 Queued</span>
+            {% elif c.status == 'scheduled' %}
+              <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📅 Scheduled</span>
+            {% elif c.status == 'triaged' %}
+              <span style="background:#ffedd5;color:#9a3412;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🩺 Triaged</span>
+            {% elif c.status == 'completed' %}
+              <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✅ Completed</span>
+            {% elif c.status == 'cancelled' %}
+              <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✕ Cancelled</span>
+            {% endif %}
+          </td>
+          <td style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ c.symptoms|truncatechars:60 }}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div style="text-align:right;">
+  <a href="{% url 'consultations:patient_home' %}" style="font-size:13px;color:var(--primary);">View all consultations →</a>
+</div>
+{% endif %}
+{% endwith %}
+{% endblock %}

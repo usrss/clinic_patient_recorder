@@ -15,11 +15,16 @@
   <a href="{% url 'accounts:dashboard' %}" class="nav-brand">Clinic Recorder</a>
   <div class="nav-links">
 
+    {% if user.role == 'patient' %}
+      <a href="{% url 'consultations:patient_home' %}" class="nav-link">My Consultations</a>
+      <a href="{% url 'consultations:patient_submit' %}" class="nav-link">+ New Request</a>
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
+    {% endif %}
+
     {% if user.role == 'frontdesk' %}
       <a href="{% url 'consultations:queue' %}" class="nav-link">Queue</a>
       <a href="{% url 'consultations:consultation_create' %}" class="nav-link">+ New Consultation</a>
       <a href="{% url 'patients:patient_list' %}" class="nav-link">Patients</a>
-
       <a href="{% url 'accounts:change_password' %}" class="nav-link">Change Password</a>
     {% endif %}
 

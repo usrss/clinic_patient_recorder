@@ -21,7 +21,7 @@ from inventory.utils import deduct_medicine_stock
 
 @login_required
 @patient_required
-def student_home(request):
+def patient_home(request):
     """Patient's own consultation history."""
     patient = request.user.get_patient_record()
     if patient is None:
@@ -32,7 +32,7 @@ def student_home(request):
         patient=patient
     ).order_by('-created_at')
 
-    return render(request, 'consultations/student_home.html', {
+    return render(request, 'consultations/patient_home.html', {
         'consultations': consultations,
         'patient': patient,
     })
@@ -40,7 +40,7 @@ def student_home(request):
 
 @login_required
 @patient_required
-def student_submit(request):
+def patient_submit(request):
     """Patient submits a new consultation request."""
     patient = request.user.get_patient_record()
     if patient is None:
@@ -54,14 +54,14 @@ def student_submit(request):
         consultation.status = Consultation.Status.PENDING
         consultation.save()
         messages.success(request, 'Your consultation request has been submitted.')
-        return redirect('consultations:student_home')
+        return redirect('consultations:patient_home')
 
-    return render(request, 'consultations/student_submit.html', {'form': form})
+    return render(request, 'consultations/patient_submit.html', {'form': form})
 
 
 @login_required
 @patient_required
-def student_detail(request, pk):
+def patient_detail(request, pk):
     """Patient views one of their own consultations."""
     patient = request.user.get_patient_record()
     if patient is None:
@@ -69,17 +69,17 @@ def student_detail(request, pk):
         return redirect('accounts:dashboard')
 
     consultation = get_object_or_404(Consultation, pk=pk, patient=patient)
-    return render(request, 'consultations/student_detail.html', {
+    return render(request, 'consultations/patient_detail.html', {
         'consultation': consultation,
     })
 
 
 @login_required
 @patient_required
-def student_cancel(request, pk):
+def patient_cancel(request, pk):
     """Patient cancels a pending consultation."""
     if request.method != 'POST':
-        return redirect('consultations:student_home')
+        return redirect('consultations:patient_home')
 
     patient = request.user.get_patient_record()
     if patient is None:
@@ -93,7 +93,7 @@ def student_cancel(request, pk):
     consultation.status = Consultation.Status.CANCELLED
     consultation.save(update_fields=['status'])
     messages.success(request, f'Consultation #{pk} has been cancelled.')
-    return redirect('consultations:student_home')
+    return redirect('consultations:patient_home')
 
 
 # ─── FRONT DESK VIEWS ─────────────────────────────────────────────────────────
@@ -327,8 +327,8 @@ def prescribe(request, pk):
                     prescription.save()
 
                     for form in item_rows:
-                        medicine    = form.cleaned_data['medicine']
-                        quantity    = form.cleaned_data['quantity']
+                        medicine     = form.cleaned_data['medicine']
+                        quantity     = form.cleaned_data['quantity']
                         instructions = form.cleaned_data['instructions']
 
                         PrescriptionItem.objects.create(
