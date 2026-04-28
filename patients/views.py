@@ -7,7 +7,7 @@ from accounts.decorators import clinical_staff_required
 from accounts.models import User
 from consultations.models import Consultation
 from .models import Patient, PatientProfile
-from .forms import PatientProfileSetupForm, PatientSearchForm
+from .forms import PatientProfileSetupForm, PatientSearchForm, PatientContactForm
 
 
 @login_required
@@ -66,7 +66,6 @@ def patient_profile_setup(request, pk):
             messages.error(request, 'You do not have permission to access that page.')
             return redirect('accounts:dashboard')
     elif not user.is_clinical_staff:
-        # Any other non-staff role is rejected
         messages.error(request, 'You do not have permission to access that page.')
         return redirect('accounts:dashboard')
 
@@ -77,12 +76,39 @@ def patient_profile_setup(request, pk):
     if request.method == 'POST' and form.is_valid():
         form.save()
         messages.success(request, f'Profile updated for {patient.get_full_name()}.')
-        # Patients go back to dashboard; staff go to patient detail
         if user.role == User.Role.PATIENT:
             return redirect('accounts:dashboard')
         return redirect('patients:patient_detail', pk=pk)
 
     return render(request, 'patients/patient_profile_setup.html', {
+        'patient': patient,
+        'form': form,
+    })
+
+
+@login_required
+def patient_contact_edit(request, pk):
+    """
+    Edit patient contact information: phone (required), email (optional),
+    emergency contact name and phone (optional, collapsed by default).
+    Available to admin and frontdesk staff only.
+    """
+    user = request.user
+
+    # Only admin and frontdesk can edit contact info
+    if user.role not in (User.Role.ADMIN, User.Role.FRONTDESK):
+        messages.error(request, 'You do not have permission to edit contact information.')
+        return redirect('accounts:dashboard')
+
+    patient = get_object_or_404(Patient, pk=pk)
+    form = PatientContactForm(request.POST or None, instance=patient)
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Contact information updated for {patient.get_full_name()}.')
+        return redirect('patients:patient_detail', pk=pk)
+
+    return render(request, 'patients/patient_contact_edit.html', {
         'patient': patient,
         'form': form,
     })

@@ -32,3 +32,67 @@ class PatientSearchForm(forms.Form):
             'autofocus': True,
         })
     )
+
+
+class PatientContactForm(forms.ModelForm):
+    """
+    Form for editing patient contact and emergency contact information.
+    Phone is required. Email and emergency contact fields are optional.
+    """
+
+    class Meta:
+        model = Patient
+        fields = [
+            'phone',
+            'email',
+            'emergency_contact_name',
+            'emergency_contact_phone',
+        ]
+        widgets = {
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. 09171234567',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Optional email address',
+            }),
+            'emergency_contact_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Emergency contact full name',
+            }),
+            'emergency_contact_phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. 09181234567',
+            }),
+        }
+        labels = {
+            'phone': 'Phone Number *',
+            'email': 'Email Address (optional)',
+            'emergency_contact_name': 'Emergency Contact Name',
+            'emergency_contact_phone': 'Emergency Contact Phone',
+        }
+        help_texts = {
+            'phone': 'Format: 09XXXXXXXXX or +63XXXXXXXXXX',
+            'email': 'If provided, must be a valid email address.',
+            'emergency_contact_name': '',
+            'emergency_contact_phone': '',
+        }
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '').strip()
+        if not phone:
+            raise forms.ValidationError('Phone number is required.')
+        return phone
+
+    def clean_emergency_contact_phone(self):
+        phone = self.cleaned_data.get('emergency_contact_phone', '').strip()
+        # Only validate if provided
+        if phone:
+            import re
+            cleaned = re.sub(r'[\s\-\(\)\+]', '', phone)
+            if not re.match(r'^\d{7,15}$', cleaned):
+                raise forms.ValidationError(
+                    'Enter a valid phone number (7–15 digits).'
+                )
+        return phone

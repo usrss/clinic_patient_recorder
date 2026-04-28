@@ -1,5 +1,16 @@
+import re
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+
+def validate_phone(value):
+    """Accept Philippine mobile numbers and common formats."""
+    cleaned = re.sub(r'[\s\-\(\)\+]', '', value)
+    if not re.match(r'^\d{7,15}$', cleaned):
+        raise ValidationError(
+            'Enter a valid phone number (7–15 digits, spaces/dashes allowed).'
+        )
 
 
 class Patient(models.Model):
@@ -22,6 +33,29 @@ class Patient(models.Model):
     middle_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=150)
     sex = models.CharField(max_length=1, choices=Sex.choices)
+
+    # ── Contact information (Module 1) ──────────────────────────────────────
+    phone = models.CharField(
+        max_length=30,
+        blank=True,
+        validators=[validate_phone],
+        help_text='Primary contact number (e.g. 09171234567)',
+    )
+    email = models.EmailField(
+        blank=True,
+        help_text='Optional email address',
+    )
+    emergency_contact_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Name of emergency contact',
+    )
+    emergency_contact_phone = models.CharField(
+        max_length=30,
+        blank=True,
+        validators=[validate_phone],
+        help_text='Phone number of emergency contact',
+    )
 
     # Only applicable for students
     college = models.ForeignKey(
@@ -84,7 +118,6 @@ class PatientProfile(models.Model):
         related_name='profile',
     )
     birthday = models.DateField(null=True, blank=True)
-    # PIN / passphrase the patient uses to access their own portal (optional future use)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

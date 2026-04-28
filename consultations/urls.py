@@ -28,6 +28,10 @@ urlpatterns = [
     path('doctor/', views.doctor_list, name='doctor_list'),
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
 
+    # ── Medical History (Module 3) ────────────────────────────────────
+    path('history/<int:patient_pk>/', views.patient_medical_history, name='medical_history'),
+    path('history/<int:patient_pk>/pdf/', views.patient_medical_history_pdf, name='medical_history_pdf'),
+
     # ── Clinical staff shared ─────────────────────────────────────────
     path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'),
 ]

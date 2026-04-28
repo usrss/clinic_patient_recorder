@@ -1,147 +1,173 @@
 {% extends 'core/base.html' %}
-{% block title %}Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block title %}{{ patient.get_full_name }} — Patients — Clinic Recorder{% endblock %}
 
 {% block content %}
-<div style="max-width:680px;">
+<div style="max-width:820px;">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:patient_home' %}" class="btn btn-secondary btn-sm">← My Consultations</a>
-    <h1 class="page-title" style="margin-bottom:0;">Consultation #{{ consultation.pk }}</h1>
-    <span style="
-      padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;
-      {% if consultation.status == 'completed' %}background:#d1fae5;color:#065f46;
-      {% elif consultation.status == 'triaged' %}background:#ffedd5;color:#9a3412;
-      {% elif consultation.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
-      {% elif consultation.status == 'pending' %}background:#fef3c7;color:#92400e;
-      {% else %}background:#f3f4f6;color:#374151;{% endif %}
-    ">{{ consultation.get_status_display }}</span>
+    <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">{{ patient.get_full_name }}</h1>
   </div>
 
-  <!-- Status Info Banner -->
-  {% if consultation.status == 'pending' %}
-  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#92400e;">
-    <strong>⏳ Awaiting review</strong> — Your request has been submitted and is waiting for the front desk to process it.
-  </div>
-  {% elif consultation.status == 'queued' %}
-  <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#1e40af;">
-    <strong>🗂 You are in the queue</strong>
-    {% if consultation.queue_number %} — Queue number: <strong>#{{ consultation.queue_number }}</strong>{% endif %}. Please come to the clinic.
-  </div>
-  {% elif consultation.status == 'scheduled' %}
-  <div style="background:#f0f9ff;border-left:4px solid #0284c7;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#0369a1;">
-    <strong>📅 Appointment scheduled</strong> — {{ consultation.scheduled_at|date:"F d, Y \a\t H:i" }}. Please arrive on time.
-  </div>
-  {% elif consultation.status == 'triaged' %}
-  <div style="background:#fff7ed;border-left:4px solid #f97316;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#9a3412;">
-    <strong>🩺 Triage complete</strong> — Your vitals have been recorded. Waiting for the doctor.
-  </div>
-  {% elif consultation.status == 'completed' %}
-  <div style="background:#f0fdf4;border-left:4px solid #22c55e;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#166534;">
-    <strong>✅ Consultation complete</strong> — See your prescription below.
-  </div>
-  {% endif %}
-
-  <!-- Your Submission -->
+  <!-- Patient Info Card -->
   <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Your Submission</h3>
-    <div style="display:grid;gap:12px;font-size:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0;">Patient Information</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% if user.role == 'doctor' or user.role == 'admin' %}
+          <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-secondary btn-sm">📋 Medical History</a>
+        {% endif %}
+        {% if user.role == 'admin' or user.role == 'frontdesk' %}
+          <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm">✏ Edit Profile</a>
+          <a href="{% url 'patients:patient_contact_edit' patient.pk %}" class="btn btn-secondary btn-sm">📞 Edit Contact</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Identity -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Symptoms</div>
-        <div>{{ consultation.symptoms }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Full Name</div>
+        <div style="font-weight:600;">{{ patient.get_full_name }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Severity (self-reported)</div>
-        <div>{{ consultation.severity_description }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Patient ID</div>
+        <div>{{ patient.patient_id }}</div>
       </div>
-      {% if consultation.medical_history %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Medical History</div>
-        <div>{{ consultation.medical_history }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Sex</div>
+        <div>{{ patient.get_sex_display }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Age</div>
+        <div>
+          {% if patient.age %}{{ patient.age }} years old
+          {% elif profile and profile.birthday is None %}
+            <span style="color:var(--text-muted);font-size:12px;">Birthday not set</span>
+          {% else %}—{% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Birthday</div>
+        <div>
+          {% if profile and profile.birthday %}{{ profile.birthday|date:"F d, Y" }}
+          {% else %}<span style="color:var(--text-muted);font-size:12px;">Not set</span>{% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">College</div>
+        <div>{% if patient.college %}{{ patient.college.abbreviation }} — {{ patient.college.name }}{% else %}—{% endif %}</div>
+      </div>
+      {% if patient.department %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Department</div>
+        <div>{{ patient.department }}</div>
       </div>
       {% endif %}
-      {% if consultation.additional_notes %}
+      {% if patient.position %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Additional Notes</div>
-        <div>{{ consultation.additional_notes }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Position</div>
+        <div>{{ patient.position }}</div>
       </div>
       {% endif %}
-      <div style="font-size:12px;color:var(--text-muted);">Submitted: {{ consultation.created_at|date:"F d, Y H:i" }}</div>
+    </div>
+
+    <!-- Contact Info -->
+    <div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Contact Information</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:14px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">📞 Phone</div>
+          <div>
+            {% if patient.phone %}
+              <a href="tel:{{ patient.phone }}" style="color:inherit;">{{ patient.phone }}</a>
+            {% else %}
+              <span style="color:var(--text-muted);font-size:12px;">Not set</span>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">✉ Email</div>
+          <div>
+            {% if patient.email %}
+              <a href="mailto:{{ patient.email }}" style="color:inherit;">{{ patient.email }}</a>
+            {% else %}
+              <span style="color:var(--text-muted);font-size:12px;">Not set</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if patient.emergency_contact_name or patient.emergency_contact_phone %}
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">🆘 Emergency Contact</div>
+          <div>
+            {% if patient.emergency_contact_name %}{{ patient.emergency_contact_name }}{% endif %}
+            {% if patient.emergency_contact_phone %}
+              <span style="color:var(--text-muted);">· {{ patient.emergency_contact_phone }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">🆘 Emergency Contact</div>
+          <div><span style="color:var(--text-muted);font-size:12px;">Not set</span></div>
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
-  <!-- Triage Results (visible to patient once triaged) -->
-  {% with t=consultation.triage %}
-  {% if t %}
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">🩺 Vitals Recorded</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
-      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
-        <div style="font-size:17px;font-weight:700;">{{ t.blood_pressure }}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Blood Pressure</div>
-      </div>
-      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
-        <div style="font-size:17px;font-weight:700;">{{ t.temperature }}°C</div>
-        <div style="font-size:11px;color:var(--text-muted);">Temperature</div>
-      </div>
-      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
-        <div style="font-size:17px;font-weight:700;">{{ t.pulse_rate }} bpm</div>
-        <div style="font-size:11px;color:var(--text-muted);">Pulse Rate</div>
-      </div>
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:10px;">
-      Recorded {{ t.triaged_at|date:"M d, Y H:i" }}
+  <!-- Consultation History -->
+  <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation History</h3>
+
+  {% if consultations %}
+  <div class="card" style="padding:0;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Status</th>
+            <th>Symptoms (summary)</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in consultations %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
+            <td>
+              {% if c.status == 'pending' %}
+                <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pending</span>
+              {% elif c.status == 'queued' %}
+                <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🗂 Queued</span>
+              {% elif c.status == 'scheduled' %}
+                <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📅 Scheduled</span>
+              {% elif c.status == 'triaged' %}
+                <span style="background:#ffedd5;color:#9a3412;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🩺 Triaged</span>
+              {% elif c.status == 'completed' %}
+                <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✅ Completed</span>
+              {% elif c.status == 'cancelled' %}
+                <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✕ Cancelled</span>
+              {% endif %}
+            </td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">
+              {{ c.symptoms|truncatechars:60 }}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
+            <td>
+              <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-  {% endif %}
-  {% endwith %}
-
-  <!-- Prescription (visible once completed) -->
-  {% with rx=consultation.prescription %}
-  {% if rx %}
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">💊 Prescription</h3>
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Diagnosis</div>
-      <div style="font-size:14px;">{{ rx.diagnosis }}</div>
-    </div>
-    {% if rx.treatment_plan %}
-    <div style="margin-bottom:16px;">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Treatment Plan</div>
-      <div style="font-size:14px;">{{ rx.treatment_plan }}</div>
-    </div>
-    {% endif %}
-    {% if rx.items.all %}
-    <div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Medicines Dispensed</div>
-      {% for item in rx.items.all %}
-      <div style="background:#f0f9f5;border-radius:6px;padding:10px 14px;margin-bottom:8px;font-size:13px;">
-        <span style="font-weight:600;">{{ item.medicine.name }}</span>
-        × {{ item.quantity }} {{ item.medicine.get_unit_display }}(s)
-        <div style="color:var(--text-muted);font-size:12px;margin-top:2px;">{{ item.instructions }}</div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p style="font-size:13px;color:var(--text-muted);">No medicines were dispensed.</p>
-    {% endif %}
-    <div style="font-size:12px;color:var(--text-muted);margin-top:10px;">
-      Prescribed by Dr. {{ rx.doctor.get_full_name }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}
-    </div>
-  </div>
-  {% endif %}
-  {% endwith %}
-
-  <!-- Cancel (pending only) -->
-  {% if consultation.status == 'pending' %}
-  <div class="card" style="border-color:#fca5a5;">
-    <h3 style="font-size:13px;font-weight:600;color:#991b1b;margin:0 0 8px;">Cancel Request</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
-      You can cancel this request if you no longer need to see the clinic.
-    </p>
-    <form method="post" action="{% url 'consultations:patient_cancel' consultation.pk %}"
-          onsubmit="return confirm('Cancel this consultation request?');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger btn-sm">✕ Cancel this request</button>
-    </form>
+  {% else %}
+  <div class="card" style="text-align:center;padding:32px 24px;">
+    <div style="font-size:36px;margin-bottom:10px;">📋</div>
+    <p style="font-weight:600;margin-bottom:4px;">No consultations yet</p>
+    <p style="color:var(--text-muted);font-size:13px;">This patient has not had any consultations recorded.</p>
   </div>
   {% endif %}
 </div>

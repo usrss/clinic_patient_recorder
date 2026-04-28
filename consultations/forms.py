@@ -182,6 +182,87 @@ class PrescriptionForm(forms.ModelForm):
 
 
 class PrescriptionItemForm(forms.Form):
+    """
+    Free-text medicine row for the prescription form.
+    Each row represents one medicine. Medicine name, dosage, frequency,
+    and duration are all required when a row has any data. Instructions optional.
+    """
+    medicine_name = forms.CharField(
+        required=False,
+        max_length=200,
+        label='Medicine Name',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Paracetamol 500mg',
+            'autocomplete': 'off',
+        }),
+    )
+    dosage = forms.CharField(
+        required=False,
+        max_length=100,
+        label='Dosage',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 500mg',
+        }),
+    )
+    frequency = forms.CharField(
+        required=False,
+        max_length=100,
+        label='Frequency',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 3x a day',
+        }),
+    )
+    duration = forms.CharField(
+        required=False,
+        max_length=100,
+        label='Duration',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 7 days',
+        }),
+    )
+    instructions = forms.CharField(
+        required=False,
+        max_length=200,
+        label='Instructions (optional)',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Take after meals',
+        }),
+    )
+
+    def has_data(self):
+        """Return True if this row has any meaningful input."""
+        cd = getattr(self, 'cleaned_data', {})
+        return bool(cd.get('medicine_name') or cd.get('dosage'))
+
+    def clean(self):
+        cleaned = super().clean()
+        name = cleaned.get('medicine_name', '').strip()
+        dosage = cleaned.get('dosage', '').strip()
+        frequency = cleaned.get('frequency', '').strip()
+        duration = cleaned.get('duration', '').strip()
+        instructions = cleaned.get('instructions', '').strip()
+
+        # If any field in this row has data, require the core fields
+        any_filled = any([name, dosage, frequency, duration, instructions])
+        if any_filled:
+            if not name:
+                self.add_error('medicine_name', 'Medicine name is required.')
+            if not dosage:
+                self.add_error('dosage', 'Dosage is required.')
+            if not frequency:
+                self.add_error('frequency', 'Frequency is required.')
+            if not duration:
+                self.add_error('duration', 'Duration is required.')
+        return cleaned
+
+
+# Used by the existing inventory-linked prescribe view (kept for backward compat)
+class PrescriptionItemInventoryForm(forms.Form):
     medicine = forms.ModelChoiceField(
         queryset=Medicine.objects.all().order_by('name'),
         required=False,
@@ -216,8 +297,6 @@ class PrescriptionItemForm(forms.Form):
                 self.add_error('medicine', 'Select a medicine.')
             if not quantity:
                 self.add_error('quantity', 'Enter a quantity.')
-            if not instructions:
-                self.add_error('instructions', 'Enter dosage instructions.')
             if medicine and quantity and quantity > medicine.quantity:
                 self.add_error(
                     'quantity',
@@ -227,4 +306,8 @@ class PrescriptionItemForm(forms.Form):
         return cleaned
 
 
-PrescriptionItemFormSet = formset_factory(PrescriptionItemForm, extra=3)
+# The formset used in the existing inventory-based prescribe view
+PrescriptionItemFormSet = formset_factory(PrescriptionItemInventoryForm, extra=3)
+
+# The new free-text medicine formset for the doctor prescription form
+PrescriptionMedicineFormSet = formset_factory(PrescriptionItemForm, extra=1)

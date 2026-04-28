@@ -11,7 +11,8 @@ from accounts.decorators import (
 from .models import Consultation, Triage, Prescription, PrescriptionItem
 from .forms import (
     ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
-    PrescriptionForm, PrescriptionItemFormSet, PatientConsultationForm,
+    PrescriptionForm, PrescriptionItemFormSet, PrescriptionMedicineFormSet,
+    PatientConsultationForm,
 )
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
@@ -303,6 +304,11 @@ def doctor_list(request):
 @login_required
 @doctor_required
 def prescribe(request, pk):
+    """
+    Doctor creates a prescription using free-text medicine rows.
+    Each row must have medicine name, dosage, frequency, duration (instructions optional).
+    At least one medicine row must be filled. Saving is atomic.
+    """
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
     if hasattr(consultation, 'prescription'):
@@ -310,42 +316,41 @@ def prescribe(request, pk):
         return redirect('consultations:doctor_list')
 
     prescription_form = PrescriptionForm(request.POST or None)
-    formset = PrescriptionItemFormSet(request.POST or None, prefix='items')
+    formset = PrescriptionMedicineFormSet(request.POST or None, prefix='meds')
 
     if request.method == 'POST':
         forms_valid = prescription_form.is_valid()
         formset_valid = formset.is_valid()
 
         if forms_valid and formset_valid:
-            try:
-                with transaction.atomic():
-                    item_rows = [f for f in formset if f.has_data()]
+            # Collect rows that actually have data
+            item_rows = [f for f in formset if f.has_data()]
 
-                    prescription = prescription_form.save(commit=False)
-                    prescription.consultation = consultation
-                    prescription.doctor = request.user
-                    prescription.save()
+            if not item_rows:
+                messages.error(
+                    request,
+                    'At least one medicine must be added to the prescription.'
+                )
+            else:
+                try:
+                    with transaction.atomic():
+                        prescription = prescription_form.save(commit=False)
+                        prescription.consultation = consultation
+                        prescription.doctor = request.user
+                        prescription.save()
 
-                    for form in item_rows:
-                        medicine     = form.cleaned_data['medicine']
-                        quantity     = form.cleaned_data['quantity']
-                        instructions = form.cleaned_data['instructions']
+                        for form in item_rows:
+                            PrescriptionItem.objects.create(
+                                prescription=prescription,
+                                medicine_name=form.cleaned_data['medicine_name'].strip(),
+                                dosage=form.cleaned_data.get('dosage', '').strip(),
+                                frequency=form.cleaned_data.get('frequency', '').strip(),
+                                duration=form.cleaned_data.get('duration', '').strip(),
+                                instructions=form.cleaned_data.get('instructions', '').strip(),
+                            )
 
-                        PrescriptionItem.objects.create(
-                            prescription=prescription,
-                            medicine=medicine,
-                            quantity=quantity,
-                            instructions=instructions,
-                        )
-                        deduct_medicine_stock(
-                            medicine_id=medicine.pk,
-                            quantity=quantity,
-                            reason=f'Consultation #{consultation.pk}',
-                            user=request.user,
-                        )
-
-                    consultation.status = Consultation.Status.COMPLETED
-                    consultation.save(update_fields=['status'])
+                        consultation.status = Consultation.Status.COMPLETED
+                        consultation.save(update_fields=['status'])
 
                     messages.success(
                         request,
@@ -353,11 +358,8 @@ def prescribe(request, pk):
                     )
                     return redirect('consultations:doctor_list')
 
-            except ValidationError as e:
-                err = e.message if hasattr(e, 'message') else '; '.join(e.messages)
-                messages.error(request, f'Stock error — prescription not saved: {err}')
-            except Exception:
-                messages.error(request, 'An unexpected error occurred. Please try again.')
+                except Exception:
+                    messages.error(request, 'An unexpected error occurred. Please try again.')
 
     return render(request, 'consultations/prescribe.html', {
         'consultation': consultation,
@@ -375,3 +377,241 @@ def clinical_detail(request, pk):
     return render(request, 'consultations/clinical_detail.html', {
         'consultation': consultation,
     })
+
+
+# ─── MEDICAL HISTORY (MODULE 3) ───────────────────────────────────────────────
+
+@login_required
+@doctor_required
+def patient_medical_history(request, patient_pk):
+    """
+    Full medical history of a patient, assembled from consultations and prescriptions.
+    Available to doctors and admins. Frontdesk cannot access.
+    """
+    from patients.models import Patient
+    from django.db.models import Count, Q
+    from datetime import date
+
+    patient = get_object_or_404(Patient, pk=patient_pk)
+
+    # Base queryset — all consultations for this patient
+    consultations_qs = (
+        Consultation.objects
+        .filter(patient=patient)
+        .select_related('triage', 'prescription')
+        .prefetch_related('prescription__items')
+        .order_by('-created_at')
+    )
+
+    # Date range filter
+    date_from_str = request.GET.get('date_from', '')
+    date_to_str   = request.GET.get('date_to', '')
+    keyword       = request.GET.get('keyword', '').strip()
+
+    if date_from_str:
+        try:
+            date_from = date.fromisoformat(date_from_str)
+            consultations_qs = consultations_qs.filter(created_at__date__gte=date_from)
+        except ValueError:
+            pass
+
+    if date_to_str:
+        try:
+            date_to = date.fromisoformat(date_to_str)
+            consultations_qs = consultations_qs.filter(created_at__date__lte=date_to)
+        except ValueError:
+            pass
+
+    if keyword:
+        consultations_qs = consultations_qs.filter(
+            Q(prescription__diagnosis__icontains=keyword) |
+            Q(prescription__items__medicine_name__icontains=keyword)
+        ).distinct()
+
+    consultations = list(consultations_qs)
+
+    # Summary — computed from ALL consultations (no date/keyword filter)
+    all_consultations = Consultation.objects.filter(patient=patient)
+    total_count = all_consultations.count()
+    first_visit = all_consultations.order_by('created_at').values_list('created_at', flat=True).first()
+    last_visit  = all_consultations.order_by('-created_at').values_list('created_at', flat=True).first()
+
+    # Most frequent diagnosis
+    top_diagnosis = (
+        Prescription.objects
+        .filter(consultation__patient=patient)
+        .values('diagnosis')
+        .annotate(cnt=Count('id'))
+        .order_by('-cnt')
+        .first()
+    )
+
+    # Most frequently prescribed medicine
+    top_medicine = (
+        PrescriptionItem.objects
+        .filter(prescription__consultation__patient=patient)
+        .values('medicine_name')
+        .annotate(cnt=Count('id'))
+        .order_by('-cnt')
+        .first()
+    )
+
+    return render(request, 'consultations/medical_history.html', {
+        'patient': patient,
+        'consultations': consultations,
+        'total_count': total_count,
+        'first_visit': first_visit,
+        'last_visit': last_visit,
+        'top_diagnosis': top_diagnosis,
+        'top_medicine': top_medicine,
+        'date_from': date_from_str,
+        'date_to': date_to_str,
+        'keyword': keyword,
+    })
+
+
+@login_required
+@doctor_required
+def patient_medical_history_pdf(request, patient_pk):
+    """Export patient medical history as PDF."""
+    from patients.models import Patient
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER
+    import io
+    from datetime import date
+
+    patient = get_object_or_404(Patient, pk=patient_pk)
+
+    consultations = (
+        Consultation.objects
+        .filter(patient=patient)
+        .select_related('triage', 'prescription')
+        .prefetch_related('prescription__items')
+        .order_by('-created_at')
+    )
+
+    # Build PDF in memory
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=2*cm, leftMargin=2*cm,
+        topMargin=2*cm, bottomMargin=2*cm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=16, spaceAfter=6)
+    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12, spaceAfter=4, spaceBefore=10)
+    body_style = styles['Normal']
+    small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=9, textColor=colors.grey)
+    label_style = ParagraphStyle('Label', parent=styles['Normal'], fontSize=9,
+                                  textColor=colors.grey, spaceAfter=2)
+
+    story = []
+
+    # Header
+    story.append(Paragraph('CLINIC RECORDER', title_style))
+    story.append(Paragraph('Patient Medical History', styles['Heading2']))
+    story.append(HRFlowable(width='100%', thickness=1, color=colors.lightgrey))
+    story.append(Spacer(1, 0.3*cm))
+
+    # Patient info table
+    all_c = Consultation.objects.filter(patient=patient)
+    total = all_c.count()
+    first_v = all_c.order_by('created_at').values_list('created_at', flat=True).first()
+    last_v  = all_c.order_by('-created_at').values_list('created_at', flat=True).first()
+
+    info_data = [
+        ['Patient Name', patient.get_full_name(), 'Patient ID', patient.patient_id],
+        ['Sex', patient.get_sex_display(), 'Age', str(patient.age or '—')],
+        ['Phone', patient.phone or '—', 'Email', patient.email or '—'],
+        ['College/Dept',
+         patient.college.abbreviation if patient.college else (patient.department or '—'),
+         'Total Visits', str(total)],
+        ['First Visit', first_v.strftime('%B %d, %Y') if first_v else '—',
+         'Last Visit', last_v.strftime('%B %d, %Y') if last_v else '—'],
+    ]
+    info_table = Table(info_data, colWidths=[3.5*cm, 6*cm, 3*cm, 4*cm])
+    info_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.grey),
+        ('TEXTCOLOR', (2, 0), (2, -1), colors.grey),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (3, 0), (3, -1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.5*cm))
+    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey))
+    story.append(Spacer(1, 0.3*cm))
+
+    # Timeline
+    story.append(Paragraph('Consultation Timeline', h2_style))
+
+    if not consultations:
+        story.append(Paragraph('No consultations on record.', body_style))
+    else:
+        for c in consultations:
+            story.append(Spacer(1, 0.2*cm))
+            # Entry header
+            status_txt = c.get_status_display()
+            header_txt = (
+                f'<b>Consultation #{c.pk}</b> — '
+                f'{c.created_at.strftime("%B %d, %Y")} — {status_txt}'
+            )
+            story.append(Paragraph(header_txt, body_style))
+            story.append(Paragraph(f'<i>Symptoms:</i> {c.symptoms}', small_style))
+            if c.severity_description:
+                story.append(Paragraph(f'<i>Severity:</i> {c.severity_description}', small_style))
+
+            if hasattr(c, 'triage') and c.triage:
+                t = c.triage
+                story.append(Paragraph(
+                    f'<i>Vitals:</i> BP {t.blood_pressure} | '
+                    f'Temp {t.temperature}°C | Pulse {t.pulse_rate} bpm | '
+                    f'Urgency: {t.get_urgency_display()}',
+                    small_style
+                ))
+
+            if hasattr(c, 'prescription') and c.prescription:
+                rx = c.prescription
+                story.append(Paragraph(f'<i>Diagnosis:</i> {rx.diagnosis}', small_style))
+                if rx.treatment_plan:
+                    story.append(Paragraph(f'<i>Treatment Plan:</i> {rx.treatment_plan}', small_style))
+                items = rx.items.all()
+                if items:
+                    for item in items:
+                        line = f'• {item.get_display_name()}'
+                        if item.dosage:
+                            line += f' {item.dosage}'
+                        if item.frequency:
+                            line += f' — {item.frequency}'
+                        if item.duration:
+                            line += f' for {item.duration}'
+                        if item.instructions:
+                            line += f' ({item.instructions})'
+                        story.append(Paragraph(line, small_style))
+
+            story.append(HRFlowable(width='100%', thickness=0.3, color=colors.lightgrey, spaceAfter=2))
+
+    story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph(
+        f'Generated: {date.today().strftime("%B %d, %Y")} | Clinic Recorder',
+        small_style
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    safe_name = patient.patient_id.replace('/', '_')
+    response['Content-Disposition'] = (
+        f'attachment; filename="medical_history_{safe_name}.pdf"'
+    )
+    return response
