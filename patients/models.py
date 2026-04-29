@@ -158,6 +158,121 @@ class PatientProfile(models.Model):
         blank=True,
         help_text='Existing medical conditions (e.g. diabetes, hypertension)'
     )
+
+    # ── Demographics ───────────────────────────────────────────────────────
+    religion = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='Religious affiliation (e.g. Roman Catholic, Islam, etc.)'
+    )
+    civil_status = models.CharField(
+        max_length=20,
+        blank=True,
+        choices=[
+            ('Single', 'Single'),
+            ('Married', 'Married'),
+            ('Widowed', 'Widowed'),
+            ('Separated', 'Separated'),
+            ('Divorced', 'Divorced'),
+        ],
+        help_text='Civil status'
+    )
+    year_level = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text='Year level (e.g. 1st Year, 2nd Year, 3rd Year, 4th Year)'
+    )
+
+    # ── Physical Info ──────────────────────────────────────────────────────
+    height_cm = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text='Height in centimeters'
+    )
+    weight_kg = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text='Weight in kilograms'
+    )
+
+    # ── Family & Past Medical History (booleans + text) ────────────────────
+    hypertension = models.BooleanField(
+        default=False,
+        help_text='Patient has hypertension'
+    )
+    diabetes = models.BooleanField(
+        default=False,
+        help_text='Patient has diabetes'
+    )
+    asthma = models.BooleanField(
+        default=False,
+        help_text='Patient has asthma'
+    )
+    cardiac_problems = models.BooleanField(
+        default=False,
+        help_text='Patient has cardiac problems'
+    )
+    arthritis = models.BooleanField(
+        default=False,
+        help_text='Patient has arthritis'
+    )
+    other_conditions = models.TextField(
+        blank=True,
+        help_text='Other medical conditions not listed above'
+    )
+
+    # ── Immunization Records (booleans + text) ────────────────────────────
+    bcg = models.BooleanField(
+        default=False,
+        help_text='BCG vaccine received'
+    )
+    dpt = models.BooleanField(
+        default=False,
+        help_text='DPT vaccine received'
+    )
+    opv = models.BooleanField(
+        default=False,
+        help_text='Oral Polio Vaccine received'
+    )
+    hepatitis_b = models.BooleanField(
+        default=False,
+        help_text='Hepatitis B vaccine received'
+    )
+    measles = models.BooleanField(
+        default=False,
+        help_text='Measles vaccine received'
+    )
+    tt = models.BooleanField(
+        default=False,
+        help_text='Tetanus Toxoid vaccine received'
+    )
+    immunization_others = models.TextField(
+        blank=True,
+        help_text='Other immunization details (e.g. influenza, HPV, etc.)'
+    )
+
+    # ── Medical Background (text fields) ──────────────────────────────────
+    current_medications = models.TextField(
+        blank=True,
+        help_text='List of current medications and dosages'
+    )
+    vices = models.TextField(
+        blank=True,
+        help_text='Smoking, alcohol intake, or other habits'
+    )
+    previous_illnesses = models.TextField(
+        blank=True,
+        help_text='Past illnesses (non‑chronic)'
+    )
+    previous_hospitalizations = models.TextField(
+        blank=True,
+        help_text='Past hospitalizations and dates if known'
+    )
+
     profile_completed = models.BooleanField(
         default=False,
         help_text='True once the patient has completed the mandatory profile setup.',

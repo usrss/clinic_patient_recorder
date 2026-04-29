@@ -1,0 +1,187 @@
+{% extends 'core/base.html' %}
+{% block title %}Settings — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #f8fafb;
+    border-radius: 6px;
+    border: 0.5px solid var(--border);
+  }
+  .checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+  }
+  .checkbox-item label {
+    margin: 0;
+    font-size: 13px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <a href="{% url 'accounts:dashboard' %}" class="btn btn-secondary btn-sm">← Back</a>
+    <h1 class="page-title" style="margin-bottom:0;">Settings</h1>
+  </div>
+
+  <!-- Profile Info -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">👤 Profile Information</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if user.role == 'patient' %}
+
+      <!-- Contact -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📞 Contact</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>Phone</label>
+          {{ info_form.phone }}
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          {{ info_form.email }}
+        </div>
+        <div class="form-group">
+          <label>Emergency Contact Name</label>
+          {{ info_form.emergency_contact_name }}
+        </div>
+        <div class="form-group">
+          <label>Emergency Contact Phone</label>
+          {{ info_form.emergency_contact_phone }}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        {{ info_form.address }}
+      </div>
+
+      <!-- Demographics -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">👤 Demographics</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>Religion</label>
+          {{ info_form.religion }}
+        </div>
+        <div class="form-group">
+          <label>Civil Status</label>
+          {{ info_form.civil_status }}
+        </div>
+        <div class="form-group">
+          <label>Year Level</label>
+          {{ info_form.year_level }}
+        </div>
+      </div>
+
+      <!-- Physical Info -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📏 Physical</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>Height (cm)</label>
+          {{ info_form.height_cm }}
+        </div>
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          {{ info_form.weight_kg }}
+        </div>
+      </div>
+
+      <!-- Medical History -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">🏥 Medical History</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item">{{ info_form.hypertension }} <label>Hypertension</label></div>
+        <div class="checkbox-item">{{ info_form.diabetes }} <label>Diabetes</label></div>
+        <div class="checkbox-item">{{ info_form.asthma }} <label>Asthma</label></div>
+        <div class="checkbox-item">{{ info_form.cardiac_problems }} <label>Cardiac Problems</label></div>
+        <div class="checkbox-item">{{ info_form.arthritis }} <label>Arthritis</label></div>
+      </div>
+      <div class="form-group">
+        <label>Other Conditions</label>
+        {{ info_form.other_conditions }}
+      </div>
+
+      <!-- Immunization -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">💉 Immunization</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item">{{ info_form.bcg }} <label>BCG</label></div>
+        <div class="checkbox-item">{{ info_form.dpt }} <label>DPT</label></div>
+        <div class="checkbox-item">{{ info_form.opv }} <label>OPV</label></div>
+        <div class="checkbox-item">{{ info_form.hepatitis_b }} <label>Hepatitis B</label></div>
+        <div class="checkbox-item">{{ info_form.measles }} <label>Measles</label></div>
+        <div class="checkbox-item">{{ info_form.tt }} <label>TT</label></div>
+      </div>
+      <div class="form-group">
+        <label>Other Immunizations</label>
+        {{ info_form.immunization_others }}
+      </div>
+
+      <!-- Medical Background -->
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📋 Medical Background</div>
+      <div class="form-group">
+        <label>Current Medications</label>
+        {{ info_form.current_medications }}
+      </div>
+      <div class="form-group">
+        <label>Vices</label>
+        {{ info_form.vices }}
+      </div>
+      <div class="form-group">
+        <label>Previous Illnesses</label>
+        {{ info_form.previous_illnesses }}
+      </div>
+      <div class="form-group">
+        <label>Previous Hospitalizations</label>
+        {{ info_form.previous_hospitalizations }}
+      </div>
+
+      {% else %}
+      <!-- Staff profile fields -->
+      <div style="display:grid;gap:14px;">
+        {% for field in info_form %}
+        <div class="form-group">
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <button type="submit" name="save_info" class="btn btn-primary" style="margin-top:16px;">💾 Save Profile</button>
+    </form>
+  </div>
+
+  <!-- Change Password -->
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🔒 Change Password</h3>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div style="display:grid;gap:14px;">
+        {% for field in password_form %}
+        <div class="form-group">
+          <label>{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" name="save_password" class="btn btn-primary" style="margin-top:8px;">🔐 Change Password</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

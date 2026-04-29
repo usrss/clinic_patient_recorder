@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dental Certificate — {{ certificate.consultation.patient.get_full_name }}</title>
+  <style>
+    @page { size: A4; margin: 2cm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; color: #000; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h2 { font-size: 14pt; margin-bottom: 2px; }
+    .header .clinic { font-size: 12pt; margin-bottom: 4px; }
+    .header .address { font-size: 9pt; color: #333; }
+    .header .title { font-size: 14pt; font-weight: 700; margin-top: 20px; text-transform: uppercase; letter-spacing: 2px; }
+    .content { margin: 20px 0; }
+    .content p { margin-bottom: 10px; }
+    .signature { margin-top: 50px; text-align: right; }
+    .signature .name { border-top: 1px solid #000; display: inline-block; padding-top: 4px; min-width: 200px; text-align: center; font-weight: 600; }
+    @media print { body { background: white; } .no-print { display: none !important; } }
+    .print-btn { position: fixed; top: 16px; right: 16px; background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; z-index: 100; }
+    .back-link { position: fixed; top: 16px; left: 16px; font-size: 12px; color: #2563eb; text-decoration: none; z-index: 100; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print();">🖨 Print</button>
+  <a href="{% url 'consultations:clinical_detail' certificate.consultation.pk %}" class="back-link no-print">← Back</a>
+
+  <div class="header">
+    <h2>Negros Oriental State University</h2>
+    <div class="clinic">Medical Dental Clinic</div>
+    <div class="address">Dumaguete City, Negros Oriental, Philippines</div>
+    <div class="title">Dental Certificate</div>
+  </div>
+
+  <div class="content">
+    <p><strong>To Whom It May Concern:</strong></p>
+
+    <p>
+      This is to certify that
+      <strong>{{ certificate.consultation.patient.get_full_name }}</strong>,
+      {{ certificate.consultation.patient.age|default:"—" }} years old,
+      {{ certificate.consultation.patient.get_sex_display|lower }},
+      {% if certificate.consultation.patient.college %}
+      {{ certificate.consultation.patient.college.abbreviation }}
+      {% if certificate.consultation.patient.profile.year_level %} — {{ certificate.consultation.patient.profile.year_level }}{% endif %},
+      {% endif %}
+      was examined and treated at this clinic on
+      <strong>{{ certificate.consultation.created_at|date:"F d, Y" }}</strong>.
+    </p>
+
+    <p>
+      <strong>Dental Findings/Procedure:</strong> {{ certificate.diagnosis }}
+    </p>
+
+    {% if certificate.remarks %}
+    <p><strong>Remarks:</strong> {{ certificate.remarks }}</p>
+    {% endif %}
+
+    <p>
+      This certificate is issued upon the request of the patient for
+      whatever legal purpose it may serve.
+    </p>
+  </div>
+
+  <div class="signature">
+    <div class="name">Dr. {{ certificate.doctor.get_full_name|default:certificate.doctor.username }}</div>
+    <div style="font-size:9pt;margin-top:4px;">Attending Dentist</div>
+    <div style="font-size:8pt;color:#999;margin-top:16px;">Issued: {{ certificate.issued_at|date:"F d, Y" }}</div>
+  </div>
+</body>
+</html>

@@ -29,6 +29,32 @@
     border-radius: 99px;
     transition: width 0.3s;
   }
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8fafb;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+  }
+  .checkbox-item label {
+    margin: 0;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
 </style>
 {% endblock %}
 
@@ -124,7 +150,166 @@
         {% if form.existing_conditions.errors %}<div class="form-error">{{ form.existing_conditions.errors.0 }}</div>{% endif %}
       </div>
 
-      <!-- Section 2: Contact Info -->
+      <!-- Section 2: Demographics -->
+      <div class="section-divider">👤 Demographics</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>{{ form.religion.label }}</label>
+          {{ form.religion }}
+          {% if form.religion.errors %}<div class="form-error">{{ form.religion.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.civil_status.label }}</label>
+          {{ form.civil_status }}
+          {% if form.civil_status.errors %}<div class="form-error">{{ form.civil_status.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.year_level.label }}</label>
+        {{ form.year_level }}
+        {% if form.year_level.errors %}<div class="form-error">{{ form.year_level.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 3: Physical Information -->
+      <div class="section-divider">📏 Physical Information</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>{{ form.height_cm.label }}</label>
+          {{ form.height_cm }}
+          {% if form.height_cm.errors %}<div class="form-error">{{ form.height_cm.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.weight_kg.label }}</label>
+          {{ form.weight_kg }}
+          {% if form.weight_kg.errors %}<div class="form-error">{{ form.weight_kg.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Section 4: Family & Past Medical History -->
+      <div class="section-divider">🏥 Family & Past Medical History</div>
+
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Check all conditions that apply to you:
+      </p>
+
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          {{ form.hypertension }}
+          <label>{{ form.hypertension.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.diabetes }}
+          <label>{{ form.diabetes.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.asthma }}
+          <label>{{ form.asthma.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.cardiac_problems }}
+          <label>{{ form.cardiac_problems.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.arthritis }}
+          <label>{{ form.arthritis.label }}</label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>{{ form.other_conditions.label }}</label>
+        {{ form.other_conditions }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          List any other medical conditions not mentioned above. Write "None" if none.
+        </div>
+        {% if form.other_conditions.errors %}<div class="form-error">{{ form.other_conditions.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 5: Immunization Records -->
+      <div class="section-divider">💉 Immunization Records</div>
+
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Check all vaccines you have received:
+      </p>
+
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          {{ form.bcg }}
+          <label>{{ form.bcg.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.dpt }}
+          <label>{{ form.dpt.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.opv }}
+          <label>{{ form.opv.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.hepatitis_b }}
+          <label>{{ form.hepatitis_b.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.measles }}
+          <label>{{ form.measles.label }}</label>
+        </div>
+        <div class="checkbox-item">
+          {{ form.tt }}
+          <label>{{ form.tt.label }}</label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>{{ form.immunization_others.label }}</label>
+        {{ form.immunization_others }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          List any other vaccines received (e.g. influenza, HPV, COVID-19).
+        </div>
+        {% if form.immunization_others.errors %}<div class="form-error">{{ form.immunization_others.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 6: Medical Background -->
+      <div class="section-divider">📋 Medical Background</div>
+
+      <div class="form-group">
+        <label>{{ form.current_medications.label }}</label>
+        {{ form.current_medications }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          List all medications you are currently taking and their dosages. Write "None" if none.
+        </div>
+        {% if form.current_medications.errors %}<div class="form-error">{{ form.current_medications.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.vices.label }}</label>
+        {{ form.vices }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          E.g. smoking, alcohol intake, or other habits. Write "None" if none.
+        </div>
+        {% if form.vices.errors %}<div class="form-error">{{ form.vices.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.previous_illnesses.label }}</label>
+        {{ form.previous_illnesses }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          List any significant past illnesses (non‑chronic). Write "None" if none.
+        </div>
+        {% if form.previous_illnesses.errors %}<div class="form-error">{{ form.previous_illnesses.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.previous_hospitalizations.label }}</label>
+        {{ form.previous_hospitalizations }}
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          List past hospitalizations and approximate dates if known. Write "None" if none.
+        </div>
+        {% if form.previous_hospitalizations.errors %}<div class="form-error">{{ form.previous_hospitalizations.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Section 7: Contact Info -->
       <div class="section-divider">📞 Contact Information</div>
 
       <div class="form-group">
@@ -146,7 +331,7 @@
         {% if form.address.errors %}<div class="form-error">{{ form.address.errors.0 }}</div>{% endif %}
       </div>
 
-      <!-- Section 3: Emergency Contact -->
+      <!-- Section 8: Emergency Contact -->
       <div class="section-divider">🆘 Emergency Contact</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">

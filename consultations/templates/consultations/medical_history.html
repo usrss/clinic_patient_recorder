@@ -46,6 +46,50 @@
     align-items: flex-end;
     flex-wrap: wrap;
   }
+  .profile-section {
+    margin-bottom: 20px;
+  }
+  .profile-section h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    font-size: 13px;
+  }
+  .profile-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 0.5px solid #f1f5f9;
+  }
+  .profile-item .label {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .profile-item .value {
+    font-weight: 500;
+  }
+  .yes-badge {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .no-badge {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
 </style>
 {% endblock %}
 
@@ -55,7 +99,7 @@
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;">
     <div style="display:flex;align-items:center;gap:12px;">
-      <a href="{% url 'consultations:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+      <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
       <div>
         <h1 class="page-title" style="margin-bottom:2px;">Medical History</h1>
         <p style="color:var(--text-muted);font-size:13px;margin:0;">{{ patient.get_full_name }} — {{ patient.patient_id }}</p>
@@ -65,6 +109,160 @@
       ⬇ Export PDF
     </a>
   </div>
+
+  <!-- ================================================================ -->
+  <!-- PART A: PATIENT PROFILE SUMMARY -->
+  <!-- ================================================================ -->
+  {% with profile=patient_profile %}
+  {% if profile %}
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:14px;font-weight:600;margin:0 0 16px;">📋 Patient Profile Summary</h3>
+
+    <!-- Demographics -->
+    <div class="profile-section">
+      <h3>👤 Demographics</h3>
+      <div class="profile-grid">
+        <div class="profile-item">
+          <span class="label">Religion</span>
+          <span class="value">{{ profile.religion|default:"—" }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Civil Status</span>
+          <span class="value">{{ profile.civil_status|default:"—" }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Year Level</span>
+          <span class="value">{{ profile.year_level|default:"—" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Physical Information -->
+    <div class="profile-section">
+      <h3>📏 Physical Information</h3>
+      <div class="profile-grid">
+        <div class="profile-item">
+          <span class="label">Height</span>
+          <span class="value">{% if profile.height_cm %}{{ profile.height_cm }} cm{% else %}—{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Weight</span>
+          <span class="value">{% if profile.weight_kg %}{{ profile.weight_kg }} kg{% else %}—{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Blood Type</span>
+          <span class="value">{{ profile.blood_type|default:"—" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Family & Past Medical History -->
+    <div class="profile-section">
+      <h3>🏥 Family & Past Medical History</h3>
+      <div class="profile-grid">
+        <div class="profile-item">
+          <span class="label">Hypertension</span>
+          <span class="value">{% if profile.hypertension %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Diabetes</span>
+          <span class="value">{% if profile.diabetes %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Asthma</span>
+          <span class="value">{% if profile.asthma %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Cardiac Problems</span>
+          <span class="value">{% if profile.cardiac_problems %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Arthritis</span>
+          <span class="value">{% if profile.arthritis %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+      </div>
+      {% if profile.other_conditions %}
+      <div class="profile-item" style="margin-top:8px;">
+        <span class="label">Other Conditions</span>
+        <span class="value">{{ profile.other_conditions }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Immunization Records -->
+    <div class="profile-section">
+      <h3>💉 Immunization Records</h3>
+      <div class="profile-grid">
+        <div class="profile-item">
+          <span class="label">BCG</span>
+          <span class="value">{% if profile.bcg %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">DPT</span>
+          <span class="value">{% if profile.dpt %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">OPV</span>
+          <span class="value">{% if profile.opv %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Hepatitis B</span>
+          <span class="value">{% if profile.hepatitis_b %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">Measles</span>
+          <span class="value">{% if profile.measles %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+        <div class="profile-item">
+          <span class="label">TT</span>
+          <span class="value">{% if profile.tt %}<span class="yes-badge">Yes</span>{% else %}<span class="no-badge">No</span>{% endif %}</span>
+        </div>
+      </div>
+      {% if profile.immunization_others %}
+      <div class="profile-item" style="margin-top:8px;">
+        <span class="label">Other Immunizations</span>
+        <span class="value">{{ profile.immunization_others }}</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Medical Background -->
+    {% if profile.current_medications or profile.vices or profile.previous_illnesses or profile.previous_hospitalizations %}
+    <div class="profile-section">
+      <h3>📋 Medical Background</h3>
+      {% if profile.current_medications and profile.current_medications|lower != 'none' %}
+      <div class="profile-item">
+        <span class="label">Current Medications</span>
+        <span class="value">{{ profile.current_medications }}</span>
+      </div>
+      {% endif %}
+      {% if profile.vices and profile.vices|lower != 'none' %}
+      <div class="profile-item">
+        <span class="label">Vices</span>
+        <span class="value">{{ profile.vices }}</span>
+      </div>
+      {% endif %}
+      {% if profile.previous_illnesses and profile.previous_illnesses|lower != 'none' %}
+      <div class="profile-item">
+        <span class="label">Previous Illnesses</span>
+        <span class="value">{{ profile.previous_illnesses }}</span>
+      </div>
+      {% endif %}
+      {% if profile.previous_hospitalizations and profile.previous_hospitalizations|lower != 'none' %}
+      <div class="profile-item">
+        <span class="label">Previous Hospitalizations</span>
+        <span class="value">{{ profile.previous_hospitalizations }}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+  {% endwith %}
+  <!-- ================================================================ -->
+  <!-- END PATIENT PROFILE SUMMARY -->
+  <!-- ================================================================ -->
 
   <!-- Summary cards -->
   <div class="summary-grid">
@@ -128,7 +326,9 @@
     </form>
   </div>
 
-  <!-- Timeline -->
+  <!-- ================================================================ -->
+  <!-- PART B: CONSULTATION TIMELINE -->
+  <!-- ================================================================ -->
   {% if consultations %}
   <div style="padding-left:8px;">
     {% for c in consultations %}
@@ -137,6 +337,7 @@
       <!-- Entry header -->
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
         <span style="font-weight:600;font-size:14px;">{{ c.created_at|date:"F d, Y" }}</span>
+        <span style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"H:i" }}</span>
         <span style="font-size:12px;color:var(--text-muted);">Consultation #{{ c.pk }}</span>
         {% if c.status == 'completed' %}
           <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">✅ Completed</span>
@@ -155,16 +356,27 @@
         <div style="font-size:13px;">{{ c.symptoms }}</div>
       </div>
 
-      <!-- Triage vitals (compact) -->
+      <!-- Triage vitals (expanded) -->
       {% if c.triage %}
-      <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted);">
-        🩺 BP {{ c.triage.blood_pressure }} &nbsp;·&nbsp;
-        Temp {{ c.triage.temperature }}°C &nbsp;·&nbsp;
-        Pulse {{ c.triage.pulse_rate }} bpm &nbsp;·&nbsp;
-        Urgency:
-        {% if c.triage.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">High</span>
-        {% elif c.triage.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">Medium</span>
-        {% else %}<span style="color:#10b981;font-weight:600;">Low</span>{% endif %}
+      <div style="margin-bottom:8px;padding:10px 14px;background:#f0f9f5;border-radius:6px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">🩺 Vital Signs</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;">
+          <span>BP <strong>{{ c.triage.blood_pressure }}</strong></span>
+          <span>Temp <strong>{{ c.triage.temperature }}°C</strong></span>
+          <span>Pulse <strong>{{ c.triage.pulse_rate }} bpm</strong></span>
+          <span>RR <strong>{% if c.triage.respiratory_rate is not None %}{{ c.triage.respiratory_rate }}{% else %}—{% endif %}</strong></span>
+          <span>SpO₂ <strong>{% if c.triage.oxygen_saturation is not None %}{{ c.triage.oxygen_saturation }}%{% else %}—{% endif %}</strong></span>
+          <span>Weight <strong>{% if c.triage.weight is not None %}{{ c.triage.weight }} kg{% else %}—{% endif %}</strong></span>
+        </div>
+        <div style="font-size:12px;margin-top:6px;">
+          Urgency:
+          {% if c.triage.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">🔴 High</span>
+          {% elif c.triage.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">🟡 Medium</span>
+          {% else %}<span style="color:#10b981;font-weight:600;">🟢 Low</span>{% endif %}
+        </div>
+        {% if c.triage.notes %}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;white-space:pre-line;">{{ c.triage.notes }}</div>
+        {% endif %}
       </div>
       {% endif %}
 

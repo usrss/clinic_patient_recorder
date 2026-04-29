@@ -2,63 +2,108 @@
 {% block title %}Login — Clinic Recorder{% endblock %}
 
 {% block content %}
-<div style="max-width:420px; margin:60px auto 0;">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:24px;">
 
-  <div style="text-align:center;margin-bottom:28px;">
-    <h1 class="page-title" style="margin-bottom:4px;">Clinic Recorder</h1>
-    <p style="color:var(--text-muted);font-size:14px;margin:0;">Student Health &amp; Consultation System</p>
-  </div>
+  <div style="width:100%;max-width:400px;">
 
-  {# Flash messages — renders the "Invalid username or password." error from login_view #}
-  {% if messages %}
-    {% for message in messages %}
-      <div style="
-        margin-bottom:16px;
-        padding:12px 16px;
-        border-radius:6px;
-        font-size:13px;
-        {% if message.tags == 'error' %}background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
-        {% elif message.tags == 'warning' %}background:#fff8e1;border-left:4px solid #f59e0b;color:#92400e;
-        {% else %}background:#f0fdf4;border-left:4px solid #22c55e;color:#166534;{% endif %}
-      ">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-
-  <div class="card">
-    <form method="post" novalidate autocomplete="off">
-      {% csrf_token %}
-
-      <div class="form-group">
-        <label for="{{ form.username.id_for_label }}">Username or Student ID</label>
-        {{ form.username }}
-        {% if form.username.errors %}
-          <div class="form-error">{{ form.username.errors.0 }}</div>
-        {% endif %}
+    {# Logo + Branding #}
+    <div style="text-align:center;margin-bottom:36px;">
+      <div style="width:56px;height:56px;background:#0078d4;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 4px 16px rgba(0,120,212,0.25);">
+        +
       </div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Clinic Recorder</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">Student Health & Consultation System</p>
+    </div>
 
-      <div class="form-group">
-        <label for="{{ form.password.id_for_label }}">Password</label>
-        {{ form.password }}
-        {% if form.password.errors %}
-          <div class="form-error">{{ form.password.errors.0 }}</div>
-        {% endif %}
-      </div>
-
-      {# Non-field errors from AuthenticationForm (e.g. account inactive) #}
-      {% if form.non_field_errors %}
-        <div class="form-error" style="margin-bottom:12px;">
-          {% for error in form.non_field_errors %}
-            <div>{{ error }}</div>
-          {% endfor %}
+    {# Messages #}
+    {% if messages %}
+      {% for message in messages %}
+        <div style="margin-bottom:16px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;
+          {% if message.tags == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
+          {% elif message.tags == 'warning' %}background:#fff8e1;color:#92400e;border:1px solid #fed7aa;
+          {% else %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;{% endif %}">
+          {{ message }}
         </div>
-      {% endif %}
+      {% endfor %}
+    {% endif %}
 
-      <button type="submit" class="btn btn-primary"
-              style="width:100%;justify-content:center;margin-top:8px;">
-        Log in
-      </button>
-    </form>
+    {# Login Card #}
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
+      <form method="post" novalidate autocomplete="off">
+        {% csrf_token %}
+
+        <div style="margin-bottom:20px;">
+          <label for="{{ form.username.id_for_label }}" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+            Username or Student ID
+          </label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div style="margin-bottom:8px;">
+          <label for="{{ form.password.id_for_label }}" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+            Password
+          </label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.password.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div style="text-align:right;margin-bottom:20px;">
+          <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+            Forgot password?
+          </a>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
+            {% for error in form.non_field_errors %}
+              <div style="font-size:12px;color:#991b1b;">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <button type="submit" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);" onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+          Sign In
+        </button>
+      </form>
+    </div>
+
+    {# Footer #}
+    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">
+      Negros Oriental State University — Medical Dental Clinic
+    </p>
+
   </div>
-
 </div>
+
+<style>
+  /* Override Django form input styles */
+  #{{ form.username.id_for_label }},
+  #{{ form.password.id_for_label }} {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  #{{ form.username.id_for_label }}:focus,
+  #{{ form.password.id_for_label }}:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  #{{ form.username.id_for_label }}::placeholder,
+  #{{ form.password.id_for_label }}::placeholder {
+    color: #c4c9d0;
+  }
+</style>
 {% endblock %}

@@ -71,6 +71,25 @@ class Triage(models.Model):
         max_digits=5, decimal_places=2, help_text='Degrees Celsius'
     )
     pulse_rate = models.PositiveIntegerField(help_text='BPM')
+    respiratory_rate = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Respiratory rate (breaths per minute)'
+    )
+    oxygen_saturation = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Oxygen saturation (SpO2) percentage (e.g. 98.50)'
+    )
+    weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Weight in kilograms (e.g. 65.50)'
+    )
     urgency = models.CharField(max_length=10, choices=Urgency.choices)
     notes = models.TextField(blank=True)
     triaged_at = models.DateTimeField(auto_now_add=True)

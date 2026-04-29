@@ -16,7 +16,9 @@
   <!-- Current Record Summary -->
   <div class="card" style="margin-bottom:16px;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Current Triage Record</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;">
+
+    <!-- Row 1: BP, Temp, Pulse -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;margin-bottom:12px;">
       <div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Blood Pressure</div>
         <strong>{{ triage.blood_pressure }}</strong>
@@ -29,6 +31,26 @@
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Pulse Rate</div>
         <strong>{{ triage.pulse_rate }} bpm</strong>
       </div>
+    </div>
+
+    <!-- Row 2: RR, SpO2, Weight -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;margin-bottom:12px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Respiratory Rate</div>
+        <strong>{% if triage.respiratory_rate is not None %}{{ triage.respiratory_rate }}{% else %}—{% endif %}</strong>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Oxygen Saturation</div>
+        <strong>{% if triage.oxygen_saturation is not None %}{{ triage.oxygen_saturation }}%{% else %}—{% endif %}</strong>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Weight</div>
+        <strong>{% if triage.weight is not None %}{{ triage.weight }} kg{% else %}—{% endif %}</strong>
+      </div>
+    </div>
+
+    <!-- Row 3: Urgency, Nurse, Timestamp -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;">
       <div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Urgency</div>
         <strong>{{ triage.get_urgency_display }}</strong>
@@ -50,6 +72,7 @@
     <form method="post" novalidate>
       {% csrf_token %}
 
+      <!-- Row 1: BP, Temp, Pulse -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="form-group">
           <label>{{ form.blood_pressure.label }}</label>
@@ -68,18 +91,49 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <!-- Row 2: RR, SpO2, Weight -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;">
+        <div class="form-group">
+          <label>{{ form.respiratory_rate.label }}</label>
+          {{ form.respiratory_rate }}
+          {% if form.respiratory_rate.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>
+          {% endif %}
+          {% if form.respiratory_rate.errors %}<div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.oxygen_saturation.label }}</label>
+          {{ form.oxygen_saturation }}
+          {% if form.oxygen_saturation.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>
+          {% endif %}
+          {% if form.oxygen_saturation.errors %}<div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.weight.label }}</label>
+          {{ form.weight }}
+          {% if form.weight.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.weight.help_text }}</div>
+          {% endif %}
+          {% if form.weight.errors %}<div class="form-error">{{ form.weight.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Urgency -->
+      <div class="form-group" style="margin-top:16px;">
         <label>Urgency Level</label>
         {{ form.urgency }}
         {% if form.urgency.errors %}<div class="form-error">{{ form.urgency.errors.0 }}</div>{% endif %}
       </div>
 
+      <!-- Clinical Notes -->
       <div class="form-group">
         <label>Clinical Notes</label>
         {{ form.notes }}
         {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
       </div>
 
+      <!-- Amendment Reason -->
       <div class="form-group">
         <label>{{ form.amendment_reason.label }}</label>
         {{ form.amendment_reason }}
@@ -102,4 +156,5 @@
     </form>
   </div>
 </div>
+{% endif %}
 {% endblock %}

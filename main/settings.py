@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from decouple import config
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
     'reports',
     'colleges',
     'core',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -48,6 +50,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_USE_TLS       = False
+EMAIL_USE_SSL       = True
+EMAIL_PORT          = 465
+EMAIL_HOST_USER     = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL  = config('EMAIL_HOST_USER')
 AUTH_USER_MODEL = 'accounts.User'
 
 # FIX: LOGIN_URL, LOGIN_REDIRECT_URL, and LOGOUT_REDIRECT_URL must be URL

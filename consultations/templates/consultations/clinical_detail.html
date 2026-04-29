@@ -13,6 +13,8 @@
       {% elif consultation.status == 'cancelled' %}background:#fee2e2;color:#991b1b;
       {% else %}background:#f3f4f6;color:#374151;{% endif %}
     ">{{ consultation.get_status_display }}</span>
+    <a href="{% url 'consultations:print_consultation' consultation.pk %}"
+       class="btn btn-secondary btn-sm" target="_blank" style="margin-left:auto;">🖨 Print</a>
   </div>
 
   <!-- Patient -->
@@ -38,6 +40,34 @@
       </div>
     </div>
   </div>
+
+  <!-- Patient Profile Summary -->
+  {% with profile=consultation.patient.profile %}
+  {% if profile %}
+  <div class="card" style="margin-bottom:16px;background:#fff8f5;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 10px;">📋 Patient Medical Profile</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:13px;">
+      {% if profile.blood_type %}
+      <div><span style="color:var(--text-muted);">Blood Type:</span> <strong>{{ profile.blood_type }}</strong></div>
+      {% endif %}
+      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Allergies:</span> <span style="color:#dc2626;font-weight:600;">⚠ {{ profile.known_allergies }}</span></div>
+      {% endif %}
+      {% if profile.existing_conditions and profile.existing_conditions|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Conditions:</span> {{ profile.existing_conditions }}</div>
+      {% endif %}
+      {% if profile.current_medications and profile.current_medications|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Current Meds:</span> {{ profile.current_medications }}</div>
+      {% endif %}
+      {% if profile.hypertension %}<div>Hypertension</div>{% endif %}
+      {% if profile.diabetes %}<div>Diabetes</div>{% endif %}
+      {% if profile.asthma %}<div>Asthma</div>{% endif %}
+      {% if profile.cardiac_problems %}<div>Cardiac Problems</div>{% endif %}
+      {% if profile.arthritis %}<div>Arthritis</div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
 
   <!-- Submission -->
   <div class="card" style="margin-bottom:16px;">
@@ -71,8 +101,10 @@
   {% with t=consultation.triage %}
   {% if t %}
   <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">🩺 Triage Vitals</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">🩺 Vital Signs</h3>
+
+    <!-- Row 1: BP, Temperature, Pulse -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:10px;">
       <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
         <div style="font-size:17px;font-weight:700;">{{ t.blood_pressure }}</div>
         <div style="font-size:11px;color:var(--text-muted);">Blood Pressure</div>
@@ -85,15 +117,40 @@
         <div style="font-size:17px;font-weight:700;">{{ t.pulse_rate }} bpm</div>
         <div style="font-size:11px;color:var(--text-muted);">Pulse Rate</div>
       </div>
+    </div>
+
+    <!-- Row 2: RR, SpO2, Weight -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:10px;">
       <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
         <div style="font-size:17px;font-weight:700;">
-          {% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>
-          {% elif t.urgency == 'medium' %}<span style="color:#f97316;">Medium</span>
-          {% else %}<span style="color:#10b981;">Low</span>{% endif %}
+          {% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}
         </div>
-        <div style="font-size:11px;color:var(--text-muted);">Urgency</div>
+        <div style="font-size:11px;color:var(--text-muted);">Respiratory Rate</div>
+      </div>
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">
+          {% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);">Oxygen Saturation</div>
+      </div>
+      <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:17px;font-weight:700;">
+          {% if t.weight is not None %}{{ t.weight }} kg{% else %}—{% endif %}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);">Weight</div>
       </div>
     </div>
+
+    <!-- Urgency -->
+    <div style="background:#f0f9f5;border-radius:8px;padding:12px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:17px;font-weight:700;">
+        {% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>
+        {% elif t.urgency == 'medium' %}<span style="color:#f97316;">Medium</span>
+        {% else %}<span style="color:#10b981;">Low</span>{% endif %}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);">Urgency</div>
+    </div>
+
     <div style="font-size:12px;color:var(--text-muted);">
       Triaged by {{ t.nurse.get_full_name|default:t.nurse.username }} at {{ t.triaged_at|date:"M d, Y H:i" }}
     </div>
@@ -151,6 +208,17 @@
   </div>
   {% endif %}
   {% endwith %}
+  {% endif %}
+
+  <!-- Medical Certificate -->
+  {% if consultation.status == 'completed' and user.role == 'doctor' %}
+  <div style="margin-top:16px;">
+    {% if consultation.certificate %}
+      <a href="{% url 'certificates:print_certificate' consultation.certificate.pk %}" class="btn btn-primary btn-sm" target="_blank">📜 View Certificate</a>
+    {% else %}
+      <a href="{% url 'certificates:create_certificate' consultation.pk %}" class="btn btn-primary btn-sm">📜 Issue Medical Certificate</a>
+    {% endif %}
+  </div>
   {% endif %}
 
   <!-- Admin: Reopen cancelled consultations -->

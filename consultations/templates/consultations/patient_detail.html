@@ -2,29 +2,21 @@
 {% block title %}{{ patient.get_full_name }} — Patients — Clinic Recorder{% endblock %}
 
 {% block content %}
-<div style="max-width:820px;">
+<div style="max-width:760px;">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
     <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary btn-sm">← Back</a>
     <h1 class="page-title" style="margin-bottom:0;">{{ patient.get_full_name }}</h1>
   </div>
 
   <!-- Patient Info Card -->
-  <div class="card" style="margin-bottom:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0;">Patient Information</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        {% if user.role == 'doctor' or user.role == 'admin' %}
-          <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-secondary btn-sm">📋 Medical History</a>
-        {% endif %}
-        {% if user.role == 'admin' or user.role == 'frontdesk' %}
-          <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm">✏ Edit Profile</a>
-          <a href="{% url 'patients:patient_contact_edit' patient.pk %}" class="btn btn-secondary btn-sm">📞 Edit Contact</a>
-        {% endif %}
-      </div>
+      {% if user.role == 'admin' or user.role == 'frontdesk' %}
+      <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm">✏ Edit Profile</a>
+      {% endif %}
     </div>
-
-    <!-- Identity -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
       <div>
         <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Full Name</div>
         <div style="font-weight:600;">{{ patient.get_full_name }}</div>
@@ -70,50 +62,179 @@
       </div>
       {% endif %}
     </div>
+  </div>
 
-    <!-- Contact Info -->
-    <div style="border-top:1px solid var(--border);padding-top:14px;">
-      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Contact Information</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:14px;">
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">📞 Phone</div>
-          <div>
-            {% if patient.phone %}
-              <a href="tel:{{ patient.phone }}" style="color:inherit;">{{ patient.phone }}</a>
-            {% else %}
-              <span style="color:var(--text-muted);font-size:12px;">Not set</span>
-            {% endif %}
-          </div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">✉ Email</div>
-          <div>
-            {% if patient.email %}
-              <a href="mailto:{{ patient.email }}" style="color:inherit;">{{ patient.email }}</a>
-            {% else %}
-              <span style="color:var(--text-muted);font-size:12px;">Not set</span>
-            {% endif %}
-          </div>
-        </div>
-        {% if patient.emergency_contact_name or patient.emergency_contact_phone %}
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">🆘 Emergency Contact</div>
-          <div>
-            {% if patient.emergency_contact_name %}{{ patient.emergency_contact_name }}{% endif %}
-            {% if patient.emergency_contact_phone %}
-              <span style="color:var(--text-muted);">· {{ patient.emergency_contact_phone }}</span>
-            {% endif %}
-          </div>
-        </div>
-        {% else %}
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">🆘 Emergency Contact</div>
-          <div><span style="color:var(--text-muted);font-size:12px;">Not set</span></div>
-        </div>
-        {% endif %}
+  <!-- Contact Information -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">📞 Contact Information</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Phone</div>
+        <div>{{ patient.phone|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Email</div>
+        <div>{{ patient.email|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Emergency Contact</div>
+        <div>{{ patient.emergency_contact_name|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Emergency Phone</div>
+        <div>{{ patient.emergency_contact_phone|default:"—" }}</div>
+      </div>
+      {% if profile and profile.address %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Address</div>
+        <div>{{ profile.address }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if profile %}
+  <!-- ================================================================ -->
+  <!-- SECTION 1: DEMOGRAPHICS -->
+  <!-- ================================================================ -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">👤 Demographics</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Religion</div>
+        <div>{{ profile.religion|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Civil Status</div>
+        <div>{{ profile.civil_status|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Year Level</div>
+        <div>{{ profile.year_level|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Height</div>
+        <div>{% if profile.height_cm %}{{ profile.height_cm }} cm{% else %}—{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Weight</div>
+        <div>{% if profile.weight_kg %}{{ profile.weight_kg }} kg{% else %}—{% endif %}</div>
+      </div>
+      {% if profile.blood_type %}
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Blood Type</div>
+        <div>{{ profile.blood_type }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 2: FAMILY & PAST MEDICAL HISTORY -->
+  <!-- ================================================================ -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">🏥 Family & Past Medical History</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Hypertension</div>
+        <div>{% if profile.hypertension %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Diabetes</div>
+        <div>{% if profile.diabetes %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Asthma</div>
+        <div>{% if profile.asthma %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Cardiac Problems</div>
+        <div>{% if profile.cardiac_problems %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Arthritis</div>
+        <div>{% if profile.arthritis %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+    </div>
+    {% if profile.other_conditions %}
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Other Conditions</div>
+      <div style="font-size:13px;">{{ profile.other_conditions }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 3: IMMUNIZATION -->
+  <!-- ================================================================ -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">💉 Immunization Records</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">BCG</div>
+        <div>{% if profile.bcg %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">DPT</div>
+        <div>{% if profile.dpt %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">OPV</div>
+        <div>{% if profile.opv %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Hepatitis B</div>
+        <div>{% if profile.hepatitis_b %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Measles</div>
+        <div>{% if profile.measles %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">TT</div>
+        <div>{% if profile.tt %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+      </div>
+    </div>
+    {% if profile.immunization_others %}
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Other Immunizations</div>
+      <div style="font-size:13px;">{{ profile.immunization_others }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SECTION 4: MEDICAL BACKGROUND -->
+  <!-- ================================================================ -->
+  <div class="card" style="margin-bottom:20px;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">📋 Medical Background</h3>
+    <div style="display:grid;gap:14px;font-size:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Current Medications</div>
+        <div>{{ profile.current_medications|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Vices (Smoking, Alcohol, etc.)</div>
+        <div>{{ profile.vices|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Previous Illnesses</div>
+        <div>{{ profile.previous_illnesses|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Previous Hospitalizations</div>
+        <div>{{ profile.previous_hospitalizations|default:"—" }}</div>
       </div>
     </div>
   </div>
+
+  <!-- View Full Medical History -->
+  <div style="margin-bottom:20px;">
+    <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;">
+      📋 View Full Medical History
+    </a>
+  </div>
+  {% endif %}
 
   <!-- Consultation History -->
   <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation History</h3>
@@ -155,7 +276,10 @@
             </td>
             <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
             <td>
-              <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
+              <div style="display:flex;gap:6px;">
+                <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
+                <a href="{% url 'consultations:print_consultation' c.pk %}" class="btn btn-secondary btn-sm" target="_blank">🖨</a>
+              </div>
             </td>
           </tr>
           {% endfor %}

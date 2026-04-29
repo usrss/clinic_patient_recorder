@@ -1,0 +1,458 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic Recorder — NORSU Medical Dental Clinic</title>
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(160deg, #f8faff 0%, #edf2fc 30%, #f4f6fb 60%, #ffffff 100%);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,120,212,0.04) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -250px; right: -200px;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(0,120,212,0.03) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -100px; left: -150px;
+      z-index: 0;
+    }
+
+    /* ── Navigation ─────────────────────────────── */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e8ecf1;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-brand .icon {
+      width: 32px; height: 32px;
+      background: #0078d4;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #0078d4; }
+    .btn-primary {
+      padding: 9px 18px;
+      background: #0078d4;
+      color: #fff !important;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: #006cbd;
+      box-shadow: 0 4px 12px rgba(0,120,212,0.25);
+    }
+    .btn-outline {
+      padding: 9px 18px;
+      border: 1.5px solid #0078d4;
+      color: #0078d4 !important;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover {
+      background: #f0f7ff;
+    }
+
+    /* ── Hero ───────────────────────────────────── */
+    .hero {
+      max-width: 720px;
+      margin: 80px auto 60px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      padding: 0 24px;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 5px 14px;
+      background: #e8f4ff;
+      color: #0078d4;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-size: 40px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 span {
+      color: #0078d4;
+    }
+    .hero p {
+      font-size: 16px;
+      color: #6b7280;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 540px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hero-buttons a {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .hero-btn-primary {
+      background: #0078d4;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+    }
+    .hero-btn-primary:hover {
+      background: #006cbd;
+      box-shadow: 0 4px 16px rgba(0,120,212,0.3);
+      transform: translateY(-1px);
+    }
+    .hero-btn-secondary {
+      background: #fff;
+      color: #0078d4;
+      border: 1.5px solid #e1e5eb;
+    }
+    .hero-btn-secondary:hover {
+      border-color: #0078d4;
+      background: #f8faff;
+    }
+
+    /* ── Features ───────────────────────────────── */
+    .features {
+      max-width: 960px;
+      margin: 0 auto 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .feature-card {
+      background: #fff;
+      border: 1px solid #e8ecf1;
+      border-radius: 14px;
+      padding: 24px;
+      transition: all 0.2s ease;
+    }
+    .feature-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+    .feature-icon {
+      width: 40px; height: 40px;
+      background: #e8f4ff;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; margin-bottom: 14px;
+    }
+    .feature-card h3 {
+      font-size: 14px; font-weight: 600; color: #111827;
+      margin-bottom: 6px;
+    }
+    .feature-card p {
+      font-size: 12px; color: #6b7280; line-height: 1.5;
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #9ca3af;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Dashboard Section (when logged in) ──────── */
+    .dashboard-section {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .dash-card {
+      background: #fff;
+      border: 1px solid #e8ecf1;
+      border-radius: 14px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+    .dash-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+      border-color: #0078d4;
+    }
+    .dash-card .icon {
+      font-size: 22px; margin-bottom: 10px;
+    }
+    .dash-card h3 {
+      font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;
+    }
+    .dash-card p {
+      font-size: 11px; color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="/" class="nav-brand">
+      <span class="icon">+</span>
+      Clinic Recorder
+    </a>
+    <div class="nav-links">
+      {% if user.is_authenticated %}
+        <span style="font-size:13px;color:#4b5563;">{{ user.get_full_name|default:user.username }}</span>
+        <a href="{% url 'accounts:profile_settings' %}">Settings</a>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" style="background:none;border:none;font-size:13px;font-weight:500;color:#dc2626;cursor:pointer;">Log out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn-primary">Sign In</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  {% if user.is_authenticated %}
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LOGGED IN — Dashboard -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="dashboard-section">
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:22px;font-weight:700;color:#111827;margin-bottom:4px;">
+        Welcome back, {{ user.first_name|default:user.username }}
+      </h2>
+      <p style="font-size:13px;color:#6b7280;">What would you like to do today?</p>
+    </div>
+
+    <div class="dashboard-grid">
+
+      {% if user.role == 'patient' %}
+        <a href="{% url 'consultations:patient_home' %}" class="dash-card">
+          <div class="icon">📋</div>
+          <h3>My Consultations</h3>
+          <p>View your consultation history</p>
+        </a>
+        <a href="{% url 'consultations:patient_submit' %}" class="dash-card">
+          <div class="icon">➕</div>
+          <h3>New Request</h3>
+          <p>Submit a consultation request</p>
+        </a>
+      {% endif %}
+
+      {% if user.role == 'frontdesk' %}
+        <a href="{% url 'consultations:queue' %}" class="dash-card">
+          <div class="icon">📝</div>
+          <h3>Queue</h3>
+          <p>Process pending consultations</p>
+        </a>
+        <a href="{% url 'consultations:consultation_create' %}" class="dash-card">
+          <div class="icon">➕</div>
+          <h3>New Consultation</h3>
+          <p>Create for walk-in patient</p>
+        </a>
+        <a href="{% url 'patients:patient_list' %}" class="dash-card">
+          <div class="icon">👥</div>
+          <h3>Patients</h3>
+          <p>View patient records</p>
+        </a>
+      {% endif %}
+
+      {% if user.role == 'nurse' %}
+        <a href="{% url 'consultations:triage_list' %}" class="dash-card">
+          <div class="icon">🩺</div>
+          <h3>Triage Queue</h3>
+          <p>Patients awaiting triage</p>
+        </a>
+        <a href="{% url 'patients:patient_list' %}" class="dash-card">
+          <div class="icon">👥</div>
+          <h3>Patients</h3>
+          <p>View patient records</p>
+        </a>
+        <a href="{% url 'inventory:medicine_list' %}" class="dash-card">
+          <div class="icon">💊</div>
+          <h3>Inventory</h3>
+          <p>Medicine stock</p>
+        </a>
+      {% endif %}
+
+      {% if user.role == 'doctor' %}
+        <a href="{% url 'consultations:doctor_list' %}" class="dash-card">
+          <div class="icon">🩺</div>
+          <h3>Patients</h3>
+          <p>Triaged & ready</p>
+        </a>
+        <a href="{% url 'patients:patient_list' %}" class="dash-card">
+          <div class="icon">📁</div>
+          <h3>Records</h3>
+          <p>All patient records</p>
+        </a>
+        <a href="{% url 'inventory:medicine_list' %}" class="dash-card">
+          <div class="icon">💊</div>
+          <h3>Inventory</h3>
+          <p>Medicine stock</p>
+        </a>
+      {% endif %}
+
+      {% if user.role == 'admin' %}
+        <a href="{% url 'reports:report_dashboard' %}" class="dash-card">
+          <div class="icon">📊</div>
+          <h3>Reports</h3>
+          <p>Clinic statistics</p>
+        </a>
+        <a href="{% url 'accounts:user_list' %}" class="dash-card">
+          <div class="icon">👤</div>
+          <h3>Staff</h3>
+          <p>Manage staff users</p>
+        </a>
+        <a href="{% url 'patients:patient_list' %}" class="dash-card">
+          <div class="icon">👥</div>
+          <h3>Patients</h3>
+          <p>Patient records</p>
+        </a>
+        <a href="{% url 'consultations:queue' %}" class="dash-card">
+          <div class="icon">📝</div>
+          <h3>Queue</h3>
+          <p>Pending consultations</p>
+        </a>
+        <a href="{% url 'inventory:medicine_list' %}" class="dash-card">
+          <div class="icon">💊</div>
+          <h3>Inventory</h3>
+          <p>Medicine stock</p>
+        </a>
+        <a href="/admin/" class="dash-card">
+          <div class="icon">⚙️</div>
+          <h3>Admin Panel</h3>
+          <p>Django admin</p>
+        </a>
+      {% endif %}
+
+      <a href="{% url 'accounts:profile_settings' %}" class="dash-card">
+        <div class="icon">⚙️</div>
+        <h3>Settings</h3>
+        <p>Profile & Password</p>
+      </a>
+
+    </div>
+  </div>
+
+  {% else %}
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LOGGED OUT — Landing Page -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">NORSU — Medical Dental Clinic</div>
+    <h1>Your Health, <span>Digitally Managed</span></h1>
+    <p>
+      A seamless consultation management system for students, staff, and faculty.
+      From triage to prescription — all in one place.
+    </p>
+    <div class="hero-buttons">
+      <a href="{% url 'accounts:login' %}" class="hero-btn-primary">Sign In</a>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Online Consultations</h3>
+      <p>Submit consultation requests anytime, anywhere.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🩺</div>
+      <h3>Smart Triage</h3>
+      <p>Complete vital signs tracking with urgency assessment.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💊</div>
+      <h3>E-Prescriptions</h3>
+      <p>Inventory-linked prescriptions with auto-dispensing.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📜</div>
+      <h3>Medical Certificates</h3>
+      <p>Issue fit-to-play, medical, and dental certificates.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <div class="footer">
+    Negros Oriental State University — Medical Dental Clinic &copy; {% now "Y" %}
+  </div>
+
+</body>
+</html>

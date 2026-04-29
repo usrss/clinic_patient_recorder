@@ -7,6 +7,47 @@ class PatientProfileInline(admin.StackedInline):
     extra = 0
     can_delete = False
     readonly_fields = ('updated_at',)
+    fieldsets = (
+        ('Basic Information', {
+            'fields': (
+                'birthday', 'address', 'blood_type',
+                'known_allergies', 'existing_conditions',
+            )
+        }),
+        ('Demographics', {
+            'fields': (
+                'religion', 'civil_status', 'year_level',
+            )
+        }),
+        ('Physical Information', {
+            'fields': (
+                'height_cm', 'weight_kg',
+            )
+        }),
+        ('Family & Past Medical History', {
+            'fields': (
+                'hypertension', 'diabetes', 'asthma',
+                'cardiac_problems', 'arthritis', 'other_conditions',
+            )
+        }),
+        ('Immunization Records', {
+            'fields': (
+                'bcg', 'dpt', 'opv', 'hepatitis_b',
+                'measles', 'tt', 'immunization_others',
+            )
+        }),
+        ('Medical Background', {
+            'fields': (
+                'current_medications', 'vices',
+                'previous_illnesses', 'previous_hospitalizations',
+            )
+        }),
+        ('Profile Status', {
+            'fields': (
+                'profile_completed', 'updated_at',
+            )
+        }),
+    )
 
 
 @admin.register(Patient)

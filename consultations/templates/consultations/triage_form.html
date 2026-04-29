@@ -69,12 +69,40 @@
     </div>
   </div>
 
+  <!-- Patient Profile Summary (if available) -->
+  {% if consultation.patient.profile %}
+  <div class="card" style="margin-bottom:16px;background:#f8fafb;">
+    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">📋 Patient Profile</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:13px;">
+      {% if consultation.patient.profile.height_cm %}
+      <div><span style="color:var(--text-muted);">Height:</span> {{ consultation.patient.profile.height_cm }} cm</div>
+      {% endif %}
+      {% if consultation.patient.profile.weight_kg %}
+      <div><span style="color:var(--text-muted);">Weight:</span> {{ consultation.patient.profile.weight_kg }} kg</div>
+      {% endif %}
+      {% if consultation.patient.profile.blood_type %}
+      <div><span style="color:var(--text-muted);">Blood Type:</span> {{ consultation.patient.profile.blood_type }}</div>
+      {% endif %}
+      {% if consultation.patient.profile.known_allergies and consultation.patient.profile.known_allergies|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Allergies:</span> <span style="color:#991b1b;">⚠ {{ consultation.patient.profile.known_allergies }}</span></div>
+      {% endif %}
+      {% if consultation.patient.profile.existing_conditions and consultation.patient.profile.existing_conditions|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Conditions:</span> {{ consultation.patient.profile.existing_conditions }}</div>
+      {% endif %}
+      {% if consultation.patient.profile.current_medications and consultation.patient.profile.current_medications|lower != 'none' %}
+      <div><span style="color:var(--text-muted);">Current Meds:</span> {{ consultation.patient.profile.current_medications }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Triage Form -->
   <div class="card">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🩺 Record Vitals</h3>
     <form method="post" novalidate>
       {% csrf_token %}
 
+      <!-- Row 1: BP, Temp, Pulse -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="form-group">
           <label>{{ form.blood_pressure.label }}</label>
@@ -99,19 +127,55 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <!-- Row 2: RR, SpO2, Weight -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;">
+        <div class="form-group">
+          <label>{{ form.respiratory_rate.label }}</label>
+          {{ form.respiratory_rate }}
+          {% if form.respiratory_rate.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>
+          {% endif %}
+          {% if form.respiratory_rate.errors %}
+            <div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.oxygen_saturation.label }}</label>
+          {{ form.oxygen_saturation }}
+          {% if form.oxygen_saturation.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>
+          {% endif %}
+          {% if form.oxygen_saturation.errors %}
+            <div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.weight.label }}</label>
+          {{ form.weight }}
+          {% if form.weight.help_text %}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.weight.help_text }}</div>
+          {% endif %}
+          {% if form.weight.errors %}
+            <div class="form-error">{{ form.weight.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Urgency -->
+      <div class="form-group" style="margin-top:16px;">
         <label>Urgency Level</label>
         {{ form.urgency }}
         {% if form.urgency.errors %}
           <div class="form-error">{{ form.urgency.errors.0 }}</div>
         {% endif %}
-        <div style="display:flex;gap:10px;margin-top:8px;font-size:12px;">
-          <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-weight:600;">Low — stable, non-urgent</span>
-          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:10px;font-weight:600;">Medium — needs attention soon</span>
-          <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:10px;font-weight:600;">High — urgent, prioritise</span>
+        <div style="display:flex;gap:10px;margin-top:8px;font-size:12px;flex-wrap:wrap;">
+          <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-weight:600;">🟢 Low — stable, non-urgent</span>
+          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:10px;font-weight:600;">🟡 Medium — needs attention soon</span>
+          <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:10px;font-weight:600;">🔴 High — urgent, prioritise</span>
         </div>
       </div>
 
+      <!-- Clinical Notes -->
       <div class="form-group">
         <label>Clinical Notes (optional)</label>
         {{ form.notes }}

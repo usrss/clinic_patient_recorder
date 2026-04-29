@@ -23,6 +23,13 @@
           <th>Status</th>
           <th>Queue / Schedule</th>
           <th>Severity</th>
+          <th>BP</th>
+          <th>Temp</th>
+          <th>Pulse</th>
+          <th>RR</th>
+          <th>SpO₂</th>
+          <th>Weight</th>
+          <th>Urgency</th>
           <th>Submitted</th>
           <th>Actions</th>
         </tr>
@@ -53,6 +60,13 @@
           <td style="font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             {{ c.severity_description|truncatechars:45 }}
           </td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
+          <td style="font-size:13px;white-space:nowrap;">—</td>
           <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, H:i" }}</td>
           <td>
             <a href="{% url 'consultations:triage_form' c.pk %}" class="btn btn-primary btn-sm">Triage →</a>

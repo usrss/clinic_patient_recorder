@@ -3,6 +3,7 @@ from django.forms import formset_factory
 
 from .models import Consultation, Triage, Prescription, PrescriptionItem
 from inventory.models import Medicine
+import re
 
 
 class PatientConsultationForm(forms.ModelForm):
@@ -111,19 +112,53 @@ class QueueAssignForm(forms.ModelForm):
 class TriageForm(forms.ModelForm):
     class Meta:
         model = Triage
-        fields = ['blood_pressure', 'temperature', 'pulse_rate', 'urgency', 'notes']
+        fields = [
+            'blood_pressure', 'temperature', 'pulse_rate',
+            'respiratory_rate', 'oxygen_saturation', 'weight',
+            'urgency', 'notes',
+        ]
         widgets = {
-            'blood_pressure': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '120/80'}),
+            'blood_pressure': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '120/80',
+            }),
             'temperature': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.1',
-                'placeholder': '36.5', 'min': '30', 'max': '45',
+                'class': 'form-control',
+                'step': '0.1',
+                'placeholder': '36.5',
+                'min': '30',
+                'max': '45',
             }),
             'pulse_rate': forms.NumberInput(attrs={
-                'class': 'form-control', 'placeholder': '72', 'min': '20', 'max': '300',
+                'class': 'form-control',
+                'placeholder': '72',
+                'min': '20',
+                'max': '300',
+            }),
+            'respiratory_rate': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': '16',
+                'min': '0',
+                'max': '100',
+            }),
+            'oxygen_saturation': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '98.00',
+                'min': '0',
+                'max': '100',
+            }),
+            'weight': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': '65.00',
+                'min': '0',
+                'max': '500',
             }),
             'urgency': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
+                'class': 'form-control',
+                'rows': 3,
                 'placeholder': 'Additional clinical observations...',
             }),
         }
@@ -131,7 +166,56 @@ class TriageForm(forms.ModelForm):
             'blood_pressure': 'Blood Pressure (mmHg)',
             'temperature': 'Temperature (°C)',
             'pulse_rate': 'Pulse Rate (bpm)',
+            'respiratory_rate': 'Respiratory Rate (breaths/min)',
+            'oxygen_saturation': 'Oxygen Saturation — SpO₂ (%)',
+            'weight': 'Weight (kg)',
         }
+        help_texts = {
+            'respiratory_rate': 'Normal adult rate: 12–20 breaths per minute.',
+            'oxygen_saturation': 'Normal range: 95–100%.',
+            'weight': 'In kilograms (e.g. 65.00).',
+        }
+
+    def clean_blood_pressure(self):
+        bp = self.cleaned_data.get('blood_pressure', '').strip()
+        if bp and not re.match(r'^\d{2,3}/\d{2,3}$', bp):
+            raise forms.ValidationError('Enter blood pressure as systolic/diastolic (e.g. 120/80).')
+        return bp
+
+    def clean_temperature(self):
+        temp = self.cleaned_data.get('temperature')
+        if temp is not None:
+            if temp < 30 or temp > 45:
+                raise forms.ValidationError('Temperature must be between 30°C and 45°C.')
+        return temp
+
+    def clean_pulse_rate(self):
+        pulse = self.cleaned_data.get('pulse_rate')
+        if pulse is not None:
+            if pulse < 20 or pulse > 300:
+                raise forms.ValidationError('Pulse rate must be between 20 and 300 bpm.')
+        return pulse
+
+    def clean_respiratory_rate(self):
+        rate = self.cleaned_data.get('respiratory_rate')
+        if rate is not None:
+            if rate < 0 or rate > 100:
+                raise forms.ValidationError('Respiratory rate must be between 0 and 100 breaths/min.')
+        return rate
+
+    def clean_oxygen_saturation(self):
+        spo2 = self.cleaned_data.get('oxygen_saturation')
+        if spo2 is not None:
+            if spo2 < 0 or spo2 > 100:
+                raise forms.ValidationError('Oxygen saturation must be between 0 and 100%.')
+        return spo2
+
+    def clean_weight(self):
+        weight = self.cleaned_data.get('weight')
+        if weight is not None:
+            if weight < 0 or weight > 500:
+                raise forms.ValidationError('Weight must be between 0 and 500 kg.')
+        return weight
 
 
 class TriageEditForm(forms.ModelForm):
@@ -146,14 +230,43 @@ class TriageEditForm(forms.ModelForm):
 
     class Meta:
         model = Triage
-        fields = ['blood_pressure', 'temperature', 'pulse_rate', 'urgency', 'notes']
+        fields = [
+            'blood_pressure', 'temperature', 'pulse_rate',
+            'respiratory_rate', 'oxygen_saturation', 'weight',
+            'urgency', 'notes',
+        ]
         widgets = {
-            'blood_pressure': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '120/80'}),
+            'blood_pressure': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '120/80',
+            }),
             'temperature': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.1', 'min': '30', 'max': '45',
+                'class': 'form-control',
+                'step': '0.1',
+                'min': '30',
+                'max': '45',
             }),
             'pulse_rate': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': '20', 'max': '300',
+                'class': 'form-control',
+                'min': '20',
+                'max': '300',
+            }),
+            'respiratory_rate': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'max': '100',
+            }),
+            'oxygen_saturation': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+            }),
+            'weight': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '500',
             }),
             'urgency': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -162,7 +275,51 @@ class TriageEditForm(forms.ModelForm):
             'blood_pressure': 'Blood Pressure (mmHg)',
             'temperature': 'Temperature (°C)',
             'pulse_rate': 'Pulse Rate (bpm)',
+            'respiratory_rate': 'Respiratory Rate (breaths/min)',
+            'oxygen_saturation': 'Oxygen Saturation — SpO₂ (%)',
+            'weight': 'Weight (kg)',
         }
+
+    def clean_blood_pressure(self):
+        bp = self.cleaned_data.get('blood_pressure', '').strip()
+        if bp and not re.match(r'^\d{2,3}/\d{2,3}$', bp):
+            raise forms.ValidationError('Enter blood pressure as systolic/diastolic (e.g. 120/80).')
+        return bp
+
+    def clean_temperature(self):
+        temp = self.cleaned_data.get('temperature')
+        if temp is not None:
+            if temp < 30 or temp > 45:
+                raise forms.ValidationError('Temperature must be between 30°C and 45°C.')
+        return temp
+
+    def clean_pulse_rate(self):
+        pulse = self.cleaned_data.get('pulse_rate')
+        if pulse is not None:
+            if pulse < 20 or pulse > 300:
+                raise forms.ValidationError('Pulse rate must be between 20 and 300 bpm.')
+        return pulse
+
+    def clean_respiratory_rate(self):
+        rate = self.cleaned_data.get('respiratory_rate')
+        if rate is not None:
+            if rate < 0 or rate > 100:
+                raise forms.ValidationError('Respiratory rate must be between 0 and 100 breaths/min.')
+        return rate
+
+    def clean_oxygen_saturation(self):
+        spo2 = self.cleaned_data.get('oxygen_saturation')
+        if spo2 is not None:
+            if spo2 < 0 or spo2 > 100:
+                raise forms.ValidationError('Oxygen saturation must be between 0 and 100%.')
+        return spo2
+
+    def clean_weight(self):
+        weight = self.cleaned_data.get('weight')
+        if weight is not None:
+            if weight < 0 or weight > 500:
+                raise forms.ValidationError('Weight must be between 0 and 500 kg.')
+        return weight
 
 
 class PrescriptionForm(forms.ModelForm):
@@ -183,17 +340,25 @@ class PrescriptionForm(forms.ModelForm):
 
 class PrescriptionItemForm(forms.Form):
     """
-    Free-text medicine row for the prescription form.
-    Each row represents one medicine. Medicine name, dosage, frequency,
-    and duration are all required when a row has any data. Instructions optional.
+    Combined medicine row: inventory dropdown + free-text dosing fields.
+    Doctor can select from inventory OR type a custom medicine name.
+    Auto-deducts stock when inventory medicine is selected.
     """
+    medicine = forms.ModelChoiceField(
+        queryset=Medicine.objects.filter(quantity__gt=0).order_by('name'),
+        required=False,
+        label='Medicine',
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+        }),
+    )
     medicine_name = forms.CharField(
         required=False,
         max_length=200,
-        label='Medicine Name',
+        label='Or custom medicine name',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'e.g. Paracetamol 500mg',
+            'placeholder': 'Type if not in inventory',
             'autocomplete': 'off',
         }),
     )
@@ -224,6 +389,16 @@ class PrescriptionItemForm(forms.Form):
             'placeholder': 'e.g. 7 days',
         }),
     )
+    quantity = forms.IntegerField(
+        required=False,
+        min_value=1,
+        label='Quantity to dispense',
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': 1,
+            'placeholder': 'Number of units',
+        }),
+    )
     instructions = forms.CharField(
         required=False,
         max_length=200,
@@ -237,28 +412,50 @@ class PrescriptionItemForm(forms.Form):
     def has_data(self):
         """Return True if this row has any meaningful input."""
         cd = getattr(self, 'cleaned_data', {})
-        return bool(cd.get('medicine_name') or cd.get('dosage'))
+        return bool(
+            cd.get('medicine') or
+            cd.get('medicine_name') or
+            cd.get('dosage')
+        )
 
     def clean(self):
         cleaned = super().clean()
-        name = cleaned.get('medicine_name', '').strip()
+        medicine = cleaned.get('medicine')
+        medicine_name = cleaned.get('medicine_name', '').strip()
         dosage = cleaned.get('dosage', '').strip()
         frequency = cleaned.get('frequency', '').strip()
         duration = cleaned.get('duration', '').strip()
+        quantity = cleaned.get('quantity')
         instructions = cleaned.get('instructions', '').strip()
 
-        # If any field in this row has data, require the core fields
-        any_filled = any([name, dosage, frequency, duration, instructions])
+        # If any field has data, validate the row
+        any_filled = any([medicine, medicine_name, dosage, frequency, duration, quantity, instructions])
         if any_filled:
-            if not name:
-                self.add_error('medicine_name', 'Medicine name is required.')
+            # Either inventory medicine OR custom name required
+            if not medicine and not medicine_name:
+                self.add_error('medicine', 'Select a medicine from inventory or type a custom name.')
+                self.add_error('medicine_name', 'Select a medicine from inventory or type a custom name.')
             if not dosage:
                 self.add_error('dosage', 'Dosage is required.')
             if not frequency:
                 self.add_error('frequency', 'Frequency is required.')
             if not duration:
                 self.add_error('duration', 'Duration is required.')
+
+            # If inventory medicine selected, quantity is required and must not exceed stock
+            if medicine:
+                if not quantity:
+                    self.add_error('quantity', 'Quantity is required when dispensing from inventory.')
+                elif quantity > medicine.quantity:
+                    self.add_error(
+                        'quantity',
+                        f'Insufficient stock — only {medicine.quantity} {medicine.get_unit_display()}(s) available.'
+                    )
         return cleaned
+
+
+# Replace the formset
+PrescriptionMedicineFormSet = formset_factory(PrescriptionItemForm, extra=1)
 
 
 # Used by the existing inventory-linked prescribe view (kept for backward compat)

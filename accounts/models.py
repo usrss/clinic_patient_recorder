@@ -23,6 +23,10 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=20, blank=True)
     force_password_change = models.BooleanField(default=False)
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    reset_otp = models.CharField(max_length=6, null=True, blank=True)
+    reset_otp_expiry = models.DateTimeField(null=True, blank=True)
 
     # ── convenience properties ──────────────────────────────────────────
     @property

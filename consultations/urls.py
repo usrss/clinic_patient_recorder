@@ -34,4 +34,8 @@ urlpatterns = [
 
     # ── Clinical staff shared ─────────────────────────────────────────
     path('detail/<int:pk>/', views.clinical_detail, name='clinical_detail'),
+
+    # Print Consultation
+    path('<int:pk>/print/', views.print_consultation, name='print_consultation'),
+
 ]

@@ -2,12 +2,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+from notifications.utils import notify_role, notify_user
 from django.core.exceptions import ValidationError
 
 from accounts.decorators import (
     frontdesk_required, nurse_required, doctor_required,
     admin_required, clinical_staff_required, patient_required,
 )
+from inventory.models import Medicine
+from patients.models import PatientProfile
 from .models import Consultation, Triage, Prescription, PrescriptionItem
 from .forms import (
     ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
@@ -54,6 +57,10 @@ def patient_submit(request):
         consultation.patient = patient
         consultation.status = Consultation.Status.PENDING
         consultation.save()
+        notify_role('frontdesk',
+                    'New Consultation Request',
+                    f'{patient.get_full_name()} submitted a consultation request.',
+                    f'/consultations/queue/{consultation.pk}/')
         messages.success(request, 'Your consultation request has been submitted.')
         return redirect('consultations:patient_home')
 
@@ -120,6 +127,10 @@ def consultation_create(request):
         consultation = form.save(commit=False)
         consultation.status = Consultation.Status.PENDING
         consultation.save()
+        notify_role('frontdesk',
+                    'New Consultation Request',
+                    f'{consultation.patient.get_full_name()} submitted a consultation request.'
+                    f'/consultations/queue/{consultation.pk}/')
         messages.success(
             request,
             f'Consultation created for {consultation.patient.get_full_name()}.'
@@ -148,6 +159,10 @@ def queue_detail(request, pk):
             with transaction.atomic():
                 instance.queue_number = assign_next_queue_number()
                 instance.save()
+                notify_role('nurse',
+                            'Patient Queued for Triage',
+                            f'{consultation.patient.get_full_name()} is ready for triage.',
+                            f'/consultations/triage/{consultation.pk}/')
         else:
             instance.save()
         messages.success(
@@ -245,6 +260,10 @@ def triage_form(request, pk):
         triage.save()
         consultation.status = Consultation.Status.TRIAGED
         consultation.save(update_fields=['status'])
+        notify_role('doctor',
+                    'Patient Ready for Consultation',
+                    f'{consultation.patient.get_full_name()} has been triaged and is ready.',
+                    f'/consultations/prescribe/{consultation.pk}/')
         messages.success(request, f'Triage complete for Consultation #{consultation.pk}.')
         return redirect('consultations:triage_list')
 
@@ -313,7 +332,7 @@ def prescribe(request, pk):
 
     if hasattr(consultation, 'prescription'):
         messages.info(request, f'Consultation #{consultation.pk} already has a prescription.')
-        return redirect('consultations:doctor_list')
+        return redirect('consultations:print_consultation', pk=consultation.pk)
 
     prescription_form = PrescriptionForm(request.POST or None)
     formset = PrescriptionMedicineFormSet(request.POST or None, prefix='meds')
@@ -340,14 +359,31 @@ def prescribe(request, pk):
                         prescription.save()
 
                         for form in item_rows:
+                            med = form.cleaned_data.get('medicine')
+                            med_name = form.cleaned_data.get('medicine_name', '').strip()
+                            qty = form.cleaned_data.get('quantity')
+
+                            # Determine medicine name: inventory name or custom text
+                            display_name = med.name if med else med_name
+
                             PrescriptionItem.objects.create(
                                 prescription=prescription,
-                                medicine_name=form.cleaned_data['medicine_name'].strip(),
+                                medicine=med,  # FK to inventory (null if custom)
+                                medicine_name=display_name,
                                 dosage=form.cleaned_data.get('dosage', '').strip(),
                                 frequency=form.cleaned_data.get('frequency', '').strip(),
                                 duration=form.cleaned_data.get('duration', '').strip(),
                                 instructions=form.cleaned_data.get('instructions', '').strip(),
                             )
+
+                            # Auto-deduct from inventory if inventory medicine selected
+                            if med and qty:
+                                deduct_medicine_stock(
+                                    medicine_id=med.pk,
+                                    quantity=qty,
+                                    reason=f'Consultation #{consultation.pk} — {consultation.patient.get_full_name()}',
+                                    user=request.user,
+                                )
 
                         consultation.status = Consultation.Status.COMPLETED
                         consultation.save(update_fields=['status'])
@@ -356,7 +392,7 @@ def prescribe(request, pk):
                         request,
                         f'Prescription saved. Consultation #{consultation.pk} is now completed.'
                     )
-                    return redirect('consultations:doctor_list')
+                    return redirect('consultations:print_consultation', pk=consultation.pk)
 
                 except Exception:
                     messages.error(request, 'An unexpected error occurred. Please try again.')
@@ -365,6 +401,7 @@ def prescribe(request, pk):
         'consultation': consultation,
         'prescription_form': prescription_form,
         'formset': formset,
+        'inventory_medicines': Medicine.objects.filter(quantity__gt=0).order_by('name'),
     })
 
 
@@ -456,8 +493,15 @@ def patient_medical_history(request, patient_pk):
         .first()
     )
 
+    # Get patient profile
+    try:
+        patient_profile = patient.profile
+    except PatientProfile.DoesNotExist:
+        patient_profile = None
+
     return render(request, 'consultations/medical_history.html', {
         'patient': patient,
+        'patient_profile': patient_profile,
         'consultations': consultations,
         'total_count': total_count,
         'first_visit': first_visit,
@@ -615,3 +659,24 @@ def patient_medical_history_pdf(request, patient_pk):
         f'attachment; filename="medical_history_{safe_name}.pdf"'
     )
     return response
+
+# ─── PRINTABLE CONSULTATION ────────────────────────────────────────────────────
+
+@login_required
+@clinical_staff_required
+def print_consultation(request, pk):
+    """
+    Printable/single-page view of a consultation with all vitals,
+    diagnosis, prescriptions — optimised for printing.
+    """
+    consultation = get_object_or_404(
+        Consultation.objects.select_related(
+            'patient', 'patient__college', 'patient__profile',
+            'triage', 'prescription',
+        ).prefetch_related('prescription__items'),
+        pk=pk,
+    )
+
+    return render(request, 'consultations/print_consultation.html', {
+        'consultation': consultation,
+    })

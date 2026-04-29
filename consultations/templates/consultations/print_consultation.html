@@ -1,0 +1,519 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medical Consultation Form — {{ patient.get_full_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1.2cm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 11pt;
+      color: #000;
+      line-height: 1.35;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 10px;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 4px;
+    }
+    .header-logo {
+      width: 60px;
+      height: 60px;
+    }
+    .header-text h2 {
+      font-size: 13pt;
+      font-weight: 700;
+      margin-bottom: 1px;
+    }
+    .header-text .univ-name {
+      font-size: 13pt;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .header-text .clinic-name {
+      font-size: 11pt;
+      font-weight: 600;
+    }
+    .header-text .address {
+      font-size: 8pt;
+      color: #333;
+    }
+    .form-title {
+      font-size: 13pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+
+    /* ── SECTIONS ──────────────────────────────────── */
+    .section {
+      margin-bottom: 10px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-size: 9pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-bottom: 0.5px solid #000;
+      margin-bottom: 6px;
+      padding-bottom: 2px;
+    }
+
+    /* ── DATA ROWS ─────────────────────────────────── */
+    .data-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 3px;
+      font-size: 10pt;
+    }
+    .data-item {
+      display: flex;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .data-item .label {
+      font-weight: 600;
+    }
+    .data-item .value {
+      border-bottom: 0.5px solid #000;
+      min-width: 60px;
+      padding: 0 4px;
+    }
+    .data-item .value.wide { min-width: 120px; }
+    .data-item .value.xwide { min-width: 180px; }
+
+    /* ── CHECKBOX GRID ─────────────────────────────── */
+    .checkbox-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+      font-size: 10pt;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .checkbox-box {
+      width: 14px;
+      height: 14px;
+      border: 1px solid #000;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10pt;
+      font-weight: 700;
+    }
+
+    /* ── VITALS TABLE ──────────────────────────────── */
+    .vitals-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+      font-size: 10pt;
+    }
+    .vitals-table td {
+      border: 0.5px solid #000;
+      padding: 4px 8px;
+      text-align: center;
+    }
+    .vitals-table .vit-label {
+      font-weight: 600;
+      background: #f5f5f5;
+    }
+
+    /* ── TEXT AREAS ────────────────────────────────── */
+    .text-area {
+      border: 0.5px solid #000;
+      min-height: 60px;
+      padding: 6px;
+      margin-bottom: 8px;
+      font-size: 10pt;
+    }
+
+    /* ── SIGNATURE ─────────────────────────────────── */
+    .signature-line {
+      border-top: 0.5px solid #000;
+      padding-top: 4px;
+      margin-top: 20px;
+      font-size: 10pt;
+    }
+    .doctor-name {
+      font-weight: 600;
+      font-size: 10pt;
+    }
+
+    /* ── CONSULTATION BLOCK ────────────────────────── */
+    .consultation-block {
+      border: 1px solid #000;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    /* ── NO-PRINT ──────────────────────────────────── */
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+    }
+    .print-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 100;
+    }
+    .back-link {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      font-size: 12px;
+      color: #2563eb;
+      text-decoration: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ BUTTONS (hidden when printed) ═══ -->
+  <button class="print-btn no-print" onclick="window.print();">🖨 Print Form</button>
+  <a href="{% url 'consultations:clinical_detail' consultation.pk %}" class="back-link no-print">← Back</a>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- HEADER -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="header-top">
+      <!-- CHANGE LOGO PATH HERE -->
+      <img src="{% static 'consultations/images/norsu-logo.png' %}" alt="NORSU Logo" class="header-logo">
+      <div class="header-text">
+        <div class="univ-name">Negros Oriental State University</div>
+        <div class="clinic-name">Medical Dental Clinic</div>
+        <div class="address">Dumaguete City, Negros Oriental, Philippines</div>
+      </div>
+    </div>
+    <div class="form-title">Medical Consultation Form</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- PATIENT INFORMATION -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Patient Information</div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Name:</span>
+        <span class="value xwide">{{ consultation.patient.get_full_name }}</span>
+      </div>
+      <div class="data-item">
+        <span class="label">Age:</span>
+        <span class="value">{{ consultation.patient.age|default:"—" }}</span>
+      </div>
+      <div class="data-item">
+        <span class="label">Sex:</span>
+        <span class="value">{{ consultation.patient.get_sex_display }}</span>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Status:</span>
+        <span class="value wide">
+          {% if consultation.patient.position %}{{ consultation.patient.position }}
+          {% elif consultation.patient.college %}Student
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="data-item">
+        <span class="label">Address:</span>
+        <span class="value xwide">{{ consultation.patient.profile.address|default:"—" }}</span>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Date of Birth:</span>
+        <span class="value wide">
+          {% if consultation.patient.profile.birthday %}{{ consultation.patient.profile.birthday|date:"F d, Y" }}{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="data-item">
+        <span class="label">Course & Year:</span>
+        <span class="value wide">
+          {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% endif %}
+          {% if consultation.patient.profile.year_level %} — {{ consultation.patient.profile.year_level }}{% endif %}
+        </span>
+      </div>
+      <div class="data-item">
+        <span class="label">Religion:</span>
+        <span class="value wide">{{ consultation.patient.profile.religion|default:"—" }}</span>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Weight:</span>
+        <span class="value">
+          {% if consultation.patient.profile.weight_kg %}{{ consultation.patient.profile.weight_kg }} kg{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="data-item">
+        <span class="label">Height:</span>
+        <span class="value">
+          {% if consultation.patient.profile.height_cm %}{{ consultation.patient.profile.height_cm }} cm{% else %}—{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- EMERGENCY CONTACT -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Person to Contact in Case of Emergency</div>
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Name:</span>
+        <span class="value wide">{{ consultation.patient.emergency_contact_name|default:"—" }}</span>
+      </div>
+      <div class="data-item">
+        <span class="label">Address & Contact No.:</span>
+        <span class="value xwide">{{ consultation.patient.emergency_contact_phone|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- FAMILY & PAST MEDICAL HISTORY -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Family and Past Medical History</div>
+
+    <div class="checkbox-row">
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.hypertension %}✓{% endif %}</span>
+        <span>HPN</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.diabetes %}✓{% endif %}</span>
+        <span>Diabetes</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.asthma %}✓{% endif %}</span>
+        <span>Asthma</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.cardiac_problems %}✓{% endif %}</span>
+        <span>Cardiac Problems</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.arthritis %}✓{% endif %}</span>
+        <span>Arthritis</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.other_conditions %}✓{% endif %}</span>
+        <span>Others: {{ consultation.patient.profile.other_conditions|default:"" }}</span>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Allergies (Medications):</span>
+        <span class="value xwide">{{ consultation.patient.profile.known_allergies|default:"—" }}</span>
+      </div>
+    </div>
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Previous Illness:</span>
+        <span class="value xwide">{{ consultation.patient.profile.previous_illnesses|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- IMMUNIZATIONS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Immunizations</div>
+
+    <div class="checkbox-row">
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.bcg %}✓{% endif %}</span>
+        <span>BCG</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.dpt %}✓{% endif %}</span>
+        <span>DPT</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.opv %}✓{% endif %}</span>
+        <span>OPV</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.hepatitis_b %}✓{% endif %}</span>
+        <span>Hepatitis B</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.measles %}✓{% endif %}</span>
+        <span>Measles</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.tt %}✓{% endif %}</span>
+        <span>TT</span>
+      </div>
+      <div class="checkbox-item">
+        <span class="checkbox-box">{% if consultation.patient.profile.immunization_others %}✓{% endif %}</span>
+        <span>Others: {{ consultation.patient.profile.immunization_others|default:"" }}</span>
+      </div>
+    </div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Meds Taken:</span>
+        <span class="value xwide">{{ consultation.patient.profile.current_medications|default:"—" }}</span>
+      </div>
+    </div>
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Vices:</span>
+        <span class="value xwide">{{ consultation.patient.profile.vices|default:"—" }}</span>
+      </div>
+    </div>
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Previous Hospitalization:</span>
+        <span class="value xwide">{{ consultation.patient.profile.previous_hospitalizations|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CONSULTATION RECORD -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="consultation-block">
+    <div class="section-title">Consultation Record</div>
+
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Date:</span>
+        <span class="value wide">{{ consultation.created_at|date:"F d, Y" }}</span>
+      </div>
+      <div class="data-item">
+        <span class="label">Time:</span>
+        <span class="value">{{ consultation.created_at|date:"h:i A" }}</span>
+      </div>
+    </div>
+
+    <!-- Vital Signs Table -->
+    {% with t=consultation.triage %}
+    {% if t %}
+    <table class="vitals-table">
+      <tr>
+        <td class="vit-label">Temp (°C)</td>
+        <td class="vit-label">BP (mmHg)</td>
+        <td class="vit-label">PR (bpm)</td>
+        <td class="vit-label">RR (breaths/min)</td>
+        <td class="vit-label">SpO₂ (%)</td>
+        <td class="vit-label">Wt. (kg)</td>
+      </tr>
+      <tr>
+        <td>{{ t.temperature }}</td>
+        <td>{{ t.blood_pressure }}</td>
+        <td>{{ t.pulse_rate }}</td>
+        <td>{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</td>
+        <td>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}{% else %}—{% endif %}</td>
+        <td>{% if t.weight is not None %}{{ t.weight }}{% else %}—{% endif %}</td>
+      </tr>
+    </table>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Complaints / Diagnosis -->
+    <div style="font-size:9pt;font-weight:600;margin-bottom:2px;">Complaints / Diagnosis:</div>
+    <div class="text-area">
+      <strong>Chief Complaint:</strong> {{ consultation.symptoms }}<br>
+      {% with rx=consultation.prescription %}
+      {% if rx %}
+      <strong>Diagnosis:</strong> {{ rx.diagnosis }}
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Medical Intervention / Action Plan -->
+    <div style="font-size:9pt;font-weight:600;margin-bottom:2px;">Medical Intervention / Action Plan:</div>
+    <div class="text-area">
+      {% with rx=consultation.prescription %}
+      {% if rx %}
+      {% if rx.treatment_plan %}{{ rx.treatment_plan }}<br>{% endif %}
+      {% if rx.items.all %}
+      <strong>Medicines Prescribed:</strong><br>
+      {% for item in rx.items.all %}
+        • {{ item.get_display_name }}
+        {% if item.dosage %} — {{ item.dosage }}{% endif %}
+        {% if item.frequency %} — {{ item.frequency }}{% endif %}
+        {% if item.duration %} for {{ item.duration }}{% endif %}
+        {% if item.instructions %} ({{ item.instructions }}){% endif %}<br>
+      {% endfor %}
+      {% endif %}
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Performed By -->
+    <!-- Performed By (Nurse) -->
+    <div class="data-row">
+      <div class="data-item">
+        <span class="label">Performed by:</span>
+        <span class="value xwide">
+          {% if consultation.triage and consultation.triage.nurse %}
+            {{ consultation.triage.nurse.get_full_name|default:consultation.triage.nurse.username }} (Nurse)
+          {% else %}—{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Doctor Signature -->
+    {% with rx=consultation.prescription %}
+    {% if rx and rx.doctor %}
+    <div class="signature-line">
+      <span class="doctor-name">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}</span><br>
+      <span style="font-size:8pt;">Signature over Printed Name</span>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+</body>
+</html>
