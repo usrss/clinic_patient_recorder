@@ -1,0 +1,264 @@
+/* ═══════════════════════════════════════════
+   LOGIN PAGE — Consistent with base.css + home.css
+   ═══════════════════════════════════════════ */
+
+/* ── Auth layout: hide chrome, center content ── */
+.auth-page .cr-navbar,
+.auth-page .cr-role-navbar,
+.auth-page .cr-footer {
+  display: none !important;
+}
+
+.auth-page {
+  background: linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 50%, #f1f5f9 100%) !important;
+  min-height: 100vh;
+}
+
+.auth-page main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Centering wrapper ── */
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ── Login container ── */
+.login-page {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ── Page Header (no logo) ── */
+.login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.login-header p {
+  font-size: 13px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ── Card — matches home feature-card / contact-card aesthetic ── */
+.login-card {
+  background: var(--surface, #ffffff);
+  border-radius: var(--radius-xl, 16px);
+  padding: 32px 28px;
+  border: 1px solid var(--border, #e2e8f0);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.06),
+    0 24px 48px rgba(0,0,0,0.04);
+}
+
+/* ── Fields ── */
+.field {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* Target Django-rendered inputs */
+.field input[type="text"],
+.field input[type="password"] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  border-radius: var(--radius, 8px);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text, #0f172a);
+  background: var(--surface-alt, #f8fafc);
+  transition: border-color var(--transition, 0.2s), box-shadow var(--transition, 0.2s), background var(--transition, 0.2s);
+  outline: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  box-sizing: border-box;
+  display: block;
+}
+
+.field input[type="text"]:focus,
+.field input[type="password"]:focus {
+  border-color: var(--primary, #0078d4);
+  background: var(--surface, #ffffff);
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.10);
+}
+
+.field input::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* ── Password toggle ── */
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrap input[type="password"],
+.password-wrap input[type="text"] {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 6px);
+  transition: color var(--transition, 0.2s), background var(--transition, 0.2s);
+  line-height: 0;
+}
+
+.password-toggle:hover {
+  color: var(--text-secondary, #475569);
+  background: var(--surface-alt, #f8fafc);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--primary, #0078d4);
+  outline-offset: 2px;
+}
+
+/* ── Options row ── */
+.login-options {
+  text-align: right;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
+
+.login-link {
+  font-size: 12px;
+  color: var(--primary, #0078d4);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition, 0.2s);
+}
+
+.login-link:hover {
+  color: var(--primary-dark, #005a9e);
+  text-decoration: underline;
+}
+
+/* ── Submit button — matches base btn-primary ── */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius, 8px);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary, #0078d4), var(--accent, #00b7c3));
+  box-shadow: var(--shadow-btn, 0 4px 12px rgba(0, 120, 212, 0.25));
+  transition: box-shadow var(--transition, 0.2s), transform var(--transition, 0.2s), background var(--transition, 0.2s);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, var(--primary-hover, #106ebe), #00a3ad);
+  box-shadow: 0 6px 20px rgba(0, 120, 212, 0.35);
+  transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn, 0 4px 12px rgba(0, 120, 212, 0.25));
+}
+
+/* ── Alerts ── */
+.alert {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border-radius: var(--radius, 8px);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.alert--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alert--warning {
+  background: #fff8e1;
+  color: #92400e;
+  border: 1px solid #fed7aa;
+}
+
+.alert--success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.alert--info {
+  background: var(--primary-subtle, #eff6fc);
+  color: var(--primary, #0078d4);
+  border: 1px solid rgba(0, 120, 212, 0.15);
+}
+
+/* ── Field-level error ── */
+.field-error {
+  display: block;
+  font-size: 11px;
+  color: var(--danger, #c42b1c);
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+/* ── Footer ── */
+.login-footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 20px;
+  font-weight: 400;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .auth-wrap {
+    padding: 24px 16px;
+  }
+  .login-card {
+    padding: 24px 20px;
+  }
+}
