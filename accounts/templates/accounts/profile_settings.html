@@ -1,187 +1,319 @@
 {% extends 'core/base.html' %}
 {% block title %}Settings — Clinic Recorder{% endblock %}
 
-{% block extra_css %}
+{% block content %}
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:40px 24px;">
+
+  <div style="width:100%;max-width:680px;margin:0 auto;">
+
+    {# Header #}
+    <div style="margin-bottom:28px;">
+      <a href="{% url 'accounts:dashboard' %}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#0078d4;text-decoration:none;margin-bottom:16px;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+        ← Back to Dashboard
+      </a>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Settings</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">Manage your profile and account preferences.</p>
+    </div>
+
+    {# Messages #}
+    {% if messages %}
+      {% for message in messages %}
+        <div style="margin-bottom:16px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;
+          {% if message.tags == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
+          {% elif message.tags == 'warning' %}background:#fff8e1;color:#92400e;border:1px solid #fed7aa;
+          {% else %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {# ── Profile Information Card ── #}
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;margin-bottom:20px;">
+
+      <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;">
+        Profile Information
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if user.role == 'patient' %}
+
+        {# Contact #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">
+          Contact
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Phone</label>
+            {{ info_form.phone }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email</label>
+            {{ info_form.email }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Name</label>
+            {{ info_form.emergency_contact_name }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Phone</label>
+            {{ info_form.emergency_contact_phone }}
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Address</label>
+          {{ info_form.address }}
+        </div>
+
+        {# Demographics #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">
+          Demographics
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>
+            {{ info_form.religion }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>
+            {{ info_form.civil_status }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>
+            {{ info_form.year_level }}
+          </div>
+        </div>
+
+        {# Physical #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">
+          Physical
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>
+            {{ info_form.height_cm }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>
+            {{ info_form.weight_kg }}
+          </div>
+        </div>
+
+        {# Medical History #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">
+          Medical History
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.hypertension }} <label style="margin:0;font-size:13px;color:#374151;">Hypertension</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.diabetes }} <label style="margin:0;font-size:13px;color:#374151;">Diabetes</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.asthma }} <label style="margin:0;font-size:13px;color:#374151;">Asthma</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.cardiac_problems }} <label style="margin:0;font-size:13px;color:#374151;">Cardiac Problems</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.arthritis }} <label style="margin:0;font-size:13px;color:#374151;">Arthritis</label></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>
+          {{ info_form.other_conditions }}
+        </div>
+
+        {# Immunization #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">
+          Immunization
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.bcg }} <label style="margin:0;font-size:13px;color:#374151;">BCG</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.dpt }} <label style="margin:0;font-size:13px;color:#374151;">DPT</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.opv }} <label style="margin:0;font-size:13px;color:#374151;">OPV</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.hepatitis_b }} <label style="margin:0;font-size:13px;color:#374151;">Hepatitis B</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.measles }} <label style="margin:0;font-size:13px;color:#374151;">Measles</label></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ info_form.tt }} <label style="margin:0;font-size:13px;color:#374151;">TT</label></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Immunizations</label>
+          {{ info_form.immunization_others }}
+        </div>
+
+        {# Medical Background #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">
+          Medical Background
+        </div>
+        <div style="display:grid;gap:14px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Current Medications</label>
+            {{ info_form.current_medications }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Vices</label>
+            {{ info_form.vices }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Illnesses</label>
+            {{ info_form.previous_illnesses }}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Hospitalizations</label>
+            {{ info_form.previous_hospitalizations }}
+          </div>
+        </div>
+
+        {% else %}
+        {# Staff fields #}
+        <div style="display:grid;gap:14px;margin-bottom:16px;">
+          {% for field in info_form %}
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <button type="submit" name="save_info"
+          style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;"
+          onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'"
+          onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+          Save Profile
+        </button>
+      </form>
+    </div>
+
+    {# ── Change Password Card ── #}
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;margin-bottom:40px;">
+
+      <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;">
+        Change Password
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div style="display:grid;gap:14px;">
+          {% for field in password_form %}
+          <div style="position:relative;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">{{ field.label }}</label>
+            <div style="position:relative;display:flex;align-items:center;">
+              {{ field }}
+              {% if field.field.widget.input_type == 'password' %}
+              <button type="button"
+                aria-label="Toggle password visibility"
+                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;border-radius:6px;transition:color 0.15s;"
+                onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'"
+                onclick="togglePw(this)">
+                <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+              {% endif %}
+            </div>
+            {% if field.errors %}<div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="submit" name="save_password"
+          style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:20px;"
+          onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'"
+          onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+          Change Password
+        </button>
+      </form>
+    </div>
+
+    {# Footer #}
+    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:4px;padding-bottom:24px;">
+      Negros Oriental State University — Medical Dental Clinic
+    </p>
+
+  </div>
+</div>
+
 <style>
-  .checkbox-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 8px;
+  /* All text inputs, selects, textareas */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="password"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
-  .checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background: #f8fafb;
-    border-radius: 6px;
-    border: 0.5px solid var(--border);
+  /* Extra right padding for password fields with toggle */
+  input[type="password"] {
+    padding-right: 44px;
   }
-  .checkbox-item input[type="checkbox"] {
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="number"]:focus,
+  input[type="password"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #c4c9d0;
+  }
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  /* Checkboxes */
+  input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    margin: 0;
+    accent-color: #0078d4;
+    cursor: pointer;
+    flex-shrink: 0;
   }
-  .checkbox-item label {
-    margin: 0;
-    font-size: 13px;
+  /* Select arrow */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  @media (max-width: 600px) {
+    div[style*="grid-template-columns:1fr 1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+    }
+    div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+    }
   }
 </style>
-{% endblock %}
 
-{% block content %}
-<div style="max-width:640px;">
-
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'accounts:dashboard' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">Settings</h1>
-  </div>
-
-  <!-- Profile Info -->
-  <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">👤 Profile Information</h3>
-    <form method="post" novalidate>
-      {% csrf_token %}
-
-      {% if user.role == 'patient' %}
-
-      <!-- Contact -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📞 Contact</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group">
-          <label>Phone</label>
-          {{ info_form.phone }}
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          {{ info_form.email }}
-        </div>
-        <div class="form-group">
-          <label>Emergency Contact Name</label>
-          {{ info_form.emergency_contact_name }}
-        </div>
-        <div class="form-group">
-          <label>Emergency Contact Phone</label>
-          {{ info_form.emergency_contact_phone }}
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Address</label>
-        {{ info_form.address }}
-      </div>
-
-      <!-- Demographics -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">👤 Demographics</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div class="form-group">
-          <label>Religion</label>
-          {{ info_form.religion }}
-        </div>
-        <div class="form-group">
-          <label>Civil Status</label>
-          {{ info_form.civil_status }}
-        </div>
-        <div class="form-group">
-          <label>Year Level</label>
-          {{ info_form.year_level }}
-        </div>
-      </div>
-
-      <!-- Physical Info -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📏 Physical</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group">
-          <label>Height (cm)</label>
-          {{ info_form.height_cm }}
-        </div>
-        <div class="form-group">
-          <label>Weight (kg)</label>
-          {{ info_form.weight_kg }}
-        </div>
-      </div>
-
-      <!-- Medical History -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">🏥 Medical History</div>
-      <div class="checkbox-group">
-        <div class="checkbox-item">{{ info_form.hypertension }} <label>Hypertension</label></div>
-        <div class="checkbox-item">{{ info_form.diabetes }} <label>Diabetes</label></div>
-        <div class="checkbox-item">{{ info_form.asthma }} <label>Asthma</label></div>
-        <div class="checkbox-item">{{ info_form.cardiac_problems }} <label>Cardiac Problems</label></div>
-        <div class="checkbox-item">{{ info_form.arthritis }} <label>Arthritis</label></div>
-      </div>
-      <div class="form-group">
-        <label>Other Conditions</label>
-        {{ info_form.other_conditions }}
-      </div>
-
-      <!-- Immunization -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">💉 Immunization</div>
-      <div class="checkbox-group">
-        <div class="checkbox-item">{{ info_form.bcg }} <label>BCG</label></div>
-        <div class="checkbox-item">{{ info_form.dpt }} <label>DPT</label></div>
-        <div class="checkbox-item">{{ info_form.opv }} <label>OPV</label></div>
-        <div class="checkbox-item">{{ info_form.hepatitis_b }} <label>Hepatitis B</label></div>
-        <div class="checkbox-item">{{ info_form.measles }} <label>Measles</label></div>
-        <div class="checkbox-item">{{ info_form.tt }} <label>TT</label></div>
-      </div>
-      <div class="form-group">
-        <label>Other Immunizations</label>
-        {{ info_form.immunization_others }}
-      </div>
-
-      <!-- Medical Background -->
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;border-bottom:0.5px solid var(--border);padding-bottom:4px;">📋 Medical Background</div>
-      <div class="form-group">
-        <label>Current Medications</label>
-        {{ info_form.current_medications }}
-      </div>
-      <div class="form-group">
-        <label>Vices</label>
-        {{ info_form.vices }}
-      </div>
-      <div class="form-group">
-        <label>Previous Illnesses</label>
-        {{ info_form.previous_illnesses }}
-      </div>
-      <div class="form-group">
-        <label>Previous Hospitalizations</label>
-        {{ info_form.previous_hospitalizations }}
-      </div>
-
-      {% else %}
-      <!-- Staff profile fields -->
-      <div style="display:grid;gap:14px;">
-        {% for field in info_form %}
-        <div class="form-group">
-          <label>{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <button type="submit" name="save_info" class="btn btn-primary" style="margin-top:16px;">💾 Save Profile</button>
-    </form>
-  </div>
-
-  <!-- Change Password -->
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🔒 Change Password</h3>
-    <form method="post" novalidate>
-      {% csrf_token %}
-      <div style="display:grid;gap:14px;">
-        {% for field in password_form %}
-        <div class="form-group">
-          <label>{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}<div class="form-error">{{ field.errors.0 }}</div>{% endif %}
-        </div>
-        {% endfor %}
-      </div>
-      <button type="submit" name="save_password" class="btn btn-primary" style="margin-top:8px;">🔐 Change Password</button>
-    </form>
-  </div>
-
-</div>
+<script>
+  function togglePw(btn) {
+    var wrap  = btn.parentElement;
+    var input = wrap.querySelector('input');
+    var eye   = btn.querySelector('.icon-eye');
+    var eyeOff= btn.querySelector('.icon-eye-off');
+    if (!input) return;
+    var show = input.type === 'password';
+    input.type          = show ? 'text'  : 'password';
+    eye.style.display   = show ? 'none'  : '';
+    eyeOff.style.display= show ? ''      : 'none';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  }
+</script>
 {% endblock %}

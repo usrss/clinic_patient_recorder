@@ -1,40 +1,79 @@
 {% extends 'core/base.html' %}
 {% block title %}Doctor Dashboard — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:28px;">
-    <h1 class="page-title" style="margin-bottom:4px;">Doctor Dashboard</h1>
-    <p style="color:var(--text-muted);font-size:14px;margin:0;">Welcome, Dr. {{ user.get_full_name|default:user.username }}</p>
-</div>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:960px;margin:0 auto;">
 
-
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
-  <div class="card" style="padding:20px;opacity:.6;">
-    <div style="font-size:22px;margin-bottom:8px;">👨‍⚕️</div>
-    <div style="font-weight:600;font-size:14px;">Triaged Patients</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Coming soon</div>
+  {# ── Page Header ── #}
+  <div style="margin-bottom:32px;">
+    <p style="font-size:13px;color:#6b7280;margin:0;">Welcome, Dr. {{ user.get_full_name|default:user.username }}</p>
   </div>
-  <div class="card" style="padding:20px;opacity:.6;">
-    <div style="font-size:22px;margin-bottom:8px;">💊</div>
-    <div style="font-weight:600;font-size:14px;">Prescriptions</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Coming soon</div>
-  </div>
-  {# FIX: Added change password card — was missing from nurse/doctor/frontdesk dashboards #}
-  <a href="{% url 'accounts:change_password' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">🔑</div>
-    <div style="font-weight:600;font-size:14px;">Change Password</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Update your login password</div>
-  </a>
-</div>
 
-<div class="card" style="padding:20px;">
-  <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;">Your Responsibilities</h3>
-  <ul style="margin:0;padding-left:20px;font-size:13px;color:var(--text-muted);line-height:2;">
-    <li>Review triaged patients forwarded by the nurse</li>
-    <li>Perform medical diagnosis</li>
-    <li>Prescribe medication — stock is deducted automatically</li>
-    <li>Provide treatment plan or recommendations</li>
-    <li>Mark consultation as Completed</li>
-  </ul>
+  {# ── Action Cards ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Quick Actions</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:32px;">
+
+
+
+   <a href="{% url 'consultations:doctor_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="people-outline" style="font-size:24px;color:#0078d4;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">My Patients</div>
+      <div style="font-size:12px;color:#94a3b8;"></div>
+    </a>
+
+    <a href="{% url 'patients:patient_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="medkit-outline" style="font-size:24px;color:#10b981;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Records</div>
+      <div style="font-size:12px;color:#94a3b8;"></div>
+    </a>
+
+
+  </div>
+
+  {# ── Responsibilities ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Your Responsibilities</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
+        <ion-icon name="clipboard-outline" style="font-size:18px;color:#0078d4;flex-shrink:0;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Review triaged patients forwarded by the nurse</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
+        <ion-icon name="search-outline" style="font-size:18px;color:#3b82f6;flex-shrink:0;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Perform medical diagnosis</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
+        <ion-icon name="medkit-outline" style="font-size:18px;color:#10b981;flex-shrink:0;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Prescribe medication — stock is deducted automatically</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
+        <ion-icon name="document-text-outline" style="font-size:18px;color:#8b5cf6;flex-shrink:0;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Provide treatment plan or recommendations</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
+        <ion-icon name="checkmark-circle-outline" style="font-size:18px;color:#166534;flex-shrink:0;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Mark consultation as Completed</span>
+      </div>
+
+    </div>
+  </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

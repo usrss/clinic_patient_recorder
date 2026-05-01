@@ -333,33 +333,49 @@ def profile_settings(request):
     if user.role == User.Role.PATIENT:
         patient = user.get_patient_record()
         profile, _ = PatientProfile.objects.get_or_create(patient=patient)
-        info_form = PatientProfileEditForm(request.POST or None, instance=profile, patient=patient)
     else:
-        info_form = UserProfileForm(request.POST or None, instance=user)
-
-    password_form = StaffPasswordChangeForm(user, request.POST or None)
+        profile = None
+        patient = None
 
     if request.method == 'POST':
-        if 'save_info' in request.POST and info_form.is_valid():
+        if 'save_info' in request.POST:
             if user.role == User.Role.PATIENT:
-                info_form.save()
-                patient.phone = info_form.cleaned_data.get('phone', '')
-                patient.email = info_form.cleaned_data.get('email', '')
-                patient.emergency_contact_name = info_form.cleaned_data.get('emergency_contact_name', '')
-                patient.emergency_contact_phone = info_form.cleaned_data.get('emergency_contact_phone', '')
-                patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone'])
+                info_form = PatientProfileEditForm(request.POST, instance=profile, patient=patient)
             else:
-                info_form.save()
-            messages.success(request, 'Profile updated successfully.')
-            return redirect('accounts:profile_settings')
+                info_form = UserProfileForm(request.POST, instance=user)
+            password_form = StaffPasswordChangeForm(user)
 
-        if 'save_password' in request.POST and password_form.is_valid():
-            user = password_form.save()
-            user.force_password_change = False
-            user.save(update_fields=['force_password_change'])
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Password changed successfully.')
-            return redirect('accounts:profile_settings')
+            if info_form.is_valid():
+                if user.role == User.Role.PATIENT:
+                    info_form.save()
+                    patient.phone = info_form.cleaned_data.get('phone', '')
+                    patient.email = info_form.cleaned_data.get('email', '')
+                    patient.emergency_contact_name = info_form.cleaned_data.get('emergency_contact_name', '')
+                    patient.emergency_contact_phone = info_form.cleaned_data.get('emergency_contact_phone', '')
+                    patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone'])
+                else:
+                    info_form.save()
+                messages.success(request, 'Profile updated successfully.')
+                return redirect('accounts:profile_settings')
+
+        elif 'save_password' in request.POST:
+            info_form = PatientProfileEditForm(instance=profile, patient=patient) if user.role == User.Role.PATIENT else UserProfileForm(instance=user)
+            password_form = StaffPasswordChangeForm(user, request.POST)
+
+            if password_form.is_valid():
+                user = password_form.save()
+                user.force_password_change = False
+                user.save(update_fields=['force_password_change'])
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Password changed successfully.')
+                return redirect('accounts:profile_settings')
+    else:
+        # GET request
+        if user.role == User.Role.PATIENT:
+            info_form = PatientProfileEditForm(instance=profile, patient=patient)
+        else:
+            info_form = UserProfileForm(instance=user)
+        password_form = StaffPasswordChangeForm(user)
 
     return render(request, 'accounts/profile_settings.html', {
         'info_form': info_form,

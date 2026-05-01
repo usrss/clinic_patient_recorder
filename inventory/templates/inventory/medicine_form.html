@@ -1,90 +1,348 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ action }} Medicine — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .combo-wrap { position:relative; }
+  .combo-wrap input { width:100%; box-sizing:border-box; }
+  .combo-dropdown {
+    position:absolute;
+    top:calc(100% + 4px);
+    left:0;right:0;
+    background:#fff;
+    border:1px solid #e8ecf1;
+    border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.10);
+    max-height:220px;
+    overflow-y:auto;
+    z-index:999;
+    display:none;
+  }
+  .combo-dropdown.open { display:block; }
+  .combo-option {
+    padding:9px 14px;
+    font-size:13px;
+    color:#374151;
+    cursor:pointer;
+    border-bottom:0.5px solid #f1f5f9;
+    transition:background 0.12s;
+  }
+  .combo-option:last-child { border-bottom:none; }
+  .combo-option:hover, .combo-option.active { background:#f0f4ff; color:#0078d4; }
+  .combo-option small { display:block; font-size:11px; color:#94a3b8; margin-top:1px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">{{ action }} Medicine{% if medicine %}: {{ medicine.name }}{% endif %}</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:660px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'inventory:medicine_list' %}"
+       style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e8ecf1;border-radius:10px;font-size:13px;font-weight:500;color:#374151;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';this.style.transform='translateY(-1px)'"
+       onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)';this.style.transform=''">
+      <ion-icon name="arrow-back-outline" style="font-size:15px;"></ion-icon> Back
+    </a>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;">{{ action }} Medicine</h1>
+      {% if medicine %}<p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">{{ medicine.name }}</p>{% endif %}
+    </div>
   </div>
 
-  <div class="card">
+  {# ── Form Card ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Medicine Details</div>
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
 
-      <div class="form-group">
-        <label>Medicine Name *</label>
-        {{ form.name }}
-        {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
+      {# Medicine Name with autocomplete dropdown #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="medkit-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
+          Medicine Name <span style="color:#ef4444;">*</span>
+        </label>
+        <div class="combo-wrap" id="wrap-name">
+          {{ form.name }}
+          <div class="combo-dropdown" id="dd-name">
+            <!-- Analgesics / Antipyretics -->
+            <div class="combo-option" data-generic="Paracetamol" data-val="Biogesic">Biogesic <small>Paracetamol 500mg</small></div>
+            <div class="combo-option" data-generic="Paracetamol" data-val="Tempra">Tempra <small>Paracetamol 500mg</small></div>
+            <div class="combo-option" data-generic="Paracetamol" data-val="Calpol">Calpol <small>Paracetamol Syrup</small></div>
+            <div class="combo-option" data-generic="Ibuprofen" data-val="Advil">Advil <small>Ibuprofen 200mg</small></div>
+            <div class="combo-option" data-generic="Ibuprofen" data-val="Motrin">Motrin <small>Ibuprofen 400mg</small></div>
+            <div class="combo-option" data-generic="Ibuprofen" data-val="Alaxan FR">Alaxan FR <small>Ibuprofen + Paracetamol</small></div>
+            <div class="combo-option" data-generic="Mefenamic Acid" data-val="Ponstan">Ponstan <small>Mefenamic Acid 500mg</small></div>
+            <div class="combo-option" data-generic="Mefenamic Acid" data-val="Dolfenal">Dolfenal <small>Mefenamic Acid 500mg</small></div>
+            <div class="combo-option" data-generic="Aspirin" data-val="Aspirin">Aspirin <small>Acetylsalicylic Acid 325mg</small></div>
+            <!-- Antibiotics -->
+            <div class="combo-option" data-generic="Amoxicillin" data-val="Amoxil">Amoxil <small>Amoxicillin 500mg</small></div>
+            <div class="combo-option" data-generic="Amoxicillin" data-val="Trimox">Trimox <small>Amoxicillin 250mg</small></div>
+            <div class="combo-option" data-generic="Amoxicillin + Clavulanic Acid" data-val="Augmentin">Augmentin <small>Amoxicillin + Clavulanic Acid</small></div>
+            <div class="combo-option" data-generic="Azithromycin" data-val="Zithromax">Zithromax <small>Azithromycin 500mg</small></div>
+            <div class="combo-option" data-generic="Cetirizine" data-val="Zyrtec">Zyrtec <small>Cetirizine 10mg</small></div>
+            <div class="combo-option" data-generic="Cetirizine" data-val="Allerta">Allerta <small>Cetirizine 10mg</small></div>
+            <!-- Antacids / GI -->
+            <div class="combo-option" data-generic="Omeprazole" data-val="Losec">Losec <small>Omeprazole 20mg</small></div>
+            <div class="combo-option" data-generic="Omeprazole" data-val="Omepron">Omepron <small>Omeprazole 20mg</small></div>
+            <div class="combo-option" data-generic="Aluminum Hydroxide + Magnesium Hydroxide" data-val="Kremil-S">Kremil-S <small>Antacid Tablet</small></div>
+            <div class="combo-option" data-generic="Loperamide" data-val="Imodium">Imodium <small>Loperamide 2mg</small></div>
+            <div class="combo-option" data-generic="Domperidone" data-val="Motilium">Motilium <small>Domperidone 10mg</small></div>
+            <!-- Antihistamines -->
+            <div class="combo-option" data-generic="Diphenhydramine" data-val="Benadryl">Benadryl <small>Diphenhydramine 25mg</small></div>
+            <div class="combo-option" data-generic="Loratadine" data-val="Claritin">Claritin <small>Loratadine 10mg</small></div>
+            <div class="combo-option" data-generic="Chlorphenamine" data-val="Neozep">Neozep <small>Chlorphenamine + Paracetamol</small></div>
+            <!-- Vitamins / Supplements -->
+            <div class="combo-option" data-generic="Ascorbic Acid" data-val="Vitamin C 500mg">Vitamin C 500mg <small>Ascorbic Acid</small></div>
+            <div class="combo-option" data-generic="Ascorbic Acid" data-val="Ceelin">Ceelin <small>Vitamin C Syrup</small></div>
+            <div class="combo-option" data-generic="Multivitamins" data-val="Centrum">Centrum <small>Multivitamins/Minerals</small></div>
+            <div class="combo-option" data-generic="Ferrous Sulfate" data-val="Feosol">Feosol <small>Ferrous Sulfate 325mg</small></div>
+            <div class="combo-option" data-generic="Calcium Carbonate + Vitamin D" data-val="Caltrate">Caltrate <small>Calcium + Vitamin D</small></div>
+            <!-- Antihypertensives -->
+            <div class="combo-option" data-generic="Amlodipine" data-val="Norvasc">Norvasc <small>Amlodipine 5mg</small></div>
+            <div class="combo-option" data-generic="Losartan" data-val="Cozaar">Cozaar <small>Losartan 50mg</small></div>
+            <div class="combo-option" data-generic="Metoprolol" data-val="Betaloc">Betaloc <small>Metoprolol 50mg</small></div>
+            <!-- Antidiabetics -->
+            <div class="combo-option" data-generic="Metformin" data-val="Glucophage">Glucophage <small>Metformin 500mg</small></div>
+            <div class="combo-option" data-generic="Glibenclamide" data-val="Daonil">Daonil <small>Glibenclamide 5mg</small></div>
+            <!-- Respiratory -->
+            <div class="combo-option" data-generic="Salbutamol" data-val="Ventolin">Ventolin <small>Salbutamol 2mg</small></div>
+            <div class="combo-option" data-generic="Salbutamol" data-val="Asthalin">Asthalin <small>Salbutamol Inhaler</small></div>
+            <div class="combo-option" data-generic="Carbocisteine" data-val="Solmux">Solmux <small>Carbocisteine 500mg</small></div>
+            <div class="combo-option" data-generic="Guaifenesin" data-val="Robitussin">Robitussin <small>Guaifenesin Syrup</small></div>
+            <!-- Topical -->
+            <div class="combo-option" data-generic="Povidone-Iodine" data-val="Betadine">Betadine <small>Povidone-Iodine Solution</small></div>
+            <div class="combo-option" data-generic="Hydrogen Peroxide" data-val="Hydrogen Peroxide">Hydrogen Peroxide <small>3% Solution</small></div>
+            <div class="combo-option" data-generic="Mupirocin" data-val="Bactroban">Bactroban <small>Mupirocin Ointment</small></div>
+          </div>
+        </div>
+        {% if form.name.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.name.errors.0 }}</div>{% endif %}
       </div>
 
-      <div class="form-group">
-        <label>Generic Name</label>
-        {{ form.generic_name }}
-        {% if form.generic_name.errors %}<div class="form-error">{{ form.generic_name.errors.0 }}</div>{% endif %}
+      {# Generic Name with autocomplete dropdown #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="flask-outline" style="font-size:14px;color:#8b5cf6;"></ion-icon>
+          Generic Name
+        </label>
+        <div class="combo-wrap" id="wrap-generic">
+          {{ form.generic_name }}
+          <div class="combo-dropdown" id="dd-generic">
+            <div class="combo-option" data-val="Paracetamol">Paracetamol</div>
+            <div class="combo-option" data-val="Ibuprofen">Ibuprofen</div>
+            <div class="combo-option" data-val="Mefenamic Acid">Mefenamic Acid</div>
+            <div class="combo-option" data-val="Aspirin">Aspirin (Acetylsalicylic Acid)</div>
+            <div class="combo-option" data-val="Amoxicillin">Amoxicillin</div>
+            <div class="combo-option" data-val="Amoxicillin + Clavulanic Acid">Amoxicillin + Clavulanic Acid</div>
+            <div class="combo-option" data-val="Azithromycin">Azithromycin</div>
+            <div class="combo-option" data-val="Cetirizine">Cetirizine</div>
+            <div class="combo-option" data-val="Loratadine">Loratadine</div>
+            <div class="combo-option" data-val="Chlorphenamine">Chlorphenamine</div>
+            <div class="combo-option" data-val="Diphenhydramine">Diphenhydramine</div>
+            <div class="combo-option" data-val="Omeprazole">Omeprazole</div>
+            <div class="combo-option" data-val="Aluminum Hydroxide + Magnesium Hydroxide">Aluminum Hydroxide + Magnesium Hydroxide</div>
+            <div class="combo-option" data-val="Loperamide">Loperamide</div>
+            <div class="combo-option" data-val="Domperidone">Domperidone</div>
+            <div class="combo-option" data-val="Ascorbic Acid">Ascorbic Acid (Vitamin C)</div>
+            <div class="combo-option" data-val="Multivitamins">Multivitamins</div>
+            <div class="combo-option" data-val="Ferrous Sulfate">Ferrous Sulfate</div>
+            <div class="combo-option" data-val="Calcium Carbonate + Vitamin D">Calcium Carbonate + Vitamin D</div>
+            <div class="combo-option" data-val="Amlodipine">Amlodipine</div>
+            <div class="combo-option" data-val="Losartan">Losartan</div>
+            <div class="combo-option" data-val="Metoprolol">Metoprolol</div>
+            <div class="combo-option" data-val="Metformin">Metformin</div>
+            <div class="combo-option" data-val="Glibenclamide">Glibenclamide</div>
+            <div class="combo-option" data-val="Salbutamol">Salbutamol</div>
+            <div class="combo-option" data-val="Carbocisteine">Carbocisteine</div>
+            <div class="combo-option" data-val="Guaifenesin">Guaifenesin</div>
+            <div class="combo-option" data-val="Povidone-Iodine">Povidone-Iodine</div>
+            <div class="combo-option" data-val="Hydrogen Peroxide">Hydrogen Peroxide</div>
+            <div class="combo-option" data-val="Mupirocin">Mupirocin</div>
+          </div>
+        </div>
+        {% if form.generic_name.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.generic_name.errors.0 }}</div>{% endif %}
       </div>
 
-      <div class="form-group">
-        <label>Description</label>
+      {# Description #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="document-text-outline" style="font-size:14px;color:#94a3b8;"></ion-icon>
+          Description
+        </label>
         {{ form.description }}
-        {% if form.description.errors %}<div class="form-error">{{ form.description.errors.0 }}</div>{% endif %}
+        {% if form.description.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.description.errors.0 }}</div>{% endif %}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Quantity *</label>
+      {# Qty / Unit / Low Stock Threshold #}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="layers-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+            Quantity <span style="color:#ef4444;">*</span>
+          </label>
           {{ form.quantity }}
-          {% if form.quantity.errors %}<div class="form-error">{{ form.quantity.errors.0 }}</div>{% endif %}
+          {% if form.quantity.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.quantity.errors.0 }}</div>{% endif %}
         </div>
-        <div class="form-group">
-          <label>Unit *</label>
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="cube-outline" style="font-size:14px;color:#f97316;"></ion-icon>
+            Unit <span style="color:#ef4444;">*</span>
+          </label>
           {{ form.unit }}
-          {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
+          {% if form.unit.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.unit.errors.0 }}</div>{% endif %}
         </div>
-        <div class="form-group">
-          <label>Low Stock Threshold</label>
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="alert-circle-outline" style="font-size:14px;color:#ef4444;"></ion-icon>
+            Low Stock Alert
+          </label>
           {{ form.low_stock_threshold }}
-          {% if form.low_stock_threshold.errors %}<div class="form-error">{{ form.low_stock_threshold.errors.0 }}</div>{% endif %}
+          {% if form.low_stock_threshold.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.low_stock_threshold.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Batch Number</label>
+      {# Batch / Expiry #}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="barcode-outline" style="font-size:14px;color:#94a3b8;"></ion-icon>
+            Batch Number
+          </label>
           {{ form.batch_number }}
-          {% if form.batch_number.errors %}<div class="form-error">{{ form.batch_number.errors.0 }}</div>{% endif %}
+          {% if form.batch_number.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.batch_number.errors.0 }}</div>{% endif %}
         </div>
-        <div class="form-group">
-          <label>Expiry Date</label>
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="calendar-outline" style="font-size:14px;color:#ef4444;"></ion-icon>
+            Expiry Date
+          </label>
           {{ form.expiry_date }}
-          {% if form.expiry_date.errors %}<div class="form-error">{{ form.expiry_date.errors.0 }}</div>{% endif %}
+          {% if form.expiry_date.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.expiry_date.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Supplier</label>
-          {{ form.supplier }}
-          {% if form.supplier.errors %}<div class="form-error">{{ form.supplier.errors.0 }}</div>{% endif %}
+      {# Supplier with dropdown / Cost #}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="business-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
+            Supplier
+          </label>
+          <div class="combo-wrap" id="wrap-supplier">
+            {{ form.supplier }}
+            <div class="combo-dropdown" id="dd-supplier">
+              <div class="combo-option" data-val="DOH / Government Supply">DOH / Government Supply</div>
+              <div class="combo-option" data-val="Mercury Drug">Mercury Drug</div>
+              <div class="combo-option" data-val="Rose Pharmacy">Rose Pharmacy</div>
+              <div class="combo-option" data-val="Generika Drugstore">Generika Drugstore</div>
+              <div class="combo-option" data-val="Watsons Pharmacy">Watsons Pharmacy</div>
+              <div class="combo-option" data-val="The Generics Pharmacy">The Generics Pharmacy</div>
+              <div class="combo-option" data-val="Southstar Drug">Southstar Drug</div>
+              <div class="combo-option" data-val="Unilab">Unilab</div>
+              <div class="combo-option" data-val="Pfizer Philippines">Pfizer Philippines</div>
+              <div class="combo-option" data-val="Pascual Laboratories">Pascual Laboratories</div>
+              <div class="combo-option" data-val="Novartis Philippines">Novartis Philippines</div>
+              <div class="combo-option" data-val="GlaxoSmithKline Philippines">GlaxoSmithKline Philippines</div>
+              <div class="combo-option" data-val="Other">Other</div>
+            </div>
+          </div>
+          {% if form.supplier.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.supplier.errors.0 }}</div>{% endif %}
         </div>
-        <div class="form-group">
-          <label>Cost per Unit</label>
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+            <ion-icon name="cash-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+            Cost per Unit (₱)
+          </label>
           {{ form.cost_per_unit }}
-          {% if form.cost_per_unit.errors %}<div class="form-error">{{ form.cost_per_unit.errors.0 }}</div>{% endif %}
+          {% if form.cost_per_unit.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.cost_per_unit.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
       {% if form.non_field_errors %}
-        <div class="form-error" style="margin-bottom:12px;">
-          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
+      <div style="background:#fee2e2;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#991b1b;">
+        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:8px;">
-        <button type="submit" class="btn btn-primary">{{ action }} Medicine</button>
-        <a href="{% url 'inventory:medicine_list' %}" class="btn btn-secondary">Cancel</a>
+      {# Submit #}
+      <div style="display:flex;gap:10px;">
+        <button type="submit"
+          style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:linear-gradient(135deg,#0078d4,#1a56db);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,120,212,0.35);transition:all 0.2s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,120,212,0.45)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.35)'">
+          <ion-icon name="save-outline" style="font-size:16px;"></ion-icon>
+          {{ action }} Medicine
+        </button>
+        <a href="{% url 'inventory:medicine_list' %}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:12px 18px;background:#fff;border:1px solid #e8ecf1;border-radius:12px;font-size:14px;font-weight:500;color:#374151;text-decoration:none;transition:all 0.2s;"
+           onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <ion-icon name="close-outline" style="font-size:15px;"></ion-icon> Cancel
+        </a>
       </div>
+
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
 </div>
+</div>
+
+<script>
+// ── Combo-box logic ──────────────────────────────────────────────────────────
+function initCombo(inputEl, dropdownEl, onSelect) {
+  const allOptions = Array.from(dropdownEl.querySelectorAll('.combo-option'));
+
+  function filterOptions(val) {
+    const q = val.toLowerCase();
+    let visible = 0;
+    allOptions.forEach(opt => {
+      const text = opt.textContent.toLowerCase();
+      const show = !q || text.includes(q);
+      opt.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    dropdownEl.classList.toggle('open', visible > 0 && document.activeElement === inputEl);
+  }
+
+  inputEl.addEventListener('input', () => filterOptions(inputEl.value));
+  inputEl.addEventListener('focus', () => filterOptions(inputEl.value));
+  inputEl.addEventListener('blur', () => setTimeout(() => dropdownEl.classList.remove('open'), 150));
+
+  allOptions.forEach(opt => {
+    opt.addEventListener('mousedown', e => {
+      e.preventDefault();
+      inputEl.value = opt.dataset.val;
+      dropdownEl.classList.remove('open');
+      if (onSelect) onSelect(opt);
+    });
+  });
+}
+
+// Name → auto-fills generic name
+const nameInput    = document.querySelector('#id_name, [name="name"]');
+const genericInput = document.querySelector('#id_generic_name, [name="generic_name"]');
+const nameDd       = document.getElementById('dd-name');
+const genericDd    = document.getElementById('dd-generic');
+const supplierInput = document.querySelector('#id_supplier, [name="supplier"]');
+const supplierDd    = document.getElementById('dd-supplier');
+
+if (nameInput && nameDd) {
+  initCombo(nameInput, nameDd, (opt) => {
+    if (opt.dataset.generic && genericInput) {
+      genericInput.value = opt.dataset.generic;
+    }
+  });
+}
+if (genericInput && genericDd) initCombo(genericInput, genericDd);
+if (supplierInput && supplierDd) initCombo(supplierInput, supplierDd);
+</script>
 {% endblock %}

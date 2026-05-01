@@ -252,14 +252,53 @@ def triage_form(request, pk):
         messages.info(request, f'Consultation #{consultation.pk} has already been triaged.')
         return redirect('consultations:triage_list')
 
-    form = TriageForm(request.POST or None)
+    # Get or create patient profile
+    patient = consultation.patient
+    profile, _ = PatientProfile.objects.get_or_create(patient=patient)
+
+    # Pre-fill profile data as initial values
+    initial_profile = {
+        'hypertension': profile.hypertension,
+        'diabetes': profile.diabetes,
+        'asthma': profile.asthma,
+        'cardiac_problems': profile.cardiac_problems,
+        'arthritis': profile.arthritis,
+        'other_conditions': profile.other_conditions,
+        'bcg': profile.bcg,
+        'dpt': profile.dpt,
+        'opv': profile.opv,
+        'hepatitis_b': profile.hepatitis_b,
+        'measles': profile.measles,
+        'tt': profile.tt,
+
+    }
+
+    form = TriageForm(request.POST or None, initial=initial_profile)
+
     if request.method == 'POST' and form.is_valid():
         triage = form.save(commit=False)
         triage.consultation = consultation
         triage.nurse = request.user
         triage.save()
+
+        # Update patient profile from triage form
+        profile.hypertension = form.cleaned_data['hypertension']
+        profile.diabetes = form.cleaned_data['diabetes']
+        profile.asthma = form.cleaned_data['asthma']
+        profile.cardiac_problems = form.cleaned_data['cardiac_problems']
+        profile.arthritis = form.cleaned_data['arthritis']
+        profile.other_conditions = form.cleaned_data.get('other_conditions', '')
+        profile.bcg = form.cleaned_data['bcg']
+        profile.dpt = form.cleaned_data['dpt']
+        profile.opv = form.cleaned_data['opv']
+        profile.hepatitis_b = form.cleaned_data['hepatitis_b']
+        profile.measles = form.cleaned_data['measles']
+        profile.tt = form.cleaned_data['tt']
+        profile.save()
+
         consultation.status = Consultation.Status.TRIAGED
         consultation.save(update_fields=['status'])
+
         notify_role('doctor',
                     'Patient Ready for Consultation',
                     f'{consultation.patient.get_full_name()} has been triaged and is ready.',
@@ -270,6 +309,7 @@ def triage_form(request, pk):
     return render(request, 'consultations/triage_form.html', {
         'consultation': consultation,
         'form': form,
+        'profile': profile,  # Pass profile for display
     })
 
 
@@ -363,13 +403,13 @@ def prescribe(request, pk):
                             med_name = form.cleaned_data.get('medicine_name', '').strip()
                             qty = form.cleaned_data.get('quantity')
 
-                            # Determine medicine name: inventory name or custom text
-                            display_name = med.name if med else med_name
+                            # Determine medicine name
+                            display_name = med.name
 
                             PrescriptionItem.objects.create(
                                 prescription=prescription,
-                                medicine=med,  # FK to inventory (null if custom)
-                                medicine_name=display_name,
+                                medicine=med,
+                                medicine_name=med.name,
                                 dosage=form.cleaned_data.get('dosage', '').strip(),
                                 frequency=form.cleaned_data.get('frequency', '').strip(),
                                 duration=form.cleaned_data.get('duration', '').strip(),
@@ -419,7 +459,7 @@ def clinical_detail(request, pk):
 # ─── MEDICAL HISTORY (MODULE 3) ───────────────────────────────────────────────
 
 @login_required
-@doctor_required
+@clinical_staff_required
 def patient_medical_history(request, patient_pk):
     """
     Full medical history of a patient, assembled from consultations and prescriptions.

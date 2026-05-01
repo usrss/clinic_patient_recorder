@@ -1,79 +1,132 @@
 {% extends 'core/base.html' %}
 {% block title %}Admin Dashboard — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:28px;">
-  <h1 class="page-title" style="margin-bottom:4px;">Admin Dashboard</h1>
-  <p style="color:var(--text-muted);font-size:14px;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
-</div>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:960px;margin:0 auto;">
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:var(--primary);">{{ total_staff }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Staff Users</div>
+  {# ── Page Header ── #}
+  <div style="margin-bottom:32px;">
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Admin Dashboard</h1>
+    <p style="font-size:13px;color:#6b7280;margin:0;">Welcome back, {{ user.get_full_name|default:user.username }}</p>
   </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#3b82f6;">{{ total_patients }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Patients</div>
-  </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#10b981;">{{ nurses }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Nurses</div>
-  </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ doctors }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Doctors</div>
-  </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#f97316;">{{ pending_consultations }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pending</div>
-  </div>
-</div>
 
-<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Quick Actions</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px;">
-  <a href="{% url 'accounts:user_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">👥</div>
-    <div style="font-weight:600;font-size:14px;">Manage Staff</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Create, edit, activate staff users</div>
-  </a>
-  <a href="{% url 'accounts:patient_import' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">📤</div>
-    <div style="font-weight:600;font-size:14px;">Import Patients</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Bulk upload from Excel</div>
-  </a>
-  <a href="{% url 'patients:patient_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">🧑‍⚕️</div>
-    <div style="font-weight:600;font-size:14px;">Patients</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">View all patient records</div>
-  </a>
-  <a href="{% url 'inventory:medicine_list' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">💊</div>
-    <div style="font-weight:600;font-size:14px;">Inventory</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Manage medicine stock</div>
-  </a>
-  <a href="{% url 'reports:report_dashboard' %}" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">📊</div>
-    <div style="font-weight:600;font-size:14px;">Reports</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Clinic activity overview</div>
-  </a>
-  <a href="/admin/" class="card" style="display:block;padding:18px;text-decoration:none;color:inherit;">
-    <div style="font-size:22px;margin-bottom:8px;">⚙️</div>
-    <div style="font-weight:600;font-size:14px;">Admin Panel</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Django admin interface</div>
-  </a>
-</div>
+  {# ── Stat Cards ── #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:32px;">
 
-<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">System Workflow</h2>
-<div class="card" style="padding:20px;">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-    <span style="background:#fef3c7;color:#92400e;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">🗂 Front Desk creates</span>
-    <span style="color:var(--text-muted);">→</span>
-    <span style="background:#d1fae5;color:#065f46;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">🩺 Nurse triages</span>
-    <span style="color:var(--text-muted);">→</span>
-    <span style="background:#ede9fe;color:#5b21b6;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">👨‍⚕️ Doctor prescribes</span>
-    <span style="color:var(--text-muted);">→</span>
-    <span style="background:#dcfce7;color:#166534;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">✅ Completed</span>
+    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+      <div style="font-size:30px;font-weight:700;color:#0078d4;line-height:1;">{{ total_staff }}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500;">Staff Users</div>
+    </div>
+
+    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+      <div style="font-size:30px;font-weight:700;color:#3b82f6;line-height:1;">{{ total_patients }}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500;">Patients</div>
+    </div>
+
+    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+      <div style="font-size:30px;font-weight:700;color:#10b981;line-height:1;">{{ nurses }}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500;">Nurses</div>
+    </div>
+
+    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+      <div style="font-size:30px;font-weight:700;color:#8b5cf6;line-height:1;">{{ doctors }}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500;">Doctors</div>
+    </div>
+
+    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+      <div style="font-size:30px;font-weight:700;color:#f97316;line-height:1;">{{ pending_consultations }}</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500;">Pending</div>
+    </div>
+
   </div>
+
+  {# ── Quick Actions ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Quick Actions</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:32px;">
+
+    <a href="{% url 'accounts:user_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="people-outline" style="font-size:24px;color:#0078d4;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Manage Staff</div>
+      <div style="font-size:12px;color:#94a3b8;">Create, edit, activate staff users</div>
+    </a>
+
+    <a href="{% url 'accounts:patient_import' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="cloud-upload-outline" style="font-size:24px;color:#3b82f6;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Import Patients</div>
+      <div style="font-size:12px;color:#94a3b8;">Bulk upload from Excel</div>
+    </a>
+
+    <a href="{% url 'patients:patient_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="person-outline" style="font-size:24px;color:#10b981;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Patients</div>
+      <div style="font-size:12px;color:#94a3b8;">View all patient records</div>
+    </a>
+
+    <a href="{% url 'inventory:medicine_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="medkit-outline" style="font-size:24px;color:#f97316;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Inventory</div>
+      <div style="font-size:12px;color:#94a3b8;">Manage medicine stock</div>
+    </a>
+
+    <a href="{% url 'reports:report_dashboard' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="bar-chart-outline" style="font-size:24px;color:#8b5cf6;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Reports</div>
+      <div style="font-size:12px;color:#94a3b8;">Clinic activity overview</div>
+    </a>
+
+    <a href="/admin/" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
+      <ion-icon name="settings-outline" style="font-size:24px;color:#6b7280;margin-bottom:10px;display:block;"></ion-icon>
+      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Admin Panel</div>
+      <div style="font-size:12px;color:#94a3b8;">Django admin interface</div>
+    </a>
+
+  </div>
+
+  {# ── System Workflow ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">System Workflow</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+
+      <div style="display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;padding:8px 14px;border-radius:20px;">
+        <ion-icon name="documents-outline" style="font-size:15px;"></ion-icon>
+        <span style="font-size:12px;font-weight:600;">Front Desk creates</span>
+      </div>
+
+      <ion-icon name="arrow-forward-outline" style="font-size:16px;color:#94a3b8;flex-shrink:0;"></ion-icon>
+
+      <div style="display:flex;align-items:center;gap:8px;background:#d1fae5;color:#065f46;padding:8px 14px;border-radius:20px;">
+        <ion-icon name="fitness-outline" style="font-size:15px;"></ion-icon>
+        <span style="font-size:12px;font-weight:600;">Nurse triages</span>
+      </div>
+
+      <ion-icon name="arrow-forward-outline" style="font-size:16px;color:#94a3b8;flex-shrink:0;"></ion-icon>
+
+      <div style="display:flex;align-items:center;gap:8px;background:#ede9fe;color:#5b21b6;padding:8px 14px;border-radius:20px;">
+        <ion-icon name="medical-outline" style="font-size:15px;"></ion-icon>
+        <span style="font-size:12px;font-weight:600;">Doctor prescribes</span>
+      </div>
+
+      <ion-icon name="arrow-forward-outline" style="font-size:16px;color:#94a3b8;flex-shrink:0;"></ion-icon>
+
+      <div style="display:flex;align-items:center;gap:8px;background:#dcfce7;color:#166534;padding:8px 14px;border-radius:20px;">
+        <ion-icon name="checkmark-circle-outline" style="font-size:15px;"></ion-icon>
+        <span style="font-size:12px;font-weight:600;">Completed</span>
+      </div>
+
+    </div>
+  </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

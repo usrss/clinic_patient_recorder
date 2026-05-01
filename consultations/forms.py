@@ -110,6 +110,22 @@ class QueueAssignForm(forms.ModelForm):
 
 
 class TriageForm(forms.ModelForm):
+
+    hypertension = forms.BooleanField(required=False, label='Hypertension')
+    diabetes = forms.BooleanField(required=False, label='Diabetes')
+    asthma = forms.BooleanField(required=False, label='Asthma')
+    cardiac_problems = forms.BooleanField(required=False, label='Cardiac Problems')
+    arthritis = forms.BooleanField(required=False, label='Arthritis')
+    other_conditions = forms.CharField(required=False, max_length=300, label='Other Conditions',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Other conditions...'}))
+
+    bcg = forms.BooleanField(required=False, label='BCG')
+    dpt = forms.BooleanField(required=False, label='DPT')
+    opv = forms.BooleanField(required=False, label='OPV')
+    hepatitis_b = forms.BooleanField(required=False, label='Hepatitis B')
+    measles = forms.BooleanField(required=False, label='Measles')
+    tt = forms.BooleanField(required=False, label='TT')
+
     class Meta:
         model = Triage
         fields = [

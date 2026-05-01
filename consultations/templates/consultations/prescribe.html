@@ -36,7 +36,7 @@
   #add-medicine-btn:hover { background: #f0fdf4; }
   .medicine-row-grid {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 1fr 1fr 1fr 2fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr;
     gap: 10px;
     padding-right: 32px;
   }
@@ -98,26 +98,51 @@
     </div>
   </div>
 
-    <!-- Patient Profile Summary -->
+  <!-- Patient Medical Profile -->
   {% with profile=consultation.patient.profile %}
   {% if profile %}
   <div class="card" style="margin-bottom:16px;background:#fff8f5;">
     <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 10px;">📋 Patient Medical Profile</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:12px;">
+
+    {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis and not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
+    <div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:12px;color:#92400e;">
+      ⚠ No medical history recorded.
+    </div>
+    {% endif %}
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;margin-bottom:8px;">
+      {% if profile.blood_type %}<span style="background:#eff6ff;padding:2px 8px;border-radius:10px;"><strong>Blood Type:</strong> {{ profile.blood_type }}</span>{% endif %}
       {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Allergies:</span> <span style="color:#dc2626;font-weight:600;">⚠ {{ profile.known_allergies }}</span></div>
-      {% endif %}
-      {% if profile.existing_conditions and profile.existing_conditions|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Conditions:</span> {{ profile.existing_conditions }}</div>
+      <span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:10px;font-weight:600;">⚠ {{ profile.known_allergies }}</span>
       {% endif %}
       {% if profile.current_medications and profile.current_medications|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Current Meds:</span> {{ profile.current_medications }}</div>
+      <span style="background:#fff7ed;padding:2px 8px;border-radius:10px;">💊 {{ profile.current_medications }}</span>
       {% endif %}
-      {% if profile.hypertension %}<div>Hypertension</div>{% endif %}
-      {% if profile.diabetes %}<div>Diabetes</div>{% endif %}
-      {% if profile.asthma %}<div>Asthma</div>{% endif %}
-      {% if profile.cardiac_problems %}<div>Cardiac Problems</div>{% endif %}
-      {% if profile.arthritis %}<div>Arthritis</div>{% endif %}
+    </div>
+
+    <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:3px;">🏥 Medical History</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;font-size:11px;">
+      {% if profile.hypertension %}<span style="background:#fef2f2;color:#991b1b;padding:2px 7px;border-radius:8px;">Hypertension</span>{% endif %}
+      {% if profile.diabetes %}<span style="background:#fef2f2;color:#991b1b;padding:2px 7px;border-radius:8px;">Diabetes</span>{% endif %}
+      {% if profile.asthma %}<span style="background:#fef2f2;color:#991b1b;padding:2px 7px;border-radius:8px;">Asthma</span>{% endif %}
+      {% if profile.cardiac_problems %}<span style="background:#fef2f2;color:#991b1b;padding:2px 7px;border-radius:8px;">Cardiac</span>{% endif %}
+      {% if profile.arthritis %}<span style="background:#fef2f2;color:#991b1b;padding:2px 7px;border-radius:8px;">Arthritis</span>{% endif %}
+      {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}
+      <span style="color:var(--text-muted);">None</span>
+      {% endif %}
+    </div>
+
+    <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:3px;">💉 Immunization</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;">
+      {% if profile.bcg %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">BCG</span>{% endif %}
+      {% if profile.dpt %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">DPT</span>{% endif %}
+      {% if profile.opv %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">OPV</span>{% endif %}
+      {% if profile.hepatitis_b %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">Hepatitis B</span>{% endif %}
+      {% if profile.measles %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">Measles</span>{% endif %}
+      {% if profile.tt %}<span style="background:#f0fdf4;color:#065f46;padding:2px 7px;border-radius:8px;">TT</span>{% endif %}
+      {% if not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
+      <span style="color:var(--text-muted);">None</span>
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -152,6 +177,7 @@
   {% endwith %}
 
   <!-- Prescription Form -->
+  {% if inventory_medicines %}
   <form method="post" novalidate id="prescription-form">
     {% csrf_token %}
 
@@ -161,16 +187,12 @@
       <div class="form-group">
         <label>Diagnosis *</label>
         {{ prescription_form.diagnosis }}
-        {% if prescription_form.diagnosis.errors %}
-          <div class="form-error">{{ prescription_form.diagnosis.errors.0 }}</div>
-        {% endif %}
+        {% if prescription_form.diagnosis.errors %}<div class="form-error">{{ prescription_form.diagnosis.errors.0 }}</div>{% endif %}
       </div>
       <div class="form-group" style="margin-bottom:0;">
         <label>Treatment Plan <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
         {{ prescription_form.treatment_plan }}
-        {% if prescription_form.treatment_plan.errors %}
-          <div class="form-error">{{ prescription_form.treatment_plan.errors.0 }}</div>
-        {% endif %}
+        {% if prescription_form.treatment_plan.errors %}<div class="form-error">{{ prescription_form.treatment_plan.errors.0 }}</div>{% endif %}
       </div>
     </div>
 
@@ -178,8 +200,7 @@
     <div class="card" style="margin-bottom:16px;">
       <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 4px;">💊 Medicines Prescribed</h3>
       <p style="font-size:12px;color:var(--text-muted);margin:0 0 16px;">
-        Select from inventory or type a custom medicine name. At least one medicine is required.
-        Dosage, frequency, and duration are required per row. Quantity is required when using inventory.
+        Select from inventory. At least one medicine with dosage, frequency, duration, and quantity is required.
       </p>
 
       {{ formset.management_form }}
@@ -190,60 +211,37 @@
           <button type="button" class="remove-row-btn" title="Remove this row" onclick="removeRow(this)">✕</button>
           <div class="medicine-row-grid">
             <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Medicine (Inventory)</label>
+              <label style="font-size:11px;">Medicine *</label>
               {{ item_form.medicine }}
-              {% if item_form.medicine.errors %}
-                <div class="form-error">{{ item_form.medicine.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Or Custom Name</label>
-              {{ item_form.medicine_name }}
-              {% if item_form.medicine_name.errors %}
-                <div class="form-error">{{ item_form.medicine_name.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label style="font-size:11px;">Dosage *</label>
               {{ item_form.dosage }}
-              {% if item_form.dosage.errors %}
-                <div class="form-error">{{ item_form.dosage.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.dosage.errors %}<div class="form-error">{{ item_form.dosage.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label style="font-size:11px;">Frequency *</label>
               {{ item_form.frequency }}
-              {% if item_form.frequency.errors %}
-                <div class="form-error">{{ item_form.frequency.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.frequency.errors %}<div class="form-error">{{ item_form.frequency.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label style="font-size:11px;">Duration *</label>
               {{ item_form.duration }}
-              {% if item_form.duration.errors %}
-                <div class="form-error">{{ item_form.duration.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.duration.errors %}<div class="form-error">{{ item_form.duration.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Qty to Dispense</label>
+              <label style="font-size:11px;">Qty *</label>
               {{ item_form.quantity }}
-              {% if item_form.quantity.errors %}
-                <div class="form-error">{{ item_form.quantity.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label style="font-size:11px;">Instructions</label>
               {{ item_form.instructions }}
-              {% if item_form.instructions.errors %}
-                <div class="form-error">{{ item_form.instructions.errors.0 }}</div>
-              {% endif %}
+              {% if item_form.instructions.errors %}<div class="form-error">{{ item_form.instructions.errors.0 }}</div>{% endif %}
             </div>
           </div>
-          {% if item_form.non_field_errors %}
-          <div class="form-error" style="margin-top:6px;">
-            {% for error in item_form.non_field_errors %}{{ error }}{% endfor %}
-          </div>
-          {% endif %}
+          {% if item_form.non_field_errors %}<div class="form-error" style="margin-top:6px;">{% for error in item_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
         </div>
         {% endfor %}
       </div>
@@ -251,17 +249,20 @@
       <button type="button" id="add-medicine-btn">+ Add Medicine</button>
     </div>
 
-    {% if prescription_form.non_field_errors %}
-    <div class="form-error" style="margin-bottom:12px;">
-      {% for error in prescription_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-    </div>
-    {% endif %}
+    {% if prescription_form.non_field_errors %}<div class="form-error" style="margin-bottom:12px;">{% for error in prescription_form.non_field_errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
 
     <div style="display:flex;gap:10px;">
       <button type="submit" class="btn btn-primary">💾 Save Prescription & Complete</button>
       <a href="{% url 'consultations:doctor_list' %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>
+  {% else %}
+  <div class="card" style="text-align:center;padding:48px 24px;margin-bottom:16px;">
+    <div style="font-size:40px;margin-bottom:12px;">📦</div>
+    <p style="font-weight:600;margin-bottom:4px;">No medicines in inventory</p>
+    <p style="color:var(--text-muted);font-size:13px;">Cannot prescribe until medicines are added to inventory.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -279,17 +280,13 @@
       <button type="button" class="remove-row-btn" title="Remove this row" onclick="removeRow(this)">✕</button>
       <div class="medicine-row-grid">
         <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:11px;">Medicine (Inventory)</label>
+          <label style="font-size:11px;">Medicine *</label>
           <select name="${prefix}-${index}-medicine" class="form-control">
             <option value="">— Select medicine —</option>
             {% for med in inventory_medicines %}
             <option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }} in stock)</option>
             {% endfor %}
           </select>
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:11px;">Or Custom Name</label>
-          <input type="text" name="${prefix}-${index}-medicine_name" class="form-control" placeholder="Type if not in inventory" autocomplete="off">
         </div>
         <div class="form-group" style="margin-bottom:0;">
           <label style="font-size:11px;">Dosage *</label>
@@ -304,7 +301,7 @@
           <input type="text" name="${prefix}-${index}-duration" class="form-control" placeholder="e.g. 7 days">
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:11px;">Qty to Dispense</label>
+          <label style="font-size:11px;">Qty *</label>
           <input type="number" name="${prefix}-${index}-quantity" class="form-control" min="1" placeholder="Units">
         </div>
         <div class="form-group" style="margin-bottom:0;">
@@ -325,13 +322,11 @@
     const row = btn.closest('.medicine-row');
     const rows = container.querySelectorAll('.medicine-row');
     if (rows.length <= 1) {
-      // Clear fields instead of removing if only one row
       row.querySelectorAll('input, select').forEach(i => i.value = '');
       return;
     }
     row.remove();
     totalForms.value = container.querySelectorAll('.medicine-row').length;
-    // Re-index remaining rows
     container.querySelectorAll('.medicine-row').forEach((r, idx) => {
       r.querySelectorAll('input, select').forEach(inp => {
         inp.name = inp.name.replace(/meds-\d+-/, `meds-${idx}-`);

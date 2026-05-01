@@ -1,78 +1,84 @@
 {% extends 'core/base.html' %}
 {% block title %}Amend Triage — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:680px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
-    <h1 class="page-title" style="margin-bottom:0;">Amend Triage — Consultation #{{ consultation.pk }}</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:760px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+    <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
+    </a>
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">
+      Amend Triage — #{{ consultation.pk }}
+    </h1>
   </div>
 
-  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#92400e;">
-    <strong>⚠ Amendment</strong> — You are editing an existing triage record.
-    The original nurse and timestamp are preserved. Your changes and reason will be appended to the notes for audit purposes.
+  {# ── Warning Banner ── #}
+  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:12px;margin-bottom:24px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
+    <ion-icon name="warning-outline" style="font-size:20px;flex-shrink:0;"></ion-icon>
+    <div><strong>Amendment</strong> — You are editing an existing triage record. The original nurse and timestamp are preserved. Your changes and reason will be appended to the notes for audit purposes.</div>
   </div>
 
-  <!-- Current Record Summary -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Current Triage Record</h3>
-
-    <!-- Row 1: BP, Temp, Pulse -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;margin-bottom:12px;">
+  {# ── Current Record ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Current Triage Record</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Blood Pressure</div>
-        <strong>{{ triage.blood_pressure }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Blood Pressure</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.blood_pressure }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Temperature</div>
-        <strong>{{ triage.temperature }}°C</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Temperature</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.temperature }}°C</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Pulse Rate</div>
-        <strong>{{ triage.pulse_rate }} bpm</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Pulse Rate</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.pulse_rate }} bpm</div>
       </div>
     </div>
-
-    <!-- Row 2: RR, SpO2, Weight -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Respiratory Rate</div>
-        <strong>{% if triage.respiratory_rate is not None %}{{ triage.respiratory_rate }}{% else %}—{% endif %}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Respiratory Rate</div>
+        <div style="font-weight:700;color:#1a1a2e;">{% if triage.respiratory_rate is not None %}{{ triage.respiratory_rate }}{% else %}—{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Oxygen Saturation</div>
-        <strong>{% if triage.oxygen_saturation is not None %}{{ triage.oxygen_saturation }}%{% else %}—{% endif %}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Oxygen Saturation</div>
+        <div style="font-weight:700;color:#1a1a2e;">{% if triage.oxygen_saturation is not None %}{{ triage.oxygen_saturation }}%{% else %}—{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Weight</div>
-        <strong>{% if triage.weight is not None %}{{ triage.weight }} kg{% else %}—{% endif %}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Weight</div>
+        <div style="font-weight:700;color:#1a1a2e;">{% if triage.weight is not None %}{{ triage.weight }} kg{% else %}—{% endif %}</div>
       </div>
     </div>
-
-    <!-- Row 3: Urgency, Nurse, Timestamp -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-size:13px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Urgency</div>
-        <strong>{{ triage.get_urgency_display }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Urgency</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.get_urgency_display }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Triaged by</div>
-        <strong>{{ triage.nurse.get_full_name|default:triage.nurse.username }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Triaged by</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.nurse.get_full_name|default:triage.nurse.username }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Triaged at</div>
-        <strong>{{ triage.triaged_at|date:"M d, Y H:i" }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Triaged at</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ triage.triaged_at|date:"M d, Y H:i" }}</div>
       </div>
     </div>
   </div>
 
-  <!-- Amendment Form -->
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🩺 Corrected Vitals</h3>
+  {# ── Amendment Form ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Corrected Vitals</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
 
-      <!-- Row 1: BP, Temp, Pulse -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="form-group">
           <label>{{ form.blood_pressure.label }}</label>
@@ -91,54 +97,44 @@
         </div>
       </div>
 
-      <!-- Row 2: RR, SpO2, Weight -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:4px;">
         <div class="form-group">
           <label>{{ form.respiratory_rate.label }}</label>
           {{ form.respiratory_rate }}
-          {% if form.respiratory_rate.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>
-          {% endif %}
+          {% if form.respiratory_rate.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>{% endif %}
           {% if form.respiratory_rate.errors %}<div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.oxygen_saturation.label }}</label>
           {{ form.oxygen_saturation }}
-          {% if form.oxygen_saturation.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>
-          {% endif %}
+          {% if form.oxygen_saturation.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>{% endif %}
           {% if form.oxygen_saturation.errors %}<div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.weight.label }}</label>
           {{ form.weight }}
-          {% if form.weight.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.weight.help_text }}</div>
-          {% endif %}
+          {% if form.weight.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.weight.help_text }}</div>{% endif %}
           {% if form.weight.errors %}<div class="form-error">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <!-- Urgency -->
-      <div class="form-group" style="margin-top:16px;">
+      <div class="form-group" style="margin-top:4px;">
         <label>Urgency Level</label>
         {{ form.urgency }}
         {% if form.urgency.errors %}<div class="form-error">{{ form.urgency.errors.0 }}</div>{% endif %}
       </div>
 
-      <!-- Clinical Notes -->
       <div class="form-group">
         <label>Clinical Notes</label>
         {{ form.notes }}
         {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
       </div>
 
-      <!-- Amendment Reason -->
       <div class="form-group">
         <label>{{ form.amendment_reason.label }}</label>
         {{ form.amendment_reason }}
         {% if form.amendment_reason.errors %}<div class="form-error">{{ form.amendment_reason.errors.0 }}</div>{% endif %}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
           This will be appended to the notes as an audit trail entry.
         </div>
       </div>
@@ -150,11 +146,17 @@
       {% endif %}
 
       <div style="display:flex;gap:10px;margin-top:8px;">
-        <button type="submit" class="btn btn-primary">✅ Save Amendment</button>
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <ion-icon name="checkmark-circle-outline" style="font-size:16px;"></ion-icon> Save Amendment
+        </button>
         <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
 </div>
-{% endif %}
+</div>
 {% endblock %}

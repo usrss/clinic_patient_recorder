@@ -1,61 +1,146 @@
 {% extends 'core/base.html' %}
 {% block title %}Import Patients — Clinic Recorder{% endblock %}
 
-{% block extra_css %}
-<style>
-  .instruction { background:#f0f9f5;border-left:4px solid #1D9E75;padding:14px 16px;border-radius:6px;margin-bottom:20px; }
-  .instruction h4 { margin:0 0 8px;font-size:14px; }
-  .instruction ul { margin:0;padding-left:20px;font-size:13px;color:var(--text-muted); }
-  .instruction li { margin:4px 0; }
-</style>
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
 {% block content %}
-<div style="max-width:560px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">Import Patients</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:600px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="margin-bottom:28px;">
+    <a href="{% url 'patients:patient_list' %}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#0078d4;text-decoration:none;margin-bottom:16px;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon>
+      Back to Patients
+    </a>
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Import Patients</h1>
+    <p style="font-size:13px;color:#6b7280;margin:0;">Bulk upload patient records from an Excel file.</p>
   </div>
 
+  {# ── Messages ── #}
   {% if messages %}
     {% for message in messages %}
-      <div style="margin-bottom:10px;padding:12px 16px;border-radius:6px;font-size:13px;
-        {% if message.tags == 'error' %}background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
-        {% elif message.tags == 'warning' %}background:#fff8e1;border-left:4px solid #f59e0b;color:#92400e;
-        {% else %}background:#f0fdf4;border-left:4px solid #22c55e;color:#166534;{% endif %}
-      ">{{ message }}</div>
+      <div style="margin-bottom:16px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;
+        {% if message.tags == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
+        {% elif message.tags == 'warning' %}background:#fff8e1;color:#92400e;border:1px solid #fed7aa;
+        {% else %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;{% endif %}">
+        {{ message }}
+      </div>
     {% endfor %}
   {% endif %}
 
-  <div class="instruction">
-    <h4>📋 Instructions</h4>
-    <ul>
-      <li>Upload an Excel (.xlsx) file to register patient records</li>
-      <li>Required columns: <strong>id, first_name, last_name, sex</strong></li>
-      <li>Optional columns: <strong>middle_name, college</strong> (college abbreviation)</li>
-      <li>Sex values: <strong>M</strong> (Male), <strong>F</strong> (Female)</li>
-      <li>Existing patients (matched by id) will be skipped — not duplicated</li>
-      <li><strong>Birthday is NOT imported</strong> — patients enter it themselves via profile setup</li>
-      <li>Maximum file size: 5 MB</li>
-    </ul>
+  {# ── Instructions Card ── #}
+  <div style="background:#eff6fc;border-radius:16px;padding:20px 24px;border:1px solid rgba(0,120,212,0.15);margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <ion-icon name="information-circle-outline" style="font-size:18px;color:#0078d4;flex-shrink:0;"></ion-icon>
+      <span style="font-size:13px;font-weight:600;color:#0078d4;">Instructions</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="document-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Upload an Excel <strong>(.xlsx)</strong> file to register patient records</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="reorder-four-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Required columns: <strong>id, first_name, last_name, sex</strong></span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="add-circle-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Optional columns: <strong>middle_name, college</strong> (college abbreviation)</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="male-female-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Sex values: <strong>M</strong> (Male), <strong>F</strong> (Female)</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="copy-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Existing patients (matched by ID) will be skipped — not duplicated</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="calendar-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;"><strong>Birthday is NOT imported</strong> — patients enter it themselves via profile setup</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <ion-icon name="cloud-upload-outline" style="font-size:15px;color:#0078d4;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <span style="font-size:13px;color:#374151;">Maximum file size: <strong>5 MB</strong></span>
+      </div>
+
+    </div>
   </div>
 
-  <div class="card">
+  {# ── Upload Card ── #}
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
     <form method="post" enctype="multipart/form-data" novalidate>
       {% csrf_token %}
-      <div class="form-group">
-        <label for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+
+      <div style="margin-bottom:20px;">
+        <label for="{{ form.file.id_for_label }}" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+          {{ form.file.label }}
+        </label>
         {{ form.file }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.file.help_text }}</div>
+        {% if form.file.help_text %}
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;">{{ form.file.help_text }}</div>
+        {% endif %}
         {% if form.file.errors %}
-          <div class="form-error">{{ form.file.errors.0 }}</div>
+          <div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.file.errors.0 }}</div>
         {% endif %}
       </div>
-      <div style="display:flex;gap:10px;margin-top:20px;">
-        <button type="submit" class="btn btn-primary">📤 Upload & Import</button>
-        <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary">Cancel</a>
+
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button type="submit"
+          style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);"
+          onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'"
+          onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+          <ion-icon name="cloud-upload-outline" style="font-size:16px;"></ion-icon>
+          Upload & Import
+        </button>
+        <a href="{% url 'patients:patient_list' %}"
+          style="display:inline-flex;align-items:center;gap:6px;padding:12px 20px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:all 0.2s;"
+          onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+          Cancel
+        </a>
       </div>
     </form>
   </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
 </div>
+</div>
+
+<style>
+  input[type="file"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px dashed #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  input[type="file"]:hover,
+  input[type="file"]:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+</style>
 {% endblock %}

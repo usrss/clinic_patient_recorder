@@ -1,18 +1,32 @@
 {% extends 'core/base.html' %}
 {% block title %}New Consultation — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:640px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
-    <h1 class="page-title" style="margin-bottom:0;">New Consultation Request</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:660px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
+    </a>
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">New Consultation Request</h1>
   </div>
 
-  <div style="background:#e0f2fe;border-left:4px solid #0369a1;padding:14px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#0c4a6e;">
-    <strong>ℹ️</strong> Select the patient from the list and fill in the presenting symptoms on their behalf.
+  {# ── Info Banner ── #}
+  <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:14px 18px;border-radius:12px;margin-bottom:24px;font-size:13px;color:#1e40af;display:flex;gap:10px;align-items:flex-start;">
+    <ion-icon name="information-circle-outline" style="font-size:20px;flex-shrink:0;margin-top:1px;"></ion-icon>
+    <div>Select the patient from the list and fill in the presenting symptoms on their behalf.</div>
   </div>
 
-  <div class="card">
+  {# ── Form ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Consultation Details</div>
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
 
@@ -53,10 +67,17 @@
       {% endif %}
 
       <div style="display:flex;gap:10px;margin-top:24px;">
-        <button type="submit" class="btn btn-primary">📤 Submit Consultation</button>
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <ion-icon name="send-outline" style="font-size:15px;"></ion-icon> Submit Consultation
+        </button>
         <a href="{% url 'consultations:queue' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+</div>
 </div>
 {% endblock %}

@@ -1,60 +1,85 @@
 {% extends 'core/base.html' %}
 {% block title %}Consultation Queue — Clinic Recorder{% endblock %}
 
-{% block content %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-  <div>
-    <h1 class="page-title" style="margin-bottom:4px;">Consultation Queue</h1>
-    <p style="color:var(--text-muted);font-size:13px;">{{ consultations.count }} pending request{{ consultations.count|pluralize }}</p>
-  </div>
-  <a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary">+ New Consultation</a>
-</div>
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
 
-{% if consultations %}
-<div class="card" style="padding:0;">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Patient</th>
-          <th>Patient ID</th>
-          <th>Symptoms (summary)</th>
-          <th>Severity</th>
-          <th>Submitted</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in consultations %}
-        <tr>
-          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
-          <td>
-            <div style="font-weight:500;">{{ c.patient.get_full_name }}</div>
-            <div style="font-size:11px;color:var(--text-muted);">
-              {% if c.patient.college %}{{ c.patient.college.abbreviation }}{% endif %}
-            </div>
-          </td>
-          <td style="color:var(--text-muted);font-size:12px;">{{ c.patient.patient_id }}</td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">
-            {{ c.symptoms|truncatechars:55 }}
-          </td>
-          <td style="font-size:13px;">{{ c.severity_description|truncatechars:40 }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, H:i" }}</td>
-          <td>
-            <a href="{% url 'consultations:queue_detail' c.pk %}" class="btn btn-primary btn-sm">Process →</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% block content %}
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:960px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Consultation Queue</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">
+        {{ consultations.count }} pending request{{ consultations.count|pluralize }}
+      </p>
+    </div>
+    <a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+      <ion-icon name="add-outline" style="font-size:16px;"></ion-icon> New Consultation
+    </a>
   </div>
+
+  {# ── Table ── #}
+  {% if consultations %}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Pending Requests</div>
+  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Symptoms</th>
+            <th>Severity</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in consultations %}
+          <tr>
+            <td style="color:#94a3b8;font-size:12px;font-weight:600;">{{ c.pk }}</td>
+            <td>
+              <div style="font-weight:600;color:#1a1a2e;">{{ c.patient.get_full_name }}</div>
+              <div style="font-size:11px;color:#94a3b8;">
+                {% if c.patient.college %}{{ c.patient.college.abbreviation }}{% endif %}
+              </div>
+            </td>
+            <td style="color:#6b7280;font-size:12px;">{{ c.patient.patient_id }}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#374151;">
+              {{ c.symptoms|truncatechars:55 }}
+            </td>
+            <td style="font-size:13px;color:#374151;">{{ c.severity_description|truncatechars:40 }}</td>
+            <td style="font-size:12px;color:#94a3b8;">{{ c.created_at|date:"M d, H:i" }}</td>
+            <td>
+              <a href="{% url 'consultations:queue_detail' c.pk %}" class="btn btn-primary btn-sm"
+                 style="display:inline-flex;align-items:center;gap:4px;">
+                Process <ion-icon name="arrow-forward-outline" style="font-size:13px;"></ion-icon>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div style="background:#fff;border-radius:16px;padding:60px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+    <ion-icon name="checkmark-circle-outline" style="font-size:48px;color:#10b981;margin-bottom:12px;display:block;"></ion-icon>
+    <p style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:4px;">Queue is clear</p>
+    <p style="color:#94a3b8;font-size:13px;margin:0;">No pending consultation requests at this time.</p>
+  </div>
+  {% endif %}
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
 </div>
-{% else %}
-<div class="card" style="text-align:center;padding:48px 24px;">
-  <div style="font-size:40px;margin-bottom:12px;">✅</div>
-  <p style="font-weight:600;margin-bottom:4px;">Queue is clear</p>
-  <p style="color:var(--text-muted);font-size:13px;">No pending consultation requests at this time.</p>
 </div>
-{% endif %}
 {% endblock %}

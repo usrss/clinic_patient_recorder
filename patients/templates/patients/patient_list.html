@@ -1,74 +1,113 @@
 {% extends 'core/base.html' %}
 {% block title %}Patients — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-  <div>
-    <h1 class="page-title" style="margin-bottom:4px;">Patients</h1>
-    <p style="color:var(--text-muted);font-size:13px;">Registered clinic patients</p>
-  </div>
-  {% if user.role == 'admin' %}
-  <a href="{% url 'accounts:patient_import' %}" class="btn btn-secondary">📤 Import</a>
-  {% endif %}
-</div>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:960px;margin:0 auto;">
 
-<div class="card" style="margin-bottom:16px;padding:16px;">
-  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-    <div style="flex:1;min-width:200px;">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Search</label>
-      {{ form.query }}
+  {# ── Page Header ── #}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Patients</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">Registered clinic patients</p>
     </div>
-    <button type="submit" class="btn btn-primary">Search</button>
-    {% if query %}
-      <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary">Clear</a>
+    {% if user.role == 'admin' %}
+    <a href="{% url 'accounts:patient_import' %}" class="btn btn-secondary" style="display:flex;align-items:center;gap:6px;border-radius:10px;">
+      <ion-icon name="cloud-upload-outline" style="font-size:16px;"></ion-icon>
+      Import
+    </a>
     {% endif %}
-  </form>
-</div>
-
-{% if patients %}
-<div class="card" style="padding:0;">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Full Name</th>
-          <th>Patient ID</th>
-          <th>Sex</th>
-          <th>Age</th>
-          <th>College / Dept</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for patient in patients %}
-        <tr>
-          <td style="font-weight:500;">{{ patient.get_full_name }}</td>
-          <td style="color:var(--text-muted);font-size:13px;">{{ patient.patient_id }}</td>
-          <td style="font-size:13px;">{{ patient.get_sex_display }}</td>
-          <td style="font-size:13px;">
-            {% if patient.age %}{{ patient.age }} yrs{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
-          </td>
-          <td style="color:var(--text-muted);font-size:13px;">
-            {% if patient.college %}{{ patient.college.abbreviation }}
-            {% elif patient.department %}{{ patient.department }}
-            {% else %}—{% endif %}
-          </td>
-          <td>
-            <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">View</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
   </div>
-</div>
-{% else %}
-<div class="card" style="text-align:center;padding:48px 24px;">
-  <div style="font-size:40px;margin-bottom:12px;">🧑‍⚕️</div>
-  <p style="font-weight:600;margin-bottom:4px;">No patients found</p>
-  <p style="color:var(--text-muted);font-size:13px;">
-    {% if query %}No patients match your search.{% else %}No patients have been registered yet.{% endif %}
+
+  {# ── Search ── #}
+  <div style="background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Search</label>
+        {{ form.query }}
+      </div>
+      <button type="submit" class="btn btn-primary" style="border-radius:10px;display:flex;align-items:center;gap:6px;">
+        <ion-icon name="search-outline" style="font-size:15px;"></ion-icon>
+        Search
+      </button>
+      {% if query %}
+        <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary" style="border-radius:10px;display:flex;align-items:center;gap:6px;">
+          <ion-icon name="close-outline" style="font-size:15px;"></ion-icon>
+          Clear
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  {# ── Results ── #}
+  {% if patients %}
+  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc;border-bottom:1px solid #e8ecf1;">
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Full Name</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Patient ID</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Sex</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Age</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">College / Dept</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for patient in patients %}
+          <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <td style="padding:14px 20px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <ion-icon name="person-outline" style="font-size:14px;color:#065f46;"></ion-icon>
+                </div>
+                <div style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ patient.get_full_name }}</div>
+              </div>
+            </td>
+            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">{{ patient.patient_id }}</td>
+            <td style="padding:14px 20px;font-size:13px;color:#374151;">{{ patient.get_sex_display }}</td>
+            <td style="padding:14px 20px;font-size:13px;color:#374151;">
+              {% if patient.age %}{{ patient.age }} yrs{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
+            </td>
+            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">
+              {% if patient.college %}{{ patient.college.abbreviation }}
+              {% elif patient.department %}{{ patient.department }}
+              {% else %}—{% endif %}
+            </td>
+            <td style="padding:14px 20px;">
+              <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
+                <ion-icon name="eye-outline" style="font-size:13px;"></ion-icon>
+                View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div style="background:#fff;border-radius:16px;padding:56px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+    <ion-icon name="people-outline" style="font-size:44px;color:#d1d5db;display:block;margin:0 auto 14px;"></ion-icon>
+    <div style="font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:6px;">No patients found</div>
+    <p style="font-size:13px;color:#94a3b8;margin:0;">
+      {% if query %}No patients match your search.{% else %}No patients have been registered yet.{% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
   </p>
+
 </div>
-{% endif %}
+</div>
 {% endblock %}

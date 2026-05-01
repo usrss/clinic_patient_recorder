@@ -31,11 +31,10 @@ INSTALLED_APPS = [
     'accounts',
     'patients',
     'consultations',
+    'colleges',
     'inventory',
-    'prescriptions',
     'certificates',
     'reports',
-    'colleges',
     'core',
     'notifications',
 ]

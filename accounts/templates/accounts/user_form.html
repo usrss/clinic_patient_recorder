@@ -1,117 +1,175 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ action }} User — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:560px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:600px;margin:0 auto;">
+
+  {# ── Page Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
     <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">{{ action }} user{% if target %}: {{ target.username }}{% endif %}</h1>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">{{ action }} User</h1>
+      {% if target %}
+      <p style="font-size:13px;color:#6b7280;margin:0;">{{ target.username }}</p>
+      {% else %}
+      <p style="font-size:13px;color:#6b7280;margin:0;">Fill in the details below</p>
+      {% endif %}
+    </div>
   </div>
 
+  {# ── Non-field errors ── #}
   {% if form.non_field_errors %}
-    <div style="background:#fef2f2;border-left:4px solid #ef4444;color:#991b1b;
-                padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;">
+    <div style="background:#fef2f2;border-radius:16px;padding:14px 18px;border:1px solid #fecaca;margin-bottom:20px;">
       {% for error in form.non_field_errors %}
-        <div>{{ error }}</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#991b1b;">
+          <ion-icon name="alert-circle-outline" style="font-size:16px;flex-shrink:0;"></ion-icon>
+          {{ error }}
+        </div>
       {% endfor %}
     </div>
   {% endif %}
 
-  <div class="card">
+  {# ── Form Card ── #}
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>First name</label>
+      {# Name row #}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">First name</label>
           {{ form.first_name }}
           {% if form.first_name.errors %}
-            <div class="form-error">{{ form.first_name.errors.0 }}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.first_name.errors.0 }}
+            </div>
           {% endif %}
         </div>
-        <div class="form-group">
-          <label>Last name</label>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Last name</label>
           {{ form.last_name }}
           {% if form.last_name.errors %}
-            <div class="form-error">{{ form.last_name.errors.0 }}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.last_name.errors.0 }}
+            </div>
           {% endif %}
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Username</label>
+      {# Username #}
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Username</label>
         {{ form.username }}
         {% if form.username.errors %}
-          <div class="form-error">{{ form.username.errors.0 }}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+            <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.username.errors.0 }}
+          </div>
         {% endif %}
       </div>
 
-      <div class="form-group">
-        <label>Email</label>
+      {# Email #}
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Email</label>
         {{ form.email }}
         {% if form.email.errors %}
-          <div class="form-error">{{ form.email.errors.0 }}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+            <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.email.errors.0 }}
+          </div>
         {% endif %}
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Role</label>
+      {# Role + Phone row #}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Role</label>
           {{ form.role }}
           {% if form.role.errors %}
-            <div class="form-error">{{ form.role.errors.0 }}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.role.errors.0 }}
+            </div>
           {% endif %}
         </div>
-        <div class="form-group">
-          <label>Phone</label>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Phone</label>
           {{ form.phone }}
           {% if form.phone.errors %}
-            <div class="form-error">{{ form.phone.errors.0 }}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.phone.errors.0 }}
+            </div>
           {% endif %}
         </div>
       </div>
 
+      {# Password fields (create only) #}
       {% if form.password1 %}
-      <div class="form-group">
-        <label>Password</label>
-        {{ form.password1 }}
-        {% if form.password1.errors %}
-          <div class="form-error">{{ form.password1.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="form-group">
-        <label>Confirm password</label>
-        {{ form.password2 }}
-        {% if form.password2.errors %}
-          <div class="form-error">{{ form.password2.errors.0 }}</div>
-        {% endif %}
+      <div style="padding-top:20px;margin-top:4px;border-top:1px solid #f1f5f9;margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:16px;">Set Password</div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Password</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password1.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password2.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
 
+      {# Active toggle #}
       {% if form.is_active %}
-      <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:20px;">
         {{ form.is_active }}
-        <label for="{{ form.is_active.id_for_label }}"
-               style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);margin-bottom:0;">
+        <label for="{{ form.is_active.id_for_label }}" style="font-size:14px;color:#374151;margin:0;cursor:pointer;font-weight:500;">
           Active account
         </label>
       </div>
       {% endif %}
 
-      {# FIX: Changed 'accounts:user_import' → 'accounts:patient_import' (correct URL name) #}
+      {# Patient import tip #}
       {% if form.role %}
-        <p style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:0;">
-          💡 Patient records are registered separately via
-          <a href="{% url 'accounts:patient_import' %}" style="color:var(--primary);">bulk import</a>
-          or the <a href="/admin/" style="color:var(--primary);">Admin Panel</a>.
-        </p>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
+          <ion-icon name="information-circle-outline" style="font-size:16px;color:#3b82f6;flex-shrink:0;margin-top:1px;"></ion-icon>
+          <p style="font-size:12px;color:#1e40af;margin:0;line-height:1.6;">
+            Patient records are registered separately via
+            <a href="{% url 'accounts:patient_import' %}" style="color:#0078d4;font-weight:600;">bulk import</a>
+            or the <a href="/admin/" style="color:#0078d4;font-weight:600;">Admin Panel</a>.
+          </p>
+        </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:24px;">
-        <button type="submit" class="btn btn-primary">{{ action }} user</button>
-        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+      {# Actions #}
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;">
+          <ion-icon name="checkmark-outline" style="font-size:16px;margin-right:6px;"></ion-icon>
+          {{ action }} user
+        </button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary" style="border-radius:10px;padding:10px 24px;">Cancel</a>
       </div>
+
     </form>
   </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

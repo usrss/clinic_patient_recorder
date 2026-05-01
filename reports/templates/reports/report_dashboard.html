@@ -1,59 +1,165 @@
 {% extends 'core/base.html' %}
 {% block title %}Reports — Clinic Recorder{% endblock %}
 
+{% block extra_css %}
+<style>
+  .reports-wrap {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px;
+  }
+  .reports-inner { max-width: 960px; margin: 0 auto; }
+
+  .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 14px;
+  }
+
+  .module-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all .2s;
+  }
+  .module-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .data-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+
+  .data-card table { width: 100%; border-collapse: collapse; }
+  .data-card th {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8ecf1;
+    text-align: left;
+  }
+  .data-card td { padding: 11px 16px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .data-card tr:last-child td { border-bottom: none; }
+  .data-card tr:hover td { background: #f9fafb; }
+
+  .rank-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .low-stock-badge {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:28px;">
-  <h1 class="page-title" style="margin-bottom:4px;">Reports</h1>
-  <p style="color:var(--text-muted);font-size:14px;margin:0;">Clinic activity overview and analytics</p>
-</div>
+<div class="reports-wrap">
+<div class="reports-inner">
 
-<!-- Top stat cards -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;">
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:var(--primary);">{{ total_consultations }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Total Consultations</div>
+  <!-- Header -->
+  <div style="margin-bottom: 32px;">
+    <h1 style="font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; letter-spacing: -.3px;">Reports</h1>
+    <p style="font-size: 13px; color: #6b7280; margin: 0;">Clinic activity overview and analytics</p>
   </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#3b82f6;">{{ consultations_today }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Today</div>
+
+  <!-- Stat cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 32px;">
+    <div class="stat-card">
+      <div class="stat-value" style="color: var(--primary);">{{ total_consultations }}</div>
+      <div class="stat-label">Total Consultations</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: #3b82f6;">{{ consultations_today }}</div>
+      <div class="stat-label">Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: #8b5cf6;">{{ total_patients }}</div>
+      <div class="stat-label">Registered Patients</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: #f97316;">{{ total_patients_pending }}</div>
+      <div class="stat-label">Pending Accounts</div>
+    </div>
   </div>
-  <div class="card" style="text-align:center;padding:20px 16px;">
-    <div style="font-size:28px;font-weight:700;color:#8b5cf6;">{{ total_patients }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Registered Patients</div>
+
+  <!-- Report modules -->
+  <div class="section-label">Report Modules</div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 32px;">
+
+    <a href="{% url 'reports:disease_report' %}" class="module-card" style="border-left: 4px solid #ef4444;">
+      <div style="font-size: 22px; margin-bottom: 10px;">🔬</div>
+      <div style="font-weight: 600; font-size: 14px; color: #1a1a2e; margin-bottom: 4px;">Disease Report</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Filter completed consultations by diagnosis, date range, and patient type</div>
+    </a>
+
+    <a href="{% url 'reports:summary_report' %}" class="module-card" style="border-left: 4px solid #3b82f6;">
+      <div style="font-size: 22px; margin-bottom: 10px;">📈</div>
+      <div style="font-weight: 600; font-size: 14px; color: #1a1a2e; margin-bottom: 4px;">Summary Report</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Monthly trends, top diagnoses, frequent patients, and college breakdowns</div>
+    </a>
+
+    <a href="{% url 'reports:report_builder' %}" class="module-card" style="border-left: 4px solid var(--primary);">
+      <div style="font-size: 22px; margin-bottom: 10px;">🛠</div>
+      <div style="font-weight: 600; font-size: 14px; color: #1a1a2e; margin-bottom: 4px;">Custom Report Builder</div>
+      <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Build any report with custom filters and metrics — export to CSV, Excel, or PDF</div>
+    </a>
+
   </div>
-</div>
 
-<!-- Report navigation -->
-<h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Report Modules</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:28px;">
-  <a href="{% url 'reports:disease_report' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #ef4444;">
-    <div style="font-size:22px;margin-bottom:8px;">🔬</div>
-    <div style="font-weight:600;font-size:14px;">Disease Report</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Filter completed consultations by diagnosis, date range, and patient type</div>
-  </a>
-  <a href="{% url 'reports:summary_report' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid #3b82f6;">
-    <div style="font-size:22px;margin-bottom:8px;">📈</div>
-    <div style="font-weight:600;font-size:14px;">Summary Report</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Monthly trends, top diagnoses, frequent patients, and college breakdowns</div>
-  </a>
-  <a href="{% url 'reports:report_builder' %}" class="card" style="display:block;padding:20px;text-decoration:none;color:inherit;border-left:4px solid var(--primary);">
-    <div style="font-size:22px;margin-bottom:8px;">🛠</div>
-    <div style="font-weight:600;font-size:14px;">Custom Report Builder</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Build any report with custom filters, groupings, and metrics — export to CSV, Excel, or PDF</div>
-  </a>
-</div>
+  <!-- Tables: top medicines + low stock -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
-
-  <!-- Most dispensed medicines -->
-  <div>
-    <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Most Dispensed Medicines</h2>
-    {% if top_medicines %}
-    <div class="card" style="padding:0;">
-      <div class="table-wrap">
+    <!-- Most dispensed -->
+    <div>
+      <div class="section-label">Most Dispensed Medicines</div>
+      {% if top_medicines %}
+      <div class="data-card">
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>Medicine</th>
               <th>Total Dispensed</th>
             </tr>
@@ -61,34 +167,29 @@
           <tbody>
             {% for m in top_medicines %}
             <tr>
-              <td style="font-weight:500;font-size:13px;">{{ m.medicine__name }}</td>
-              <td style="font-weight:600;color:var(--primary);">{{ m.total_dispensed }}</td>
+              <td><span class="rank-chip">{{ forloop.counter }}</span></td>
+              <td style="font-weight: 500;">{{ m.medicine__name }}</td>
+              <td style="font-weight: 700; color: var(--primary);">{{ m.total_dispensed }} <span style="font-size:11px;color:#94a3b8;font-weight:400;">{{ m.medicine__unit }}</span></td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      {% else %}
+      <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;text-align:center;padding:32px;color:#94a3b8;font-size:13px;">No dispensing data yet.</div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="card" style="text-align:center;padding:32px 24px;">
-      <p style="color:var(--text-muted);font-size:13px;">No dispensing data yet.</p>
-    </div>
-    {% endif %}
-  </div>
 
-  <!-- Low stock medicines -->
-  <div>
-    <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">
-      Low Stock Medicines
-      {% with count=low_stock.count %}
-        {% if count %}
-          <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;vertical-align:middle;">⚠ {{ count }}</span>
-        {% endif %}
-      {% endwith %}
-    </h2>
-    {% if low_stock %}
-    <div class="card" style="padding:0;">
-      <div class="table-wrap">
+    <!-- Low stock -->
+    <div>
+      <div class="section-label" style="display:flex;align-items:center;gap:8px;">
+        Low Stock Medicines
+        {% with count=low_stock.count %}
+        {% if count %}<span class="low-stock-badge">⚠ {{ count }}</span>{% endif %}
+        {% endwith %}
+      </div>
+      {% if low_stock %}
+      <div class="data-card">
         <table>
           <thead>
             <tr>
@@ -100,24 +201,31 @@
           <tbody>
             {% for m in low_stock %}
             <tr>
-              <td style="font-weight:500;font-size:13px;">
-                <a href="{% url 'inventory:medicine_detail' m.pk %}" style="color:inherit;">{{ m.name }}</a>
+              <td style="font-weight:500;">
+                <a href="{% url 'inventory:medicine_detail' m.pk %}" style="color:inherit;text-decoration:none;">{{ m.name }}</a>
               </td>
-              <td style="font-weight:700;color:#ef4444;">{{ m.quantity }}</td>
-              <td style="font-size:12px;color:var(--text-muted);">{{ m.low_stock_threshold }}</td>
+              <td style="font-weight: 700; color: #ef4444;">{{ m.quantity }}</td>
+              <td style="font-size: 12px; color: #94a3b8;">{{ m.low_stock_threshold }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      {% else %}
+      <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;text-align:center;padding:32px;">
+        <div style="font-size:28px;margin-bottom:8px;">✅</div>
+        <p style="color:#94a3b8;font-size:13px;">All medicines are adequately stocked.</p>
+      </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="card" style="text-align:center;padding:32px 24px;">
-      <div style="font-size:28px;margin-bottom:8px;">✅</div>
-      <p style="color:var(--text-muted);font-size:13px;">All medicines are adequately stocked.</p>
-    </div>
-    {% endif %}
+
   </div>
 
+  <!-- Footer -->
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

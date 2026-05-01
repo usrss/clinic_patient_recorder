@@ -1,187 +1,189 @@
 {% extends 'core/base.html' %}
 {% block title %}Triage — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:680px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
-    <h1 class="page-title" style="margin-bottom:0;">Triage — Consultation #{{ consultation.pk }}</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:760px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
+    </a>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">
+        Triage — Consultation #{{ consultation.pk }}
+      </h1>
+    </div>
   </div>
 
-  <!-- Patient Info -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;font-size:14px;">
+  {# ── Patient Info ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Patient</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;font-size:14px;">
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Name</span><br>
-        <strong>{{ consultation.patient.get_full_name }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Name</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div>
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Patient ID</span><br>
-        <strong>{{ consultation.patient.patient_id }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Patient ID</div>
+        <div style="font-weight:600;color:#374151;">{{ consultation.patient.patient_id }}</div>
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">College</span><br>
-        {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
-        {% elif consultation.patient.department %}{{ consultation.patient.department }}
-        {% else %}—{% endif %}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">College</div>
+        <div style="color:#374151;">
+          {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
+          {% elif consultation.patient.department %}{{ consultation.patient.department }}
+          {% else %}—{% endif %}
+        </div>
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Age / Sex</span><br>
-        {{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}
-        / {{ consultation.patient.get_sex_display }}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Age / Sex</div>
+        <div style="color:#374151;">
+          {{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}
+          / {{ consultation.patient.get_sex_display }}
+        </div>
       </div>
       <div>
-        <span style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Status</span><br>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Status</div>
         {% if consultation.status == 'queued' %}
-          <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">🗂 Queue #{{ consultation.queue_number }}</span>
+          <span style="background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">🗂 Queue #{{ consultation.queue_number }}</span>
         {% elif consultation.status == 'scheduled' %}
-          <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">📅 {{ consultation.scheduled_at|date:"M d, H:i" }}</span>
+          <span style="background:#e0f2fe;color:#0369a1;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">📅 {{ consultation.scheduled_at|date:"M d, H:i" }}</span>
         {% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Consultation Details -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation Details</h3>
-    <div style="display:grid;gap:12px;font-size:14px;">
+  {# ── Consultation Details ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Consultation Details</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;gap:14px;font-size:14px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Symptoms</div>
-        <div>{{ consultation.symptoms }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Symptoms</div>
+        <div style="color:#1a1a2e;">{{ consultation.symptoms }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Severity (self-reported)</div>
-        <div>{{ consultation.severity_description }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Severity (self-reported)</div>
+        <div style="color:#1a1a2e;">{{ consultation.severity_description }}</div>
       </div>
       {% if consultation.medical_history %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Medical History</div>
-        <div>{{ consultation.medical_history }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Medical History</div>
+        <div style="color:#1a1a2e;">{{ consultation.medical_history }}</div>
       </div>
       {% endif %}
       {% if consultation.additional_notes %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Additional Notes</div>
-        <div>{{ consultation.additional_notes }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Additional Notes</div>
+        <div style="color:#1a1a2e;">{{ consultation.additional_notes }}</div>
       </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- Patient Profile Summary (if available) -->
-  {% if consultation.patient.profile %}
-  <div class="card" style="margin-bottom:16px;background:#f8fafb;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">📋 Patient Profile</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:13px;">
-      {% if consultation.patient.profile.height_cm %}
-      <div><span style="color:var(--text-muted);">Height:</span> {{ consultation.patient.profile.height_cm }} cm</div>
-      {% endif %}
-      {% if consultation.patient.profile.weight_kg %}
-      <div><span style="color:var(--text-muted);">Weight:</span> {{ consultation.patient.profile.weight_kg }} kg</div>
-      {% endif %}
-      {% if consultation.patient.profile.blood_type %}
-      <div><span style="color:var(--text-muted);">Blood Type:</span> {{ consultation.patient.profile.blood_type }}</div>
-      {% endif %}
-      {% if consultation.patient.profile.known_allergies and consultation.patient.profile.known_allergies|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Allergies:</span> <span style="color:#991b1b;">⚠ {{ consultation.patient.profile.known_allergies }}</span></div>
-      {% endif %}
-      {% if consultation.patient.profile.existing_conditions and consultation.patient.profile.existing_conditions|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Conditions:</span> {{ consultation.patient.profile.existing_conditions }}</div>
-      {% endif %}
-      {% if consultation.patient.profile.current_medications and consultation.patient.profile.current_medications|lower != 'none' %}
-      <div><span style="color:var(--text-muted);">Current Meds:</span> {{ consultation.patient.profile.current_medications }}</div>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Triage Form -->
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">🩺 Record Vitals</h3>
+  {# ── Triage Form ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Record Vitals</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
 
-      <!-- Row 1: BP, Temp, Pulse -->
+      {# Medical History & Immunization #}
+      {% if profile %}
+      <div style="margin-bottom:20px;padding:18px;background:#f8fafc;border-radius:12px;border:1px solid #e8ecf1;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <ion-icon name="clipboard-outline" style="font-size:18px;color:#0078d4;"></ion-icon>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.06em;">Medical History & Immunization</div>
+        </div>
+
+        {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis and not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
+        <div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12px;color:#92400e;">
+          ⚠ No medical history recorded. Please update below.
+        </div>
+        {% endif %}
+
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">🏥 Medical History</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.hypertension }} Hypertension</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.diabetes }} Diabetes</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.asthma }} Asthma</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.cardiac_problems }} Cardiac</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.arthritis }} Arthritis</label>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">{{ form.other_conditions }}</div>
+
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">💉 Immunization</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.bcg }} BCG</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.dpt }} DPT</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.opv }} OPV</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.hepatitis_b }} Hepatitis B</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.measles }} Measles</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 12px;background:#fff;border-radius:8px;border:1px solid #e8ecf1;cursor:pointer;">{{ form.tt }} TT</label>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Vitals Row 1 #}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
         <div class="form-group">
           <label>{{ form.blood_pressure.label }}</label>
           {{ form.blood_pressure }}
-          {% if form.blood_pressure.errors %}
-            <div class="form-error">{{ form.blood_pressure.errors.0 }}</div>
-          {% endif %}
+          {% if form.blood_pressure.errors %}<div class="form-error">{{ form.blood_pressure.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.temperature.label }}</label>
           {{ form.temperature }}
-          {% if form.temperature.errors %}
-            <div class="form-error">{{ form.temperature.errors.0 }}</div>
-          {% endif %}
+          {% if form.temperature.errors %}<div class="form-error">{{ form.temperature.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.pulse_rate.label }}</label>
           {{ form.pulse_rate }}
-          {% if form.pulse_rate.errors %}
-            <div class="form-error">{{ form.pulse_rate.errors.0 }}</div>
-          {% endif %}
+          {% if form.pulse_rate.errors %}<div class="form-error">{{ form.pulse_rate.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <!-- Row 2: RR, SpO2, Weight -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;">
+      {# Vitals Row 2 #}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:4px;">
         <div class="form-group">
           <label>{{ form.respiratory_rate.label }}</label>
           {{ form.respiratory_rate }}
-          {% if form.respiratory_rate.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>
-          {% endif %}
-          {% if form.respiratory_rate.errors %}
-            <div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>
-          {% endif %}
+          {% if form.respiratory_rate.errors %}<div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.oxygen_saturation.label }}</label>
           {{ form.oxygen_saturation }}
-          {% if form.oxygen_saturation.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>
-          {% endif %}
-          {% if form.oxygen_saturation.errors %}
-            <div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>
-          {% endif %}
+          {% if form.oxygen_saturation.errors %}<div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.weight.label }}</label>
           {{ form.weight }}
-          {% if form.weight.help_text %}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ form.weight.help_text }}</div>
-          {% endif %}
-          {% if form.weight.errors %}
-            <div class="form-error">{{ form.weight.errors.0 }}</div>
-          {% endif %}
+          {% if form.weight.errors %}<div class="form-error">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <!-- Urgency -->
-      <div class="form-group" style="margin-top:16px;">
+      {# Urgency #}
+      <div class="form-group" style="margin-top:4px;">
         <label>Urgency Level</label>
         {{ form.urgency }}
-        {% if form.urgency.errors %}
-          <div class="form-error">{{ form.urgency.errors.0 }}</div>
-        {% endif %}
-        <div style="display:flex;gap:10px;margin-top:8px;font-size:12px;flex-wrap:wrap;">
-          <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-weight:600;">🟢 Low — stable, non-urgent</span>
-          <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:10px;font-weight:600;">🟡 Medium — needs attention soon</span>
-          <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:10px;font-weight:600;">🔴 High — urgent, prioritise</span>
+        {% if form.urgency.errors %}<div class="form-error">{{ form.urgency.errors.0 }}</div>{% endif %}
+        <div style="display:flex;gap:10px;margin-top:10px;font-size:12px;flex-wrap:wrap;">
+          <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:20px;font-weight:600;"> Low</span>
+          <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-weight:600;">Medium</span>
+          <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-weight:600;">High</span>
         </div>
       </div>
 
-      <!-- Clinical Notes -->
+      {# Notes #}
       <div class="form-group">
-        <label>Clinical Notes (optional)</label>
+        <label>Clinical Notes <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
         {{ form.notes }}
-        {% if form.notes.errors %}
-          <div class="form-error">{{ form.notes.errors.0 }}</div>
-        {% endif %}
+        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
       </div>
 
       {% if form.non_field_errors %}
@@ -191,10 +193,18 @@
       {% endif %}
 
       <div style="display:flex;gap:10px;margin-top:8px;">
-        <button type="submit" class="btn btn-primary">✅ Complete Triage → Forward to Doctor</button>
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <ion-icon name="checkmark-circle-outline" style="font-size:16px;"></ion-icon>
+          Complete Triage → Forward to Doctor
+        </button>
         <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+</div>
 </div>
 {% endblock %}

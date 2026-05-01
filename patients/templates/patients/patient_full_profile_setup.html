@@ -1,374 +1,76 @@
 {% extends 'core/base.html' %}
-{% block title %}Profile Setup — Clinic Recorder{% endblock %}
+{% block title %}Profile Setup — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-divider {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    margin: 24px 0 14px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .progress-bar-wrap {
-    background: var(--border);
-    border-radius: 99px;
-    height: 6px;
-    margin-bottom: 4px;
-    overflow: hidden;
-  }
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--primary);
-    border-radius: 99px;
-    transition: width 0.3s;
-  }
-  .checkbox-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-  }
-  .checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #f8fafb;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-  }
-  .checkbox-item input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    cursor: pointer;
-  }
-  .checkbox-item label {
-    margin: 0;
-    font-size: 13px;
-    cursor: pointer;
-    user-select: none;
-  }
-</style>
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
 {% block content %}
-<div style="max-width:640px;margin:0 auto;">
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:480px;margin:0 auto;">
 
-  {% if is_forced %}
-  <!-- Forced setup banner -->
-  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:8px;margin-bottom:24px;">
-    <div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:4px;">⚠ Profile Setup Required</div>
-    <p style="font-size:13px;color:#92400e;margin:0;">
-      Before you can use the Clinic Portal, you must complete your profile.
-      This information is used by clinic staff to provide you with proper care.
-      All fields marked <strong>*</strong> are required.
-    </p>
-  </div>
-  {% endif %}
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-    {% if not is_forced %}
+  {# ── Page Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
     <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
-    {% endif %}
     <div>
-      <h1 class="page-title" style="margin-bottom:2px;">
-        {% if is_forced %}Complete Your Profile{% else %}Edit Profile{% endif %}
-      </h1>
-      <p style="color:var(--text-muted);font-size:13px;margin:0;">{{ patient.get_full_name }} — {{ patient.patient_id }}</p>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Profile Setup</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">{{ patient.get_full_name }}</p>
     </div>
   </div>
 
-  <!-- Patient Identity (read-only, from import) -->
-  <div class="card" style="margin-bottom:20px;padding:16px 20px;background:#f8fafb;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Your Information (from clinic records)</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;font-size:13px;">
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Full Name</div>
-        <strong>{{ patient.get_full_name }}</strong>
+  {# ── Info Banner ── #}
+  <div style="background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">
+    <div style="width:44px;height:44px;border-radius:12px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <ion-icon name="calendar-outline" style="font-size:22px;color:#3b82f6;"></ion-icon>
+    </div>
+    <div>
+      <div style="font-weight:600;font-size:13px;color:#1a1a2e;margin-bottom:4px;">Birthday</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.5;">
+        Birthday is entered here, not imported. It is used to compute the patient's age in clinic records.
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Patient ID</div>
-        <strong>{{ patient.patient_id }}</strong>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Sex</div>
-        <strong>{{ patient.get_sex_display }}</strong>
-      </div>
-      {% if patient.college %}
-      <div>
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">College</div>
-        <strong>{{ patient.college.abbreviation }}</strong>
-      </div>
-      {% endif %}
     </div>
   </div>
 
-  <!-- Main Form -->
-  <div class="card">
-    <form method="post" novalidate id="profile-form">
+  {# ── Patient identity ── #}
+  <div style="background:#f8fafc;border-radius:16px;padding:16px 20px;border:1px solid #e8ecf1;margin-bottom:20px;">
+    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Patient</div>
+    <div style="font-size:14px;font-weight:600;color:#1a1a2e;">{{ patient.get_full_name }}</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">{{ patient.patient_id }}</div>
+  </div>
+
+  {# ── Form Card ── #}
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+    <form method="post" novalidate>
       {% csrf_token %}
-
-      <!-- Section 1: Health Info -->
-      <div class="section-divider">🩺 Health Information</div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>{{ form.birthday.label }}</label>
-          {{ form.birthday }}
-          {% if form.birthday.errors %}<div class="form-error">{{ form.birthday.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>{{ form.blood_type.label }}</label>
-          {{ form.blood_type }}
-          {% if form.blood_type.errors %}<div class="form-error">{{ form.blood_type.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.known_allergies.label }}</label>
-        {{ form.known_allergies }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          Write "None" if you have no known allergies.
-        </div>
-        {% if form.known_allergies.errors %}<div class="form-error">{{ form.known_allergies.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.existing_conditions.label }}</label>
-        {{ form.existing_conditions }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          Write "None" if you have no existing conditions.
-        </div>
-        {% if form.existing_conditions.errors %}<div class="form-error">{{ form.existing_conditions.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 2: Demographics -->
-      <div class="section-divider">👤 Demographics</div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>{{ form.religion.label }}</label>
-          {{ form.religion }}
-          {% if form.religion.errors %}<div class="form-error">{{ form.religion.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>{{ form.civil_status.label }}</label>
-          {{ form.civil_status }}
-          {% if form.civil_status.errors %}<div class="form-error">{{ form.civil_status.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.year_level.label }}</label>
-        {{ form.year_level }}
-        {% if form.year_level.errors %}<div class="form-error">{{ form.year_level.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 3: Physical Information -->
-      <div class="section-divider">📏 Physical Information</div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>{{ form.height_cm.label }}</label>
-          {{ form.height_cm }}
-          {% if form.height_cm.errors %}<div class="form-error">{{ form.height_cm.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>{{ form.weight_kg.label }}</label>
-          {{ form.weight_kg }}
-          {% if form.weight_kg.errors %}<div class="form-error">{{ form.weight_kg.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
-
-      <!-- Section 4: Family & Past Medical History -->
-      <div class="section-divider">🏥 Family & Past Medical History</div>
-
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        Check all conditions that apply to you:
-      </p>
-
-      <div class="checkbox-group">
-        <div class="checkbox-item">
-          {{ form.hypertension }}
-          <label>{{ form.hypertension.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.diabetes }}
-          <label>{{ form.diabetes.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.asthma }}
-          <label>{{ form.asthma.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.cardiac_problems }}
-          <label>{{ form.cardiac_problems.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.arthritis }}
-          <label>{{ form.arthritis.label }}</label>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-top:16px;">
-        <label>{{ form.other_conditions.label }}</label>
-        {{ form.other_conditions }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          List any other medical conditions not mentioned above. Write "None" if none.
-        </div>
-        {% if form.other_conditions.errors %}<div class="form-error">{{ form.other_conditions.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 5: Immunization Records -->
-      <div class="section-divider">💉 Immunization Records</div>
-
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        Check all vaccines you have received:
-      </p>
-
-      <div class="checkbox-group">
-        <div class="checkbox-item">
-          {{ form.bcg }}
-          <label>{{ form.bcg.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.dpt }}
-          <label>{{ form.dpt.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.opv }}
-          <label>{{ form.opv.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.hepatitis_b }}
-          <label>{{ form.hepatitis_b.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.measles }}
-          <label>{{ form.measles.label }}</label>
-        </div>
-        <div class="checkbox-item">
-          {{ form.tt }}
-          <label>{{ form.tt.label }}</label>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-top:16px;">
-        <label>{{ form.immunization_others.label }}</label>
-        {{ form.immunization_others }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          List any other vaccines received (e.g. influenza, HPV, COVID-19).
-        </div>
-        {% if form.immunization_others.errors %}<div class="form-error">{{ form.immunization_others.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 6: Medical Background -->
-      <div class="section-divider">📋 Medical Background</div>
-
-      <div class="form-group">
-        <label>{{ form.current_medications.label }}</label>
-        {{ form.current_medications }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          List all medications you are currently taking and their dosages. Write "None" if none.
-        </div>
-        {% if form.current_medications.errors %}<div class="form-error">{{ form.current_medications.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.vices.label }}</label>
-        {{ form.vices }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          E.g. smoking, alcohol intake, or other habits. Write "None" if none.
-        </div>
-        {% if form.vices.errors %}<div class="form-error">{{ form.vices.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.previous_illnesses.label }}</label>
-        {{ form.previous_illnesses }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          List any significant past illnesses (non‑chronic). Write "None" if none.
-        </div>
-        {% if form.previous_illnesses.errors %}<div class="form-error">{{ form.previous_illnesses.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.previous_hospitalizations.label }}</label>
-        {{ form.previous_hospitalizations }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          List past hospitalizations and approximate dates if known. Write "None" if none.
-        </div>
-        {% if form.previous_hospitalizations.errors %}<div class="form-error">{{ form.previous_hospitalizations.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 7: Contact Info -->
-      <div class="section-divider">📞 Contact Information</div>
-
-      <div class="form-group">
-        <label>{{ form.phone.label }}</label>
-        {{ form.phone }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.phone.help_text }}</div>
-        {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.email.label }}</label>
-        {{ form.email }}
-        {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
-      </div>
-
-      <div class="form-group">
-        <label>{{ form.address.label }}</label>
-        {{ form.address }}
-        {% if form.address.errors %}<div class="form-error">{{ form.address.errors.0 }}</div>{% endif %}
-      </div>
-
-      <!-- Section 8: Emergency Contact -->
-      <div class="section-divider">🆘 Emergency Contact</div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>{{ form.emergency_contact_name.label }}</label>
-          {{ form.emergency_contact_name }}
-          {% if form.emergency_contact_name.errors %}<div class="form-error">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>{{ form.emergency_contact_phone.label }}</label>
-          {{ form.emergency_contact_phone }}
-          {% if form.emergency_contact_phone.errors %}<div class="form-error">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
-
-      {% if form.non_field_errors %}
-        <div class="form-error" style="margin-bottom:12px;padding:10px 14px;background:#fef2f2;border-radius:6px;">
-          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
-      {% endif %}
-
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">
-          {% if is_forced %}✅ Complete Profile & Continue{% else %}💾 Save Profile{% endif %}
-        </button>
-        {% if not is_forced %}
-        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary">Cancel</a>
+      <div style="margin-bottom:24px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">{{ form.birthday.label }}</label>
+        {{ form.birthday }}
+        {% if form.birthday.help_text %}
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;">{{ form.birthday.help_text }}</div>
+        {% endif %}
+        {% if form.birthday.errors %}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#ef4444;">
+            <ion-icon name="alert-circle-outline" style="font-size:13px;"></ion-icon>
+            {{ form.birthday.errors.0 }}
+          </div>
         {% endif %}
       </div>
-
-      {% if is_forced %}
-      <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:12px;">
-        You cannot skip this step. All required fields must be filled before accessing the portal.
-      </p>
-      {% endif %}
-
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;border-radius:10px;padding:12px;font-size:14px;display:flex;align-items:center;gap:8px;">
+          <ion-icon name="save-outline" style="font-size:16px;"></ion-icon>
+          Save Profile
+        </button>
+        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary" style="border-radius:10px;padding:12px 20px;">Cancel</a>
+      </div>
     </form>
   </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

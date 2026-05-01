@@ -1,31 +1,42 @@
 {% extends 'core/base.html' %}
 {% block title %}Edit Contact — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:560px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">Contact Information</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:620px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back
+    </a>
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">Contact Information</h1>
   </div>
 
-  <div class="card" style="margin-bottom:16px;padding:14px 20px;">
-    <div style="font-size:14px;">
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Patient</div>
-      <strong>{{ patient.get_full_name }}</strong> — {{ patient.patient_id }}
+  {# ── Patient Label ── #}
+  <div style="background:#fff;border-radius:16px;padding:16px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+    <ion-icon name="person-circle-outline" style="font-size:32px;color:#3b82f6;"></ion-icon>
+    <div>
+      <div style="font-weight:700;color:#1a1a2e;font-size:15px;">{{ patient.get_full_name }}</div>
+      <div style="font-size:12px;color:#94a3b8;">{{ patient.patient_id }}</div>
     </div>
   </div>
 
-  <div class="card">
+  {# ── Form ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Primary Contact</div>
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
-
-      <!-- Primary Contact -->
-      <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;">Primary Contact</div>
 
       <div class="form-group">
         <label>{{ form.phone.label }}</label>
         {{ form.phone }}
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.phone.help_text }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">{{ form.phone.help_text }}</div>
         {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
       </div>
 
@@ -35,12 +46,15 @@
         {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
       </div>
 
-      <!-- Emergency Contact (collapsible) -->
+      {# ── Emergency Contact ── #}
       <details style="margin-top:16px;" {% if patient.emergency_contact_name or patient.emergency_contact_phone %}open{% endif %}>
-        <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;padding:10px 0;list-style:none;display:flex;align-items:center;gap:6px;">
-          <span>▶</span> Emergency Contact (optional)
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;padding:10px 0;list-style:none;display:flex;align-items:center;gap:6px;border-top:1px solid #e8ecf1;margin-top:4px;">
+          <ion-icon name="people-outline" style="font-size:15px;color:#3b82f6;"></ion-icon>
+          <span id="emergency-label">Emergency Contact</span>
+          <span style="font-weight:400;color:#94a3b8;">(optional)</span>
+          <span id="arrow-icon" style="margin-left:auto;">▶</span>
         </summary>
-        <div style="padding-top:12px;">
+        <div style="padding-top:14px;">
           <div class="form-group">
             <label>{{ form.emergency_contact_name.label }}</label>
             {{ form.emergency_contact_name }}
@@ -60,25 +74,29 @@
         </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:20px;">
-        <button type="submit" class="btn btn-primary">Save Contact Info</button>
+      <div style="display:flex;gap:10px;margin-top:24px;">
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <ion-icon name="checkmark-circle-outline" style="font-size:15px;"></ion-icon> Save Contact Info
+        </button>
         <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+</div>
 </div>
 
-{% block extra_js %}
+{% block extra_js_inline %}
 <script>
-// Rotate the summary arrow when details is opened/closed
 document.querySelectorAll('details').forEach(d => {
+  const arrow = d.querySelector('#arrow-icon');
+  if (arrow) arrow.textContent = d.open ? '▼' : '▶';
   d.addEventListener('toggle', function() {
-    const arrow = this.querySelector('summary span');
     if (arrow) arrow.textContent = this.open ? '▼' : '▶';
   });
-  // Set initial state
-  const arrow = d.querySelector('summary span');
-  if (arrow) arrow.textContent = d.open ? '▼' : '▶';
 });
 </script>
 {% endblock %}

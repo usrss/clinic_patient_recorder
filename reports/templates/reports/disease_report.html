@@ -1,117 +1,284 @@
 {% extends 'core/base.html' %}
 {% block title %}Disease Report — Clinic Recorder{% endblock %}
 
+{% block extra_css %}
+<style>
+  .reports-wrap {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px;
+  }
+  .reports-inner { max-width: 1100px; margin: 0 auto; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .15s;
+    font-weight: 500;
+  }
+  .back-btn:hover { background: #f9fafb; color: inherit; text-decoration: none; }
+
+  .filter-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    align-items: flex-end;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .form-control {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid #e8ecf1;
+    background: #f9fafb;
+    font-size: 13px;
+    color: #1a1a2e;
+    transition: border-color .15s;
+  }
+  .form-control:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .88; }
+
+  .btn-secondary {
+    background: #fff;
+    color: #4b5563;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background .15s;
+  }
+  .btn-secondary:hover { background: #f9fafb; color: inherit; text-decoration: none; }
+
+  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+
+  .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 14px;
+    text-align: center;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+
+  .data-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .data-card table { width: 100%; border-collapse: collapse; }
+  .data-card th {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8ecf1;
+    text-align: left;
+    background: #fafafa;
+  }
+  .data-card td { padding: 11px 16px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .data-card tr:last-child td { border-bottom: none; }
+  .data-card tr:hover td { background: #f9fafb; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 12px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-student    { background: #dbeafe; color: #1e40af; }
+  .badge-staff      { background: #ede9fe; color: #5b21b6; }
+  .badge-instructor { background: #fef9c3; color: #713f12; }
+
+  .college-tag {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #166534;
+  }
+  .college-tag strong { color: #14532d; }
+
+  .empty-state {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    text-align: center;
+    padding: 48px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:24px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary btn-sm">← Reports</a>
-    <h1 class="page-title" style="margin-bottom:0;">Disease Report</h1>
-  </div>
-  <p style="color:var(--text-muted);font-size:13px;">Filter completed consultations by diagnosis keyword, date range, and patient type.</p>
-</div>
+<div class="reports-wrap">
+<div class="reports-inner">
 
-<!-- Filter Form -->
-<div class="card" style="margin-bottom:20px;padding:20px;">
-  <form method="get" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:flex-end;">
-
-    <div class="form-group" style="margin-bottom:0;">
-      <label>Diagnosis keyword</label>
-      <input type="text" name="keyword" value="{{ keyword }}"
-             class="form-control" placeholder="e.g. fever, UTI, hypertension">
+  <!-- Header -->
+  <div style="margin-bottom: 28px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+      <a href="{% url 'reports:report_dashboard' %}" class="back-btn">← Reports</a>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-.3px;">Disease Report</h1>
     </div>
+    <p style="font-size:13px;color:#6b7280;margin:0;">Filter completed consultations by diagnosis keyword, date range, and patient type.</p>
+  </div>
 
-    <div class="form-group" style="margin-bottom:0;">
-      <label>Date from</label>
-      <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+  <!-- Filter Form -->
+  <div class="filter-card">
+    <form method="get">
+      <div class="filter-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Diagnosis keyword</label>
+          <input type="text" name="keyword" value="{{ keyword }}" class="form-control" placeholder="e.g. fever, UTI">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Date from</label>
+          <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Date to</label>
+          <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Patient type</label>
+          <select name="patient_type" class="form-control">
+            <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All types</option>
+            <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
+            <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
+            <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>College <span style="font-weight:400;text-transform:none;font-size:10px;">(students)</span></label>
+          <select name="college_id" class="form-control">
+            <option value="">All colleges</option>
+            {% for c in colleges %}
+            <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
+              {{ c.abbreviation }} — {{ c.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <button type="submit" class="btn-primary">Search</button>
+          {% if has_filters %}
+          <a href="{% url 'reports:disease_report' %}" class="btn-secondary btn-sm">Clear</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if has_filters %}
+
+  <!-- Summary stat cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:20px;">
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--primary);">{{ total_affected }}</div>
+      <div class="stat-label">Affected Patients</div>
     </div>
-
-    <div class="form-group" style="margin-bottom:0;">
-      <label>Date to</label>
-      <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+    <div class="stat-card">
+      <div class="stat-value" style="color:#3b82f6;">{{ by_type.student }}</div>
+      <div class="stat-label">Students</div>
     </div>
-
-    <div class="form-group" style="margin-bottom:0;">
-      <label>Patient type</label>
-      <select name="patient_type" class="form-control">
-        <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All</option>
-        <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
-        <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
-        <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
-      </select>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#8b5cf6;">{{ by_type.staff }}</div>
+      <div class="stat-label">Staff</div>
     </div>
-
-    <div class="form-group" style="margin-bottom:0;">
-      <label>College <span style="font-weight:400;color:var(--text-muted);">(students only)</span></label>
-      <select name="college_id" class="form-control">
-        <option value="">All colleges</option>
-        {% for c in colleges %}
-          <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
-            {{ c.abbreviation }} — {{ c.name }}
-          </option>
-        {% endfor %}
-      </select>
+    <div class="stat-card">
+      <div class="stat-value" style="color:#f97316;">{{ by_type.instructor }}</div>
+      <div class="stat-label">Instructors</div>
     </div>
-
-    <div style="display:flex;gap:8px;align-items:flex-end;">
-      <button type="submit" class="btn btn-primary">Search</button>
-      {% if has_filters %}
-        <a href="{% url 'reports:disease_report' %}" class="btn btn-secondary">Clear</a>
-      {% endif %}
+    <div class="stat-card">
+      <div class="stat-value">{{ consultations.count }}</div>
+      <div class="stat-label">Consultations</div>
     </div>
-  </form>
-</div>
+  </div>
 
-{% if has_filters %}
-<!-- Summary Cards -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px;">
-  <div class="card" style="text-align:center;padding:18px 12px;">
-    <div style="font-size:26px;font-weight:700;color:var(--primary);">{{ total_affected }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Affected Patients</div>
+  <!-- Breakdown by college -->
+  {% if by_college %}
+  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);">
+    <div class="section-label">Breakdown by College</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for row in by_college %}
+      <span class="college-tag">
+        <strong>{{ row.patient__college__abbreviation }}</strong> — {{ row.count }} patient{{ row.count|pluralize }}
+      </span>
+      {% endfor %}
+    </div>
   </div>
-  <div class="card" style="text-align:center;padding:18px 12px;">
-    <div style="font-size:26px;font-weight:700;color:#3b82f6;">{{ by_type.student }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Students</div>
-  </div>
-  <div class="card" style="text-align:center;padding:18px 12px;">
-    <div style="font-size:26px;font-weight:700;color:#8b5cf6;">{{ by_type.staff }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Staff</div>
-  </div>
-  <div class="card" style="text-align:center;padding:18px 12px;">
-    <div style="font-size:26px;font-weight:700;color:#f97316;">{{ by_type.instructor }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Instructors</div>
-  </div>
-  <div class="card" style="text-align:center;padding:18px 12px;">
-    <div style="font-size:26px;font-weight:700;">{{ consultations.count }}</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Consultations</div>
-  </div>
-</div>
+  {% endif %}
 
-<!-- Breakdown by College -->
-{% if by_college %}
-<div class="card" style="margin-bottom:20px;">
-  <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Breakdown by College</h3>
-  <div style="display:flex;flex-wrap:wrap;gap:8px;">
-    {% for row in by_college %}
-    <span style="background:#f0f9f5;border:1px solid #bbf7d0;padding:5px 12px;border-radius:20px;font-size:13px;">
-      <strong>{{ row.patient__college__abbreviation }}</strong> — {{ row.count }} patient{{ row.count|pluralize }}
-    </span>
-    {% endfor %}
+  <!-- Export bar + count -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <p style="font-size:13px;color:#6b7280;margin:0;">
+      <strong style="color:#1a1a2e;">{{ consultations.count }}</strong> consultation{{ consultations.count|pluralize }} found
+    </p>
+    <a href="?keyword={{ keyword }}&date_from={{ date_from }}&date_to={{ date_to }}&patient_type={{ patient_type }}&college_id={{ college_id }}&export=csv"
+       class="btn-secondary btn-sm">⬇ Export CSV</a>
   </div>
-</div>
-{% endif %}
 
-<!-- Export + Results -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-  <p style="font-size:13px;color:var(--text-muted);margin:0;">
-    {{ consultations.count }} consultation{{ consultations.count|pluralize }} found
-  </p>
-  <a href="?keyword={{ keyword }}&date_from={{ date_from }}&date_to={{ date_to }}&patient_type={{ patient_type }}&college_id={{ college_id }}&export=csv"
-     class="btn btn-secondary btn-sm">⬇ Export CSV</a>
-</div>
-
-{% if consultations %}
-<div class="card" style="padding:0;">
-  <div class="table-wrap">
+  {% if consultations %}
+  <div class="data-card">
     <table>
       <thead>
         <tr>
@@ -127,47 +294,49 @@
       <tbody>
         {% for c in consultations %}
         <tr>
-          <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
-          <td style="font-weight:500;">{{ c.patient.get_full_name }}</td>
-          <td style="font-size:12px;color:var(--text-muted);">{{ c.patient.patient_id }}</td>
-          <td style="font-size:12px;">
+          <td style="color:#9ca3af;font-size:12px;font-weight:500;">{{ c.pk }}</td>
+          <td style="font-size:12px;color:#6b7280;">{{ c.created_at|date:"M d, Y" }}</td>
+          <td style="font-weight:600;color:#1a1a2e;">{{ c.patient.get_full_name }}</td>
+          <td style="font-size:12px;color:#9ca3af;font-family:monospace;">{{ c.patient.patient_id }}</td>
+          <td>
             {% if c.patient.college %}
-              <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Student</span>
+              <span class="badge badge-student">Student</span>
             {% elif c.patient.department %}
-              <span style="background:#f3e8ff;color:#6b21a8;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Staff</span>
+              <span class="badge badge-staff">Staff</span>
             {% else %}
-              <span style="background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">Instructor</span>
+              <span class="badge badge-instructor">Instructor</span>
             {% endif %}
           </td>
-          <td style="font-size:12px;color:var(--text-muted);">
+          <td style="font-size:12px;color:#6b7280;">
             {% if c.patient.college %}{{ c.patient.college.abbreviation }}
             {% elif c.patient.department %}{{ c.patient.department }}
             {% else %}—{% endif %}
           </td>
-          <td style="font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            {% if c.prescription %}{{ c.prescription.diagnosis|truncatechars:60 }}{% else %}—{% endif %}
+          <td style="font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {% if c.prescription %}{{ c.prescription.diagnosis|truncatechars:65 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-</div>
-{% else %}
-<div class="card" style="text-align:center;padding:40px 24px;">
-  <div style="font-size:36px;margin-bottom:10px;">🔍</div>
-  <p style="font-weight:600;margin-bottom:4px;">No results found</p>
-  <p style="color:var(--text-muted);font-size:13px;">Try adjusting your filters.</p>
-</div>
-{% endif %}
+  {% else %}
+  <div class="empty-state">
+    <div style="font-size:40px;margin-bottom:12px;">🔍</div>
+    <p style="font-weight:600;color:#374151;margin-bottom:6px;">No results found</p>
+    <p style="color:#9ca3af;font-size:13px;">Try adjusting your filters or broadening the date range.</p>
+  </div>
+  {% endif %}
 
-{% else %}
-<div class="card" style="text-align:center;padding:48px 24px;">
-  <div style="font-size:40px;margin-bottom:12px;">🔬</div>
-  <p style="font-weight:600;margin-bottom:4px;">Use the filters above to search</p>
-  <p style="color:var(--text-muted);font-size:13px;">Enter a diagnosis keyword, date range, or patient type to get started.</p>
-</div>
-{% endif %}
+  {% else %}
+  <!-- Initial state -->
+  <div class="empty-state">
+    <div style="font-size:44px;margin-bottom:14px;">🔬</div>
+    <p style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:6px;">Use the filters above to search</p>
+    <p style="color:#9ca3af;font-size:13px;">Enter a diagnosis keyword, date range, or patient type to get started.</p>
+  </div>
+  {% endif %}
 
+</div>
+</div>
 {% endblock %}

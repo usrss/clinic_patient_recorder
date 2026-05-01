@@ -1,54 +1,118 @@
 {% extends 'core/base.html' %}
 {% block title %}Medical Certificate — Consultation #{{ consultation.pk }}{% endblock %}
 
-{% block content %}
-<div style="max-width:600px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:clinical_detail' consultation.pk %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">Medical Certificate</h1>
-  </div>
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
 
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 10px;">Patient</h3>
-    <div style="font-size:14px;">
-      <strong>{{ consultation.patient.get_full_name }}</strong> —
-      {{ consultation.patient.age|default:"—" }} yrs / {{ consultation.patient.get_sex_display }}
+{% block content %}
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:640px;margin:0 auto;">
+
+  {# ── Page Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'consultations:clinical_detail' consultation.pk %}"
+       style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e8ecf1;border-radius:10px;font-size:13px;font-weight:500;color:#374151;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';this.style.transform='translateY(-1px)'"
+       onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)';this.style.transform=''">
+      <ion-icon name="arrow-back-outline" style="font-size:15px;"></ion-icon> Back
+    </a>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;">Medical Certificate</h1>
+      <p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">Consultation #{{ consultation.pk }}</p>
     </div>
   </div>
 
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">Certificate Details</h3>
+  {# ── Patient Card ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Patient</div>
+  <div style="background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#e8f0fe,#c7d7fb);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <ion-icon name="person-outline" style="font-size:20px;color:#0078d4;"></ion-icon>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:15px;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:2px;">
+          {{ consultation.patient.age|default:"—" }} yrs &nbsp;·&nbsp; {{ consultation.patient.get_sex_display }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Certificate Details ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Certificate Details</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
     <form method="post" novalidate>
       {% csrf_token %}
-      <div class="form-group">
-        <label>Certificate Type *</label>
+
+      {# Certificate Type #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="document-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
+          Certificate Type <span style="color:#ef4444;">*</span>
+        </label>
         {{ form.certificate_type }}
-        {% if form.certificate_type.errors %}<div class="form-error">{{ form.certificate_type.errors.0 }}</div>{% endif %}
+        {% if form.certificate_type.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.certificate_type.errors.0 }}</div>{% endif %}
       </div>
-      <div class="form-group">
-        <label>Diagnosis / Findings *</label>
+
+      {# Diagnosis #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="search-outline" style="font-size:14px;color:#3b82f6;"></ion-icon>
+          Diagnosis / Findings <span style="color:#ef4444;">*</span>
+        </label>
         {{ form.diagnosis }}
-        {% if form.diagnosis.errors %}<div class="form-error">{{ form.diagnosis.errors.0 }}</div>{% endif %}
+        {% if form.diagnosis.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.diagnosis.errors.0 }}</div>{% endif %}
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label>Rest From</label>
-          {{ form.rest_from }}
-          {% if form.rest_from.errors %}<div class="form-error">{{ form.rest_from.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="form-group">
-          <label>Rest To</label>
-          {{ form.rest_to }}
-          {% if form.rest_to.errors %}<div class="form-error">{{ form.rest_to.errors.0 }}</div>{% endif %}
+
+      {# Rest Period #}
+      <div style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="calendar-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+          Rest Period
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">From</div>
+            {{ form.rest_from }}
+            {% if form.rest_from.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.rest_from.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">To</div>
+            {{ form.rest_to }}
+            {% if form.rest_to.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.rest_to.errors.0 }}</div>{% endif %}
+          </div>
         </div>
       </div>
-      <div class="form-group">
-        <label>Remarks</label>
+
+      {# Remarks #}
+      <div style="margin-bottom:24px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:7px;">
+          <ion-icon name="chatbox-ellipses-outline" style="font-size:14px;color:#8b5cf6;"></ion-icon>
+          Remarks
+        </label>
         {{ form.remarks }}
-        {% if form.remarks.errors %}<div class="form-error">{{ form.remarks.errors.0 }}</div>{% endif %}
+        {% if form.remarks.errors %}<div style="font-size:12px;color:#ef4444;margin-top:4px;">{{ form.remarks.errors.0 }}</div>{% endif %}
       </div>
-      <button type="submit" class="btn btn-primary">💾 Issue Certificate & Print</button>
+
+      {# Submit #}
+      <button type="submit"
+        style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:linear-gradient(135deg,#0078d4,#1a56db);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,120,212,0.35);transition:all 0.2s;"
+        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(0,120,212,0.45)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.35)'">
+        <ion-icon name="print-outline" style="font-size:16px;"></ion-icon>
+        Issue Certificate &amp; Print
+      </button>
+
     </form>
   </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

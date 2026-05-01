@@ -1,255 +1,273 @@
 {% extends 'core/base.html' %}
 {% block title %}{{ patient.get_full_name }} — Patients — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:760px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary btn-sm">← Back</a>
-    <h1 class="page-title" style="margin-bottom:0;">{{ patient.get_full_name }}</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:800px;margin:0 auto;">
+
+  {# ── Page Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">{{ patient.get_full_name }}</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">Patient record</p>
+    </div>
   </div>
 
-  <!-- Patient Info Card -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0;">Patient Information</h3>
+  {# ── Patient Info ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Patient Information</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <ion-icon name="person-outline" style="font-size:22px;color:#065f46;"></ion-icon>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a2e;">{{ patient.get_full_name }}</div>
+          <div style="font-size:12px;color:#94a3b8;">{{ patient.patient_id }}</div>
+        </div>
+      </div>
       {% if user.role == 'admin' or user.role == 'frontdesk' %}
-      <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm">✏ Edit Profile</a>
+      <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
+        <ion-icon name="create-outline" style="font-size:13px;"></ion-icon>
+        Edit Profile
+      </a>
       {% endif %}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Full Name</div>
-        <div style="font-weight:600;">{{ patient.get_full_name }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Full Name</div>
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ patient.get_full_name }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Patient ID</div>
-        <div>{{ patient.patient_id }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Patient ID</div>
+        <div style="font-size:13px;color:#374151;">{{ patient.patient_id }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Sex</div>
-        <div>{{ patient.get_sex_display }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Sex</div>
+        <div style="font-size:13px;color:#374151;">{{ patient.get_sex_display }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Age</div>
-        <div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Age</div>
+        <div style="font-size:13px;color:#374151;">
           {% if patient.age %}{{ patient.age }} years old
-          {% elif profile and profile.birthday is None %}
-            <span style="color:var(--text-muted);font-size:12px;">Birthday not set</span>
+          {% elif profile and profile.birthday is None %}<span style="color:#94a3b8;font-size:12px;">Birthday not set</span>
           {% else %}—{% endif %}
         </div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Birthday</div>
-        <div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Birthday</div>
+        <div style="font-size:13px;color:#374151;">
           {% if profile and profile.birthday %}{{ profile.birthday|date:"F d, Y" }}
-          {% else %}<span style="color:var(--text-muted);font-size:12px;">Not set</span>{% endif %}
+          {% else %}<span style="color:#94a3b8;font-size:12px;">Not set</span>{% endif %}
         </div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">College</div>
-        <div>{% if patient.college %}{{ patient.college.abbreviation }} — {{ patient.college.name }}{% else %}—{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">College</div>
+        <div style="font-size:13px;color:#374151;">{% if patient.college %}{{ patient.college.abbreviation }} — {{ patient.college.name }}{% else %}—{% endif %}</div>
       </div>
       {% if patient.department %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Department</div>
-        <div>{{ patient.department }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Department</div>
+        <div style="font-size:13px;color:#374151;">{{ patient.department }}</div>
       </div>
       {% endif %}
       {% if patient.position %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Position</div>
-        <div>{{ patient.position }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Position</div>
+        <div style="font-size:13px;color:#374151;">{{ patient.position }}</div>
       </div>
       {% endif %}
     </div>
   </div>
 
   {% if profile %}
-  <!-- ================================================================ -->
-  <!-- SECTION 1: DEMOGRAPHICS -->
-  <!-- ================================================================ -->
-  <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">👤 Demographics</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+
+  {# ── Demographics ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">👤 Demographics</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Religion</div>
-        <div>{{ profile.religion|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Religion</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.religion|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Civil Status</div>
-        <div>{{ profile.civil_status|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Civil Status</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.civil_status|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Year Level</div>
-        <div>{{ profile.year_level|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Year Level</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.year_level|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Height</div>
-        <div>{% if profile.height_cm %}{{ profile.height_cm }} cm{% else %}—{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Height</div>
+        <div style="font-size:13px;color:#374151;">{% if profile.height_cm %}{{ profile.height_cm }} cm{% else %}—{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Weight</div>
-        <div>{% if profile.weight_kg %}{{ profile.weight_kg }} kg{% else %}—{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Weight</div>
+        <div style="font-size:13px;color:#374151;">{% if profile.weight_kg %}{{ profile.weight_kg }} kg{% else %}—{% endif %}</div>
       </div>
       {% if profile.blood_type %}
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Blood Type</div>
-        <div>{{ profile.blood_type }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Blood Type</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.blood_type }}</div>
       </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- ================================================================ -->
-  <!-- SECTION 2: FAMILY & PAST MEDICAL HISTORY -->
-  <!-- ================================================================ -->
-  <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">🏥 Family & Past Medical History</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+  {# ── Family & Past Medical History ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">🏥 Family & Past Medical History</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:{% if profile.other_conditions %}16px{% else %}0{% endif %};">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Hypertension</div>
-        <div>{% if profile.hypertension %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Hypertension</div>
+        <div>{% if profile.hypertension %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Diabetes</div>
-        <div>{% if profile.diabetes %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Diabetes</div>
+        <div>{% if profile.diabetes %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Asthma</div>
-        <div>{% if profile.asthma %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Asthma</div>
+        <div>{% if profile.asthma %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Cardiac Problems</div>
-        <div>{% if profile.cardiac_problems %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Cardiac Problems</div>
+        <div>{% if profile.cardiac_problems %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Arthritis</div>
-        <div>{% if profile.arthritis %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Arthritis</div>
+        <div>{% if profile.arthritis %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
     </div>
     {% if profile.other_conditions %}
-    <div style="margin-top:12px;">
-      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Other Conditions</div>
-      <div style="font-size:13px;">{{ profile.other_conditions }}</div>
+    <div style="padding-top:16px;border-top:1px solid #f1f5f9;">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Other Conditions</div>
+      <div style="font-size:13px;color:#374151;">{{ profile.other_conditions }}</div>
     </div>
     {% endif %}
   </div>
 
-  <!-- ================================================================ -->
-  <!-- SECTION 3: IMMUNIZATION -->
-  <!-- ================================================================ -->
-  <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">💉 Immunization Records</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:14px;">
+  {# ── Immunization Records ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">💉 Immunization Records</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:{% if profile.immunization_others %}16px{% else %}0{% endif %};">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">BCG</div>
-        <div>{% if profile.bcg %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">BCG</div>
+        <div>{% if profile.bcg %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">DPT</div>
-        <div>{% if profile.dpt %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">DPT</div>
+        <div>{% if profile.dpt %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">OPV</div>
-        <div>{% if profile.opv %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">OPV</div>
+        <div>{% if profile.opv %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Hepatitis B</div>
-        <div>{% if profile.hepatitis_b %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Hepatitis B</div>
+        <div>{% if profile.hepatitis_b %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Measles</div>
-        <div>{% if profile.measles %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Measles</div>
+        <div>{% if profile.measles %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">TT</div>
-        <div>{% if profile.tt %}<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">Yes</span>{% else %}<span style="color:var(--text-muted);font-size:13px;">No</span>{% endif %}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">TT</div>
+        <div>{% if profile.tt %}<span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>{% else %}<span style="font-size:13px;color:#94a3b8;">No</span>{% endif %}</div>
       </div>
     </div>
     {% if profile.immunization_others %}
-    <div style="margin-top:12px;">
-      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Other Immunizations</div>
-      <div style="font-size:13px;">{{ profile.immunization_others }}</div>
+    <div style="padding-top:16px;border-top:1px solid #f1f5f9;">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Other Immunizations</div>
+      <div style="font-size:13px;color:#374151;">{{ profile.immunization_others }}</div>
     </div>
     {% endif %}
   </div>
 
-  <!-- ================================================================ -->
-  <!-- SECTION 4: MEDICAL BACKGROUND -->
-  <!-- ================================================================ -->
-  <div class="card" style="margin-bottom:20px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 14px;">📋 Medical Background</h3>
-    <div style="display:grid;gap:14px;font-size:14px;">
+  {# ── Medical Background ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">📋 Medical Background</div>
+  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;gap:18px;">
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Current Medications</div>
-        <div>{{ profile.current_medications|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Current Medications</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.current_medications|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Vices (Smoking, Alcohol, etc.)</div>
-        <div>{{ profile.vices|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Vices (Smoking, Alcohol, etc.)</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.vices|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Previous Illnesses</div>
-        <div>{{ profile.previous_illnesses|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Previous Illnesses</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.previous_illnesses|default:"—" }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Previous Hospitalizations</div>
-        <div>{{ profile.previous_hospitalizations|default:"—" }}</div>
+        <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;">Previous Hospitalizations</div>
+        <div style="font-size:13px;color:#374151;">{{ profile.previous_hospitalizations|default:"—" }}</div>
       </div>
     </div>
   </div>
 
-  <!-- View Full Medical History -->
-  <div style="margin-bottom:20px;">
-    <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;">
-      📋 View Full Medical History
+  {# ── Full Medical History CTA ── #}
+  <div style="margin-bottom:32px;">
+    <a href="{% url 'consultations:medical_history' patient.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;border-radius:10px;padding:12px;font-size:14px;display:flex;align-items:center;gap:8px;">
+      <ion-icon name="document-text-outline" style="font-size:16px;"></ion-icon>
+      View Full Medical History
     </a>
   </div>
+
   {% endif %}
 
-  <!-- Consultation History -->
-  <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation History</h3>
+  {# ── Consultation History ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Consultation History</div>
 
   {% if consultations %}
-  <div class="card" style="padding:0;">
-    <div class="table-wrap">
-      <table>
+  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
         <thead>
-          <tr>
-            <th>#</th>
-            <th>Status</th>
-            <th>Symptoms (summary)</th>
-            <th>Submitted</th>
-            <th>Actions</th>
+          <tr style="background:#f8fafc;border-bottom:1px solid #e8ecf1;">
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">#</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Status</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Symptoms (summary)</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Submitted</th>
+            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for c in consultations %}
-          <tr>
-            <td style="color:var(--text-muted);font-size:12px;">{{ c.pk }}</td>
-            <td>
+          <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <td style="padding:14px 20px;font-size:12px;color:#94a3b8;">{{ c.pk }}</td>
+            <td style="padding:14px 20px;">
               {% if c.status == 'pending' %}
-                <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pending</span>
+                <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">⏳ Pending</span>
               {% elif c.status == 'queued' %}
-                <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🗂 Queued</span>
+                <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">🗂 Queued</span>
               {% elif c.status == 'scheduled' %}
-                <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">📅 Scheduled</span>
+                <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">📅 Scheduled</span>
               {% elif c.status == 'triaged' %}
-                <span style="background:#ffedd5;color:#9a3412;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">🩺 Triaged</span>
+                <span style="background:#ffedd5;color:#9a3412;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">🩺 Triaged</span>
               {% elif c.status == 'completed' %}
-                <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✅ Completed</span>
+                <span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">✅ Completed</span>
               {% elif c.status == 'cancelled' %}
-                <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">✕ Cancelled</span>
+                <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">✕ Cancelled</span>
               {% endif %}
             </td>
-            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">
-              {{ c.symptoms|truncatechars:60 }}
-            </td>
-            <td style="font-size:12px;color:var(--text-muted);">{{ c.created_at|date:"M d, Y" }}</td>
-            <td>
+            <td style="padding:14px 20px;font-size:13px;color:#374151;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.symptoms|truncatechars:60 }}</td>
+            <td style="padding:14px 20px;font-size:12px;color:#94a3b8;">{{ c.created_at|date:"M d, Y" }}</td>
+            <td style="padding:14px 20px;">
               <div style="display:flex;gap:6px;">
-                <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm">View</a>
-                <a href="{% url 'consultations:print_consultation' c.pk %}" class="btn btn-secondary btn-sm" target="_blank">🖨</a>
+                <a href="{% url 'consultations:clinical_detail' c.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
+                  <ion-icon name="eye-outline" style="font-size:12px;"></ion-icon>View
+                </a>
+                <a href="{% url 'consultations:print_consultation' c.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;" target="_blank">
+                  <ion-icon name="print-outline" style="font-size:12px;"></ion-icon>
+                </a>
               </div>
             </td>
           </tr>
@@ -258,12 +276,20 @@
       </table>
     </div>
   </div>
+
   {% else %}
-  <div class="card" style="text-align:center;padding:32px 24px;">
-    <div style="font-size:36px;margin-bottom:10px;">📋</div>
-    <p style="font-weight:600;margin-bottom:4px;">No consultations yet</p>
-    <p style="color:var(--text-muted);font-size:13px;">This patient has not had any consultations recorded.</p>
+  <div style="background:#fff;border-radius:16px;padding:48px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
+    <ion-icon name="document-outline" style="font-size:40px;color:#d1d5db;display:block;margin:0 auto 14px;"></ion-icon>
+    <div style="font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:6px;">No consultations yet</div>
+    <p style="font-size:13px;color:#94a3b8;margin:0;">This patient has not had any consultations recorded.</p>
   </div>
   {% endif %}
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

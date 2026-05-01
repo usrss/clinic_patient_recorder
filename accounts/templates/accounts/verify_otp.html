@@ -1,24 +1,72 @@
 {% extends 'core/base.html' %}
 {% block title %}Verify OTP — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:440px;margin:40px auto;">
-  <div class="card">
-    <h1 class="page-title" style="margin-bottom:8px;">Verify OTP</h1>
-    <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">
-      Enter the 6-digit code sent to your email.
-    </p>
-    <form method="post" novalidate>
-      {% csrf_token %}
-      <div class="form-group">
-        <label>Enter OTP</label>
-        <input type="text" name="otp" class="form-control" maxlength="6" placeholder="000000" autofocus autocomplete="off" style="font-size:24px;text-align:center;letter-spacing:8px;">
-      </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;">Verify OTP</button>
-    </form>
-    <div style="text-align:center;margin-top:16px;">
-      <a href="{% url 'accounts:forgot_password' %}" style="font-size:13px;">← Resend OTP</a>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:480px;margin:0 auto;">
+
+  {# ── Page Header ── #}
+  <div style="margin-bottom:32px;">
+    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Verify OTP</h1>
+    <p style="font-size:13px;color:#6b7280;margin:0;">Enter the 6-digit code sent to your email</p>
+  </div>
+
+  {# ── Info Banner ── #}
+  <div style="background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+    <div style="width:44px;height:44px;border-radius:12px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <ion-icon name="mail-outline" style="font-size:22px;color:#3b82f6;"></ion-icon>
+    </div>
+    <div>
+      <div style="font-weight:600;font-size:13px;color:#1a1a2e;margin-bottom:2px;">Check your inbox</div>
+      <div style="font-size:12px;color:#94a3b8;">A 6-digit verification code was sent to your email address.</div>
     </div>
   </div>
+
+  {# ── Form Card ── #}
+  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div style="margin-bottom:28px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;text-align:center;">Enter OTP</label>
+        <input
+          type="text"
+          name="otp"
+          class="form-control"
+          maxlength="6"
+          placeholder="000000"
+          autofocus
+          autocomplete="off"
+          style="font-size:28px;text-align:center;letter-spacing:12px;font-weight:700;padding:16px;border-radius:12px;border:2px solid #e8ecf1;color:#1a1a2e;background:#f8fafc;width:100%;box-sizing:border-box;transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='#0078d4';this.style.background='#fff';"
+          onblur="this.style.borderColor='#e8ecf1';this.style.background='#f8fafc';"
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:10px;">
+        <ion-icon name="checkmark-shield-outline" style="font-size:16px;margin-right:8px;"></ion-icon>
+        Verify OTP
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #f1f5f9;">
+      <a href="{% url 'accounts:forgot_password' %}" style="font-size:13px;color:#6b7280;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        <ion-icon name="refresh-outline" style="font-size:14px;"></ion-icon>
+        Resend OTP
+      </a>
+    </div>
+  </div>
+
+  {# Footer #}
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+
+</div>
 </div>
 {% endblock %}

@@ -1,69 +1,87 @@
 {% extends 'core/base.html' %}
 {% block title %}Process Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
 
+{% block extra_js %}
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:680px;">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm">← Back to Queue</a>
-    <h1 class="page-title" style="margin-bottom:0;">Consultation #{{ consultation.pk }}</h1>
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
+<div style="width:100%;max-width:760px;margin:0 auto;">
+
+  {# ── Header ── #}
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
+      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
+    </a>
+    <div>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">Consultation #{{ consultation.pk }}</h1>
+    </div>
   </div>
 
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Patient</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;">
+  {# ── Patient Info ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Patient Information</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:14px;">
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Name</span><br>
-        <strong>{{ consultation.patient.get_full_name }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Name</div>
+        <div style="font-weight:700;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Patient ID</span><br>
-        <strong>{{ consultation.patient.patient_id }}</strong>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Patient ID</div>
+        <div style="font-weight:600;color:#374151;">{{ consultation.patient.patient_id }}</div>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Sex</span><br>
-        {{ consultation.patient.get_sex_display }}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Sex</div>
+        <div style="color:#374151;">{{ consultation.patient.get_sex_display }}</div>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Age</span><br>
-        {{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Age</div>
+        <div style="color:#374151;">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %}</div>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">College / Dept</span><br>
-        {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
-        {% elif consultation.patient.department %}{{ consultation.patient.department }}
-        {% else %}—{% endif %}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">College / Dept</div>
+        <div style="color:#374151;">
+          {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
+          {% elif consultation.patient.department %}{{ consultation.patient.department }}
+          {% else %}—{% endif %}
+        </div>
       </div>
       <div>
-        <span style="color:var(--text-muted);font-size:12px;">Submitted</span><br>
-        {{ consultation.created_at|date:"F d, Y \a\t H:i" }}
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Submitted</div>
+        <div style="color:#374151;">{{ consultation.created_at|date:"F d, Y \a\t H:i" }}</div>
       </div>
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 12px;">Consultation Details</h3>
-    <div style="display:grid;gap:12px;font-size:14px;">
+  {# ── Consultation Details ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Consultation Details</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="display:grid;gap:16px;font-size:14px;">
       <div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Symptoms</div>
-        <div>{{ consultation.symptoms }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Symptoms</div>
+        <div style="color:#1a1a2e;">{{ consultation.symptoms }}</div>
       </div>
       <div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Severity Description</div>
-        <div>{{ consultation.severity_description }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Severity Description</div>
+        <div style="color:#1a1a2e;">{{ consultation.severity_description }}</div>
       </div>
       {% if consultation.medical_history %}
       <div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px;">Medical History</div>
-        <div>{{ consultation.medical_history }}</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Medical History</div>
+        <div style="color:#1a1a2e;">{{ consultation.medical_history }}</div>
       </div>
       {% endif %}
     </div>
   </div>
 
-  <div class="card" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:0 0 16px;">Assign Queue / Schedule</h3>
-    <div style="background:#f0f9f5;border-left:4px solid var(--primary);padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;">
-      💡 Selecting <strong>Queued</strong> will automatically assign the next available queue number for today.
+  {# ── Assign Queue / Schedule ── #}
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Assign Queue / Schedule</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
+    <div style="background:#f0f9f5;border-left:4px solid #10b981;padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:20px;color:#065f46;display:flex;align-items:center;gap:8px;">
+      <ion-icon name="information-circle-outline" style="font-size:18px;flex-shrink:0;"></ion-icon>
+      Selecting <strong style="margin:0 3px;">Queued</strong> will automatically assign the next available queue number for today.
     </div>
     <form method="post" novalidate>
       {% csrf_token %}
@@ -73,27 +91,40 @@
         {% if form.status.errors %}<div class="form-error">{{ form.status.errors.0 }}</div>{% endif %}
       </div>
       <div class="form-group">
-        <label>Appointment Time <span style="color:var(--text-muted);font-weight:400;">(only for Scheduled)</span></label>
+        <label>Appointment Time <span style="color:#94a3b8;font-weight:400;">(only for Scheduled)</span></label>
         {{ form.scheduled_at }}
         {% if form.scheduled_at.errors %}<div class="form-error">{{ form.scheduled_at.errors.0 }}</div>{% endif %}
       </div>
       <div style="display:flex;gap:10px;margin-top:8px;">
-        <button type="submit" class="btn btn-primary">Save & Route to Nurse</button>
+        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+          <ion-icon name="checkmark-outline" style="font-size:15px;"></ion-icon> Save & Route to Nurse
+        </button>
         <a href="{% url 'consultations:queue' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>
   </div>
 
-  <div class="card" style="border-color:#fca5a5;">
-    <h3 style="font-size:13px;font-weight:600;color:#991b1b;margin:0 0 8px;">Cancel Consultation</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+  {# ── Cancel ── #}
+  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #fca5a5;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <ion-icon name="close-circle-outline" style="font-size:20px;color:#ef4444;"></ion-icon>
+      <h3 style="font-size:14px;font-weight:700;color:#991b1b;margin:0;">Cancel Consultation</h3>
+    </div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
       Use this if the patient did not show up, submitted in error, or requested cancellation in person.
     </p>
     <form method="post" action="{% url 'consultations:frontdesk_cancel' consultation.pk %}"
           onsubmit="return confirm('Cancel consultation #{{ consultation.pk }}?');">
       {% csrf_token %}
-      <button type="submit" class="btn btn-danger btn-sm">✕ Cancel this consultation</button>
+      <button type="submit" class="btn btn-danger btn-sm" style="display:inline-flex;align-items:center;gap:6px;">
+        <ion-icon name="trash-outline" style="font-size:14px;"></ion-icon> Cancel this consultation
+      </button>
     </form>
   </div>
+
+  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+    Negros Oriental State University — Medical Dental Clinic
+  </p>
+</div>
 </div>
 {% endblock %}
