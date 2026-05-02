@@ -1,0 +1,297 @@
+{% extends 'core/base.html' %}
+{% block title %}Register — Clinic Recorder{% endblock %}
+{% block content %}
+<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:24px;">
+
+  <div style="width:100%;max-width:600px;margin:0 auto;">
+
+    {# Branding #}
+    <div style="text-align:center;margin-bottom:28px;">
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Create Account</h1>
+      <p style="font-size:13px;color:#6b7280;margin:0;">NORSU Medical Dental Clinic</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;
+          {% if message.tags == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
+          {% elif message.tags == 'warning' %}background:#fff8e1;color:#92400e;border:1px solid #fed7aa;
+          {% else %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
+      <form method="post" novalidate autocomplete="off">
+        {% csrf_token %}
+
+        {# ── Account Info ── #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Account Information</div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Role</label>
+          <select name="role" id="id_role" style="width:100%;padding:11px 14px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;background:#fafbfc;outline:none;">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">ID Number *</label>
+            <input type="text" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Sex *</label>
+            <select name="sex" class="reg-input" required>
+              <option value="">—</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">First Name *</label>
+            <input type="text" name="first_name" class="reg-input" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Middle Name</label>
+            <input type="text" name="middle_name" class="reg-input">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Last Name *</label>
+            <input type="text" name="last_name" class="reg-input" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;" id="college-field">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">College/Department *</label>
+            <select name="college" class="reg-input" required>
+              <option value="">— Select —</option>
+              {% for c in form.college.field.queryset %}
+              <option value="{{ c.pk }}">{{ c.abbreviation }} — {{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="margin-bottom:14px;" id="year-field">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Year Level</label>
+            <select name="year_level" class="reg-input">
+              <option value="">—</option>
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option>4th Year</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Phone *</label>
+            <input type="text" name="phone" class="reg-input" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Email *</label>
+            <input type="email" name="email" class="reg-input" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Emergency Contact *</label>
+            <input type="text" name="emergency_contact_name" class="reg-input" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Emergency Phone *</label>
+            <input type="text" name="emergency_contact_phone" class="reg-input" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Password *</label>
+            <input type="password" name="password1" class="reg-input" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Confirm Password *</label>
+            <input type="password" name="password2" class="reg-input" required>
+          </div>
+        </div>
+
+        {# ── Medical Profile ── #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin:24px 0 14px;">Medical Profile</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Birthday *</label>
+            <input type="date" name="birthday" class="reg-input" required>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Blood Type</label>
+            <select name="blood_type" class="reg-input">
+              <option value="">—</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Religion</label>
+            <input type="text" name="religion" class="reg-input">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Civil Status</label>
+            <select name="civil_status" class="reg-input">
+              <option value="">—</option>
+              <option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option>
+            </select>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Address</label>
+            <input type="text" name="address" class="reg-input">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Height (cm)</label>
+            <input type="number" name="height_cm" class="reg-input" step="0.1">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Weight (kg)</label>
+            <input type="number" name="weight_kg" class="reg-input" step="0.1">
+          </div>
+        </div>
+
+        {# Medical History #}
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Medical History</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="hypertension"> Hypertension
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="diabetes"> Diabetes
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="asthma"> Asthma
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="cardiac_problems"> Cardiac
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="arthritis"> Arthritis
+          </label>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Other Conditions</label>
+          <textarea name="other_conditions" class="reg-input" rows="2"></textarea>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Known Allergies</label>
+          <textarea name="known_allergies" class="reg-input" rows="2"></textarea>
+        </div>
+
+        {# Immunization #}
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Immunization</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="bcg"> BCG
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="dpt"> DPT
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="opv"> OPV
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="hepatitis_b"> Hepatitis B
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="measles"> Measles
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
+            <input type="checkbox" name="tt"> TT
+          </label>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Other Immunizations</label>
+          <textarea name="immunization_others" class="reg-input" rows="2"></textarea>
+        </div>
+
+        {# Medical Background #}
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Medical Background</div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Current Medications</label>
+          <textarea name="current_medications" class="reg-input" rows="2"></textarea>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Vices</label>
+          <textarea name="vices" class="reg-input" rows="2"></textarea>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Previous Illnesses</label>
+          <textarea name="previous_illnesses" class="reg-input" rows="2"></textarea>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Previous Hospitalizations</label>
+          <textarea name="previous_hospitalizations" class="reg-input" rows="2"></textarea>
+        </div>
+
+        {% if form.non_field_errors %}
+          <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
+            {% for error in form.non_field_errors %}<div style="font-size:12px;color:#991b1b;">{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+
+        <button type="submit" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,120,212,0.2);">Send OTP to Email</button>
+      </form>
+    </div>
+
+    <p style="text-align:center;margin-top:20px;font-size:13px;">
+      Already have an account? <a href="{% url 'accounts:login' %}" style="color:#0078d4;font-weight:500;">Sign in</a>
+    </p>
+    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Negros Oriental State University — Medical Dental Clinic</p>
+  </div>
+</div>
+
+<style>
+  .reg-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+  .reg-input:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  textarea.reg-input { resize: vertical; }
+  select.reg-input { appearance: none; }
+</style>
+
+<script>
+  // Show/hide year level based on role
+  document.getElementById('id_role').addEventListener('change', function() {
+    var yearField = document.getElementById('year-field');
+    yearField.style.display = this.value === 'student' ? '' : 'none';
+  });
+  // Trigger on load
+  document.getElementById('id_role').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}
