@@ -19,7 +19,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=10,
         choices=Role.choices,
-        default=Role.NURSE,
+        default=Role.ADMIN,
     )
     phone = models.CharField(max_length=20, blank=True)
     force_password_change = models.BooleanField(default=False)
