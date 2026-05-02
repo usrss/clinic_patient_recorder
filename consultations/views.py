@@ -11,7 +11,7 @@ from accounts.decorators import (
 )
 from inventory.models import Medicine
 from patients.models import PatientProfile
-from .models import Consultation, Triage, Prescription, PrescriptionItem
+from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis
 from .forms import (
     ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
     PrescriptionForm, PrescriptionItemFormSet, PrescriptionMedicineFormSet,
@@ -363,11 +363,6 @@ def doctor_list(request):
 @login_required
 @doctor_required
 def prescribe(request, pk):
-    """
-    Doctor creates a prescription using free-text medicine rows.
-    Each row must have medicine name, dosage, frequency, duration (instructions optional).
-    At least one medicine row must be filled. Saving is atomic.
-    """
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
     if hasattr(consultation, 'prescription'):
@@ -376,74 +371,80 @@ def prescribe(request, pk):
 
     prescription_form = PrescriptionForm(request.POST or None)
     formset = PrescriptionMedicineFormSet(request.POST or None, prefix='meds')
+    inventory_medicines = Medicine.objects.filter(quantity__gt=0).order_by('name')
 
     if request.method == 'POST':
-        forms_valid = prescription_form.is_valid()
-        formset_valid = formset.is_valid()
+        # Check if completing without medicine
+        no_medicine = request.POST.get('no_medicine') == '1'
 
-        if forms_valid and formset_valid:
-            # Collect rows that actually have data
-            item_rows = [f for f in formset if f.has_data()]
-
-            if not item_rows:
-                messages.error(
-                    request,
-                    'At least one medicine must be added to the prescription.'
-                )
+        if no_medicine or not inventory_medicines.exists():
+            if prescription_form.is_valid():
+                with transaction.atomic():
+                    prescription = prescription_form.save(commit=False)
+                    prescription.consultation = consultation
+                    prescription.doctor = request.user
+                    prescription.save()
+                    consultation.status = Consultation.Status.COMPLETED
+                    consultation.save(update_fields=['status'])
+                messages.success(request, f'Consultation #{consultation.pk} completed.')
+                return redirect('consultations:print_consultation', pk=consultation.pk)
             else:
-                try:
-                    with transaction.atomic():
-                        prescription = prescription_form.save(commit=False)
-                        prescription.consultation = consultation
-                        prescription.doctor = request.user
-                        prescription.save()
+                messages.error(request, 'Please enter a diagnosis.')
+        else:
+            forms_valid = prescription_form.is_valid()
+            formset_valid = formset.is_valid()
 
-                        for form in item_rows:
-                            med = form.cleaned_data.get('medicine')
-                            med_name = form.cleaned_data.get('medicine_name', '').strip()
-                            qty = form.cleaned_data.get('quantity')
+            if forms_valid and formset_valid:
+                item_rows = [f for f in formset if f.has_data()]
 
-                            # Determine medicine name
-                            display_name = med.name
+                if not item_rows:
+                    messages.error(request, 'At least one medicine must be added.')
+                else:
+                    try:
+                        with transaction.atomic():
+                            prescription = prescription_form.save(commit=False)
+                            prescription.consultation = consultation
+                            prescription.doctor = request.user
+                            prescription.save()
 
-                            PrescriptionItem.objects.create(
-                                prescription=prescription,
-                                medicine=med,
-                                medicine_name=med.name,
-                                dosage=form.cleaned_data.get('dosage', '').strip(),
-                                frequency=form.cleaned_data.get('frequency', '').strip(),
-                                duration=form.cleaned_data.get('duration', '').strip(),
-                                instructions=form.cleaned_data.get('instructions', '').strip(),
-                            )
+                            for form in item_rows:
+                                med = form.cleaned_data.get('medicine')
+                                qty = form.cleaned_data.get('quantity')
 
-                            # Auto-deduct from inventory if inventory medicine selected
-                            if med and qty:
-                                deduct_medicine_stock(
-                                    medicine_id=med.pk,
-                                    quantity=qty,
-                                    reason=f'Consultation #{consultation.pk} — {consultation.patient.get_full_name()}',
-                                    user=request.user,
+                                PrescriptionItem.objects.create(
+                                    prescription=prescription,
+                                    medicine=med,
+                                    medicine_name=med.name,
+                                    dosage=form.cleaned_data.get('dosage', '').strip(),
+                                    frequency=form.cleaned_data.get('frequency', '').strip(),
+                                    duration=form.cleaned_data.get('duration', '').strip(),
+                                    instructions=form.cleaned_data.get('instructions', '').strip(),
                                 )
 
-                        consultation.status = Consultation.Status.COMPLETED
-                        consultation.save(update_fields=['status'])
+                                if med and qty:
+                                    deduct_medicine_stock(
+                                        medicine_id=med.pk,
+                                        quantity=qty,
+                                        reason=f'Consultation #{consultation.pk} — {consultation.patient.get_full_name()}',
+                                        user=request.user,
+                                    )
 
-                    messages.success(
-                        request,
-                        f'Prescription saved. Consultation #{consultation.pk} is now completed.'
-                    )
-                    return redirect('consultations:print_consultation', pk=consultation.pk)
+                            consultation.status = Consultation.Status.COMPLETED
+                            consultation.save(update_fields=['status'])
 
-                except Exception:
-                    messages.error(request, 'An unexpected error occurred. Please try again.')
+                        messages.success(request, f'Prescription saved. Consultation #{consultation.pk} completed.')
+                        return redirect('consultations:print_consultation', pk=consultation.pk)
+
+                    except Exception:
+                        messages.error(request, 'An unexpected error occurred. Please try again.')
 
     return render(request, 'consultations/prescribe.html', {
         'consultation': consultation,
         'prescription_form': prescription_form,
         'formset': formset,
-        'inventory_medicines': Medicine.objects.filter(quantity__gt=0).order_by('name'),
+        'inventory_medicines': inventory_medicines,
+        'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
     })
-
 
 # ─── CLINICAL STAFF SHARED VIEWS ──────────────────────────────────────────────
 

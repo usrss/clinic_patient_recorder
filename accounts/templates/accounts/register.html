@@ -1,297 +1,888 @@
 {% extends 'core/base.html' %}
+{% load static %}
 {% block title %}Register — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Page ── */
+  .reg-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 32px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .reg-wrap {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  /* ── Branding ── */
+  .reg-brand {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .reg-brand h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
+  }
+  .reg-brand p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .progress-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+  .step-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: #e8ecf1;
+    z-index: 0;
+    transition: background .4s;
+  }
+  .step-item.done:not(:last-child)::after,
+  .step-item.active:not(:last-child)::after {
+    background: #0078d4;
+  }
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    border: 2px solid #e8ecf1;
+    background: #fff;
+    color: #94a3b8;
+    position: relative;
+    z-index: 1;
+    transition: all .3s;
+  }
+  .step-item.active .step-circle {
+    border-color: #0078d4;
+    background: #0078d4;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(0,120,212,.12);
+  }
+  .step-item.done .step-circle {
+    border-color: #0078d4;
+    background: #0078d4;
+    color: #fff;
+  }
+  .step-item.done .step-circle::after {
+    content: '✓';
+    font-size: 13px;
+  }
+  .step-item.done .step-num { display: none; }
+  .step-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: 6px;
+    text-align: center;
+    letter-spacing: .02em;
+    transition: color .3s;
+    white-space: nowrap;
+  }
+  .step-item.active .step-label { color: #0078d4; }
+  .step-item.done .step-label { color: #1a1a2e; }
+
+  /* ── Card ── */
+  .reg-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    padding: 32px 28px;
+    margin-bottom: 16px;
+  }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* ── Section label ── */
+  .sec-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin: 0 0 16px;
+  }
+  .sec-label-gap { margin-top: 28px; }
+
+  /* ── Form fields ── */
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+  }
+  .form-group label .req { color: #ef4444; margin-left: 2px; }
+
+  .reg-input {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all .2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .reg-input:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,.08);
+  }
+  .reg-input.error {
+    border-color: #ef4444;
+    background: #fff5f5;
+  }
+  .reg-input.success {
+    border-color: #10b981;
+  }
+  textarea.reg-input { resize: vertical; min-height: 70px; }
+  select.reg-input { appearance: none; cursor: pointer; }
+
+  .field-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-top: 4px;
+    display: none;
+  }
+  .field-error.show { display: block; }
+  .field-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  /* ── Grid helpers ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── Password field wrapper ── */
+  .pw-wrap { position: relative; }
+  .pw-wrap .reg-input { padding-right: 44px; }
+  .pw-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color .15s;
+  }
+  .pw-toggle:hover { color: #374151; }
+  .pw-toggle svg { width: 18px; height: 18px; }
+
+  /* ── Password strength ── */
+  .strength-wrap { margin-top: 8px; }
+  .strength-bars {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .strength-bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: #e8ecf1;
+    transition: background .3s;
+  }
+  .strength-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: color .3s;
+  }
+
+  /* ── OTP Step ── */
+  .otp-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .otp-icon {
+    width: 56px;
+    height: 56px;
+    background: #eff6ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 24px;
+  }
+  .otp-header h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 0 0 6px; }
+  .otp-header p { font-size: 13px; color: #6b7280; margin: 0; }
+  .otp-header .otp-email {
+    font-weight: 600;
+    color: #0078d4;
+  }
+
+  .otp-inputs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .otp-box {
+    width: 52px;
+    height: 58px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 12px;
+    background: #fafbfc;
+    outline: none;
+    transition: all .2s;
+    caret-color: #0078d4;
+  }
+  .otp-box:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,.1);
+  }
+  .otp-box.filled {
+    border-color: #0078d4;
+    background: #eff6ff;
+  }
+  .otp-box.error-otp {
+    border-color: #ef4444;
+    background: #fff5f5;
+  }
+
+  .otp-timer {
+    text-align: center;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+  .otp-timer .countdown { font-weight: 700; color: #0078d4; }
+  .otp-timer .countdown.expired { color: #ef4444; }
+
+  .otp-resend {
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .otp-resend button {
+    background: none;
+    border: none;
+    color: #0078d4;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+  }
+  .otp-resend button:disabled { color: #94a3b8; cursor: not-allowed; }
+
+  .otp-error {
+    text-align: center;
+    font-size: 12px;
+    color: #ef4444;
+    font-weight: 500;
+    min-height: 18px;
+    margin-bottom: 8px;
+  }
+
+  /* ── Checkbox panels (medical/immunization) ── */
+  .check-panel {
+    background: #f0f7ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
+    transition: all .15s;
+    user-select: none;
+  }
+  .check-item:has(input:checked) {
+    background: #eff6ff;
+    border-color: #0078d4;
+    color: #1e40af;
+  }
+  .check-item input[type="checkbox"] {
+    accent-color: #0078d4;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  /* immunization = slightly different tint */
+  .check-panel.imm { background: #f0fdf4; border-color: #bbf7d0; }
+  .check-panel.imm .check-item:has(input:checked) {
+    background: #dcfce7;
+    border-color: #16a34a;
+    color: #14532d;
+  }
+  .check-panel.imm .check-item input[type="checkbox"] { accent-color: #16a34a; }
+
+  /* ── Buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 28px;
+    align-items: center;
+  }
+  .btn-next {
+    flex: 1;
+    padding: 12px;
+    background: #0078d4;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: 0 2px 8px rgba(0,120,212,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-next:hover { background: #006bbf; box-shadow: 0 4px 14px rgba(0,120,212,.3); }
+  .btn-next:active { transform: scale(.98); }
+
+  .btn-back {
+    padding: 12px 20px;
+    background: #fff;
+    color: #4b5563;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-back:hover { background: #f9fafb; border-color: #d1d5db; }
+
+  .btn-submit {
+    flex: 1;
+    padding: 12px;
+    background: linear-gradient(135deg, #0078d4 0%, #005ea2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: 0 2px 12px rgba(0,120,212,.25);
+  }
+  .btn-submit:hover { opacity: .92; box-shadow: 0 4px 18px rgba(0,120,212,.35); }
+
+  /* ── Alert messages ── */
+  .alert {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .alert-warning { background: #fff8e1; color: #92400e; border: 1px solid #fed7aa; }
+  .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+  /* ── Footer ── */
+  .reg-footer {
+    text-align: center;
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 8px;
+  }
+  .reg-footer a { color: #0078d4; font-weight: 500; text-decoration: none; }
+  .reg-footer a:hover { text-decoration: underline; }
+  .reg-copy {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 500px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .role-grid { grid-template-columns: 1fr; }
+    .otp-box { width: 44px; height: 50px; font-size: 18px; }
+    .reg-card { padding: 24px 18px; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:24px;">
+<div class="reg-page">
+<div class="reg-wrap">
 
-  <div style="width:100%;max-width:600px;margin:0 auto;">
+  <!-- Branding -->
+  <div class="reg-brand">
+    <h1>Create Account</h1>
+    <p>NORSU Medical Dental Clinic</p>
+  </div>
 
-    {# Branding #}
-    <div style="text-align:center;margin-bottom:28px;">
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Create Account</h1>
-      <p style="font-size:13px;color:#6b7280;margin:0;">NORSU Medical Dental Clinic</p>
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Progress indicator -->
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="step-item active" id="prog-1">
+        <div class="step-circle"><span class="step-num">1</span></div>
+        <div class="step-label">Account</div>
+      </div>
+      <div class="step-item" id="prog-2">
+        <div class="step-circle"><span class="step-num">2</span></div>
+        <div class="step-label">Verify Email</div>
+      </div>
+      <div class="step-item" id="prog-3">
+        <div class="step-circle"><span class="step-num">3</span></div>
+        <div class="step-label">Personal Info</div>
+      </div>
+      <div class="step-item" id="prog-4">
+        <div class="step-circle"><span class="step-num">4</span></div>
+        <div class="step-label">Medical Profile</div>
+      </div>
     </div>
+  </div>
 
-    {% if messages %}
-      {% for message in messages %}
-        <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;
-          {% if message.tags == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
-          {% elif message.tags == 'warning' %}background:#fff8e1;color:#92400e;border:1px solid #fed7aa;
-          {% else %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;{% endif %}">
-          {{ message }}
-        </div>
-      {% endfor %}
-    {% endif %}
+  <!-- Form card -->
+  <div class="reg-card">
+    <form method="post" novalidate autocomplete="off" id="reg-form">
+      {% csrf_token %}
+      <!-- current_step is seeded from the server on failed POST, otherwise defaults to 1 -->
+      <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
 
-    <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
-      <form method="post" novalidate autocomplete="off">
-        {% csrf_token %}
+      <!-- ══════════════════════════════════════════
+           STEP 1 — Account Info
+      ══════════════════════════════════════════ -->
+      <div class="step-panel active" id="step-1">
 
-        {# ── Account Info ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Account Information</div>
+        <div class="sec-label">Account Information</div>
 
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Role</label>
-          <select name="role" id="id_role" style="width:100%;padding:11px 14px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;background:#fafbfc;outline:none;">
+        <div class="form-group">
+          <label for="id_role">Role <span class="req">*</span></label>
+          <select id="id_role" name="role" class="reg-input" onchange="updateRoleFields()">
             <option value="student">Student</option>
             <option value="faculty">Faculty</option>
             <option value="staff">Staff</option>
           </select>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">ID Number *</label>
-            <input type="text" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required>
+        <div class="form-group">
+          <label for="id_patient_id">ID Number <span class="req">*</span></label>
+          <input type="text" id="id_patient_id" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required>
+          <div class="field-error" id="err-patient_id">Please enter your ID number.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="id_email">Email Address <span class="req">*</span></label>
+          <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph" required>
+          <div class="field-error" id="err-email">Please enter a valid email address.</div>
+          <div class="field-hint">An OTP will be sent to this email to verify your account.</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_password1">Password <span class="req">*</span></label>
+            <div class="pw-wrap">
+              <input type="password" id="id_password1" name="password1" class="reg-input" placeholder="Create a strong password" required autocomplete="new-password">
+              <button type="button" class="pw-toggle" onclick="togglePw('id_password1', this)" aria-label="Toggle password visibility">
+                <svg id="eye-pw1-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <svg id="eye-pw1-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              </button>
+            </div>
+            <div class="strength-wrap" id="strength-wrap" style="display:none;">
+              <div class="strength-bars">
+                <div class="strength-bar" id="sb1"></div>
+                <div class="strength-bar" id="sb2"></div>
+                <div class="strength-bar" id="sb3"></div>
+                <div class="strength-bar" id="sb4"></div>
+              </div>
+              <div class="strength-text" id="strength-text">Too short</div>
+            </div>
+            <div class="field-error" id="err-password1">Password must be at least 8 characters.</div>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Sex *</label>
-            <select name="sex" class="reg-input" required>
-              <option value="">—</option>
+
+          <div class="form-group">
+            <label for="id_password2">Confirm Password <span class="req">*</span></label>
+            <div class="pw-wrap">
+              <input type="password" id="id_password2" name="password2" class="reg-input" placeholder="Repeat your password" required autocomplete="new-password">
+              <button type="button" class="pw-toggle" onclick="togglePw('id_password2', this)" aria-label="Toggle confirm password visibility">
+                <svg id="eye-pw2-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <svg id="eye-pw2-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              </button>
+            </div>
+            <div class="field-error" id="err-password2">Passwords do not match.</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn-next" onclick="goNext(1)">
+            Send OTP &amp; Continue
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           STEP 2 — Verify Email (OTP)
+      ══════════════════════════════════════════ -->
+      <div class="step-panel" id="step-2">
+        <div class="otp-header">
+          <div class="otp-icon">📧</div>
+          <h2>Check your email</h2>
+          <p>We sent a 6-digit code to<br><span class="otp-email" id="otp-email-display">your email</span></p>
+        </div>
+
+        <div class="otp-inputs">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-0" aria-label="OTP digit 1">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-1" aria-label="OTP digit 2">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-2" aria-label="OTP digit 3">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-3" aria-label="OTP digit 4">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-4" aria-label="OTP digit 5">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-5" aria-label="OTP digit 6">
+        </div>
+        <input type="hidden" name="otp_code" id="otp-hidden">
+
+        <div class="otp-error" id="otp-error"></div>
+
+        <div class="otp-timer">
+          Code expires in <span class="countdown" id="otp-countdown">03:00</span>
+        </div>
+        <div class="otp-resend">
+          Didn't get it? <button type="button" id="resend-btn" onclick="resendOtp()" disabled>Resend code</button>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn-back" onclick="goBack(2)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <button type="button" class="btn-next" onclick="verifyOtp()">
+            Verify &amp; Continue
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           STEP 3 — Personal Info
+      ══════════════════════════════════════════ -->
+      <div class="step-panel" id="step-3">
+
+        <div class="sec-label">Full Name</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label for="id_first_name">First Name <span class="req">*</span></label>
+            <input type="text" id="id_first_name" name="first_name" class="reg-input" required>
+            <div class="field-error" id="err-first_name">Required.</div>
+          </div>
+          <div class="form-group">
+            <label for="id_middle_name">Middle Name</label>
+            <input type="text" id="id_middle_name" name="middle_name" class="reg-input">
+          </div>
+          <div class="form-group">
+            <label for="id_last_name">Last Name <span class="req">*</span></label>
+            <input type="text" id="id_last_name" name="last_name" class="reg-input" required>
+            <div class="field-error" id="err-last_name">Required.</div>
+          </div>
+        </div>
+
+        <div class="sec-label sec-label-gap">Basic Details</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_sex">Sex <span class="req">*</span></label>
+            <select id="id_sex" name="sex" class="reg-input" required>
+              <option value="">— Select —</option>
               <option value="M">Male</option>
               <option value="F">Female</option>
+            </select>
+            <div class="field-error" id="err-sex">Please select your sex.</div>
+          </div>
+          <div class="form-group">
+            <label for="id_birthday">Date of Birth <span class="req">*</span></label>
+            <input type="date" id="id_birthday" name="birthday" class="reg-input" required>
+            <div class="field-error" id="err-birthday">Required.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_blood_type">Blood Type</label>
+            <select id="id_blood_type" name="blood_type" class="reg-input">
+              <option value="">— Unknown —</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option>
+              <option>O+</option><option>O-</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="id_civil_status">Civil Status</label>
+            <select id="id_civil_status" name="civil_status" class="reg-input">
+              <option value="">— Select —</option>
+              <option>Single</option><option>Married</option>
+              <option>Widowed</option><option>Separated</option>
             </select>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">First Name *</label>
-            <input type="text" name="first_name" class="reg-input" required>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_height_cm">Height (cm)</label>
+            <input type="number" id="id_height_cm" name="height_cm" class="reg-input" step="0.1" min="50" max="250" placeholder="e.g. 165">
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Middle Name</label>
-            <input type="text" name="middle_name" class="reg-input">
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Last Name *</label>
-            <input type="text" name="last_name" class="reg-input" required>
+          <div class="form-group">
+            <label for="id_weight_kg">Weight (kg)</label>
+            <input type="number" id="id_weight_kg" name="weight_kg" class="reg-input" step="0.1" min="10" max="300" placeholder="e.g. 60">
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;" id="college-field">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">College/Department *</label>
-            <select name="college" class="reg-input" required>
-              <option value="">— Select —</option>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_religion">Religion</label>
+            <input type="text" id="id_religion" name="religion" class="reg-input" placeholder="e.g. Roman Catholic">
+          </div>
+          <div class="form-group">
+            <label for="id_address">Address</label>
+            <input type="text" id="id_address" name="address" class="reg-input" placeholder="City, Province">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group" id="field-college">
+            <label for="id_college">College <span class="req">*</span></label>
+            <select id="id_college" name="college" class="reg-input">
+              <option value="">— Select College —</option>
               {% for c in form.college.field.queryset %}
               <option value="{{ c.pk }}">{{ c.abbreviation }} — {{ c.name }}</option>
               {% endfor %}
             </select>
+            <div class="field-error" id="err-college">Please select your college.</div>
           </div>
-          <div style="margin-bottom:14px;" id="year-field">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Year Level</label>
-            <select name="year_level" class="reg-input">
+          <div class="form-group" id="field-year">
+            <label for="id_year_level">Year Level</label>
+            <select id="id_year_level" name="year_level" class="reg-input">
               <option value="">—</option>
-              <option>1st Year</option>
-              <option>2nd Year</option>
-              <option>3rd Year</option>
-              <option>4th Year</option>
+              <option>1st Year</option><option>2nd Year</option>
+              <option>3rd Year</option><option>4th Year</option>
+              <option>5th Year</option>
             </select>
           </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Phone *</label>
-            <input type="text" name="phone" class="reg-input" required>
+          <div class="form-group" id="field-department" style="display:none;">
+            <label for="id_department">Department <span class="req">*</span></label>
+            <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS">
+            <div class="field-error" id="err-department">Please enter your department.</div>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Email *</label>
-            <input type="email" name="email" class="reg-input" required>
+          <div class="form-group" id="field-position" style="display:none;">
+            <label for="id_position">Position / Designation</label>
+            <input type="text" id="id_position" name="position" class="reg-input" placeholder="e.g. Department Head">
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Emergency Contact *</label>
-            <input type="text" name="emergency_contact_name" class="reg-input" required>
+        <div class="sec-label sec-label-gap">Contact &amp; Emergency</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_phone">Phone Number <span class="req">*</span></label>
+            <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX" required>
+            <div class="field-error" id="err-phone">Please enter a valid phone number.</div>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Emergency Phone *</label>
-            <input type="text" name="emergency_contact_phone" class="reg-input" required>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Password *</label>
-            <input type="password" name="password1" class="reg-input" required>
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Confirm Password *</label>
-            <input type="password" name="password2" class="reg-input" required>
+          <div class="form-group">
+            <!-- spacer -->
           </div>
         </div>
-
-        {# ── Medical Profile ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin:24px 0 14px;">Medical Profile</div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Birthday *</label>
-            <input type="date" name="birthday" class="reg-input" required>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_emergency_contact_name">Emergency Contact Name <span class="req">*</span></label>
+            <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input" required>
+            <div class="field-error" id="err-emergency_contact_name">Required.</div>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Blood Type</label>
-            <select name="blood_type" class="reg-input">
-              <option value="">—</option>
-              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-              <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-              <option>Unknown</option>
-            </select>
-          </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Religion</label>
-            <input type="text" name="religion" class="reg-input">
+          <div class="form-group">
+            <label for="id_emergency_contact_phone">Emergency Contact Phone <span class="req">*</span></label>
+            <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input" required>
+            <div class="field-error" id="err-emergency_contact_phone">Required.</div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Civil Status</label>
-            <select name="civil_status" class="reg-input">
-              <option value="">—</option>
-              <option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option>
-            </select>
+        <div class="btn-row">
+          <button type="button" class="btn-back" onclick="goBack(3)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <button type="button" class="btn-next" onclick="goNext(3)">
+            Continue to Medical Profile
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           STEP 4 — Medical Profile
+      ══════════════════════════════════════════ -->
+      <div class="step-panel" id="step-4">
+
+        <div class="sec-label">Medical History</div>
+        <div class="check-panel">
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="hypertension"> Hypertension</label>
+            <label class="check-item"><input type="checkbox" name="diabetes"> Diabetes</label>
+            <label class="check-item"><input type="checkbox" name="asthma"> Asthma</label>
+            <label class="check-item"><input type="checkbox" name="cardiac_problems"> Cardiac Problems</label>
+            <label class="check-item"><input type="checkbox" name="arthritis"> Arthritis</label>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Address</label>
-            <input type="text" name="address" class="reg-input">
-          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_other_conditions">Other Conditions</label>
+          <textarea id="id_other_conditions" name="other_conditions" class="reg-input" rows="2" placeholder="List any other diagnosed conditions…"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="id_known_allergies">Known Allergies</label>
+          <textarea id="id_known_allergies" name="known_allergies" class="reg-input" rows="2" placeholder="e.g. Penicillin, shellfish, dust…"></textarea>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Height (cm)</label>
-            <input type="number" name="height_cm" class="reg-input" step="0.1">
+        <div class="sec-label sec-label-gap">Immunization History</div>
+        <div class="check-panel imm">
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="bcg"> BCG</label>
+            <label class="check-item"><input type="checkbox" name="dpt"> DPT</label>
+            <label class="check-item"><input type="checkbox" name="opv"> OPV</label>
+            <label class="check-item"><input type="checkbox" name="hepatitis_b"> Hepatitis B</label>
+            <label class="check-item"><input type="checkbox" name="measles"> Measles</label>
+            <label class="check-item"><input type="checkbox" name="tt"> TT (Tetanus)</label>
           </div>
-          <div style="margin-bottom:14px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;">Weight (kg)</label>
-            <input type="number" name="weight_kg" class="reg-input" step="0.1">
-          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_immunization_others">Other Immunizations</label>
+          <textarea id="id_immunization_others" name="immunization_others" class="reg-input" rows="2" placeholder="e.g. COVID-19 vaccine, Flu shot…"></textarea>
         </div>
 
-        {# Medical History #}
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Medical History</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-bottom:10px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="hypertension"> Hypertension
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="diabetes"> Diabetes
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="asthma"> Asthma
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="cardiac_problems"> Cardiac
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="arthritis"> Arthritis
-          </label>
+        <div class="sec-label sec-label-gap">Medical Background</div>
+        <div class="form-group">
+          <label for="id_current_medications">Current Medications</label>
+          <textarea id="id_current_medications" name="current_medications" class="reg-input" rows="2" placeholder="List any medications you currently take…"></textarea>
         </div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Other Conditions</label>
-          <textarea name="other_conditions" class="reg-input" rows="2"></textarea>
+        <div class="form-group">
+          <label for="id_previous_illnesses">Previous Illnesses</label>
+          <textarea id="id_previous_illnesses" name="previous_illnesses" class="reg-input" rows="2" placeholder="e.g. Dengue, Typhoid fever…"></textarea>
         </div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Known Allergies</label>
-          <textarea name="known_allergies" class="reg-input" rows="2"></textarea>
+        <div class="form-group">
+          <label for="id_previous_hospitalizations">Previous Hospitalizations</label>
+          <textarea id="id_previous_hospitalizations" name="previous_hospitalizations" class="reg-input" rows="2" placeholder="Reason and year if applicable…"></textarea>
         </div>
-
-        {# Immunization #}
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Immunization</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:10px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="bcg"> BCG
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="dpt"> DPT
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="opv"> OPV
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="hepatitis_b"> Hepatitis B
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="measles"> Measles
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:8px 10px;background:#f8fafb;border-radius:6px;border:0.5px solid #e8ecf1;">
-            <input type="checkbox" name="tt"> TT
-          </label>
-        </div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Other Immunizations</label>
-          <textarea name="immunization_others" class="reg-input" rows="2"></textarea>
-        </div>
-
-        {# Medical Background #}
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Medical Background</div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Current Medications</label>
-          <textarea name="current_medications" class="reg-input" rows="2"></textarea>
-        </div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Vices</label>
-          <textarea name="vices" class="reg-input" rows="2"></textarea>
-        </div>
-        <div style="margin-bottom:10px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Previous Illnesses</label>
-          <textarea name="previous_illnesses" class="reg-input" rows="2"></textarea>
-        </div>
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:3px;">Previous Hospitalizations</label>
-          <textarea name="previous_hospitalizations" class="reg-input" rows="2"></textarea>
+        <div class="form-group">
+          <label for="id_vices">Vices / Lifestyle Habits</label>
+          <textarea id="id_vices" name="vices" class="reg-input" rows="2" placeholder="e.g. Smoking, alcohol use…"></textarea>
         </div>
 
         {% if form.non_field_errors %}
-          <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
-            {% for error in form.non_field_errors %}<div style="font-size:12px;color:#991b1b;">{{ error }}</div>{% endfor %}
-          </div>
+        <div class="alert alert-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
         {% endif %}
 
-        <button type="submit" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,120,212,0.2);">Send OTP to Email</button>
-      </form>
-    </div>
+        <div class="btn-row">
+          <button type="button" class="btn-back" onclick="goBack(4)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <button type="submit" class="btn-submit">✅ Complete Registration</button>
+        </div>
+      </div>
 
-    <p style="text-align:center;margin-top:20px;font-size:13px;">
-      Already have an account? <a href="{% url 'accounts:login' %}" style="color:#0078d4;font-weight:500;">Sign in</a>
-    </p>
-    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Negros Oriental State University — Medical Dental Clinic</p>
-  </div>
+    </form>
+  </div><!-- /reg-card -->
+
+  <p class="reg-footer">
+    Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a>
+  </p>
+  <p class="reg-copy">Negros Oriental State University — Medical Dental Clinic</p>
+
 </div>
+</div>
+{% endblock %}
 
-<style>
-  .reg-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid #e1e5eb;
-    border-radius: 10px;
-    font-size: 14px;
-    color: #1a1a2e;
-    background: #fafbfc;
-    transition: all 0.2s;
-    outline: none;
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
-  }
-  .reg-input:focus {
-    border-color: #0078d4;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
-  }
-  textarea.reg-input { resize: vertical; }
-  select.reg-input { appearance: none; }
-</style>
-
+{% block extra_js %}
 <script>
-  // Show/hide year level based on role
-  document.getElementById('id_role').addEventListener('change', function() {
-    var yearField = document.getElementById('year-field');
-    yearField.style.display = this.value === 'student' ? '' : 'none';
-  });
-  // Trigger on load
-  document.getElementById('id_role').dispatchEvent(new Event('change'));
+  const REGISTER_SEND_OTP_URL = "{% url 'accounts:send_registration_otp' %}";
+  const REGISTER_VERIFY_OTP_URL = "{% url 'accounts:verify_registration_otp' %}";
 </script>
+<script src="{% static 'accounts/js/register.js' %}"></script>
 {% endblock %}

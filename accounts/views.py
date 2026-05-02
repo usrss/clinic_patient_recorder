@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -9,7 +10,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
 import random
+import datetime
 
+from colleges.models import College
 from patients.models import Patient, PatientProfile
 from .models import User
 from .forms import (
@@ -20,7 +23,7 @@ from .forms import (
 from .decorators import admin_required
 
 MAX_FAILED_ATTEMPTS = 5
-LOCKOUT_DURATION = timedelta(minutes=15)
+LOCKOUT_DURATION = timedelta(minutes=5)
 
 
 def login_view(request):
@@ -70,7 +73,7 @@ def login_view(request):
                         if remaining > 0:
                             messages.error(request, f'Invalid password. {remaining} attempts remaining.')
                         else:
-                            messages.error(request, 'Account locked for 15 minutes. Use Forgot Password to unlock sooner.')
+                            messages.error(request, f'Account locked for {LOCKOUT_DURATION.seconds // 60} minutes. Use Forgot Password to unlock sooner.')
                 except User.DoesNotExist:
                     messages.error(request, 'Invalid username or password.')
             else:
@@ -87,64 +90,8 @@ def register(request):
 
     form = RegistrationForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        # Store form data in session for OTP verification
-        request.session['registration_data'] = {
-            k: v for k, v in form.cleaned_data.items()
-            if k not in ('password1', 'password2')
-        }
-        request.session['registration_password'] = form.cleaned_data['password1']
-        request.session['registration_email'] = form.cleaned_data['email']
-
-        # Generate OTP
-        otp = str(random.randint(100000, 999999))
-        request.session['registration_otp'] = otp
-        request.session['registration_otp_expiry'] = (timezone.now() + timedelta(minutes=10)).isoformat()
-
-        send_mail(
-            'Registration OTP — Clinic Recorder',
-            f'Your OTP to complete registration is: {otp}\n\nThis OTP expires in 10 minutes.',
-            settings.DEFAULT_FROM_EMAIL,
-            [form.cleaned_data['email']],
-            fail_silently=False,
-        )
-
-        print(f'Registration OTP for {form.cleaned_data["email"]}: {otp}')  # Debug
-
-        messages.success(request, 'A 6-digit OTP has been sent to your email.')
-        return redirect('accounts:verify_registration_otp')
-
-    return render(request, 'accounts/register.html', {'form': form})
-
-
-def verify_registration_otp(request):
-    if request.user.is_authenticated:
-        return redirect('accounts:dashboard')
-
-    if 'registration_data' not in request.session:
-        messages.error(request, 'No registration in progress.')
-        return redirect('accounts:register')
-
-    if request.method == 'POST':
-        otp = request.POST.get('otp', '').strip()
-        stored_otp = request.session.get('registration_otp')
-        expiry_str = request.session.get('registration_otp_expiry')
-
-        if not stored_otp or not expiry_str:
-            messages.error(request, 'OTP expired. Please register again.')
-            return redirect('accounts:register')
-
-        if timezone.now() > timezone.datetime.fromisoformat(expiry_str):
-            _clear_registration_session(request)
-            messages.error(request, 'OTP expired. Please register again.')
-            return redirect('accounts:register')
-
-        if otp != stored_otp:
-            messages.error(request, 'Invalid OTP. Please try again.')
-            return render(request, 'accounts/verify_registration_otp.html')
-
-        # OTP verified — create the account
-        data = request.session['registration_data']
-        password = request.session['registration_password']
+        password = form.cleaned_data['password1']
+        data = form.cleaned_data
 
         with transaction.atomic():
             user = User.objects.create_user(
@@ -203,11 +150,72 @@ def verify_registration_otp(request):
                 profile_completed=True,
             )
 
-        _clear_registration_session(request)
-        messages.success(request, 'Registration successful! You may now log in.')
-        return redirect('accounts:login')
+        login(request, user)
+        messages.success(request, f'Welcome, {user.first_name}! Your account has been created.')
+        return redirect('accounts:dashboard')
 
-    return render(request, 'accounts/verify_registration_otp.html')
+    # Pass current_step back so JS can restore the correct step on failed submission
+    current_step = request.POST.get('current_step', '1') if request.method == 'POST' else '1'
+    return render(request, 'accounts/register.html', {
+        'form': form,
+        'current_step': current_step,
+    })
+
+
+def send_registration_otp(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request.'})
+
+    email = request.POST.get('email', '').strip()
+    patient_id = request.POST.get('patient_id', '').strip()
+
+    if not email or not patient_id:
+        return JsonResponse({'success': False, 'error': 'Email and ID are required.'})
+
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({'success': False, 'error': 'Email already registered.'})
+
+    if User.objects.filter(username=patient_id).exists():
+        return JsonResponse({'success': False, 'error': 'ID already registered.'})
+
+    otp = str(random.randint(100000, 999999))
+    request.session['registration_otp'] = otp
+    request.session['registration_otp_expiry'] = (timezone.now() + timedelta(minutes=3)).isoformat()
+    request.session['registration_email'] = email
+    request.session['registration_otp_pending'] = True
+
+    send_mail(
+        'Registration OTP — Clinic Recorder',
+        f'Your OTP is: {otp}\n\nExpires in 3 minutes.',
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+        fail_silently=False,
+    )
+    return JsonResponse({'success': True})
+
+
+def verify_registration_otp(request):
+    if request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Already logged in.'})
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request.'})
+
+    otp = request.POST.get('otp', '').strip()
+    stored_otp = request.session.get('registration_otp')
+    expiry_str = request.session.get('registration_otp_expiry')
+
+    if not stored_otp or not expiry_str:
+        return JsonResponse({'success': False, 'error': 'OTP expired.'})
+
+    if timezone.now() > timezone.datetime.fromisoformat(expiry_str):
+        return JsonResponse({'success': False, 'error': 'OTP expired.'})
+
+    if otp != stored_otp:
+        return JsonResponse({'success': False, 'error': 'Invalid OTP.'})
+
+    request.session['registration_otp_verified'] = True
+    return JsonResponse({'success': True})
 
 
 def _clear_registration_session(request):
@@ -230,7 +238,7 @@ def forgot_password(request):
 
         otp = str(random.randint(100000, 999999))
         user.reset_otp = otp
-        user.reset_otp_expiry = timezone.now() + timedelta(minutes=10)
+        user.reset_otp_expiry = timezone.now() + timedelta(minutes=3)
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
 
         print(f'OTP for {email}: {otp}')

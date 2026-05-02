@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Consultation, Triage, Prescription, PrescriptionItem
-
+from .models import CommonDiagnosis
 
 class TriageInline(admin.StackedInline):
     model = Triage
@@ -15,6 +15,12 @@ class PrescriptionItemInline(admin.TabularInline):
     readonly_fields = ('medicine', 'quantity', 'instructions')
     can_delete = False
 
+
+
+@admin.register(CommonDiagnosis)
+class CommonDiagnosisAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category')
+    search_fields = ('name', 'category')
 
 class PrescriptionInline(admin.StackedInline):
     model = Prescription

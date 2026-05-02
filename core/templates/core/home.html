@@ -22,7 +22,7 @@
         <img src="{% static 'core/images/norsu-logo.png' %}" alt="NORSU Logo" class="header-logo"
              onerror="this.style.display='none';this.parentElement.innerHTML='CR'">
       </span>
-      <span class="brand-text">Clinic Patient Recorder</span>
+      <span class="brand-text">Clinic Patient Recorder – BSC Campus</span>
     </a>
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#homeNav">
       <span class="navbar-toggler-icon"></span>
@@ -34,7 +34,10 @@
         <li class="nav-item"><a href="#about" class="nav-link-pill">About</a></li>
         <li class="nav-item"><a href="#contact" class="nav-link-pill">Contact</a></li>
         <li class="nav-item ms-lg-3">
-          <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm">Sign In</a>
+          <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">Sign In</a>
+        </li>
+        <li class="nav-item ms-lg-2">
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Sign Up</a>
         </li>
       </ul>
     </div>
@@ -62,6 +65,7 @@
           </p>
           <div class="hero-cta">
             <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">Sign In</a>
+            <a href="{% url 'accounts:register' %}" class="btn btn-ghost btn-lg">Create Account</a>
             <a href="#features" class="btn btn-ghost btn-lg">Explore Features</a>
           </div>
         </div>
@@ -292,7 +296,7 @@
       <div class="badge-pill" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);">Get Started</div>
       <h2>Ready to streamline your clinic?</h2>
       <p>Sign in to access your personalized health dashboard and manage consultations with ease.</p>
-      <a href="{% url 'accounts:login' %}" class="btn btn-cta">Sign In Now</a>
+      <a href="{% url 'accounts:register' %}" class="btn btn-cta">Sign Up Now</a>
     </div>
   </div>
 </section>

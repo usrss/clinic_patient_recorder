@@ -14,7 +14,7 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
     <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary btn-sm">← Back</a>
     <div>
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">{{ action }} User</h1>
+      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">{{ action }} Staffs</h1>
       {% if target %}
       <p style="font-size:13px;color:#6b7280;margin:0;">{{ target.username }}</p>
       {% else %}
@@ -141,14 +141,12 @@
       </div>
       {% endif %}
 
-      {# Patient import tip #}
+
       {% if form.role %}
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
           <ion-icon name="information-circle-outline" style="font-size:16px;color:#3b82f6;flex-shrink:0;margin-top:1px;"></ion-icon>
           <p style="font-size:12px;color:#1e40af;margin:0;line-height:1.6;">
-            Patient records are registered separately via
-            <a href="{% url 'accounts:patient_import' %}" style="color:#0078d4;font-weight:600;">bulk import</a>
-            or the <a href="/admin/" style="color:#0078d4;font-weight:600;">Admin Panel</a>.
+            Patients can self-register at the <a href="{% url 'accounts:register' %}" style="color:#0078d4;font-weight:600;">registration page</a>.
           </p>
         </div>
       {% endif %}
@@ -157,7 +155,7 @@
       <div style="display:flex;gap:10px;">
         <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;">
           <ion-icon name="checkmark-outline" style="font-size:16px;margin-right:6px;"></ion-icon>
-          {{ action }} user
+          {{ action }} staff
         </button>
         <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary" style="border-radius:10px;padding:10px 24px;">Cancel</a>
       </div>

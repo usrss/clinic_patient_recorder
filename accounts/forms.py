@@ -169,19 +169,11 @@ class RegistrationForm(forms.Form):
     middle_name = forms.CharField(max_length=100, required=False)
     last_name = forms.CharField(max_length=150)
     sex = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')])
-    college = forms.ModelChoiceField(queryset=College.objects.all().order_by('name'), label='College/Department')
-    year_level = forms.ChoiceField(
-        choices=[('', '—'), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'), ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
-        required=False, label='Year Level'
-    )
-    phone = forms.CharField(max_length=30)
     email = forms.EmailField()
-    emergency_contact_name = forms.CharField(max_length=200)
-    emergency_contact_phone = forms.CharField(max_length=30)
     password1 = forms.CharField(widget=forms.PasswordInput(), label='Password')
     password2 = forms.CharField(widget=forms.PasswordInput(), label='Confirm Password')
 
-    # ── Medical Profile ──
+    # ── Personal Info ──
     birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     address = forms.CharField(max_length=300, required=False)
     blood_type = forms.ChoiceField(
@@ -191,13 +183,37 @@ class RegistrationForm(forms.Form):
     )
     religion = forms.CharField(max_length=100, required=False)
     civil_status = forms.ChoiceField(
-        choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'), ('Widowed', 'Widowed'), ('Separated', 'Separated')],
+        choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'),
+                 ('Widowed', 'Widowed'), ('Separated', 'Separated')],
         required=False
     )
     height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
     weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
 
-    # Medical History
+    # College — required for student and faculty, optional for staff
+    college = forms.ModelChoiceField(
+        queryset=College.objects.all().order_by('name'),
+        required=False,  # enforced conditionally in clean()
+        label='College',
+        empty_label='— Select College —',
+    )
+    year_level = forms.ChoiceField(
+        choices=[('', '—'), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
+                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year'), ('5th Year', '5th Year')],
+        required=False,
+        label='Year Level',
+    )
+
+    # Department — required for faculty and staff, hidden for students
+    department = forms.CharField(max_length=200, required=False, label='Department')
+    position = forms.CharField(max_length=200, required=False, label='Position / Designation')
+
+    # ── Contact & Emergency ──
+    phone = forms.CharField(max_length=30)
+    emergency_contact_name = forms.CharField(max_length=200)
+    emergency_contact_phone = forms.CharField(max_length=30)
+
+    # ── Medical History ──
     hypertension = forms.BooleanField(required=False)
     diabetes = forms.BooleanField(required=False)
     asthma = forms.BooleanField(required=False)
@@ -206,7 +222,7 @@ class RegistrationForm(forms.Form):
     other_conditions = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
     known_allergies = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
 
-    # Immunization
+    # ── Immunization ──
     bcg = forms.BooleanField(required=False)
     dpt = forms.BooleanField(required=False)
     opv = forms.BooleanField(required=False)
@@ -215,7 +231,7 @@ class RegistrationForm(forms.Form):
     tt = forms.BooleanField(required=False)
     immunization_others = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
 
-    # Medical Background
+    # ── Medical Background ──
     current_medications = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
     vices = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
     previous_illnesses = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
@@ -238,14 +254,32 @@ class RegistrationForm(forms.Form):
         p1 = cleaned.get('password1')
         p2 = cleaned.get('password2')
         role = cleaned.get('role')
-        year = cleaned.get('year_level')
 
+        # Password match
         if p1 and p2 and p1 != p2:
             self.add_error('password2', 'Passwords do not match.')
 
+        # College required for student and faculty
+        college = cleaned.get('college')
+        if role in ('student', 'faculty') and not college:
+            self.add_error('college', 'Please select your college.')
+
+        # Year level required for students
+        year = cleaned.get('year_level')
         if role == 'student' and not year:
             self.add_error('year_level', 'Year level is required for students.')
-        elif role != 'student':
+
+        # Department required for faculty and staff
+        department = cleaned.get('department')
+        if role in ('faculty', 'staff') and not department:
+            self.add_error('department', 'Please enter your department.')
+
+        # Clear college/year for staff; clear department for students
+        if role == 'staff':
+            cleaned['college'] = None
             cleaned['year_level'] = ''
+        if role == 'student':
+            cleaned['department'] = ''
+            cleaned['position'] = ''
 
         return cleaned

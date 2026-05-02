@@ -193,3 +193,17 @@ class PrescriptionItem(models.Model):
     class Meta:
         verbose_name = 'Prescription Item'
         verbose_name_plural = 'Prescription Items'
+
+
+class CommonDiagnosis(models.Model):
+    """Predefined list of common diagnoses for the clinic."""
+    name = models.CharField(max_length=200, unique=True)
+    category = models.CharField(max_length=100, blank=True, help_text='e.g. Respiratory, Musculoskeletal, etc.')
+
+    class Meta:
+        verbose_name = 'Common Diagnosis'
+        verbose_name_plural = 'Common Diagnoses'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
