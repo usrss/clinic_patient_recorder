@@ -19,7 +19,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=10,
         choices=Role.choices,
-        default=Role.ADMIN,
+        default=Role.PATIENT,
     )
     phone = models.CharField(max_length=20, blank=True)
     force_password_change = models.BooleanField(default=False)
@@ -70,6 +70,11 @@ class User(AbstractUser):
             return Patient.objects.get(patient_id=self.username)
         except Patient.DoesNotExist:
             return None
+
+    def save(self, *args, **kwargs):
+        if self.is_superuser and self.role != self.Role.ADMIN:
+            self.role = self.Role.ADMIN
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.get_full_name() or self.username} ({self.role})'
