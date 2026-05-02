@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import formset_factory
 
-from .models import Consultation, Triage, Prescription, PrescriptionItem
+from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis
 from inventory.models import Medicine
 import re
 
@@ -339,17 +339,26 @@ class TriageEditForm(forms.ModelForm):
 
 
 class PrescriptionForm(forms.ModelForm):
+    diagnosis_select = forms.ModelChoiceField(
+        queryset=CommonDiagnosis.objects.all().order_by('name'),
+        required=False,
+        label='Common Diagnosis',
+        widget=forms.Select(attrs={'class': 'reg-input'}),
+    )
+
     class Meta:
         model = Prescription
         fields = ['diagnosis', 'treatment_plan']
         widgets = {
             'diagnosis': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 4,
-                'placeholder': 'Clinical diagnosis...',
+                'class': 'reg-input',
+                'rows': 3,
+                'placeholder': 'Or type a custom diagnosis...',
             }),
             'treatment_plan': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Treatment plan and recommendations... (optional)',
+                'class': 'reg-input',
+                'rows': 3,
+                'placeholder': 'Treatment plan and recommendations...',
             }),
         }
 

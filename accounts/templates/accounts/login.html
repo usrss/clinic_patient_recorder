@@ -67,11 +67,11 @@
           {% endif %}
         </div>
 
-        <div style="text-align:right;margin-bottom:20px;">
-          <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
-            Forgot password?
-          </a>
-        </div>
+   <div style="text-align:right;margin-bottom:20px;">
+  <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+    Forgot password?
+  </a>
+</div>
 
         {% if form.non_field_errors %}
           <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
@@ -84,6 +84,11 @@
         <button type="submit" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);" onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
           Sign In
         </button>
+
+        <div style="text-align:center;margin-top:16px;">
+  <span style="font-size:13px;color:#6b7280;">Don't have an account?</span>
+  <a href="{% url 'accounts:register' %}" style="font-size:13px;color:#0078d4;text-decoration:none;font-weight:600;margin-left:4px;">Create one</a>
+</div>
       </form>
     </div>
 

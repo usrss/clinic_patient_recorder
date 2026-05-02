@@ -1,26 +1,29 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
 import random
+import datetime
 
-from patients.models import PatientProfile
+from colleges.models import College
+from patients.models import Patient, PatientProfile
 from .models import User
 from .forms import (
-    LoginForm, UserCreateForm, UserEditForm, PatientBulkUploadForm,
+    LoginForm, UserCreateForm, UserEditForm,
     StaffPasswordChangeForm, PatientProfileEditForm, UserProfileForm,
-    PasswordResetRequestForm, PasswordResetForm,
+    PasswordResetRequestForm, PasswordResetForm, RegistrationForm,
 )
 from .decorators import admin_required
-from .utils import import_patients_from_excel, PatientImportError
 
 MAX_FAILED_ATTEMPTS = 5
-LOCKOUT_DURATION = timedelta(minutes=15)
+LOCKOUT_DURATION = timedelta(minutes=5)
 
 
 def login_view(request):
@@ -33,13 +36,11 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
 
-            # Check if account is locked
             if user.locked_until and timezone.now() < user.locked_until:
                 remaining = (user.locked_until - timezone.now()).seconds // 60
                 messages.error(request, f'Account locked. Try again in {remaining} minutes or reset your password.')
                 return render(request, 'accounts/login.html', {'form': form})
 
-            # Reset failed attempts on successful login
             user.failed_login_attempts = 0
             user.locked_until = None
             user.save(update_fields=['failed_login_attempts', 'locked_until'])
@@ -51,9 +52,6 @@ def login_view(request):
                 if patient is not None and not patient.has_logged_in:
                     patient.has_logged_in = True
                     patient.save(update_fields=['has_logged_in'])
-
-            if user.force_password_change:
-                return redirect('accounts:change_password')
 
             messages.success(request, f'Welcome back, {user.first_name or user.username}!')
             return redirect('accounts:dashboard')
@@ -71,12 +69,11 @@ def login_view(request):
                         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                             user.locked_until = timezone.now() + LOCKOUT_DURATION
                         user.save(update_fields=['failed_login_attempts', 'locked_until'])
-
                         remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
                         if remaining > 0:
                             messages.error(request, f'Invalid password. {remaining} attempts remaining.')
                         else:
-                            messages.error(request, 'Account locked for 15 minutes. Use Forgot Password to unlock sooner.')
+                            messages.error(request, f'Account locked for {LOCKOUT_DURATION.seconds // 60} minutes. Use Forgot Password to unlock sooner.')
                 except User.DoesNotExist:
                     messages.error(request, 'Invalid username or password.')
             else:
@@ -84,6 +81,151 @@ def login_view(request):
 
     return render(request, 'accounts/login.html', {'form': form})
 
+
+# ── REGISTRATION ──────────────────────────────────────────────────────
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+
+    form = RegistrationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        password = form.cleaned_data['password1']
+        data = form.cleaned_data
+
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=data['patient_id'],
+                password=password,
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                email=data['email'],
+                role=User.Role.PATIENT,
+                phone=data['phone'],
+                force_password_change=False,
+            )
+
+            patient = Patient.objects.create(
+                patient_id=data['patient_id'],
+                first_name=data['first_name'],
+                middle_name=data.get('middle_name', ''),
+                last_name=data['last_name'],
+                sex=data['sex'],
+                college=data.get('college'),
+                phone=data['phone'],
+                email=data['email'],
+                emergency_contact_name=data['emergency_contact_name'],
+                emergency_contact_phone=data['emergency_contact_phone'],
+                has_logged_in=False,
+            )
+
+            PatientProfile.objects.create(
+                patient=patient,
+                birthday=data.get('birthday'),
+                address=data.get('address', ''),
+                blood_type=data.get('blood_type', ''),
+                religion=data.get('religion', ''),
+                civil_status=data.get('civil_status', ''),
+                year_level=data.get('year_level', ''),
+                height_cm=data.get('height_cm'),
+                weight_kg=data.get('weight_kg'),
+                hypertension=data.get('hypertension', False),
+                diabetes=data.get('diabetes', False),
+                asthma=data.get('asthma', False),
+                cardiac_problems=data.get('cardiac_problems', False),
+                arthritis=data.get('arthritis', False),
+                other_conditions=data.get('other_conditions', ''),
+                known_allergies=data.get('known_allergies', ''),
+                bcg=data.get('bcg', False),
+                dpt=data.get('dpt', False),
+                opv=data.get('opv', False),
+                hepatitis_b=data.get('hepatitis_b', False),
+                measles=data.get('measles', False),
+                tt=data.get('tt', False),
+                immunization_others=data.get('immunization_others', ''),
+                current_medications=data.get('current_medications', ''),
+                vices=data.get('vices', ''),
+                previous_illnesses=data.get('previous_illnesses', ''),
+                previous_hospitalizations=data.get('previous_hospitalizations', ''),
+                profile_completed=True,
+            )
+
+        login(request, user)
+        messages.success(request, f'Welcome, {user.first_name}! Your account has been created.')
+        return redirect('accounts:dashboard')
+
+    # Pass current_step back so JS can restore the correct step on failed submission
+    current_step = request.POST.get('current_step', '1') if request.method == 'POST' else '1'
+    return render(request, 'accounts/register.html', {
+        'form': form,
+        'current_step': current_step,
+    })
+
+
+def send_registration_otp(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request.'})
+
+    email = request.POST.get('email', '').strip()
+    patient_id = request.POST.get('patient_id', '').strip()
+
+    if not email or not patient_id:
+        return JsonResponse({'success': False, 'error': 'Email and ID are required.'})
+
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({'success': False, 'error': 'Email already registered.'})
+
+    if User.objects.filter(username=patient_id).exists():
+        return JsonResponse({'success': False, 'error': 'ID already registered.'})
+
+    otp = str(random.randint(100000, 999999))
+    request.session['registration_otp'] = otp
+    request.session['registration_otp_expiry'] = (timezone.now() + timedelta(minutes=3)).isoformat()
+    request.session['registration_email'] = email
+    request.session['registration_otp_pending'] = True
+
+    send_mail(
+        'Registration OTP — Clinic Recorder',
+        f'Your OTP is: {otp}\n\nExpires in 3 minutes.',
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+        fail_silently=False,
+    )
+    return JsonResponse({'success': True})
+
+
+def verify_registration_otp(request):
+    if request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Already logged in.'})
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request.'})
+
+    otp = request.POST.get('otp', '').strip()
+    stored_otp = request.session.get('registration_otp')
+    expiry_str = request.session.get('registration_otp_expiry')
+
+    if not stored_otp or not expiry_str:
+        return JsonResponse({'success': False, 'error': 'OTP expired.'})
+
+    if timezone.now() > timezone.datetime.fromisoformat(expiry_str):
+        return JsonResponse({'success': False, 'error': 'OTP expired.'})
+
+    if otp != stored_otp:
+        return JsonResponse({'success': False, 'error': 'Invalid OTP.'})
+
+    request.session['registration_otp_verified'] = True
+    return JsonResponse({'success': True})
+
+
+def _clear_registration_session(request):
+    keys = ['registration_data', 'registration_password', 'registration_email',
+            'registration_otp', 'registration_otp_expiry']
+    for key in keys:
+        request.session.pop(key, None)
+
+
+# ── FORGOT / RESET PASSWORD ───────────────────────────────────────────
 
 def forgot_password(request):
     if request.user.is_authenticated:
@@ -96,16 +238,14 @@ def forgot_password(request):
 
         otp = str(random.randint(100000, 999999))
         user.reset_otp = otp
-        user.reset_otp_expiry = timezone.now() + timedelta(minutes=10)
+        user.reset_otp_expiry = timezone.now() + timedelta(minutes=3)
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
 
-        print(f'OTP for {email}: {otp}')  # Debug — remove in production
+        print(f'OTP for {email}: {otp}')
 
         send_mail(
             'Password Reset OTP — Clinic Recorder',
-            f'Your OTP for password reset is: {otp}\n\n'
-            f'This OTP expires in 10 minutes.\n\n'
-            f'If you did not request this, please ignore this email.',
+            f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 10 minutes.',
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
@@ -127,24 +267,21 @@ def verify_otp(request, user_id):
         user.refresh_from_db(fields=['reset_otp', 'reset_otp_expiry'])
         otp = request.POST.get('otp', '').strip()
 
-        print(f'Entered OTP: [{otp}], Stored OTP: [{user.reset_otp}]')  # Debug
-
         if not user.reset_otp or not user.reset_otp_expiry:
-            messages.error(request, 'No OTP was requested. Please try again.')
+            messages.error(request, 'No OTP was requested.')
             return redirect('accounts:forgot_password')
 
         if timezone.now() > user.reset_otp_expiry:
-            messages.error(request, 'OTP has expired. Please request a new one.')
+            messages.error(request, 'OTP expired.')
             return redirect('accounts:forgot_password')
 
         if otp != user.reset_otp:
-            messages.error(request, 'Invalid OTP. Please try again.')
+            messages.error(request, 'Invalid OTP.')
             return render(request, 'accounts/verify_otp.html', {'user_id': user_id})
 
         user.reset_otp = None
         user.reset_otp_expiry = None
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
-
         request.session['reset_user_id'] = user.pk
         return redirect('accounts:reset_password')
 
@@ -161,16 +298,14 @@ def reset_password(request):
         return redirect('accounts:forgot_password')
 
     user = get_object_or_404(User, pk=user_id, is_active=True)
-
     form = PasswordResetForm(request.POST or None)
+
     if request.method == 'POST' and form.is_valid():
         user.set_password(form.cleaned_data['new_password1'])
         user.failed_login_attempts = 0
         user.locked_until = None
         user.save()
-
         del request.session['reset_user_id']
-
         messages.success(request, 'Password reset successful. You may now log in.')
         return redirect('accounts:login')
 
@@ -188,21 +323,12 @@ def logout_view(request):
 def dashboard(request):
     user = request.user
 
-    if user.force_password_change:
-        return redirect('accounts:change_password')
-
     if user.role == User.Role.PATIENT:
         patient = user.get_patient_record()
-
         if patient is None:
-            messages.error(request, 'Your patient record could not be found. Please contact the clinic.')
+            messages.error(request, 'Patient record not found.')
             logout(request)
             return redirect('accounts:login')
-
-        if not patient.is_profile_complete:
-            messages.info(request, 'Please complete your profile before continuing.')
-            return redirect('patients:patient_full_profile_setup', pk=patient.pk)
-
         return render(request, 'patients/patient_dashboard.html', {'patient': patient})
 
     role_template_map = {
@@ -215,7 +341,6 @@ def dashboard(request):
         return render(request, role_template_map[user.role], {'user': user})
 
     if user.role == User.Role.ADMIN:
-        from patients.models import Patient
         from consultations.models import Consultation
         context = {
             'user': user,
@@ -227,7 +352,7 @@ def dashboard(request):
         }
         return render(request, 'accounts/dashboard_admin.html', context)
 
-    messages.error(request, 'Your account has an unrecognised role.')
+    messages.error(request, 'Account has an unrecognised role.')
     logout(request)
     return redirect('accounts:login')
 
@@ -240,14 +365,8 @@ def change_password(request):
     if request.method == 'POST' and form.is_valid():
         user = form.save()
         user.force_password_change = False
-        user.save(update_fields=['force_password_change'])
+        user.save()
         update_session_auth_hash(request, user)
-
-        if user.role == User.Role.PATIENT:
-            patient = user.get_patient_record()
-            if patient and not patient.is_profile_complete:
-                return redirect('patients:patient_full_profile_setup', pk=patient.pk)
-
         messages.success(request, 'Password changed successfully.')
         return redirect('accounts:dashboard')
 
@@ -284,9 +403,7 @@ def user_edit(request, pk):
         form.save()
         messages.success(request, 'User updated successfully.')
         return redirect('accounts:user_list')
-    return render(request, 'accounts/user_form.html', {
-        'form': form, 'action': 'Edit', 'target': target,
-    })
+    return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Edit', 'target': target})
 
 
 @login_required
@@ -303,26 +420,6 @@ def user_toggle_active(request, pk):
         status = 'activated' if user.is_active else 'deactivated'
         messages.success(request, f'User {user.username} {status}.')
     return redirect('accounts:user_list')
-
-
-@login_required
-@admin_required
-def patient_import(request):
-    form = PatientBulkUploadForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        try:
-            results = import_patients_from_excel(request.FILES['file'])
-            messages.success(request, f'✓ Import complete: {results["created"]} created, {results["skipped"]} skipped')
-            for warning in results['warnings']:
-                messages.warning(request, warning)
-            for error in results['errors']:
-                messages.error(request, error)
-            return redirect('accounts:patient_import')
-        except PatientImportError as e:
-            messages.error(request, f'Import failed: {str(e)}')
-        except Exception as e:
-            messages.error(request, f'Unexpected error: {str(e)}')
-    return render(request, 'accounts/import_patients.html', {'form': form})
 
 
 @login_required
@@ -354,7 +451,7 @@ def profile_settings(request):
                     patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone'])
                 else:
                     info_form.save()
-                messages.success(request, 'Profile updated successfully.')
+                messages.success(request, 'Profile updated.')
                 return redirect('accounts:profile_settings')
 
         elif 'save_password' in request.POST:
@@ -364,12 +461,11 @@ def profile_settings(request):
             if password_form.is_valid():
                 user = password_form.save()
                 user.force_password_change = False
-                user.save(update_fields=['force_password_change'])
+                user.save()
                 update_session_auth_hash(request, user)
-                messages.success(request, 'Password changed successfully.')
+                messages.success(request, 'Password changed.')
                 return redirect('accounts:profile_settings')
     else:
-        # GET request
         if user.role == User.Role.PATIENT:
             info_form = PatientProfileEditForm(instance=profile, patient=patient)
         else:
