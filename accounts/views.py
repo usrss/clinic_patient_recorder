@@ -181,7 +181,6 @@ def logout_view(request):
     if request.method != 'POST':
         return redirect('accounts:dashboard')
     logout(request)
-    messages.info(request, 'You have been logged out.')
     return redirect('accounts:login')
 
 
