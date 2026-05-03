@@ -1,142 +1,189 @@
-{% extends 'core/base.html' %}
+{% extends 'core/base_admin.html' %}
 {% block title %}Disease Report — Clinic Recorder{% endblock %}
+{% block nav_reports %}active{% endblock %}
+{% block page_title %}Disease Report{% endblock %}
+{% block page_subtitle %}Filter completed consultations by diagnosis, date, and patient type{% endblock %}
 
 {% block extra_css %}
 <style>
-  .reports-wrap {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
-    padding: 36px 24px;
-  }
-  .reports-inner { max-width: 1100px; margin: 0 auto; }
-
-  .back-btn {
+  /* ── Back link ── */
+  .back-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #6b7280;
-    background: #fff;
-    border: 1px solid #e8ecf1;
-    border-radius: 8px;
-    padding: 6px 14px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all .15s;
     font-weight: 500;
+    color: #0078d4;
+    text-decoration: none;
+    margin-bottom: 20px;
+    transition: color 0.15s;
   }
-  .back-btn:hover { background: #f9fafb; color: inherit; text-decoration: none; }
+  .back-link:hover { color: #005a9e; text-decoration: none; }
 
+  /* ── Filter card ── */
   .filter-card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    padding: 22px;
     margin-bottom: 20px;
   }
-
   .filter-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 14px;
     align-items: flex-end;
   }
-
-  .form-group label {
+  .filter-label {
+    display: block;
     font-size: 11px;
     font-weight: 700;
     color: #94a3b8;
-    display: block;
-    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
   }
-  .form-control {
+  .filter-input, .filter-select {
     width: 100%;
     padding: 9px 12px;
-    border-radius: 10px;
-    border: 1px solid #e8ecf1;
-    background: #f9fafb;
+    border-radius: 9px;
+    border: 1.5px solid #e1e5eb;
+    background: #fafbfc;
     font-size: 13px;
     color: #1a1a2e;
-    transition: border-color .15s;
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
   }
-  .form-control:focus { outline: none; border-color: var(--primary); background: #fff; }
-
+  .filter-input:focus, .filter-select:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  .filter-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+  }
   .btn-primary {
-    background: var(--primary);
+    padding: 9px 18px;
+    background: #0078d4;
     color: #fff;
     border: none;
-    border-radius: 10px;
-    padding: 9px 20px;
+    border-radius: 9px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity .15s;
+    transition: background .15s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
   }
-  .btn-primary:hover { opacity: .88; }
-
-  .btn-secondary {
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary-sm {
+    padding: 8px 14px;
     background: #fff;
-    color: #4b5563;
+    color: #6b7280;
     border: 1px solid #e8ecf1;
-    border-radius: 10px;
-    padding: 9px 16px;
-    font-size: 13px;
+    border-radius: 9px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
     transition: background .15s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
   }
-  .btn-secondary:hover { background: #f9fafb; color: inherit; text-decoration: none; }
+  .btn-secondary-sm:hover { background: #f5f8ff; color: inherit; text-decoration: none; }
 
-  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
-
-  .stat-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 18px 14px;
-    text-align: center;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-  }
-  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
-  .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
-
-  .data-card {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    overflow: hidden;
-  }
-  .data-card table { width: 100%; border-collapse: collapse; }
-  .data-card th {
-    font-size: 11px;
-    font-weight: 600;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e8ecf1;
-    text-align: left;
-    background: #fafafa;
-  }
-  .data-card td { padding: 11px 16px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
-  .data-card tr:last-child td { border-bottom: none; }
-  .data-card tr:hover td { background: #f9fafb; }
-
-  .section-label {
+  /* ── Section heading ── */
+  .sec-heading {
     font-size: 11px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: .6px;
+    letter-spacing: 0.6px;
     margin-bottom: 12px;
   }
 
+  /* ── Stat cards ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+
+  /* ── Panel ── */
+  .panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f0f4f8;
+  }
+  .panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .panel table { width: 100%; border-collapse: collapse; }
+  .panel th {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f4f8;
+    text-align: left;
+    background: #fafbfc;
+  }
+  .panel td {
+    padding: 11px 16px;
+    border-bottom: 1px solid #f5f7fa;
+    font-size: 13px;
+    color: #374151;
+  }
+  .panel tr:last-child td { border-bottom: none; }
+  .panel tr:hover td { background: #f9fafb; }
+
+  /* ── College tags ── */
+  .college-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 18px;
+  }
+  .college-tag {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #166534;
+  }
+  .college-tag strong { color: #14532d; }
+
+  /* ── Type badges ── */
   .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -148,195 +195,193 @@
   .badge-staff      { background: #ede9fe; color: #5b21b6; }
   .badge-instructor { background: #fef9c3; color: #713f12; }
 
-  .college-tag {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    color: #166534;
-  }
-  .college-tag strong { color: #14532d; }
-
+  /* ── Empty state ── */
   .empty-state {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #e8ecf1;
     text-align: center;
     padding: 48px 24px;
     box-shadow: 0 1px 3px rgba(0,0,0,.04);
   }
+
+  @media (max-width: 768px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .filter-row { grid-template-columns: 1fr; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="reports-wrap">
-<div class="reports-inner">
 
-  <!-- Header -->
-  <div style="margin-bottom: 28px;">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
-      <a href="{% url 'reports:report_dashboard' %}" class="back-btn">← Reports</a>
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-.3px;">Disease Report</h1>
-    </div>
-    <p style="font-size:13px;color:#6b7280;margin:0;">Filter completed consultations by diagnosis keyword, date range, and patient type.</p>
-  </div>
+<a href="{% url 'reports:report_dashboard' %}" class="back-link">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+  Back to Reports
+</a>
 
-  <!-- Filter Form -->
-  <div class="filter-card">
-    <form method="get">
-      <div class="filter-row">
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Diagnosis keyword</label>
-          <input type="text" name="keyword" value="{{ keyword }}" class="form-control" placeholder="e.g. fever, UTI">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Date from</label>
-          <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Date to</label>
-          <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Patient type</label>
-          <select name="patient_type" class="form-control">
-            <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All types</option>
-            <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
-            <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
-            <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>College <span style="font-weight:400;text-transform:none;font-size:10px;">(students)</span></label>
-          <select name="college_id" class="form-control">
-            <option value="">All colleges</option>
-            {% for c in colleges %}
-            <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
-              {{ c.abbreviation }} — {{ c.name }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <button type="submit" class="btn-primary">Search</button>
-          {% if has_filters %}
-          <a href="{% url 'reports:disease_report' %}" class="btn-secondary btn-sm">Clear</a>
-          {% endif %}
-        </div>
+{# ── Filter Card ── #}
+<div class="filter-card">
+  <form method="get">
+    <div class="filter-row">
+      <div>
+        <label class="filter-label">Diagnosis keyword</label>
+        <input type="text" name="keyword" value="{{ keyword }}" class="filter-input" placeholder="e.g. fever, UTI">
       </div>
-    </form>
+      <div>
+        <label class="filter-label">Date from</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="filter-input">
+      </div>
+      <div>
+        <label class="filter-label">Date to</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="filter-input">
+      </div>
+      <div>
+        <label class="filter-label">Patient type</label>
+        <select name="patient_type" class="filter-select">
+          <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All types</option>
+          <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
+          <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
+          <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
+        </select>
+      </div>
+      <div>
+        <label class="filter-label">College <span style="font-weight:400;text-transform:none;font-size:10px;">(students)</span></label>
+        <select name="college_id" class="filter-select">
+          <option value="">All colleges</option>
+          {% for c in colleges %}
+          <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.abbreviation }} — {{ c.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button type="submit" class="btn-primary">Search</button>
+        {% if has_filters %}
+        <a href="{% url 'reports:disease_report' %}" class="btn-secondary-sm">Clear</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if has_filters %}
+
+{# ── Summary Stat Cards ── #}
+<div class="sec-heading">Results Overview</div>
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value" style="color:#0078d4;">{{ total_affected }}</div>
+    <div class="stat-label">Affected Patients</div>
   </div>
-
-  {% if has_filters %}
-
-  <!-- Summary stat cards -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:20px;">
-    <div class="stat-card">
-      <div class="stat-value" style="color:var(--primary);">{{ total_affected }}</div>
-      <div class="stat-label">Affected Patients</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#3b82f6;">{{ by_type.student }}</div>
-      <div class="stat-label">Students</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#8b5cf6;">{{ by_type.staff }}</div>
-      <div class="stat-label">Staff</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#f97316;">{{ by_type.instructor }}</div>
-      <div class="stat-label">Instructors</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{ consultations.count }}</div>
-      <div class="stat-label">Consultations</div>
-    </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#3b82f6;">{{ by_type.student }}</div>
+    <div class="stat-label">Students</div>
   </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#8b5cf6;">{{ by_type.staff }}</div>
+    <div class="stat-label">Staff</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#f97316;">{{ by_type.instructor }}</div>
+    <div class="stat-label">Instructors</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#1a1a2e;">{{ consultations.count }}</div>
+    <div class="stat-label">Consultations</div>
+  </div>
+</div>
 
-  <!-- Breakdown by college -->
-  {% if by_college %}
-  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);">
-    <div class="section-label">Breakdown by College</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      {% for row in by_college %}
-      <span class="college-tag">
-        <strong>{{ row.patient__college__abbreviation }}</strong> — {{ row.count }} patient{{ row.count|pluralize }}
-      </span>
+{# ── College breakdown ── #}
+{% if by_college %}
+<div class="panel" style="margin-bottom:20px;">
+  <div class="panel-header">
+    <span class="panel-title">Breakdown by College</span>
+  </div>
+  <div class="college-tags">
+    {% for row in by_college %}
+    <span class="college-tag">
+      <strong>{{ row.patient__college__abbreviation }}</strong> — {{ row.count }} patient{{ row.count|pluralize }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Results Table ── #}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <span style="font-size:13px;color:#6b7280;">
+    <strong style="color:#1a1a2e;">{{ consultations.count }}</strong> consultation{{ consultations.count|pluralize }} found
+  </span>
+  <a href="?keyword={{ keyword }}&date_from={{ date_from }}&date_to={{ date_to }}&patient_type={{ patient_type }}&college_id={{ college_id }}&export=csv"
+     class="btn-secondary-sm">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export CSV
+  </a>
+</div>
+
+{% if consultations %}
+<div class="panel">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date</th>
+        <th>Patient</th>
+        <th>Patient ID</th>
+        <th>Type</th>
+        <th>College / Dept</th>
+        <th>Diagnosis</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in consultations %}
+      <tr>
+        <td style="color:#9ca3af;font-size:12px;font-weight:500;">{{ c.pk }}</td>
+        <td style="font-size:12px;color:#6b7280;">{{ c.created_at|date:"M d, Y" }}</td>
+        <td style="font-weight:600;color:#1a1a2e;">{{ c.patient.get_full_name }}</td>
+        <td style="font-size:12px;color:#9ca3af;font-family:monospace;">{{ c.patient.patient_id }}</td>
+        <td>
+          {% if c.patient.college %}
+            <span class="badge badge-student">Student</span>
+          {% elif c.patient.department %}
+            <span class="badge badge-staff">Staff</span>
+          {% else %}
+            <span class="badge badge-instructor">Instructor</span>
+          {% endif %}
+        </td>
+        <td style="font-size:12px;color:#6b7280;">
+          {% if c.patient.college %}{{ c.patient.college.abbreviation }}
+          {% elif c.patient.department %}{{ c.patient.department }}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          {% if c.prescription %}{{ c.prescription.diagnosis|truncatechars:65 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
+        </td>
+      </tr>
       {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Export bar + count -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <p style="font-size:13px;color:#6b7280;margin:0;">
-      <strong style="color:#1a1a2e;">{{ consultations.count }}</strong> consultation{{ consultations.count|pluralize }} found
-    </p>
-    <a href="?keyword={{ keyword }}&date_from={{ date_from }}&date_to={{ date_to }}&patient_type={{ patient_type }}&college_id={{ college_id }}&export=csv"
-       class="btn-secondary btn-sm">⬇ Export CSV</a>
-  </div>
-
-  {% if consultations %}
-  <div class="data-card">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Date</th>
-          <th>Patient</th>
-          <th>Patient ID</th>
-          <th>Type</th>
-          <th>College / Dept</th>
-          <th>Diagnosis</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in consultations %}
-        <tr>
-          <td style="color:#9ca3af;font-size:12px;font-weight:500;">{{ c.pk }}</td>
-          <td style="font-size:12px;color:#6b7280;">{{ c.created_at|date:"M d, Y" }}</td>
-          <td style="font-weight:600;color:#1a1a2e;">{{ c.patient.get_full_name }}</td>
-          <td style="font-size:12px;color:#9ca3af;font-family:monospace;">{{ c.patient.patient_id }}</td>
-          <td>
-            {% if c.patient.college %}
-              <span class="badge badge-student">Student</span>
-            {% elif c.patient.department %}
-              <span class="badge badge-staff">Staff</span>
-            {% else %}
-              <span class="badge badge-instructor">Instructor</span>
-            {% endif %}
-          </td>
-          <td style="font-size:12px;color:#6b7280;">
-            {% if c.patient.college %}{{ c.patient.college.abbreviation }}
-            {% elif c.patient.department %}{{ c.patient.department }}
-            {% else %}—{% endif %}
-          </td>
-          <td style="font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            {% if c.prescription %}{{ c.prescription.diagnosis|truncatechars:65 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty-state">
-    <div style="font-size:40px;margin-bottom:12px;">🔍</div>
-    <p style="font-weight:600;color:#374151;margin-bottom:6px;">No results found</p>
-    <p style="color:#9ca3af;font-size:13px;">Try adjusting your filters or broadening the date range.</p>
-  </div>
-  {% endif %}
-
-  {% else %}
-  <!-- Initial state -->
-  <div class="empty-state">
-    <div style="font-size:44px;margin-bottom:14px;">🔬</div>
-    <p style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:6px;">Use the filters above to search</p>
-    <p style="color:#9ca3af;font-size:13px;">Enter a diagnosis keyword, date range, or patient type to get started.</p>
-  </div>
-  {% endif %}
-
+    </tbody>
+  </table>
 </div>
+{% else %}
+<div class="empty-state">
+  <svg width="40" height="40" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  <p style="font-weight:600;color:#374151;margin-bottom:6px;">No results found</p>
+  <p style="color:#9ca3af;font-size:13px;margin:0;">Try adjusting your filters or broadening the date range.</p>
 </div>
+{% endif %}
+
+{% else %}
+{# ── Initial state ── #}
+<div class="empty-state">
+  <svg width="44" height="44" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 14px;display:block;"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+  <p style="font-weight:700;font-size:15px;color:#1a1a2e;margin-bottom:6px;">Use the filters above to search</p>
+  <p style="color:#9ca3af;font-size:13px;margin:0;">Enter a diagnosis keyword, date range, or patient type to get started.</p>
+</div>
+{% endif %}
+
+<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:28px;">
+  Negros Oriental State University — Medical Dental Clinic
+</p>
+
 {% endblock %}

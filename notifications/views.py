@@ -5,12 +5,22 @@ from .models import Notification
 from .utils import get_notifications, get_unread_count
 
 
+
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'patient':
+        return 'core/base.html'
+    elif user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
+
 @login_required
 def notification_list(request):
     """View all notifications."""
     notifications = get_notifications(request.user)
     return render(request, 'notifications/list.html', {
         'notifications': notifications,
+        'base_template': _base_template(request.user),
     })
 
 

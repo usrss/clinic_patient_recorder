@@ -1,105 +1,173 @@
-{% extends 'core/base.html' %}
+{% extends base_template %}
 {% block title %}Triage Queue — Clinic Recorder{% endblock %}
+{% block page_title %}Triage Queue{% endblock %}
+{% block page_subtitle %}{{ consultations.count }} patient{{ consultations.count|pluralize }} awaiting triage{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .sec-heading {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
+  }
+  .table-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    overflow: hidden;
+  }
+  .table-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #f0f4f8;
+  }
+  .table-panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .table-panel-meta { font-size: 11px; color: #94a3b8; font-weight: 500; }
+
+  .q-table { width: 100%; border-collapse: collapse; }
+  .q-table thead tr { background: #f8fafc; border-bottom: 1px solid #e8ecf1; }
+  .q-table th {
+    padding: 10px 18px; text-align: left;
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap;
+  }
+  .q-table tbody tr { border-bottom: 1px solid #f5f7fa; transition: background 0.12s; }
+  .q-table tbody tr:last-child { border-bottom: none; }
+  .q-table tbody tr:hover { background: #f8fafc; }
+  .q-table td { padding: 12px 18px; font-size: 13px; color: #374151; vertical-align: middle; }
+
+  .patient-name { font-size: 13px; font-weight: 600; color: #1a1a2e; line-height: 1.2; }
+  .patient-college { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+  .id-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    color: #6b7280; background: #f3f4f6; border-radius: 6px; padding: 2px 7px;
+  }
+  .urgency-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .urgency-high  { background: #fee2e2; color: #991b1b; }
+  .urgency-med   { background: #fef3c7; color: #92400e; }
+  .urgency-low   { background: #d1fae5; color: #065f46; }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .status-queued    { background: #dbeafe; color: #1e40af; }
+  .status-scheduled { background: #e0f2fe; color: #0369a1; }
+
+  .triage-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 13px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    color: #fff; background: #059669;
+    text-decoration: none; border: none;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .triage-btn:hover { background: #047857; color: #fff; }
+
+  .vitals-cell { font-size: 12px; color: #6b7280; line-height: 1.7; }
+  .vitals-cell strong { color: #1a1a2e; }
+
+  .empty-state { padding: 60px 24px; text-align: center; }
+  .empty-icon {
+    width: 52px; height: 52px; border-radius: 14px; background: #f0fdf4;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .empty-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 5px; }
+  .empty-sub { font-size: 13px; color: #94a3b8; }
+  .table-scroll { overflow-x: auto; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:960px;margin:0 auto;">
 
-  {# ── Header ── #}
-  <div style="margin-bottom:32px;">
-    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">Triage Queue</h1>
-    <p style="font-size:13px;color:#6b7280;margin:0;">
-      {{ consultations.count }} patient{{ consultations.count|pluralize }} awaiting triage
-    </p>
+<div class="sec-heading">Awaiting Triage</div>
+
+{% if consultations %}
+<div class="table-panel">
+  <div class="table-panel-header">
+    <span class="table-panel-title">Triage Queue</span>
+    <span class="table-panel-meta">{{ consultations.count }} patient{{ consultations.count|pluralize }}</span>
   </div>
+  <div class="table-scroll">
+    <table class="q-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Patient</th>
+          <th>Patient ID</th>
+          <th>Status</th>
+          <th>Queue / Schedule</th>
+          <th>Vitals</th>
+          <th>Severity</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in consultations %}
+        <tr>
+          <td style="color:#94a3b8;font-size:11px;font-weight:600;">{{ c.pk }}</td>
+          <td>
+            <div class="patient-name">{{ c.patient.get_full_name }}</div>
+            {% if c.patient.college %}
+            <div class="patient-college">{{ c.patient.college.abbreviation }}</div>
+            {% endif %}
+          </td>
+          <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
+          <td>
+            {% if c.status == 'queued' %}
+              <span class="status-badge status-queued">🗂 Queued</span>
+            {% elif c.status == 'scheduled' %}
+              <span class="status-badge status-scheduled">📅 Scheduled</span>
+            {% endif %}
+          </td>
+          <td style="font-size:13px;color:#6b7280;">
+            {% if c.queue_number %}#{{ c.queue_number }}
+            {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="vitals-cell">
+            {% if c.triage %}
+              BP: <strong>{{ c.triage.blood_pressure }}</strong><br>
+              Temp: <strong>{{ c.triage.temperature }}°C</strong><br>
+              Pulse: <strong>{{ c.triage.pulse_rate }} bpm</strong>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:12px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ c.severity_description|truncatechars:35 }}
+          </td>
+          <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
+          <td>
+            <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn">
+              Triage
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-  {% if consultations %}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Awaiting Triage</div>
-  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Patient</th>
-            <th>Patient ID</th>
-            <th>Status</th>
-            <th>Queue / Schedule</th>
-            <th>Severity</th>
-            <th>BP</th>
-            <th>Temp</th>
-            <th>Pulse</th>
-            <th>RR</th>
-            <th>SpO₂</th>
-            <th>Wt.</th>
-            <th>Urgency</th>
-            <th>Submitted</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in consultations %}
-          <tr>
-            <td style="color:#94a3b8;font-size:12px;font-weight:600;">{{ c.pk }}</td>
-            <td>
-              <div style="font-weight:600;color:#1a1a2e;">{{ c.patient.get_full_name }}</div>
-              <div style="font-size:11px;color:#94a3b8;">
-                {% if c.patient.college %}{{ c.patient.college.abbreviation }}{% endif %}
-              </div>
-            </td>
-            <td style="color:#6b7280;font-size:12px;">{{ c.patient.patient_id }}</td>
-            <td>
-              {% if c.status == 'queued' %}
-                <span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">🗂 Queued</span>
-              {% elif c.status == 'scheduled' %}
-                <span style="background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">📅 Scheduled</span>
-              {% endif %}
-            </td>
-            <td style="font-size:13px;color:#6b7280;">
-              {% if c.queue_number %}#{{ c.queue_number }}
-              {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
-              {% else %}—{% endif %}
-            </td>
-            <td style="font-size:13px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#374151;">
-              {{ c.severity_description|truncatechars:35 }}
-            </td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:13px;color:#94a3b8;">—</td>
-            <td style="font-size:12px;color:#94a3b8;">{{ c.created_at|date:"M d, H:i" }}</td>
-            <td>
-              <a href="{% url 'consultations:triage_form' c.pk %}" class="btn btn-primary btn-sm"
-                 style="display:inline-flex;align-items:center;gap:4px;">
-                Triage <ion-icon name="arrow-forward-outline" style="font-size:13px;"></ion-icon>
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+{% else %}
+<div class="table-panel">
+  <div class="empty-state">
+    <div class="empty-icon">
+      <svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
+    <div class="empty-title">Triage queue is clear</div>
+    <div class="empty-sub">No patients are waiting to be triaged.</div>
   </div>
-
-  {% else %}
-  <div style="background:#fff;border-radius:16px;padding:60px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
-    <ion-icon name="checkmark-circle-outline" style="font-size:48px;color:#10b981;margin-bottom:12px;display:block;"></ion-icon>
-    <p style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:4px;">Triage queue is clear</p>
-    <p style="color:#94a3b8;font-size:13px;margin:0;">No patients are waiting to be triaged.</p>
-  </div>
-  {% endif %}
-
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
 </div>
-</div>
+{% endif %}
+
 {% endblock %}

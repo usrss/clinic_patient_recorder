@@ -5,10 +5,16 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-# FIX 05: Added clinical_staff_required so doctors and front desk can view stock.
 from accounts.decorators import nurse_required, admin_required, clinical_staff_required
 from .models import Medicine, StockMovement
 from .forms import MedicineForm, MedicineRestockForm, MedicineSearchForm
+
+
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
 
 
 @login_required
@@ -39,6 +45,7 @@ def medicine_list(request):
         'medicines': medicines,
         'form': form,
         'low_stock_count': low_stock_count,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -52,6 +59,7 @@ def medicine_detail(request, pk):
         'medicine': medicine,
         'stock_movements': stock_movements,
         'is_low_stock': medicine.is_low_stock(),
+        'base_template': _base_template(request.user),
     })
 
 

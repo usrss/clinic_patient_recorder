@@ -1,0 +1,224 @@
+{% extends base_template %}
+{% block title %}Settings — Clinic Recorder{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}Manage your profile and account preferences{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-wrap { width: 100%; max-width: 680px; }
+  .card-panel {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    padding: 28px; margin-bottom: 20px;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 20px;
+  }
+  .subsection-label {
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .subsection-label-gap { margin-top: 24px; }
+
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; } }
+
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 8px; margin-bottom: 16px;
+  }
+  .check-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #f8fafc;
+    border-radius: 8px; border: 1px solid #e8ecf1;
+  }
+  .check-item label { margin: 0; font-size: 13px; color: #374151; cursor: pointer; }
+
+  .reg-input {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid #e1e5eb; border-radius: 10px;
+    font-size: 14px; color: #1a1a2e; background: #fafbfc;
+    transition: all 0.2s; outline: none; box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+  }
+  .reg-input:focus { border-color: #0078d4; background: #fff; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+  textarea.reg-input { resize: vertical; min-height: 80px; }
+  select.reg-input { appearance: none; cursor: pointer; }
+  input[type="password"].reg-input { padding-right: 44px; }
+  input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0078d4; cursor: pointer; flex-shrink: 0; }
+  select.reg-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+  }
+
+  .btn-save {
+    padding: 11px 24px; background: #0078d4; color: #fff;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-save:hover { background: #006bbf; box-shadow: 0 4px 14px rgba(0,120,212,0.3); }
+
+  .field-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
+  .alert {
+    margin-bottom: 16px; padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+  }
+  .alert-error   { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+  .alert-warning { background:#fff8e1; color:#92400e; border:1px solid #fed7aa; }
+  .alert-success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 4px; padding-bottom: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="settings-wrap">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Profile Card -->
+  <div class="card-panel">
+    <div class="section-label">Profile Information</div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if user.role == 'patient' %}
+        <!-- Patient profile fields -->
+        <div class="subsection-label">Contact</div>
+        <div class="form-grid-2">
+          <div><label class="field-label">Phone</label>{{ info_form.phone }}</div>
+          <div><label class="field-label">Email</label>{{ info_form.email }}</div>
+          <div><label class="field-label">Emergency Contact Name</label>{{ info_form.emergency_contact_name }}</div>
+          <div><label class="field-label">Emergency Contact Phone</label>{{ info_form.emergency_contact_phone }}</div>
+        </div>
+        <div style="margin-bottom:16px;"><label class="field-label">Address</label>{{ info_form.address }}</div>
+
+        <div class="subsection-label subsection-label-gap">Demographics</div>
+        <div class="form-grid-3">
+          <div><label class="field-label">Religion</label>{{ info_form.religion }}</div>
+          <div><label class="field-label">Civil Status</label>{{ info_form.civil_status }}</div>
+          <div><label class="field-label">Year Level</label>{{ info_form.year_level }}</div>
+        </div>
+
+        <div class="subsection-label subsection-label-gap">Physical</div>
+        <div class="form-grid-2">
+          <div><label class="field-label">Height (cm)</label>{{ info_form.height_cm }}</div>
+          <div><label class="field-label">Weight (kg)</label>{{ info_form.weight_kg }}</div>
+        </div>
+
+        <div class="subsection-label subsection-label-gap">Medical History</div>
+        <div class="check-grid">
+          <div class="check-item">{{ info_form.hypertension }} <label>Hypertension</label></div>
+          <div class="check-item">{{ info_form.diabetes }} <label>Diabetes</label></div>
+          <div class="check-item">{{ info_form.asthma }} <label>Asthma</label></div>
+          <div class="check-item">{{ info_form.cardiac_problems }} <label>Cardiac Problems</label></div>
+          <div class="check-item">{{ info_form.arthritis }} <label>Arthritis</label></div>
+        </div>
+        <div style="margin-bottom:16px;"><label class="field-label">Other Conditions</label>{{ info_form.other_conditions }}</div>
+
+        <div class="subsection-label subsection-label-gap">Immunization</div>
+        <div class="check-grid">
+          <div class="check-item">{{ info_form.bcg }} <label>BCG</label></div>
+          <div class="check-item">{{ info_form.dpt }} <label>DPT</label></div>
+          <div class="check-item">{{ info_form.opv }} <label>OPV</label></div>
+          <div class="check-item">{{ info_form.hepatitis_b }} <label>Hepatitis B</label></div>
+          <div class="check-item">{{ info_form.measles }} <label>Measles</label></div>
+          <div class="check-item">{{ info_form.tt }} <label>TT</label></div>
+        </div>
+        <div style="margin-bottom:16px;"><label class="field-label">Other Immunizations</label>{{ info_form.immunization_others }}</div>
+
+        <div class="subsection-label subsection-label-gap">Medical Background</div>
+        <div style="display:grid;gap:14px;margin-bottom:16px;">
+          <div><label class="field-label">Current Medications</label>{{ info_form.current_medications }}</div>
+          <div><label class="field-label">Vices</label>{{ info_form.vices }}</div>
+          <div><label class="field-label">Previous Illnesses</label>{{ info_form.previous_illnesses }}</div>
+          <div><label class="field-label">Previous Hospitalizations</label>{{ info_form.previous_hospitalizations }}</div>
+        </div>
+      {% else %}
+        <!-- Staff fields -->
+        <div style="display:grid;gap:14px;margin-bottom:16px;">
+          {% for field in info_form %}
+          <div>
+            <label class="field-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <button type="submit" name="save_info" class="btn-save">Save Profile</button>
+    </form>
+  </div>
+
+  <!-- Password Card -->
+  <div class="card-panel">
+    <div class="section-label">Change Password</div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div style="display:grid;gap:14px;">
+        {% for field in password_form %}
+        <div style="position:relative;">
+          <label class="field-label">{{ field.label }}</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            {{ field }}
+            {% if field.field.widget.input_type == 'password' %}
+            <button type="button" class="pw-toggle" onclick="togglePw(this)">
+              <svg class="icon-eye" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-eye-off" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+            {% endif %}
+          </div>
+          {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" name="save_password" class="btn-save" style="margin-top:20px;">Change Password</button>
+    </form>
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+
+<style>
+  .field-label {
+    display: block; font-size: 12px; font-weight: 600; color: #374151;
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; padding: 4px; cursor: pointer;
+    color: #94a3b8; display: flex; align-items: center;
+    border-radius: 6px; transition: color 0.15s;
+  }
+  .pw-toggle:hover { color: #475569; }
+</style>
+
+<script>
+  function togglePw(btn) {
+    var wrap = btn.parentElement;
+    var input = wrap.querySelector('input');
+    var eye = btn.querySelector('.icon-eye');
+    var eyeOff = btn.querySelector('.icon-eye-off');
+    if (!input) return;
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    eye.style.display = show ? 'none' : '';
+    eyeOff.style.display = show ? '' : 'none';
+  }
+</script>
+{% endblock %}

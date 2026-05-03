@@ -1,82 +1,110 @@
-{% extends 'core/base.html' %}
+{% extends 'core/base_staff.html' %}
+{% load static%}
 {% block title %}Front Desk Dashboard — Clinic Recorder{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }}{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/dashboard_frontdesk.css' %}">
+{% endblock %}
+
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:960px;margin:0 auto;">
 
-  {# ── Page Header ── #}
-  <div style="margin-bottom:32px;">
-    <p style="font-size:13px;color:#6b7280;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
-  </div>
+{# ── Quick Actions ── #}
+<div class="sec-label">Quick Actions</div>
+<div class="dash-grid">
 
-  {# ── Action Cards ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Quick Actions</div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:32px;">
-
-    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);opacity:0.6;">
-      <ion-icon name="list-outline" style="font-size:24px;color:#0078d4;margin-bottom:10px;display:block;"></ion-icon>
-      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Consultation Queue</div>
-      <div style="font-size:12px;color:#94a3b8;">Coming soon</div>
+  <a href="{% url 'consultations:queue' %}" class="dash-card primary-action">
+    <div class="dash-card-icon">
+      <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
     </div>
-
-    <div style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);opacity:0.6;">
-      <ion-icon name="calendar-outline" style="font-size:24px;color:#3b82f6;margin-bottom:10px;display:block;"></ion-icon>
-      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Schedule</div>
-      <div style="font-size:12px;color:#94a3b8;">Coming soon</div>
+    <div class="dash-card-text">
+      <strong>Consultation Queue</strong>
+      <span>View & manage queue</span>
     </div>
+  </a>
 
-    <a href="{% url 'accounts:profile_settings' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
-      <ion-icon name="key-outline" style="font-size:24px;color:#f97316;margin-bottom:10px;display:block;"></ion-icon>
-      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Change Password</div>
-      <div style="font-size:12px;color:#94a3b8;">Update your login password</div>
-    </a>
-
-  </div>
-
-  {# ── Responsibilities ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Your Responsibilities</div>
-  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
-    <div style="display:flex;flex-direction:column;gap:12px;">
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="mail-open-outline" style="font-size:18px;color:#0078d4;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Review incoming consultation requests from students</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="checkmark-done-outline" style="font-size:18px;color:#3b82f6;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Validate completeness of submitted information</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="person-circle-outline" style="font-size:18px;color:#10b981;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Confirm patient identity if needed</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="ticket-outline" style="font-size:18px;color:#8b5cf6;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Assign queue number or schedule appointment time</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="git-branch-outline" style="font-size:18px;color:#f97316;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Route validated cases to nurse triage</span>
-      </div>
-
+  <a href="{% url 'consultations:consultation_create' %}" class="dash-card">
+    <div class="dash-card-icon" style="background:#d1fae5;">
+      <svg width="22" height="22" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </div>
-  </div>
+    <div class="dash-card-text">
+      <strong>New Consultation</strong>
+      <span>Register a patient visit</span>
+    </div>
+  </a>
 
-  {# Footer #}
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
+  <a href="{% url 'patients:patient_list' %}" class="dash-card">
+    <div class="dash-card-icon" style="background:#ede9fe;">
+      <svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="dash-card-text">
+      <strong>Patients</strong>
+      <span>Search patient records</span>
+    </div>
+  </a>
+
+  <a href="{% url 'accounts:profile_settings' %}" class="dash-card">
+    <div class="dash-card-icon" style="background:#fff7ed;">
+      <svg width="22" height="22" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="dash-card-text">
+      <strong>Settings</strong>
+      <span>Change password</span>
+    </div>
+  </a>
 
 </div>
+
+{# ── Responsibilities ── #}
+<div class="sec-label">Your Responsibilities</div>
+<div class="resp-panel">
+  <div class="resp-panel-header">Front Desk Workflow</div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#eff6ff;">
+      <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    </div>
+    Review incoming consultation requests from students
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#d1fae5;">
+      <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    Validate completeness of submitted information
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#fef3c7;">
+      <svg width="15" height="15" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    Confirm patient identity if needed
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#ede9fe;">
+      <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    </div>
+    Assign queue number or schedule appointment time
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#fff7ed;">
+      <svg width="15" height="15" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+    </div>
+    Route validated cases to nurse triage
+  </div>
 </div>
+
+<p style="text-align:center;font-size:11px;color:#9ca3af;">
+  Negros Oriental State University — Medical Dental Clinic
+</p>
+
 {% endblock %}

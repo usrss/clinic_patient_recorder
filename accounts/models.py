@@ -21,6 +21,7 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.PATIENT,
     )
+
     phone = models.CharField(max_length=20, blank=True)
     force_password_change = models.BooleanField(default=False)
     failed_login_attempts = models.PositiveIntegerField(default=0)

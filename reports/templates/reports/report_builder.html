@@ -1,551 +1,535 @@
-{% extends 'core/base.html' %}
+{% extends 'core/base_admin.html' %}
 {% block title %}Custom Report Builder — Clinic Recorder{% endblock %}
+{% block nav_reports %}active{% endblock %}
+{% block page_title %}Custom Report Builder{% endblock %}
+{% block page_subtitle %}Select filters and metrics to generate a custom report{% endblock %}
 
 {% block extra_css %}
 <style>
-  .reports-wrap {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
-    padding: 36px 24px;
+  /* ── Back link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #0078d4;
+    text-decoration: none;
+    margin-bottom: 20px;
+    transition: color 0.15s;
   }
-  .reports-inner { max-width: 1100px; margin: 0 auto; }
+  .back-link:hover { color: #005a9e; text-decoration: none; }
 
-  .back-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: #6b7280; background: #fff;
-    border: 1px solid #e8ecf1; border-radius: 8px;
-    padding: 6px 14px; cursor: pointer; text-decoration: none;
-    transition: all .15s; font-weight: 500;
-  }
-  .back-btn:hover { background: #f9fafb; color: inherit; text-decoration: none; }
-
+  /* ── Form card ── */
   .form-card {
-    background: #fff; border-radius: 16px;
+    background: #fff;
+    border-radius: 14px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    padding: 28px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    padding: 24px;
+    margin-bottom: 20px;
   }
 
-  .section-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px;
+  /* ── Section heading ── */
+  .sec-heading {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 12px;
   }
 
-  .form-group label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
-    display: block; margin-bottom: 6px;
-    text-transform: uppercase; letter-spacing: .04em;
+  /* ── Inputs ── */
+  .form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
   }
-  .form-control {
-    width: 100%; padding: 9px 12px; border-radius: 10px;
-    border: 1px solid #e8ecf1; background: #f9fafb; font-size: 13px; color: #1a1a2e;
-    transition: border-color .15s;
+  .form-input, .form-select {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1.5px solid #e1e5eb;
+    background: #fafbfc;
+    font-size: 13px;
+    color: #1a1a2e;
+    transition: border-color .15s, box-shadow .15s;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
   }
-  .form-control:focus { outline: none; border-color: var(--primary); background: #fff; }
+  .form-input:focus, .form-select:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+  }
 
+  /* ── Buttons ── */
   .btn-primary {
-    background: var(--primary); color: #fff; border: none;
-    border-radius: 10px; padding: 10px 22px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: opacity .15s;
+    padding: 10px 22px;
+    background: #0078d4;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: 'Inter', sans-serif;
   }
-  .btn-primary:hover { opacity: .88; }
-
-  .btn-secondary {
-    background: #fff; color: #4b5563; border: 1px solid #e8ecf1;
-    border-radius: 10px; padding: 10px 18px; font-size: 13px;
-    font-weight: 500; cursor: pointer; text-decoration: none;
-    display: inline-block; transition: background .15s;
+  .btn-primary:hover { background: #006bbf; }
+  .btn-ghost {
+    padding: 10px 18px;
+    background: #fff;
+    color: #6b7280;
+    border: 1px solid #e8ecf1;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background .15s;
+    font-family: 'Inter', sans-serif;
   }
-  .btn-secondary:hover { background: #f9fafb; color: inherit; text-decoration: none; }
+  .btn-ghost:hover { background: #f5f8ff; color: inherit; text-decoration: none; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
 
-  .btn-sm { padding: 6px 14px !important; font-size: 12px !important; border-radius: 8px !important; }
+  /* ── Period radio tabs ── */
+  .radio-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 7px 14px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 8px;
+    background: #fafbfc;
+    transition: all .15s;
+    user-select: none;
+  }
+  .radio-tab:has(input:checked) {
+    background: #eff6ff;
+    border-color: #0078d4;
+    color: #0078d4;
+    font-weight: 600;
+  }
+  .radio-tab input[type="radio"] { accent-color: #0078d4; }
 
+  /* ── Metrics grid ── */
   .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 8px;
     margin-bottom: 20px;
   }
   .metric-checkbox {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; border: 1px solid #e8ecf1;
-    border-radius: 10px; cursor: pointer; font-size: 13px;
-    transition: background .15s, border-color .15s; user-select: none;
-    background: #fafafa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .15s;
+    user-select: none;
+    background: #fafbfc;
+    color: #374151;
   }
-  .metric-checkbox:has(input:checked) { background: #f0fdf4; border-color: var(--primary); }
-  .metric-checkbox input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; flex-shrink: 0; }
+  .metric-checkbox:has(input:checked) {
+    background: #eff6ff;
+    border-color: #0078d4;
+    color: #1a1a2e;
+  }
+  .metric-checkbox input[type="checkbox"] {
+    accent-color: #0078d4;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
 
+  /* ── Export bar ── */
   .export-bar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 20px; background: #f0fdf4; border: 1px solid #bbf7d0;
-    border-radius: 14px; margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
   }
-  .export-bar-label { font-size: 13px; font-weight: 600; color: #166534; }
+  .export-label { font-size: 13px; font-weight: 600; color: #166534; }
 
-  .stat-card {
-    background: #fff; border-radius: 16px; padding: 20px 16px;
-    text-align: center; border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  /* ── Stat cards ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
   }
-  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  }
+  .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
   .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
 
-  .data-card {
-    background: #fff; border-radius: 16px;
+  /* ── Panel ── */
+  .panel {
+    background: #fff;
+    border-radius: 14px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    overflow: hidden; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    overflow: hidden;
+    margin-bottom: 20px;
   }
-  .data-card-title {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: .6px;
-    padding: 14px 18px; border-bottom: 1px solid #e8ecf1; background: #fafafa;
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f4f8;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    background: #fafbfc;
   }
-  .data-card table { width: 100%; border-collapse: collapse; }
-  .data-card th {
-    font-size: 11px; font-weight: 600; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: .04em;
-    padding: 11px 16px; border-bottom: 1px solid #e8ecf1;
-    text-align: left; background: #fff;
+  .panel table { width: 100%; border-collapse: collapse; }
+  .panel th {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f4f8;
+    text-align: left;
+    background: #fff;
   }
-  .data-card td { padding: 11px 16px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
-  .data-card tr:last-child td { border-bottom: none; }
-  .data-card tr:hover td { background: #f9fafb; }
+  .panel td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f5f7fa;
+    font-size: 13px;
+    color: #374151;
+  }
+  .panel tr:last-child td { border-bottom: none; }
+  .panel tr:hover td { background: #f9fafb; }
 
   .rank-chip {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 6px;
-    background: #f3f4f6; font-size: 11px; font-weight: 600; color: #6b7280;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
   }
 
+  /* ── Result grid ── */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* ── Badges ── */
   .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
   .badge-student    { background: #dbeafe; color: #1e40af; }
   .badge-staff      { background: #ede9fe; color: #5b21b6; }
   .badge-instructor { background: #fef9c3; color: #713f12; }
 
+  /* ── Bar chart ── */
   .trend-bar-wrap { display: flex; align-items: flex-end; gap: 3px; height: 100px; padding-bottom: 4px; }
-  .trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; gap: 3px; }
-  .trend-bar { width: 100%; background: var(--primary); border-radius: 3px 3px 0 0; min-height: 3px; transition: opacity .2s; }
-  .trend-bar:hover { opacity: .7; }
-  .trend-label { font-size: 9px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+  .trend-bar-col  { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; gap: 3px; }
+  .trend-bar      { width: 100%; background: #0078d4; border-radius: 3px 3px 0 0; min-height: 3px; opacity: 0.8; }
+  .trend-label    { font-size: 9px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
 
-  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
+  /* ── Error / Empty ── */
   .error-note { font-size: 12px; color: #ef4444; margin-top: 6px; }
-
   .empty-state {
-    background: #fff; border-radius: 16px; border: 1px solid #e8ecf1;
-    text-align: center; padding: 56px 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    text-align: center;
+    padding: 56px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+
+  @media (max-width: 860px) {
+    .result-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="reports-wrap">
-<div class="reports-inner">
 
-  <!-- Header -->
-  <div style="margin-bottom:28px;">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
-      <a href="{% url 'reports:report_dashboard' %}" class="back-btn">← Reports</a>
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-.3px;">Custom Report Builder</h1>
-    </div>
-    <p style="font-size:13px;color:#6b7280;margin:0;">Select a date range, optional filters, and metrics to generate a report. Export as CSV, Excel, or PDF.</p>
-  </div>
+<a href="{% url 'reports:report_dashboard' %}" class="back-link">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+  Back to Reports
+</a>
 
-  <!-- Form -->
-  <div class="form-card">
-    <form method="get" id="report-form">
+{# ── Form Card ── #}
+<div class="form-card">
+  <form method="get" id="report-form">
 
-      <!-- Date range -->
-      <div style="margin-bottom:24px;">
-        <div class="section-label">
-          📅 Date Range <span style="color:#ef4444;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">* required</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label>From</label>
-            <input type="date" name="date_from" value="{{ date_from }}" class="form-control" required>
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label>To</label>
-            <input type="date" name="date_to" value="{{ date_to }}" class="form-control" required>
-          </div>
-        </div>
-        {% if date_error %}
-        <p class="error-note">⚠ {{ date_error }}</p>
-        {% endif %}
+    {# Date range #}
+    <div style="margin-bottom:24px;">
+      <div class="sec-heading">
+        Date Range
+        <span style="color:#ef4444;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px;">* required</span>
       </div>
-
-      <!-- Optional filters -->
-      <div style="margin-bottom:24px;">
-        <div class="section-label">🔍 Optional Filters</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label>College</label>
-            <select name="college_id" class="form-control">
-              <option value="">All colleges</option>
-              {% for c in colleges %}
-              <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
-                {{ c.abbreviation }} — {{ c.name }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Diagnosis keyword</label>
-            <input type="text" name="keyword" value="{{ keyword }}" class="form-control" placeholder="e.g. fever, UTI">
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Group results by</label>
-            <select name="grouping" class="form-control">
-              <option value="date"      {% if grouping == 'date' %}selected{% endif %}>Date</option>
-              <option value="college"   {% if grouping == 'college' %}selected{% endif %}>College</option>
-              <option value="diagnosis" {% if grouping == 'diagnosis' %}selected{% endif %}>Diagnosis</option>
-            </select>
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label class="form-label">From</label>
+          <input type="date" name="date_from" value="{{ date_from }}" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">To</label>
+          <input type="date" name="date_to" value="{{ date_to }}" class="form-input" required>
         </div>
       </div>
-
-      <!-- Period (for trend) -->
-      <div style="margin-bottom:24px;">
-        <div class="section-label">📅 Trend Granularity</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          {% for val, label in period_choices %}
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:7px 14px;border:1px solid {% if period == val %}var(--primary){% else %}#e8ecf1{% endif %};border-radius:8px;background:{% if period == val %}#f0fdf4{% else %}#fafafa{% endif %};">
-            <input type="radio" name="period" value="{{ val }}" {% if period == val %}checked{% endif %} style="accent-color:var(--primary);">
-            {{ label }}
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Metrics -->
-      <div style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div class="section-label" style="margin-bottom:0;">📊 Metrics to Include</div>
-          <div style="display:flex;gap:8px;">
-            <button type="button" onclick="checkAll(true)" style="font-size:11px;color:var(--primary);background:none;border:none;cursor:pointer;font-weight:600;">Select all</button>
-            <button type="button" onclick="checkAll(false)" style="font-size:11px;color:#94a3b8;background:none;border:none;cursor:pointer;">Clear all</button>
-          </div>
-        </div>
-        <div class="metrics-grid">
-          {% for value, label in all_metrics %}
-          <label class="metric-checkbox">
-            <input type="checkbox" name="metrics" value="{{ value }}"
-                   {% if value in metrics %}checked{% endif %}>
-            {{ label }}
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn-primary">Generate Report</button>
-        {% if has_query %}
-        <a href="{% url 'reports:report_builder' %}" class="btn-secondary">Reset</a>
-        {% endif %}
-      </div>
-
-    </form>
-  </div>
-
-  <!-- Results -->
-  {% if results %}
-
-  <!-- Export bar -->
-  <div class="export-bar">
-    <span class="export-bar-label">⬇ Export:</span>
-    <a href="?{{ export_params }}&export=csv"   class="btn-secondary btn-sm">CSV</a>
-    <a href="?{{ export_params }}&export=excel" class="btn-secondary btn-sm">Excel</a>
-    <a href="?{{ export_params }}&export=pdf"   class="btn-secondary btn-sm">PDF</a>
-    <span style="font-size:12px;color:#4ade80;margin-left:6px;">
-      {{ results.date_from|date:"M d, Y" }} — {{ results.date_to|date:"M d, Y" }}
-    </span>
-  </div>
-
-  <!-- Summary numbers -->
-  {% if 'total_consultations' in results or 'total_patients' in results or 'completion_rate' in results or 'avg_per_day' in results %}
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px;">
-    {% if 'total_consultations' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:var(--primary);">{{ results.total_consultations }}</div>
-      <div class="stat-label">Total Consultations</div>
+      {% if date_error %}<p class="error-note">{{ date_error }}</p>{% endif %}
     </div>
-    {% endif %}
-    {% if 'total_patients' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:#3b82f6;">{{ results.total_patients }}</div>
-      <div class="stat-label">Unique Patients</div>
-    </div>
-    {% endif %}
-    {% if 'completion_rate' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:#10b981;">{{ results.completion_rate }}%</div>
-      <div class="stat-label">Completion Rate</div>
-    </div>
-    {% endif %}
-    {% if 'cancellation_rate' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:#ef4444;">{{ results.cancellation_rate }}%</div>
-      <div class="stat-label">Cancellation Rate</div>
-    </div>
-    {% endif %}
-    {% if 'avg_per_day' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:#8b5cf6;">{{ results.avg_per_day }}</div>
-      <div class="stat-label">Avg / Day</div>
-    </div>
-    {% endif %}
-    {% if 'new_patients' in results %}
-    <div class="stat-card">
-      <div class="stat-value" style="color:#f97316;">{{ results.new_patients }}</div>
-      <div class="stat-label">New Patients</div>
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
 
-  <!-- Repeat patients -->
-  {% if 'repeat_patients' in results %}
-  <div class="data-card" style="margin-bottom:20px;">
-    <div class="data-card-title">Repeat vs. New Patient Ratio</div>
-    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
-      <div style="text-align:center;">
-        <div style="font-size:24px;font-weight:700;color:#3b82f6;">{{ results.repeat_patients.new }}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">New (1 visit)</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:24px;font-weight:700;color:var(--primary);">{{ results.repeat_patients.repeat }}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Visitors</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:24px;font-weight:700;color:#8b5cf6;">{{ results.repeat_patients.repeat_pct }}%</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Rate</div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- 2-column results -->
-  <div class="result-grid">
-
-    {% if 'top_diagnoses' in results %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Top Diagnoses</div>
-        {% if results.top_diagnoses %}
-        <table>
-          <thead><tr><th>#</th><th>Diagnosis</th><th>Cases</th></tr></thead>
-          <tbody>
-            {% for row in results.top_diagnoses %}
-            <tr>
-              <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-              <td style="font-size:13px;">{{ row.diagnosis|truncatechars:55 }}</td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.count }}</td>
-            </tr>
+    {# Optional filters #}
+    <div style="margin-bottom:24px;">
+      <div class="sec-heading">Optional Filters</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+        <div>
+          <label class="form-label">College</label>
+          <select name="college_id" class="form-select">
+            <option value="">All colleges</option>
+            {% for c in colleges %}
+            <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
+              {{ c.abbreviation }} — {{ c.name }}
+            </option>
             {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p style="color:#94a3b8;font-size:13px;text-align:center;padding:20px;">No diagnosis data.</p>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'top_medicines' in results %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Most Prescribed Medicines</div>
-        {% if results.top_medicines %}
-        <table>
-          <thead><tr><th>#</th><th>Medicine</th><th>Prescriptions</th></tr></thead>
-          <tbody>
-            {% for row in results.top_medicines %}
-            <tr>
-              <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-              <td style="font-size:13px;">{{ row.medicine_name }}</td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.count }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p style="color:#94a3b8;font-size:13px;text-align:center;padding:20px;">No prescription data.</p>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'cases_per_college' in results %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Cases per College</div>
-        {% if results.cases_per_college %}
-        <table>
-          <thead><tr><th>Code</th><th>College</th><th>Cases</th></tr></thead>
-          <tbody>
-            {% for row in results.cases_per_college %}
-            <tr>
-              <td style="font-weight:700;">{{ row.patient__college__abbreviation }}</td>
-              <td style="font-size:12px;color:#6b7280;">{{ row.patient__college__name }}</td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.count }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p style="color:#94a3b8;font-size:13px;text-align:center;padding:20px;">No college data.</p>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'cases_by_sex' in results %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Cases by Sex</div>
-        <table>
-          <thead><tr><th>Sex</th><th>Cases</th></tr></thead>
-          <tbody>
-            {% for row in results.cases_by_sex %}
-            <tr>
-              <td style="font-weight:500;">
-                {% if row.patient__sex == 'M' %}Male
-                {% elif row.patient__sex == 'F' %}Female
-                {% else %}Unknown{% endif %}
-              </td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.count }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'cases_by_patient_type' in results %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Cases by Patient Type</div>
-        <table>
-          <thead><tr><th>Type</th><th>Cases</th></tr></thead>
-          <tbody>
-            {% with t=results.cases_by_patient_type %}
-            <tr><td><span class="badge badge-student">Students</span></td><td style="font-weight:700;color:var(--primary);">{{ t.students }}</td></tr>
-            <tr><td><span class="badge badge-staff">Staff</span></td><td style="font-weight:700;color:var(--primary);">{{ t.staff }}</td></tr>
-            <tr><td><span class="badge badge-instructor">Instructors</span></td><td style="font-weight:700;color:var(--primary);">{{ t.instructors }}</td></tr>
-            {% endwith %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'urgency_breakdown' in results and results.urgency_breakdown %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Urgency Breakdown (Triage)</div>
-        <table>
-          <thead><tr><th>Urgency</th><th>Count</th></tr></thead>
-          <tbody>
-            {% for row in results.urgency_breakdown %}
-            <tr>
-              <td style="font-weight:500;text-transform:capitalize;">{{ row.urgency }}</td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.count }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
-    {% if 'medicine_dispensed' in results and results.medicine_dispensed %}
-    <div>
-      <div class="data-card">
-        <div class="data-card-title">Medicine Dispensing Summary</div>
-        <table>
-          <thead><tr><th>Medicine</th><th>Unit</th><th>Total Dispensed</th></tr></thead>
-          <tbody>
-            {% for row in results.medicine_dispensed %}
-            <tr>
-              <td style="font-size:13px;">{{ row.medicine__name }}</td>
-              <td style="font-size:12px;color:#94a3b8;">{{ row.medicine__unit }}</td>
-              <td style="font-weight:700;color:var(--primary);">{{ row.total_dispensed }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {% endif %}
-
-  </div>{# /result-grid #}
-
-  <!-- Trend over time (full-width) -->
-  {% if 'trend' in results %}
-  <div class="data-card" style="margin-top:4px;">
-    <div class="data-card-title">Trend Over Time</div>
-    {% if results.trend %}
-    <div style="padding:20px 24px 0;">
-      <div class="trend-bar-wrap" id="builder-trend">
-        {% for point in results.trend %}
-        <div class="trend-bar-col" title="{{ point.label }}: {{ point.count }}">
-          <div style="font-size:9px;color:#94a3b8;min-height:14px;text-align:center;">
-            {% if point.count %}{{ point.count }}{% endif %}
-          </div>
-          <div class="trend-bar" style="height:4px;flex:none;"></div>
-          <div class="trend-label">{{ point.label }}</div>
+          </select>
         </div>
+        <div>
+          <label class="form-label">Diagnosis keyword</label>
+          <input type="text" name="keyword" value="{{ keyword }}" class="form-input" placeholder="e.g. fever, UTI">
+        </div>
+        <div>
+          <label class="form-label">Group results by</label>
+          <select name="grouping" class="form-select">
+            <option value="date"      {% if grouping == 'date' %}selected{% endif %}>Date</option>
+            <option value="college"   {% if grouping == 'college' %}selected{% endif %}>College</option>
+            <option value="diagnosis" {% if grouping == 'diagnosis' %}selected{% endif %}>Diagnosis</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {# Trend granularity #}
+    <div style="margin-bottom:24px;">
+      <div class="sec-heading">Trend Granularity</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% for val, label in period_choices %}
+        <label class="radio-tab">
+          <input type="radio" name="period" value="{{ val }}" {% if period == val %}checked{% endif %}>
+          {{ label }}
+        </label>
         {% endfor %}
       </div>
     </div>
-    <table style="border-collapse:collapse;width:100%;">
-      <thead>
-        <tr>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Period</th>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Consultations</th>
-        </tr>
-      </thead>
+
+    {# Metrics #}
+    <div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="sec-heading" style="margin-bottom:0;">Metrics to Include</div>
+        <div style="display:flex;gap:10px;">
+          <button type="button" onclick="checkAll(true)" style="font-size:11px;color:#0078d4;background:none;border:none;cursor:pointer;font-weight:600;padding:0;">Select all</button>
+          <button type="button" onclick="checkAll(false)" style="font-size:11px;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">Clear all</button>
+        </div>
+      </div>
+      <div class="metrics-grid">
+        {% for value, label in all_metrics %}
+        <label class="metric-checkbox">
+          <input type="checkbox" name="metrics" value="{{ value }}"
+                 {% if value in metrics %}checked{% endif %}>
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn-primary">Generate Report</button>
+      {% if has_query %}
+      <a href="{% url 'reports:report_builder' %}" class="btn-ghost">Reset</a>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+
+{# ── Results ── #}
+{% if results %}
+
+{# Export bar #}
+<div class="export-bar">
+  <span class="export-label">Export:</span>
+  <a href="?{{ export_params }}&export=csv"   class="btn-ghost btn-sm">CSV</a>
+  <a href="?{{ export_params }}&export=excel" class="btn-ghost btn-sm">Excel</a>
+  <a href="?{{ export_params }}&export=pdf"   class="btn-ghost btn-sm">PDF</a>
+  <span style="font-size:12px;color:#16a34a;margin-left:4px;">
+    {{ results.date_from|date:"M d, Y" }} — {{ results.date_to|date:"M d, Y" }}
+  </span>
+</div>
+
+{# Summary numbers #}
+{% if 'total_consultations' in results or 'total_patients' in results or 'completion_rate' in results or 'avg_per_day' in results %}
+<div class="sec-heading">Summary</div>
+<div class="stat-grid">
+  {% if 'total_consultations' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#0078d4;">{{ results.total_consultations }}</div><div class="stat-label">Total Consultations</div></div>
+  {% endif %}
+  {% if 'total_patients' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#3b82f6;">{{ results.total_patients }}</div><div class="stat-label">Unique Patients</div></div>
+  {% endif %}
+  {% if 'completion_rate' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#10b981;">{{ results.completion_rate }}%</div><div class="stat-label">Completion Rate</div></div>
+  {% endif %}
+  {% if 'cancellation_rate' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#ef4444;">{{ results.cancellation_rate }}%</div><div class="stat-label">Cancellation Rate</div></div>
+  {% endif %}
+  {% if 'avg_per_day' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#8b5cf6;">{{ results.avg_per_day }}</div><div class="stat-label">Avg / Day</div></div>
+  {% endif %}
+  {% if 'new_patients' in results %}
+  <div class="stat-card"><div class="stat-value" style="color:#f97316;">{{ results.new_patients }}</div><div class="stat-label">New Patients</div></div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# Repeat patients #}
+{% if 'repeat_patients' in results %}
+<div class="panel">
+  <div class="panel-header">Repeat vs. New Patient Ratio</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding:18px;">
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:#3b82f6;">{{ results.repeat_patients.new }}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">New (1 visit)</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:#0078d4;">{{ results.repeat_patients.repeat }}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Visitors</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:#8b5cf6;">{{ results.repeat_patients.repeat_pct }}%</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Rate</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# 2-column results #}
+<div class="result-grid">
+
+  {% if 'top_diagnoses' in results %}
+  <div class="panel">
+    <div class="panel-header">Top Diagnoses</div>
+    {% if results.top_diagnoses %}
+    <table>
+      <thead><tr><th>#</th><th>Diagnosis</th><th>Cases</th></tr></thead>
       <tbody>
-        {% for point in results.trend %}
+        {% for row in results.top_diagnoses %}
         <tr>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-size:13px;">{{ point.label }}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-weight:{% if point.count %}600{% else %}400{% endif %};color:{% if point.count %}var(--primary){% else %}#d1d5db{% endif %};">{{ point.count|default:"0" }}</td>
+          <td><span class="rank-chip">{{ forloop.counter }}</span></td>
+          <td>{{ row.diagnosis|truncatechars:55 }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% else %}
-    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No trend data for this period.</p>
+    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No diagnosis data.</p>
     {% endif %}
   </div>
   {% endif %}
 
-  <!-- Grouped summary -->
-  {% if results.grouped %}
-  <div class="data-card" style="margin-top:20px;">
-    <div class="data-card-title">Grouped Summary — by {{ results.grouping|capfirst }}</div>
-    <table style="border-collapse:collapse;width:100%;">
-      <thead>
-        <tr>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">{{ results.grouping|capfirst }}</th>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Consultations</th>
-        </tr>
-      </thead>
+  {% if 'top_medicines' in results %}
+  <div class="panel">
+    <div class="panel-header">Most Prescribed Medicines</div>
+    {% if results.top_medicines %}
+    <table>
+      <thead><tr><th>#</th><th>Medicine</th><th>Prescriptions</th></tr></thead>
       <tbody>
-        {% for row in results.grouped %}
+        {% for row in results.top_medicines %}
         <tr>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-size:13px;">
-            {% if results.grouping == 'college' %}{{ row.patient__college__abbreviation|default:"—" }}
-            {% elif results.grouping == 'diagnosis' %}{{ row.prescription__diagnosis|truncatechars:70|default:"—" }}
-            {% endif %}
+          <td><span class="rank-chip">{{ forloop.counter }}</span></td>
+          <td>{{ row.medicine_name }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No prescription data.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if 'cases_per_college' in results %}
+  <div class="panel">
+    <div class="panel-header">Cases per College</div>
+    {% if results.cases_per_college %}
+    <table>
+      <thead><tr><th>Code</th><th>College</th><th>Cases</th></tr></thead>
+      <tbody>
+        {% for row in results.cases_per_college %}
+        <tr>
+          <td style="font-weight:700;">{{ row.patient__college__abbreviation }}</td>
+          <td style="font-size:12px;color:#6b7280;">{{ row.patient__college__name }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No college data.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if 'cases_by_sex' in results %}
+  <div class="panel">
+    <div class="panel-header">Cases by Sex</div>
+    <table>
+      <thead><tr><th>Sex</th><th>Cases</th></tr></thead>
+      <tbody>
+        {% for row in results.cases_by_sex %}
+        <tr>
+          <td style="font-weight:500;">
+            {% if row.patient__sex == 'M' %}Male
+            {% elif row.patient__sex == 'F' %}Female
+            {% else %}Unknown{% endif %}
           </td>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-weight:600;color:var(--primary);">{{ row.count }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -553,24 +537,32 @@
   </div>
   {% endif %}
 
-  <!-- Low stock -->
-  {% if 'low_stock' in results and results.low_stock %}
-  <div class="data-card" style="margin-top:20px;">
-    <div class="data-card-title">⚠ Low Stock Medicines</div>
-    <table style="border-collapse:collapse;width:100%;">
-      <thead>
-        <tr>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Medicine</th>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Stock</th>
-          <th style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding:12px 16px;border-bottom:1px solid #e8ecf1;text-align:left;background:#fff;">Threshold</th>
-        </tr>
-      </thead>
+  {% if 'cases_by_patient_type' in results %}
+  <div class="panel">
+    <div class="panel-header">Cases by Patient Type</div>
+    <table>
+      <thead><tr><th>Type</th><th>Cases</th></tr></thead>
       <tbody>
-        {% for row in results.low_stock %}
+        {% with t=results.cases_by_patient_type %}
+        <tr><td><span class="badge badge-student">Students</span></td><td style="font-weight:700;color:#0078d4;">{{ t.students }}</td></tr>
+        <tr><td><span class="badge badge-staff">Staff</span></td><td style="font-weight:700;color:#0078d4;">{{ t.staff }}</td></tr>
+        <tr><td><span class="badge badge-instructor">Instructors</span></td><td style="font-weight:700;color:#0078d4;">{{ t.instructors }}</td></tr>
+        {% endwith %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if 'urgency_breakdown' in results and results.urgency_breakdown %}
+  <div class="panel">
+    <div class="panel-header">Urgency Breakdown (Triage)</div>
+    <table>
+      <thead><tr><th>Urgency</th><th>Count</th></tr></thead>
+      <tbody>
+        {% for row in results.urgency_breakdown %}
         <tr>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-size:13px;font-weight:500;">{{ row.name }}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-weight:700;color:#ef4444;">{{ row.quantity }}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid #f0f2f5;font-size:12px;color:#94a3b8;">{{ row.low_stock_threshold }}</td>
+          <td style="font-weight:500;text-transform:capitalize;">{{ row.urgency }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -578,16 +570,112 @@
   </div>
   {% endif %}
 
-  {% elif not has_query %}
-  <div class="empty-state">
-    <div style="font-size:52px;margin-bottom:16px;">🛠</div>
-    <p style="font-weight:700;font-size:16px;color:#1a1a2e;margin-bottom:6px;">Set a date range to get started</p>
-    <p style="color:#9ca3af;font-size:13px;">Select a start and end date above, choose your metrics, and click Generate Report.</p>
+  {% if 'medicine_dispensed' in results and results.medicine_dispensed %}
+  <div class="panel">
+    <div class="panel-header">Medicine Dispensing Summary</div>
+    <table>
+      <thead><tr><th>Medicine</th><th>Unit</th><th>Total Dispensed</th></tr></thead>
+      <tbody>
+        {% for row in results.medicine_dispensed %}
+        <tr>
+          <td>{{ row.medicine__name }}</td>
+          <td style="font-size:12px;color:#94a3b8;">{{ row.medicine__unit }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.total_dispensed }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
   {% endif %}
 
+</div>{# /result-grid #}
+
+{# Trend (full-width) #}
+{% if 'trend' in results %}
+<div class="panel">
+  <div class="panel-header">Trend Over Time</div>
+  {% if results.trend %}
+  <div style="padding:20px 20px 0;">
+    <div class="trend-bar-wrap" id="builder-trend">
+      {% for point in results.trend %}
+      <div class="trend-bar-col" title="{{ point.label }}: {{ point.count }}">
+        <div style="font-size:9px;color:#94a3b8;min-height:14px;text-align:center;">{% if point.count %}{{ point.count }}{% endif %}</div>
+        <div class="trend-bar" style="height:4px;flex:none;"></div>
+        <div class="trend-label">{{ point.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Period</th><th>Consultations</th></tr></thead>
+    <tbody>
+      {% for point in results.trend %}
+      <tr>
+        <td>{{ point.label }}</td>
+        <td style="font-weight:{% if point.count %}600{% else %}400{% endif %};color:{% if point.count %}#0078d4{% else %}#d1d5db{% endif %};">{{ point.count|default:"0" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No trend data for this period.</p>
+  {% endif %}
 </div>
+{% endif %}
+
+{# Grouped summary #}
+{% if results.grouped %}
+<div class="panel" style="margin-top:4px;">
+  <div class="panel-header">Grouped Summary — by {{ results.grouping|capfirst }}</div>
+  <table>
+    <thead><tr><th>{{ results.grouping|capfirst }}</th><th>Consultations</th></tr></thead>
+    <tbody>
+      {% for row in results.grouped %}
+      <tr>
+        <td>
+          {% if results.grouping == 'college' %}{{ row.patient__college__abbreviation|default:"—" }}
+          {% elif results.grouping == 'diagnosis' %}{{ row.prescription__diagnosis|truncatechars:70|default:"—" }}
+          {% endif %}
+        </td>
+        <td style="font-weight:600;color:#0078d4;">{{ row.count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+{% endif %}
+
+{# Low stock #}
+{% if 'low_stock' in results and results.low_stock %}
+<div class="panel" style="margin-top:20px;">
+  <div class="panel-header">Low Stock Medicines</div>
+  <table>
+    <thead><tr><th>Medicine</th><th>Stock</th><th>Threshold</th></tr></thead>
+    <tbody>
+      {% for row in results.low_stock %}
+      <tr>
+        <td style="font-weight:500;">{{ row.name }}</td>
+        <td style="font-weight:700;color:#ef4444;">{{ row.quantity }}</td>
+        <td style="font-size:12px;color:#94a3b8;">{{ row.low_stock_threshold }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% elif not has_query %}
+<div class="empty-state">
+  <svg width="48" height="48" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 16px;display:block;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  <p style="font-weight:700;font-size:15px;color:#1a1a2e;margin-bottom:6px;">Set a date range to get started</p>
+  <p style="color:#9ca3af;font-size:13px;margin:0;">Select a start and end date above, choose your metrics, and click Generate Report.</p>
+</div>
+{% endif %}
+
+<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:28px;">
+  Negros Oriental State University — Medical Dental Clinic
+</p>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -595,9 +683,7 @@
 function checkAll(val) {
   document.querySelectorAll('input[name="metrics"]').forEach(cb => cb.checked = val);
 }
-
 document.addEventListener('DOMContentLoaded', function () {
-  // Scale builder trend bars
   const cols = document.querySelectorAll('#builder-trend .trend-bar-col');
   if (!cols.length) return;
   const counts = Array.from(cols).map(col => {
@@ -611,6 +697,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (bar) {
       const pct = Math.max((counts[i] / max) * 100, counts[i] > 0 ? 4 : 2);
       bar.style.height = pct + '%';
+      bar.style.flex   = 'none';
     }
   });
 });

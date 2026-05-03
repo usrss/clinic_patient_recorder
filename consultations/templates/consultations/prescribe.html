@@ -1,116 +1,71 @@
-{% extends 'core/base.html' %}
+{% extends base_template %}
 {% block title %}Prescribe — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block page_title %}Prescribe{% endblock %}
+{% block page_subtitle %}Consultation #{{ consultation.pk }}{% endblock %}
 
 {% block extra_css %}
 <style>
-  .prescribe-page {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
-    padding: 32px 16px 48px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
   .prescribe-wrap { width: 100%; max-width: 820px; }
 
-  .card-wrap {
+  .card-panel {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    padding: 24px 28px;
     margin-bottom: 16px;
   }
 
   .sec-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: .6px;
-    margin: 0 0 16px;
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px;
   }
   .sec-label-gap { margin-top: 24px; }
 
   .form-group { margin-bottom: 16px; }
-  .form-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 5px;
-  }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
   .form-group label .req { color: #ef4444; margin-left: 2px; }
 
   .reg-input {
-    width: 100%;
-    padding: 10px 13px;
-    border: 1.5px solid #e1e5eb;
-    border-radius: 10px;
-    font-size: 14px;
-    color: #1a1a2e;
-    background: #fafbfc;
-    transition: all .2s;
-    outline: none;
-    box-sizing: border-box;
+    width: 100%; padding: 10px 13px; border: 1.5px solid #e1e5eb;
+    border-radius: 10px; font-size: 14px; color: #1a1a2e;
+    background: #fafbfc; transition: all 0.2s; outline: none; box-sizing: border-box;
   }
-  .reg-input:focus {
-    border-color: #0078d4;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,120,212,.08);
-  }
-  textarea.reg-input { resize: vertical; min-height: 70px; }
+  .reg-input:focus { border-color: #0078d4; background: #fff; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+  textarea.reg-input { resize: vertical; min-height: 70px; font-family: 'Inter', sans-serif; }
   select.reg-input { appearance: none; cursor: pointer; }
 
   .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
 
   .btn-row { display: flex; gap: 10px; margin-top: 24px; align-items: center; }
   .btn-primary-custom {
-    flex: 1;
-    padding: 12px;
-    background: #0078d4;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .2s;
-    box-shadow: 0 2px 8px rgba(0,120,212,.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    flex: 1; padding: 12px; background: #0078d4; color: #fff;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .btn-primary-custom:hover { background: #006bbf; }
   .btn-ghost {
-    padding: 12px 20px;
-    background: #fff;
-    color: #4b5563;
-    border: 1px solid #e8ecf1;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    padding: 12px 20px; background: #fff; color: #4b5563;
+    border: 1px solid #e8ecf1; border-radius: 10px; font-size: 14px;
+    font-weight: 500; cursor: pointer; text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
   }
   .btn-ghost:hover { background: #f9fafb; }
 
   .vitals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
   .vital-box {
-    background: #f0f9f5;
-    border-radius: 10px;
-    padding: 12px 8px;
-    text-align: center;
-    border: 1px solid #d1fae5;
+    background: #f0fdf4; border-radius: 10px; padding: 12px 8px;
+    text-align: center; border: 1px solid #d1fae5;
   }
-  .vital-value { font-size: 16px; font-weight: 700; color: #065f46; }
-  .vital-label { font-size: 10px; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: .3px; }
+  .vital-val { font-size: 16px; font-weight: 700; color: #065f46; }
+  .vital-lbl { font-size: 10px; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
 
-  .alert { margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; }
+  .alert {
+    margin-bottom: 16px; padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+  }
   .alert-warning { background: #fff8e1; color: #92400e; border: 1px solid #fed7aa; }
   .alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
   .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
@@ -119,10 +74,10 @@
   .badge-pill {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
-    background: #eff6ff; color: #0078d4;
   }
-  .badge-red { background: #fef2f2; color: #991b1b; }
-  .badge-green { background: #f0fdf4; color: #065f46; }
+  .badge-blue { background: #eff6ff; color: #0078d4; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
 
   .profile-tag {
     display: inline-flex; align-items: center; gap: 4px;
@@ -133,19 +88,14 @@
   .tag-allergy { background: #fef2f2; color: #dc2626; font-weight: 600; }
 
   .medicine-row {
-    background: #f8fafb;
-    border: 1px solid #e8ecf1;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    position: relative;
+    background: #f8fafb; border: 1px solid #e8ecf1;
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; position: relative;
   }
   .medicine-row:last-child { margin-bottom: 0; }
   .remove-row-btn {
     position: absolute; top: 10px; right: 12px;
     background: none; border: none; cursor: pointer;
-    color: #ef4444; font-size: 16px; padding: 2px 6px;
-    border-radius: 4px; line-height: 1;
+    color: #ef4444; font-size: 16px; padding: 2px 6px; border-radius: 4px; line-height: 1;
   }
   .remove-row-btn:hover { background: #fee2e2; }
   #add-medicine-btn {
@@ -153,86 +103,73 @@
     padding: 8px 16px; border-radius: 10px;
     border: 1px dashed #0078d4; background: transparent;
     color: #0078d4; cursor: pointer; font-size: 13px;
-    font-family: inherit; margin-top: 10px;
-    transition: background 0.15s;
+    font-family: inherit; margin-top: 10px; transition: background 0.15s;
   }
   #add-medicine-btn:hover { background: #eff6ff; }
   .medicine-row-grid {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr;
-    gap: 10px;
-    padding-right: 32px;
+    gap: 10px; padding-right: 32px;
   }
-  @media (max-width: 700px) {
-    .medicine-row-grid { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 700px) { .medicine-row-grid { grid-template-columns: 1fr 1fr; } }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
   }
+  .info-label {
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .info-value { font-size: 14px; font-weight: 500; color: #374151; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="prescribe-page">
 <div class="prescribe-wrap">
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
-    <a href="{% url 'consultations:doctor_list' %}" class="btn-ghost" style="padding:8px 14px;font-size:13px;">← Back</a>
-    <div>
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">
-        Consultation #{{ consultation.pk }}
-      </h1>
-      {% if consultation.status == 'triaged' %}
-        <span class="badge-pill" style="background:#fef3c7;color:#92400e;">🩺 Awaiting Prescription</span>
-      {% elif consultation.status == 'completed' %}
-        <span class="badge-pill badge-green">✅ Completed</span>
-      {% endif %}
-    </div>
-  </div>
 
   <!-- Messages -->
   {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
+    {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
   {% endif %}
 
   <!-- Patient Summary -->
-  <div class="card-wrap">
+  <div class="card-panel">
     <div class="sec-label">Patient</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;font-size:14px;">
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Name</div><div style="font-weight:700;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div></div>
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">ID</div><div style="color:#374151;">{{ consultation.patient.patient_id }}</div></div>
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">College</div><div style="color:#374151;">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div></div>
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Age / Sex</div><div style="color:#374151;">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %} / {{ consultation.patient.get_sex_display }}</div></div>
+    <div class="info-grid">
+      <div><div class="info-label">Name</div><div class="info-value" style="font-weight:700;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div></div>
+      <div><div class="info-label">Patient ID</div><div class="info-value">{{ consultation.patient.patient_id }}</div></div>
+      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div></div>
+      <div><div class="info-label">Age / Sex</div><div class="info-value">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %} / {{ consultation.patient.get_sex_display }}</div></div>
     </div>
   </div>
 
   <!-- Symptoms -->
-  <div class="card-wrap">
+  <div class="card-panel">
     <div class="sec-label">Symptoms & History</div>
     <div style="display:grid;gap:12px;font-size:14px;">
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Symptoms</div><div style="color:#374151;">{{ consultation.symptoms }}</div></div>
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Severity</div><div style="color:#374151;">{{ consultation.severity_description }}</div></div>
-      {% if consultation.medical_history %}
-      <div><div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Medical History</div><div style="color:#374151;">{{ consultation.medical_history }}</div></div>
-      {% endif %}
+      <div><div class="info-label">Symptoms</div><div style="color:#374151;">{{ consultation.symptoms }}</div></div>
+      <div><div class="info-label">Severity</div><div style="color:#374151;">{{ consultation.severity_description }}</div></div>
+      {% if consultation.medical_history %}<div><div class="info-label">Medical History</div><div style="color:#374151;">{{ consultation.medical_history }}</div></div>{% endif %}
     </div>
   </div>
 
   <!-- Patient Medical Profile -->
   {% with profile=consultation.patient.profile %}
   {% if profile %}
-  <div class="card-wrap" style="background:#fff8f5;">
-    <div class="sec-label">📋 Patient Medical Profile</div>
+  <div class="card-panel" style="background:#fff8f5;">
+    <div class="sec-label">Patient Medical Profile</div>
     {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis and not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
-    <div class="alert alert-warning">⚠ No medical history recorded.</div>
+    <div class="alert alert-warning">No medical history recorded for this patient.</div>
     {% endif %}
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:12px;">
-      {% if profile.blood_type %}<span class="badge-pill">{{ profile.blood_type }}</span>{% endif %}
-      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy">⚠ {{ profile.known_allergies }}</span>{% endif %}
-      {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">💊 {{ profile.current_medications }}</span>{% endif %}
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+      {% if profile.blood_type %}<span class="badge-pill badge-blue">{{ profile.blood_type }}</span>{% endif %}
+      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy">{{ profile.known_allergies }}</span>{% endif %}
+      {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">{{ profile.current_medications }}</span>{% endif %}
     </div>
     <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Medical History</div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;font-size:11px;">
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
       {% if profile.hypertension %}<span class="profile-tag tag-history">Hypertension</span>{% endif %}
       {% if profile.diabetes %}<span class="profile-tag tag-history">Diabetes</span>{% endif %}
       {% if profile.asthma %}<span class="profile-tag tag-history">Asthma</span>{% endif %}
@@ -241,7 +178,7 @@
       {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}<span style="color:#94a3b8;">None</span>{% endif %}
     </div>
     <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Immunization</div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;font-size:11px;">
+    <div style="display:flex;flex-wrap:wrap;gap:4px;">
       {% if profile.bcg %}<span class="profile-tag tag-immunization">BCG</span>{% endif %}
       {% if profile.dpt %}<span class="profile-tag tag-immunization">DPT</span>{% endif %}
       {% if profile.opv %}<span class="profile-tag tag-immunization">OPV</span>{% endif %}
@@ -257,16 +194,16 @@
   <!-- Triage Vitals -->
   {% with t=consultation.triage %}
   {% if t %}
-  <div class="card-wrap">
-    <div class="sec-label">🩺 Triage Vitals</div>
+  <div class="card-panel">
+    <div class="sec-label">Triage Vitals</div>
     <div class="vitals-grid">
-      <div class="vital-box"><div class="vital-value">{{ t.blood_pressure }}</div><div class="vital-label">BP</div></div>
-      <div class="vital-box"><div class="vital-value">{{ t.temperature }}°C</div><div class="vital-label">Temp</div></div>
-      <div class="vital-box"><div class="vital-value">{{ t.pulse_rate }} bpm</div><div class="vital-label">Pulse</div></div>
-      <div class="vital-box"><div class="vital-value">{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</div><div class="vital-label">RR</div></div>
-      <div class="vital-box"><div class="vital-value">{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}</div><div class="vital-label">SpO₂</div></div>
-      <div class="vital-box"><div class="vital-value">{% if t.weight is not None %}{{ t.weight }}{% else %}—{% endif %}</div><div class="vital-label">Wt</div></div>
-      <div class="vital-box"><div class="vital-value">{% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>{% elif t.urgency == 'medium' %}<span style="color:#f97316;">Med</span>{% else %}<span style="color:#10b981;">Low</span>{% endif %}</div><div class="vital-label">Urgency</div></div>
+      <div class="vital-box"><div class="vital-val">{{ t.blood_pressure }}</div><div class="vital-lbl">BP</div></div>
+      <div class="vital-box"><div class="vital-val">{{ t.temperature }}°C</div><div class="vital-lbl">Temp</div></div>
+      <div class="vital-box"><div class="vital-val">{{ t.pulse_rate }} bpm</div><div class="vital-lbl">Pulse</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</div><div class="vital-lbl">RR</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}</div><div class="vital-lbl">SpO₂</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.weight is not None %}{{ t.weight }}{% else %}—{% endif %}</div><div class="vital-lbl">Wt</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>{% elif t.urgency == 'medium' %}<span style="color:#f97316;">Med</span>{% else %}<span style="color:#10b981;">Low</span>{% endif %}</div><div class="vital-lbl">Urgency</div></div>
     </div>
     {% if t.notes %}<p style="font-size:12px;color:#64748b;margin-top:12px;">Notes: {{ t.notes }}</p>{% endif %}
   </div>
@@ -274,20 +211,18 @@
   {% endwith %}
 
   <!-- Prescription Form -->
-  <div class="card-wrap">
+  <div class="card-panel">
     <form method="post" novalidate id="prescription-form">
       {% csrf_token %}
 
-      <div class="sec-label">👨‍⚕️ Diagnosis & Treatment</div>
+      <div class="sec-label">Diagnosis & Treatment</div>
 
       {% if common_diagnoses %}
       <div class="form-group">
         <label>Common Diagnosis</label>
         <select name="diagnosis_select" class="reg-input">
           <option value="">— Select or type below —</option>
-          {% for d in common_diagnoses %}
-          <option value="{{ d.pk }}">{{ d.name }}</option>
-          {% endfor %}
+          {% for d in common_diagnoses %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}
         </select>
       </div>
       {% endif %}
@@ -298,26 +233,68 @@
         {% if prescription_form.diagnosis.errors %}<div class="form-error">{{ prescription_form.diagnosis.errors.0 }}</div>{% endif %}
       </div>
       <div class="form-group">
-        <label>Treatment Plan <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+        <label>Treatment Plan</label>
         {{ prescription_form.treatment_plan }}
-        {% if prescription_form.treatment_plan.errors %}<div class="form-error">{{ prescription_form.treatment_plan.errors.0 }}</div>{% endif %}
       </div>
 
       {% if inventory_medicines %}
-      <div class="sec-label sec-label-gap">💊 Medicines Prescribed</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 16px;">At least one medicine is required.</p>
+      <div class="sec-label sec-label-gap">Medicines Prescribed</div>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 16px;">Select medicine from inventory. All fields required.</p>
       {{ formset.management_form }}
       <div id="medicine-rows">
         {% for item_form in formset %}
         <div class="medicine-row">
           <button type="button" class="remove-row-btn" onclick="removeRow(this)">✕</button>
           <div class="medicine-row-grid">
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Medicine *</label>{{ item_form.medicine }}{% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}</div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Dosage *</label>{{ item_form.dosage }}{% if item_form.dosage.errors %}<div class="form-error">{{ item_form.dosage.errors.0 }}</div>{% endif %}</div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Freq *</label>{{ item_form.frequency }}{% if item_form.frequency.errors %}<div class="form-error">{{ item_form.frequency.errors.0 }}</div>{% endif %}</div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Duration *</label>{{ item_form.duration }}{% if item_form.duration.errors %}<div class="form-error">{{ item_form.duration.errors.0 }}</div>{% endif %}</div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Qty *</label>{{ item_form.quantity }}{% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}</div>
-            <div class="form-group" style="margin-bottom:0;"><label style="font-size:11px;">Instructions</label>{{ item_form.instructions }}</div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Medicine *</label>
+              {{ item_form.medicine }}
+              {% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Dosage *</label>
+              <select name="{{ item_form.dosage.html_name }}" class="reg-input">
+                <option value="">—</option>
+                <option>500mg</option><option>250mg</option><option>100mg</option>
+                <option>50mg</option><option>10mg</option><option>5mg</option>
+                <option>10ml</option><option>5ml</option>
+              </select>
+              {% if item_form.dosage.errors %}<div class="form-error">{{ item_form.dosage.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Freq *</label>
+              <select name="{{ item_form.frequency.html_name }}" class="reg-input">
+                <option value="">—</option>
+                <option>Once daily</option><option>2x a day</option><option>3x a day</option>
+                <option>4x a day</option><option>Every 4 hours</option>
+                <option>Every 6 hours</option><option>Every 8 hours</option>
+                <option>As needed</option>
+              </select>
+              {% if item_form.frequency.errors %}<div class="form-error">{{ item_form.frequency.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Duration *</label>
+              <select name="{{ item_form.duration.html_name }}" class="reg-input">
+                <option value="">—</option>
+                <option>3 days</option><option>5 days</option><option>7 days</option>
+                <option>10 days</option><option>14 days</option><option>1 month</option>
+              </select>
+              {% if item_form.duration.errors %}<div class="form-error">{{ item_form.duration.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Qty *</label>
+              {{ item_form.quantity }}
+              {% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label style="font-size:11px;">Instructions</label>
+              <select name="{{ item_form.instructions.html_name }}" class="reg-input">
+                <option value="">—</option>
+                <option>Take after meals</option><option>Take before meals</option>
+                <option>Take on empty stomach</option><option>Take with food</option>
+                <option>As directed</option>
+              </select>
+            </div>
           </div>
           {% if item_form.non_field_errors %}<div class="form-error" style="margin-top:6px;">{% for error in item_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
         </div>
@@ -326,7 +303,6 @@
       <button type="button" id="add-medicine-btn">+ Add Medicine</button>
       {% else %}
       <div class="alert alert-info" style="text-align:center;padding:24px;">
-        <div style="font-size:32px;margin-bottom:8px;">📦</div>
         <p style="font-weight:600;margin-bottom:4px;">No medicines in inventory</p>
         <p style="font-size:12px;color:#64748b;margin:0;">You can complete this consultation without medicine.</p>
       </div>
@@ -335,25 +311,23 @@
       {% if prescription_form.non_field_errors %}<div class="alert alert-error">{% for error in prescription_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
 
       <div class="btn-row">
-        <button type="submit" class="btn-primary-custom">💾 Save & Complete</button>
+        <button type="submit" class="btn-primary-custom">Save & Complete</button>
         <a href="{% url 'consultations:doctor_list' %}" class="btn-ghost">Cancel</a>
       </div>
     </form>
   </div>
-</div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Diagnosis dropdown → fill textarea
 document.querySelector('[name="diagnosis_select"]')?.addEventListener('change', function() {
   if (this.value) {
     document.querySelector('[name="diagnosis"]').value = this.options[this.selectedIndex].text;
   }
 });
 
-// Medicine rows
 (function () {
   const container = document.getElementById('medicine-rows');
   const totalForms = document.querySelector('[name="meds-TOTAL_FORMS"]');
@@ -365,11 +339,11 @@ document.querySelector('[name="diagnosis_select"]')?.addEventListener('change', 
     row.className = 'medicine-row';
     row.innerHTML = '<button type="button" class="remove-row-btn" onclick="removeRow(this)">✕</button><div class="medicine-row-grid">'
       + '<div><label style="font-size:11px;">Medicine *</label><select name="' + prefix + '-' + index + '-medicine" class="reg-input"><option value="">— Select —</option>{% for med in inventory_medicines %}<option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }})</option>{% endfor %}</select></div>'
-      + '<div><label style="font-size:11px;">Dosage *</label><input type="text" name="' + prefix + '-' + index + '-dosage" class="reg-input" placeholder="e.g. 500mg"></div>'
-      + '<div><label style="font-size:11px;">Freq *</label><input type="text" name="' + prefix + '-' + index + '-frequency" class="reg-input" placeholder="e.g. 3x/day"></div>'
-      + '<div><label style="font-size:11px;">Duration *</label><input type="text" name="' + prefix + '-' + index + '-duration" class="reg-input" placeholder="e.g. 7 days"></div>'
+      + '<div><label style="font-size:11px;">Dosage *</label><select name="' + prefix + '-' + index + '-dosage" class="reg-input"><option value="">—</option><option>500mg</option><option>250mg</option><option>100mg</option><option>50mg</option><option>10mg</option><option>5mg</option><option>10ml</option><option>5ml</option></select></div>'
+      + '<div><label style="font-size:11px;">Freq *</label><select name="' + prefix + '-' + index + '-frequency" class="reg-input"><option value="">—</option><option>Once daily</option><option>2x a day</option><option>3x a day</option><option>4x a day</option><option>Every 4 hours</option><option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option></select></div>'
+      + '<div><label style="font-size:11px;">Duration *</label><select name="' + prefix + '-' + index + '-duration" class="reg-input"><option value="">—</option><option>3 days</option><option>5 days</option><option>7 days</option><option>10 days</option><option>14 days</option><option>1 month</option></select></div>'
       + '<div><label style="font-size:11px;">Qty *</label><input type="number" name="' + prefix + '-' + index + '-quantity" class="reg-input" min="1" placeholder="Units"></div>'
-      + '<div><label style="font-size:11px;">Instructions</label><input type="text" name="' + prefix + '-' + index + '-instructions" class="reg-input" placeholder="e.g. After meals"></div>'
+      + '<div><label style="font-size:11px;">Instructions</label><select name="' + prefix + '-' + index + '-instructions" class="reg-input"><option value="">—</option><option>Take after meals</option><option>Take before meals</option><option>Take on empty stomach</option><option>Take with food</option><option>As directed</option></select></div>'
       + '</div>';
     return row;
   }

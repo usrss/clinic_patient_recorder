@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
@@ -8,11 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
 from django.conf import settings
-from django.urls import reverse
 import random
-import datetime
-
-from colleges.models import College
 from patients.models import Patient, PatientProfile
 from .models import User
 from .forms import (
@@ -20,11 +16,18 @@ from .forms import (
     StaffPasswordChangeForm, PatientProfileEditForm, UserProfileForm,
     PasswordResetRequestForm, PasswordResetForm, RegistrationForm,
 )
+from consultations.models import Consultation
 from .decorators import admin_required
 
 MAX_FAILED_ATTEMPTS = 5
-LOCKOUT_DURATION = timedelta(minutes=5)
+LOCKOUT_DURATION = timedelta(minutes=2)
 
+
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -329,7 +332,17 @@ def dashboard(request):
             messages.error(request, 'Patient record not found.')
             logout(request)
             return redirect('accounts:login')
-        return render(request, 'patients/patient_dashboard.html', {'patient': patient})
+
+        # Check for unreviewed completed consultations
+        unreviewed = Consultation.objects.filter(
+            patient=patient,
+            status=Consultation.Status.COMPLETED,
+        ).exclude(feedback__isnull=False).first()
+
+        return render(request, 'patients/patient_dashboard.html', {
+            'patient': patient,
+            'unreviewed_consultation': unreviewed,
+        })
 
     role_template_map = {
         User.Role.NURSE: 'accounts/dashboard_nurse.html',
@@ -341,7 +354,7 @@ def dashboard(request):
         return render(request, role_template_map[user.role], {'user': user})
 
     if user.role == User.Role.ADMIN:
-        from consultations.models import Consultation
+
         context = {
             'user': user,
             'total_staff': User.objects.exclude(role=User.Role.PATIENT).count(),
@@ -472,7 +485,18 @@ def profile_settings(request):
             info_form = UserProfileForm(instance=user)
         password_form = StaffPasswordChangeForm(user)
 
-    return render(request, 'accounts/profile_settings.html', {
-        'info_form': info_form,
-        'password_form': password_form,
-    })
+    if user.role == User.Role.PATIENT:
+        template = 'accounts/profile_settings_patient.html'
+        context = {
+            'info_form': info_form,
+            'password_form': password_form,
+        }
+    else:
+        template = 'accounts/profile_settings_staff.html'
+        context = {
+            'info_form': info_form,
+            'password_form': password_form,
+            'base_template': _base_template(request.user),
+        }
+
+    return render(request, template, context)

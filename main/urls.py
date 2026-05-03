@@ -12,4 +12,5 @@ urlpatterns = [
     path('reports/', include('reports.urls', namespace='reports')),
     path('notifications/', include('notifications.urls', namespace='notifications')),
     path('certificates/', include('certificates.urls', namespace='certificates')),
+    path('feedback/', include('feedback.urls', namespace='feedback')),
 ]
