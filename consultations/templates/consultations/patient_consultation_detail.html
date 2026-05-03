@@ -1,0 +1,347 @@
+{% extends 'core/base.html' %}
+{% block title %}Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pat-detail-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pat-detail-wrap { width: 100%; max-width: 820px; }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    text-decoration: none;
+    margin-bottom: 28px;
+    transition: color 0.15s;
+  }
+  .back-link:hover { color: #0078d4; }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.04);
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    width: auto;
+    max-width: fit-content;
+}
+  .s-pending   { background:#fef3c7; color:#92400e; }
+  .s-queued    { background:#dbeafe; color:#1e40af; }
+  .s-scheduled { background:#e0f2fe; color:#0369a1; }
+  .s-triaged   { background:#ffedd5; color:#9a3412; }
+  .s-completed { background:#d1fae5; color:#065f46; }
+  .s-cancelled { background:#fee2e2; color:#991b1b; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 18px;
+  }
+  .info-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .info-value {
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .content-text {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+
+  .vital-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+  }
+  .vital-box {
+    background: #f0fdf4;
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    border: 1px solid #d1fae5;
+  }
+  .vital-val { font-size: 17px; font-weight: 700; color: #065f46; }
+  .vital-lbl { font-size: 10px; color: #64748b; margin-top: 3px; }
+
+  .rx-card {
+    padding: 14px 18px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .rx-name { font-weight: 700; font-size: 14px; color: #1a1a2e; margin-bottom: 6px; }
+  .rx-meta { font-size: 12px; color: #6b7280; display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-red { background:#fef2f2; color:#991b1b; }
+  .tag-blue { background:#eff6ff; color:#1e40af; }
+  .tag-green { background:#f0fdf4; color:#065f46; }
+  .tag-orange { background:#fff7ed; color:#c2410c; }
+
+  .divider {
+    margin: 18px 0;
+    border-top: 1px solid #f0f4f8;
+  }
+  .signature {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f4f8;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 24px;
+    padding-bottom: 16px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pat-detail-page">
+<div class="pat-detail-wrap">
+
+  <!-- Back -->
+  <a href="{% url 'consultations:patient_home' %}" class="back-link">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+    Back to My Consultations
+  </a>
+
+  <!-- Status Header -->
+  <div class="card" style="text-align:center;padding:24px 28px 20px;">
+    <div style="font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Consultation #{{ consultation.pk }}</div>
+    <span class="status-pill
+
+      {% if consultation.status == 'completed' %}s-completed
+      {% elif consultation.status == 'triaged' %}s-triaged
+      {% elif consultation.status == 'cancelled' %}s-cancelled
+      {% elif consultation.status == 'queued' %}s-queued
+      {% elif consultation.status == 'scheduled' %}s-scheduled
+      {% else %}s-pending{% endif %}">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        {% if consultation.status == 'completed' %}<polyline points="20 6 9 17 4 12"/>
+        {% elif consultation.status == 'triaged' %}<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        {% elif consultation.status == 'cancelled' %}<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        {% else %}<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>{% endif %}
+      </svg>
+      {{ consultation.get_status_display }}
+    </span>
+    <div style="font-size:11px;color:#94a3b8;margin-top:10px;">
+      {{ consultation.created_at|date:"F d, Y — h:i A" }}
+    </div>
+  </div>
+
+  <!-- Your Information -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="card-icon" style="background:#eff6ff;color:#3b82f6;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </span>
+        Your Information
+      </span>
+    </div>
+    <div class="info-grid">
+      <div><div class="info-label">Full Name</div><div class="info-value" style="font-weight:600;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div></div>
+      <div><div class="info-label">Patient ID</div><div class="info-value">{{ consultation.patient.patient_id }}</div></div>
+      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div></div>
+      <div><div class="info-label">Age / Sex</div><div class="info-value">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %} / {{ consultation.patient.get_sex_display }}</div></div>
+    </div>
+  </div>
+
+  <!-- Your Complaint -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="card-icon" style="background:#fff7ed;color:#f97316;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </span>
+        Your Complaint
+      </span>
+      <span style="font-size:11px;color:#94a3b8;">Severity: <strong style="color:#374151;">{{ consultation.severity_description }}</strong></span>
+    </div>
+    <div class="content-text">{{ consultation.symptoms }}</div>
+    {% if consultation.additional_notes %}
+    <div class="divider"></div>
+    <div class="info-label">Additional Notes</div>
+    <div class="content-text" style="margin-top:4px;">{{ consultation.additional_notes }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Medical Profile -->
+  {% with profile=consultation.patient.profile %}
+  {% if profile %}
+  <div class="card" style="background:#fff8f5;">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="card-icon" style="background:#fef2f2;color:#dc2626;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </span>
+        Your Medical Profile
+      </span>
+    </div>
+    <div class="tag-row">
+      {% if profile.blood_type %}<span class="tag tag-blue"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Blood Type: {{ profile.blood_type }}</span>{% endif %}
+      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="tag tag-red"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ profile.known_allergies }}</span>{% endif %}
+      {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="tag tag-orange"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> {{ profile.current_medications }}</span>{% endif %}
+      {% if profile.hypertension %}<span class="tag tag-red">Hypertension</span>{% endif %}
+      {% if profile.diabetes %}<span class="tag tag-red">Diabetes</span>{% endif %}
+      {% if profile.asthma %}<span class="tag tag-red">Asthma</span>{% endif %}
+      {% if profile.cardiac_problems %}<span class="tag tag-red">Cardiac</span>{% endif %}
+      {% if profile.arthritis %}<span class="tag tag-red">Arthritis</span>{% endif %}
+      {% if profile.bcg %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> BCG</span>{% endif %}
+      {% if profile.dpt %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> DPT</span>{% endif %}
+      {% if profile.opv %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> OPV</span>{% endif %}
+      {% if profile.hepatitis_b %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Hep B</span>{% endif %}
+      {% if profile.measles %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Measles</span>{% endif %}
+      {% if profile.tt %}<span class="tag tag-green"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> TT</span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Vital Signs -->
+  {% with t=consultation.triage %}
+  {% if t %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="card-icon" style="background:#f0fdf4;color:#10b981;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </span>
+        Vital Signs
+      </span>
+    </div>
+    <div class="vital-grid">
+      <div class="vital-box"><div class="vital-val">{{ t.blood_pressure }}</div><div class="vital-lbl">Blood Pressure</div></div>
+      <div class="vital-box"><div class="vital-val">{{ t.temperature }}°C</div><div class="vital-lbl">Temperature</div></div>
+      <div class="vital-box"><div class="vital-val">{{ t.pulse_rate }} bpm</div><div class="vital-lbl">Pulse Rate</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</div><div class="vital-lbl">Resp Rate</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}</div><div class="vital-lbl">SpO₂</div></div>
+      <div class="vital-box"><div class="vital-val">{% if t.weight is not None %}{{ t.weight }} kg{% else %}—{% endif %}</div><div class="vital-lbl">Weight</div></div>
+    </div>
+    {% if t.notes %}
+    <div class="divider"></div>
+    <div class="info-label">Nurse Notes</div>
+    <div class="content-text" style="margin-top:4px;">{{ t.notes }}</div>
+    {% endif %}
+    <div class="signature">Triaged by {{ t.nurse.get_full_name|default:t.nurse.username }} on {{ t.triaged_at|date:"M d, Y H:i" }}</div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Prescription -->
+  {% with rx=consultation.prescription %}
+  {% if rx %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="card-icon" style="background:#ede9fe;color:#7c3aed;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+        </span>
+        Prescription
+      </span>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div class="info-label">Diagnosis</div>
+      <div class="content-text" style="margin-top:4px;">{{ rx.diagnosis }}</div>
+    </div>
+    {% if rx.treatment_plan %}
+    <div style="margin-bottom:16px;">
+      <div class="info-label">Treatment Plan</div>
+      <div class="content-text" style="margin-top:4px;">{{ rx.treatment_plan }}</div>
+    </div>
+    {% endif %}
+    {% if rx.items.all %}
+    <div class="info-label" style="margin-bottom:10px;">Medicines Prescribed</div>
+    {% for item in rx.items.all %}
+    <div class="rx-card">
+      <div class="rx-name">{{ item.get_display_name }}</div>
+      <div class="rx-meta">
+        {% if item.dosage %}<span><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> Dosage: {{ item.dosage }}</span>{% endif %}
+        {% if item.frequency %}<span><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Frequency: {{ item.frequency }}</span>{% endif %}
+        {% if item.duration %}<span><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Duration: {{ item.duration }}</span>{% endif %}
+        {% if item.instructions %}<span><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> {{ item.instructions }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    <div class="signature">Prescribed by Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+{% endblock %}

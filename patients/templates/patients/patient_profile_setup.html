@@ -1,5 +1,8 @@
-{% extends 'core/base.html' %}
-{% block title %}Profile Setup — Clinic Recorder{% endblock %}
+{% extends 'core/base_admin.html' %}
+{% block title %}{% if is_forced %}Complete Profile{% else %}Edit Profile{% endif %} — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
+{% block nav_patients %}active{% endblock %}
+{% block page_title %}{% if is_forced %}Complete Profile{% else %}Edit Profile{% endif %}{% endblock %}
+{% block page_subtitle %}{{ patient.get_full_name }} — {{ patient.patient_id }}{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -8,314 +11,504 @@
 
 {% block extra_css %}
 <style>
-  .profile-section-label {
-    font-size: 11px;
+  /* ── Layout ── */
+  .form-wrap {
+    max-width: 780px;
+  }
+
+  /* ── Back link ── */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-decoration: none;
+    margin-bottom: 20px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid #e8ecf1;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .back-link:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+
+  /* ── Alert banner ── */
+  .alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  .alert-banner.warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+  }
+  .alert-banner-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .alert-banner-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 3px;
+  }
+  .alert-banner-text {
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.6;
+  }
+
+  /* ── Identity card ── */
+  .identity-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid #e8ecf1;
+    margin-bottom: 20px;
+  }
+  .identity-card-label {
+    font-size: 10px;
     font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin: 28px 0 14px;
+    margin-bottom: 12px;
   }
-  .profile-section-label:first-of-type { margin-top: 0; }
-  .profile-divider {
-    border: none;
-    border-top: 1px solid #f1f5f9;
-    margin: 24px 0;
-  }
-  .checkbox-group {
+  .identity-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .identity-item-label {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+  .identity-item-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+
+  /* ── Form panel ── */
+  .form-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+
+  /* ── Form sections ── */
+  .form-section {
+    padding: 22px 24px;
+    border-bottom: 1px solid #f0f4f8;
+  }
+  .form-section:last-of-type { border-bottom: none; }
+  .form-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .form-section-title span {
+    font-size: 14px;
+  }
+
+  /* ── Two-col field grid ── */
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .field-row.single { grid-template-columns: 1fr; }
+  @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+
+  /* ── Field ── */
+  .field-wrap { margin-bottom: 14px; }
+  .field-wrap:last-child { margin-bottom: 0; }
+  .field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+  }
+  .field-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  .field-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-top: 4px;
+  }
+
+  /* ── Checkbox grid ── */
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
   }
   .checkbox-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 9px 12px;
     background: #f8fafc;
-    border-radius: 10px;
+    border-radius: 9px;
     border: 1px solid #e8ecf1;
     transition: border-color 0.15s;
+    cursor: pointer;
   }
-  .checkbox-item:hover { border-color: #c7d2fe; }
-  .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
-  .checkbox-item label { margin: 0; font-size: 13px; color: #374151; cursor: pointer; user-select: none; }
-  .field-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-  .field-label { display: block; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .field-wrap { margin-bottom: 20px; }
+  .checkbox-item:hover { border-color: #bfdbfe; background: #eff6ff; }
+  .checkbox-item input[type="checkbox"] { width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: #0078d4; }
+  .checkbox-item label { margin: 0; font-size: 12px; font-weight: 500; color: #374151; cursor: pointer; user-select: none; }
+
+  /* ── Non-field errors ── */
+  .non-field-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .non-field-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #991b1b;
+  }
+
+  /* ── Form footer ── */
+  .form-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #f0f4f8;
+    background: #f8fafc;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #0078d4;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .submit-btn:hover { background: #006bbf; }
+  .cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 18px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .cancel-btn:hover { background: #f3f4f6; color: #374151; }
+  .skip-note {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 10px 24px 14px;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:680px;margin:0 auto;">
+<div class="form-wrap">
 
-  {# ── Page Header ── #}
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
-    {% if not is_forced %}
-    <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm">← Back</a>
-    {% endif %}
-    <div>
-      <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0 0 4px;letter-spacing:-0.3px;">
-        {% if is_forced %}Complete Your Profile{% else %}Edit Profile{% endif %}
-      </h1>
-      <p style="font-size:13px;color:#6b7280;margin:0;">{{ patient.get_full_name }} — {{ patient.patient_id }}</p>
-    </div>
-  </div>
+  {# ── Back ── #}
+  {% if not is_forced %}
+  <a href="{% url 'patients:patient_detail' patient.pk %}" class="back-link">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to Patient
+  </a>
+  {% endif %}
 
   {# ── Forced setup banner ── #}
   {% if is_forced %}
-  <div style="background:#fff8e1;border-radius:16px;padding:16px 20px;border:1px solid #fde68a;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:20px;display:flex;align-items:flex-start;gap:12px;">
-    <ion-icon name="warning-outline" style="font-size:20px;color:#f59e0b;flex-shrink:0;margin-top:1px;"></ion-icon>
+  <div class="alert-banner warning">
+    <div class="alert-banner-icon">
+      <svg width="18" height="18" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
     <div>
-      <div style="font-weight:600;font-size:13px;color:#92400e;margin-bottom:4px;">Profile Setup Required</div>
-      <p style="margin:0;font-size:12px;color:#92400e;line-height:1.6;">
+      <div class="alert-banner-title">Profile Setup Required</div>
+      <div class="alert-banner-text">
         Before you can use the Clinic Portal, you must complete your profile.
-        This information is used by clinic staff to provide you with proper care.
+        This information is used by clinic staff to provide proper care.
         All fields marked <strong>*</strong> are required.
-      </p>
+      </div>
     </div>
   </div>
   {% endif %}
 
   {# ── Read-only identity card ── #}
-  <div style="background:#f8fafc;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;margin-bottom:20px;">
-    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Your Information (from clinic records)</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+  <div class="identity-card">
+    <div class="identity-card-label">Your Information (from clinic records)</div>
+    <div class="identity-grid">
       <div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">Full Name</div>
-        <strong style="font-size:13px;color:#1a1a2e;">{{ patient.get_full_name }}</strong>
+        <div class="identity-item-label">Full Name</div>
+        <div class="identity-item-value">{{ patient.get_full_name }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">Patient ID</div>
-        <strong style="font-size:13px;color:#1a1a2e;">{{ patient.patient_id }}</strong>
+        <div class="identity-item-label">Patient ID</div>
+        <div class="identity-item-value">{{ patient.patient_id }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">Sex</div>
-        <strong style="font-size:13px;color:#1a1a2e;">{{ patient.get_sex_display }}</strong>
+        <div class="identity-item-label">Sex</div>
+        <div class="identity-item-value">{{ patient.get_sex_display }}</div>
       </div>
       {% if patient.college %}
       <div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">College</div>
-        <strong style="font-size:13px;color:#1a1a2e;">{{ patient.college.abbreviation }}</strong>
+        <div class="identity-item-label">College</div>
+        <div class="identity-item-value">{{ patient.college.abbreviation }}</div>
       </div>
       {% endif %}
     </div>
   </div>
 
-  {# ── Main Form Card ── #}
-  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+  {# ── Main form panel ── #}
+  <div class="form-panel">
     <form method="post" novalidate id="profile-form">
       {% csrf_token %}
 
       {# Section 1: Health Info #}
-      <div class="profile-section-label">🩺 Health Information</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="field-wrap">
-          <label class="field-label">{{ form.birthday.label }}</label>
-          {{ form.birthday }}
-          {% if form.birthday.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.birthday.errors.0 }}</div>{% endif %}
+      <div class="form-section">
+        <div class="form-section-title"><span>🩺</span> Health Information</div>
+        <div class="field-row">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.birthday.label }}</label>
+            {{ form.birthday }}
+            {% if form.birthday.errors %}<div class="field-error">{{ form.birthday.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.blood_type.label }}</label>
+            {{ form.blood_type }}
+            {% if form.blood_type.errors %}<div class="field-error">{{ form.blood_type.errors.0 }}</div>{% endif %}
+          </div>
         </div>
         <div class="field-wrap">
-          <label class="field-label">{{ form.blood_type.label }}</label>
-          {{ form.blood_type }}
-          {% if form.blood_type.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.blood_type.errors.0 }}</div>{% endif %}
+          <label class="field-label">{{ form.known_allergies.label }}</label>
+          {{ form.known_allergies }}
+          <div class="field-hint">Write "None" if you have no known allergies.</div>
+          {% if form.known_allergies.errors %}<div class="field-error">{{ form.known_allergies.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.existing_conditions.label }}</label>
+          {{ form.existing_conditions }}
+          <div class="field-hint">Write "None" if you have no existing conditions.</div>
+          {% if form.existing_conditions.errors %}<div class="field-error">{{ form.existing_conditions.errors.0 }}</div>{% endif %}
         </div>
       </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.known_allergies.label }}</label>
-        {{ form.known_allergies }}
-        <div class="field-hint">Write "None" if you have no known allergies.</div>
-        {% if form.known_allergies.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.known_allergies.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.existing_conditions.label }}</label>
-        {{ form.existing_conditions }}
-        <div class="field-hint">Write "None" if you have no existing conditions.</div>
-        {% if form.existing_conditions.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.existing_conditions.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
 
       {# Section 2: Demographics #}
-      <div class="profile-section-label">👤 Demographics</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="field-wrap">
-          <label class="field-label">{{ form.religion.label }}</label>
-          {{ form.religion }}
-          {% if form.religion.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.religion.errors.0 }}</div>{% endif %}
+      <div class="form-section">
+        <div class="form-section-title"><span>👤</span> Demographics</div>
+        <div class="field-row">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.religion.label }}</label>
+            {{ form.religion }}
+            {% if form.religion.errors %}<div class="field-error">{{ form.religion.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.civil_status.label }}</label>
+            {{ form.civil_status }}
+            {% if form.civil_status.errors %}<div class="field-error">{{ form.civil_status.errors.0 }}</div>{% endif %}
+          </div>
         </div>
         <div class="field-wrap">
-          <label class="field-label">{{ form.civil_status.label }}</label>
-          {{ form.civil_status }}
-          {% if form.civil_status.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.civil_status.errors.0 }}</div>{% endif %}
+          <label class="field-label">{{ form.year_level.label }}</label>
+          {{ form.year_level }}
+          {% if form.year_level.errors %}<div class="field-error">{{ form.year_level.errors.0 }}</div>{% endif %}
         </div>
       </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.year_level.label }}</label>
-        {{ form.year_level }}
-        {% if form.year_level.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.year_level.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
 
       {# Section 3: Physical #}
-      <div class="profile-section-label">📏 Physical Information</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="field-wrap">
-          <label class="field-label">{{ form.height_cm.label }}</label>
-          {{ form.height_cm }}
-          {% if form.height_cm.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.height_cm.errors.0 }}</div>{% endif %}
+      <div class="form-section">
+        <div class="form-section-title"><span>📏</span> Physical Information</div>
+        <div class="field-row">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.height_cm.label }}</label>
+            {{ form.height_cm }}
+            {% if form.height_cm.errors %}<div class="field-error">{{ form.height_cm.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.weight_kg.label }}</label>
+            {{ form.weight_kg }}
+            {% if form.weight_kg.errors %}<div class="field-error">{{ form.weight_kg.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# Section 4: Family & Medical History #}
+      <div class="form-section">
+        <div class="form-section-title"><span>🏥</span> Family & Past Medical History</div>
+        <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">Check all conditions that apply:</p>
+        <div class="checkbox-grid" style="margin-bottom:14px;">
+          <div class="checkbox-item">{{ form.hypertension }}<label>{{ form.hypertension.label }}</label></div>
+          <div class="checkbox-item">{{ form.diabetes }}<label>{{ form.diabetes.label }}</label></div>
+          <div class="checkbox-item">{{ form.asthma }}<label>{{ form.asthma.label }}</label></div>
+          <div class="checkbox-item">{{ form.cardiac_problems }}<label>{{ form.cardiac_problems.label }}</label></div>
+          <div class="checkbox-item">{{ form.arthritis }}<label>{{ form.arthritis.label }}</label></div>
         </div>
         <div class="field-wrap">
-          <label class="field-label">{{ form.weight_kg.label }}</label>
-          {{ form.weight_kg }}
-          {% if form.weight_kg.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.weight_kg.errors.0 }}</div>{% endif %}
+          <label class="field-label">{{ form.other_conditions.label }}</label>
+          {{ form.other_conditions }}
+          <div class="field-hint">List any other medical conditions not mentioned above. Write "None" if none.</div>
+          {% if form.other_conditions.errors %}<div class="field-error">{{ form.other_conditions.errors.0 }}</div>{% endif %}
         </div>
       </div>
-
-      <hr class="profile-divider">
-
-      {# Section 4: Family & Past Medical History #}
-      <div class="profile-section-label">🏥 Family & Past Medical History</div>
-      <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Check all conditions that apply to you:</p>
-      <div class="checkbox-group" style="margin-bottom:20px;">
-        <div class="checkbox-item">{{ form.hypertension }}<label>{{ form.hypertension.label }}</label></div>
-        <div class="checkbox-item">{{ form.diabetes }}<label>{{ form.diabetes.label }}</label></div>
-        <div class="checkbox-item">{{ form.asthma }}<label>{{ form.asthma.label }}</label></div>
-        <div class="checkbox-item">{{ form.cardiac_problems }}<label>{{ form.cardiac_problems.label }}</label></div>
-        <div class="checkbox-item">{{ form.arthritis }}<label>{{ form.arthritis.label }}</label></div>
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.other_conditions.label }}</label>
-        {{ form.other_conditions }}
-        <div class="field-hint">List any other medical conditions not mentioned above. Write "None" if none.</div>
-        {% if form.other_conditions.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.other_conditions.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
 
       {# Section 5: Immunization #}
-      <div class="profile-section-label">💉 Immunization Records</div>
-      <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Check all vaccines you have received:</p>
-      <div class="checkbox-group" style="margin-bottom:20px;">
-        <div class="checkbox-item">{{ form.bcg }}<label>{{ form.bcg.label }}</label></div>
-        <div class="checkbox-item">{{ form.dpt }}<label>{{ form.dpt.label }}</label></div>
-        <div class="checkbox-item">{{ form.opv }}<label>{{ form.opv.label }}</label></div>
-        <div class="checkbox-item">{{ form.hepatitis_b }}<label>{{ form.hepatitis_b.label }}</label></div>
-        <div class="checkbox-item">{{ form.measles }}<label>{{ form.measles.label }}</label></div>
-        <div class="checkbox-item">{{ form.tt }}<label>{{ form.tt.label }}</label></div>
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.immunization_others.label }}</label>
-        {{ form.immunization_others }}
-        <div class="field-hint">List any other vaccines received (e.g. influenza, HPV, COVID-19).</div>
-        {% if form.immunization_others.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.immunization_others.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
-
-      {# Section 6: Medical Background #}
-      <div class="profile-section-label">📋 Medical Background</div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.current_medications.label }}</label>
-        {{ form.current_medications }}
-        <div class="field-hint">List all medications you are currently taking and their dosages. Write "None" if none.</div>
-        {% if form.current_medications.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.current_medications.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.vices.label }}</label>
-        {{ form.vices }}
-        <div class="field-hint">E.g. smoking, alcohol intake, or other habits. Write "None" if none.</div>
-        {% if form.vices.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.vices.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.previous_illnesses.label }}</label>
-        {{ form.previous_illnesses }}
-        <div class="field-hint">List any significant past illnesses (non-chronic). Write "None" if none.</div>
-        {% if form.previous_illnesses.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.previous_illnesses.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.previous_hospitalizations.label }}</label>
-        {{ form.previous_hospitalizations }}
-        <div class="field-hint">List past hospitalizations and approximate dates if known. Write "None" if none.</div>
-        {% if form.previous_hospitalizations.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.previous_hospitalizations.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
-
-      {# Section 7: Contact Info #}
-      <div class="profile-section-label">📞 Contact Information</div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.phone.label }}</label>
-        {{ form.phone }}
-        <div class="field-hint">{{ form.phone.help_text }}</div>
-        {% if form.phone.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.phone.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.email.label }}</label>
-        {{ form.email }}
-        {% if form.email.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.email.errors.0 }}</div>{% endif %}
-      </div>
-      <div class="field-wrap">
-        <label class="field-label">{{ form.address.label }}</label>
-        {{ form.address }}
-        {% if form.address.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.address.errors.0 }}</div>{% endif %}
-      </div>
-
-      <hr class="profile-divider">
-
-      {# Section 8: Emergency Contact #}
-      <div class="profile-section-label">🆘 Emergency Contact</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="field-wrap">
-          <label class="field-label">{{ form.emergency_contact_name.label }}</label>
-          {{ form.emergency_contact_name }}
-          {% if form.emergency_contact_name.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
+      <div class="form-section">
+        <div class="form-section-title"><span>💉</span> Immunization Records</div>
+        <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">Check all vaccines you have received:</p>
+        <div class="checkbox-grid" style="margin-bottom:14px;">
+          <div class="checkbox-item">{{ form.bcg }}<label>{{ form.bcg.label }}</label></div>
+          <div class="checkbox-item">{{ form.dpt }}<label>{{ form.dpt.label }}</label></div>
+          <div class="checkbox-item">{{ form.opv }}<label>{{ form.opv.label }}</label></div>
+          <div class="checkbox-item">{{ form.hepatitis_b }}<label>{{ form.hepatitis_b.label }}</label></div>
+          <div class="checkbox-item">{{ form.measles }}<label>{{ form.measles.label }}</label></div>
+          <div class="checkbox-item">{{ form.tt }}<label>{{ form.tt.label }}</label></div>
         </div>
         <div class="field-wrap">
-          <label class="field-label">{{ form.emergency_contact_phone.label }}</label>
-          {{ form.emergency_contact_phone }}
-          {% if form.emergency_contact_phone.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
+          <label class="field-label">{{ form.immunization_others.label }}</label>
+          {{ form.immunization_others }}
+          <div class="field-hint">List any other vaccines received (e.g. influenza, HPV, COVID-19).</div>
+          {% if form.immunization_others.errors %}<div class="field-error">{{ form.immunization_others.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# Section 6: Medical Background #}
+      <div class="form-section">
+        <div class="form-section-title"><span>📋</span> Medical Background</div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.current_medications.label }}</label>
+          {{ form.current_medications }}
+          <div class="field-hint">List all medications and dosages. Write "None" if none.</div>
+          {% if form.current_medications.errors %}<div class="field-error">{{ form.current_medications.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.vices.label }}</label>
+          {{ form.vices }}
+          <div class="field-hint">E.g. smoking, alcohol intake. Write "None" if none.</div>
+          {% if form.vices.errors %}<div class="field-error">{{ form.vices.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.previous_illnesses.label }}</label>
+          {{ form.previous_illnesses }}
+          <div class="field-hint">List significant past illnesses. Write "None" if none.</div>
+          {% if form.previous_illnesses.errors %}<div class="field-error">{{ form.previous_illnesses.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.previous_hospitalizations.label }}</label>
+          {{ form.previous_hospitalizations }}
+          <div class="field-hint">List past hospitalizations with approximate dates. Write "None" if none.</div>
+          {% if form.previous_hospitalizations.errors %}<div class="field-error">{{ form.previous_hospitalizations.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# Section 7: Contact Info #}
+      <div class="form-section">
+        <div class="form-section-title"><span>📞</span> Contact Information</div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.phone.label }}</label>
+          {{ form.phone }}
+          <div class="field-hint">{{ form.phone.help_text }}</div>
+          {% if form.phone.errors %}<div class="field-error">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.email.label }}</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="field-error">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">{{ form.address.label }}</label>
+          {{ form.address }}
+          {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# Section 8: Emergency Contact #}
+      <div class="form-section">
+        <div class="form-section-title"><span>🆘</span> Emergency Contact</div>
+        <div class="field-row">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.emergency_contact_name.label }}</label>
+            {{ form.emergency_contact_name }}
+            {% if form.emergency_contact_name.errors %}<div class="field-error">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.emergency_contact_phone.label }}</label>
+            {{ form.emergency_contact_phone }}
+            {% if form.emergency_contact_phone.errors %}<div class="field-error">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
+          </div>
         </div>
       </div>
 
       {# Non-field errors #}
       {% if form.non_field_errors %}
-        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 14px;margin-bottom:20px;">
+      <div class="form-section">
+        <div class="non-field-errors">
           {% for error in form.non_field_errors %}
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#991b1b;">
-              <ion-icon name="alert-circle-outline" style="font-size:13px;"></ion-icon>{{ error }}
-            </div>
+          <div class="non-field-error">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ error }}
+          </div>
           {% endfor %}
         </div>
+      </div>
       {% endif %}
 
-      {# Submit #}
-      <div style="padding-top:24px;border-top:1px solid #f1f5f9;display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;border-radius:10px;padding:12px;font-size:14px;display:flex;align-items:center;gap:8px;">
-          <ion-icon name="{% if is_forced %}checkmark-circle-outline{% else %}save-outline{% endif %}" style="font-size:16px;"></ion-icon>
+      {# ── Footer ── #}
+      <div class="form-footer">
+        <button type="submit" class="submit-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            {% if is_forced %}<polyline points="20 6 9 17 4 12"/>{% else %}<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v14a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>{% endif %}
+          </svg>
           {% if is_forced %}Complete Profile & Continue{% else %}Save Profile{% endif %}
         </button>
         {% if not is_forced %}
-        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary" style="border-radius:10px;padding:12px 20px;">Cancel</a>
+        <a href="{% url 'patients:patient_detail' patient.pk %}" class="cancel-btn">Cancel</a>
         {% endif %}
       </div>
 
       {% if is_forced %}
-      <p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:12px;">
-        You cannot skip this step. All required fields must be filled before accessing the portal.
-      </p>
+      <div class="skip-note">You cannot skip this step. All required fields must be filled before accessing the portal.</div>
       {% endif %}
 
     </form>
   </div>
 
-  {# Footer #}
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
-
-</div>
 </div>
 {% endblock %}

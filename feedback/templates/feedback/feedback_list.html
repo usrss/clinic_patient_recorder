@@ -1,0 +1,131 @@
+{% extends base_template %}
+{% block title %}Feedback — Clinic Recorder{% endblock %}
+{% block page_title %}Patient Feedback{% endblock %}
+{% block page_subtitle %}Reviews and ratings from consultations{% endblock %}
+
+{% block extra_css %}
+<style>
+  .feedback-wrap { width: 100%; max-width: 960px; }
+
+  .card-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .fb-table { width: 100%; border-collapse: collapse; }
+  .fb-table th {
+    padding: 12px 18px;
+    background: #f8fafc;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid #e8ecf1;
+  }
+  .fb-table td {
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid #f5f7fa;
+    vertical-align: middle;
+  }
+  .fb-table tbody tr:hover td { background: #f8fafc; }
+  .fb-table tbody tr:last-child td { border-bottom: none; }
+
+  .star-row {
+    display: inline-flex;
+    gap: 2px;
+    color: #f59e0b;
+  }
+
+  .empty-state {
+    padding: 56px 24px;
+    text-align: center;
+  }
+  .empty-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+  }
+  .empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .empty-sub {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .comment-cell {
+    max-width: 240px;
+    white-space: normal;
+    line-height: 1.5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feedback-wrap">
+
+  <div class="card-panel">
+    {% if feedbacks %}
+    <div style="overflow-x:auto;">
+      <table class="fb-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Patient ID</th>
+            <th>Consultation</th>
+            <th>Rating</th>
+            <th>Review</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in feedbacks %}
+          <tr>
+            <td style="font-weight:600;color:#1a1a2e;">{{ f.consultation.patient.get_full_name }}</td>
+            <td style="color:#6b7280;font-size:12px;">{{ f.consultation.patient.patient_id }}</td>
+            <td style="color:#6b7280;">#{{ f.consultation.pk }}</td>
+            <td>
+              <span class="star-row">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= f.rating %}
+                    <svg width="16" height="16" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  {% else %}
+                    <svg width="16" height="16" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  {% endif %}
+                {% endfor %}
+              </span>
+            </td>
+            <td class="comment-cell">{{ f.comment|default:"—" }}</td>
+            <td style="color:#94a3b8;font-size:12px;white-space:nowrap;">{{ f.created_at|date:"M d, Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon-wrap">
+        <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="empty-title">No feedback yet</div>
+      <div class="empty-sub">Patient reviews will appear here once submitted.</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

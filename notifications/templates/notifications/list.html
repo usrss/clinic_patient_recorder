@@ -1,30 +1,130 @@
-{% extends 'core/base.html' %}
+{% extends base_template %}
 {% block title %}Notifications — Clinic Recorder{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}{% if notifications %}{{ notifications|length }} notification{{ notifications|length|pluralize }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .notif-page { padding: 0; }
+  .notif-wrap { width: 100%; max-width: 640px; }
+
+  .notif-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+  }
+  .notif-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .notif-card.unread {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  .notif-card.unread:hover { background: #dbeafe; }
+
+  .notif-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .notif-content { flex: 1; min-width: 0; }
+  .notif-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 3px; }
+  .notif-message { font-size: 13px; color: #6b7280; line-height: 1.5; }
+  .notif-time { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+
+  .empty-card {
+    text-align: center;
+    padding: 56px 24px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .empty-icon-wrap {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+  }
+  .empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+  .empty-sub { font-size: 12px; color: #94a3b8; }
+
+  .btn-mark-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid #e8ecf1;
+    background: #fff;
+    color: #374151;
+    transition: all 0.15s;
+  }
+  .btn-mark-all:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="max-width:640px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <h1 class="page-title" style="margin-bottom:0;">Notifications</h1>
-    {% if notifications %}
-    <a href="{% url 'notifications:mark_all_read' %}?next={% url 'notifications:list' %}" class="btn btn-secondary btn-sm">Mark All Read</a>
-    {% endif %}
-  </div>
+<div class="notif-page">
+<div class="notif-wrap">
 
   {% if notifications %}
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+    <a href="{% url 'notifications:mark_all_read' %}?next={% url 'notifications:list' %}" class="btn-mark-all">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      Mark All Read
+    </a>
+  </div>
+
   {% for n in notifications %}
-  <a href="{% url 'notifications:mark_read' n.pk %}" style="text-decoration:none;color:inherit;">
-    <div style="padding:14px 18px;margin-bottom:8px;border-radius:8px;{% if not n.is_read %}background:#eff6ff;border-left:3px solid #3b82f6;{% else %}background:#fff;border:1px solid var(--border);{% endif %}">
-      <div style="font-weight:600;font-size:14px;margin-bottom:4px;">{{ n.title }}</div>
-      <div style="font-size:13px;color:var(--text-muted);">{{ n.message }}</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">{{ n.created_at|date:"M d, Y H:i" }}</div>
+  <a href="{% url 'notifications:mark_read' n.pk %}" class="notif-card {% if not n.is_read %}unread{% endif %}">
+    <div class="notif-icon" style="background:{% if not n.is_read %}#dbeafe{% else %}#f3f4f6{% endif %};color:{% if not n.is_read %}#3b82f6{% else %}#9ca3af{% endif %};">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        {% if n.recipient_role == 'nurse' %}<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        {% elif n.recipient_role == 'doctor' %}<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        {% else %}<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>{% endif %}
+      </svg>
     </div>
+    <div class="notif-content">
+      <div class="notif-title">{{ n.title }}</div>
+      <div class="notif-message">{{ n.message }}</div>
+      <div class="notif-time">{{ n.created_at|date:"M d, Y · h:i A" }}</div>
+    </div>
+    {% if not n.is_read %}
+    <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:6px;"></div>
+    {% endif %}
   </a>
   {% endfor %}
+
   {% else %}
-  <div class="card" style="text-align:center;padding:48px;">
-    <div style="font-size:40px;margin-bottom:12px;">🔔</div>
-    <p style="font-weight:600;">No notifications</p>
+  <div class="empty-card">
+    <div class="empty-icon-wrap">
+      <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    </div>
+    <div class="empty-title">No notifications</div>
+    <div class="empty-sub">You're all caught up.</div>
   </div>
   {% endif %}
+
+</div>
 </div>
 {% endblock %}

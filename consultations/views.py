@@ -23,6 +23,12 @@ from inventory.utils import deduct_medicine_stock
 
 # ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
 
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
+
 @login_required
 @patient_required
 def patient_home(request):
@@ -77,8 +83,9 @@ def patient_detail(request, pk):
         return redirect('accounts:dashboard')
 
     consultation = get_object_or_404(Consultation, pk=pk, patient=patient)
-    return render(request, 'consultations/patient_detail.html', {
+    return render(request, 'consultations/patient_consultation_detail.html', {
         'consultation': consultation,
+
     })
 
 
@@ -115,6 +122,7 @@ def queue(request):
     ).select_related('patient', 'patient__college').order_by('created_at')
     return render(request, 'consultations/queue.html', {
         'consultations': consultations,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -136,7 +144,10 @@ def consultation_create(request):
             f'Consultation created for {consultation.patient.get_full_name()}.'
         )
         return redirect('consultations:queue')
-    return render(request, 'consultations/consultation_create.html', {'form': form})
+    return render(request, 'consultations/consultation_create.html', {
+        'form': form,
+        'base_template': _base_template(request.user),
+    })
 
 
 @login_required
@@ -237,6 +248,7 @@ def triage_list(request):
     )
     return render(request, 'consultations/triage_list.html', {
         'consultations': consultations,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -357,6 +369,7 @@ def doctor_list(request):
     ).select_related('patient', 'triage', 'patient__college').order_by('created_at')
     return render(request, 'consultations/doctor_list.html', {
         'consultations': consultations,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -444,6 +457,7 @@ def prescribe(request, pk):
         'formset': formset,
         'inventory_medicines': inventory_medicines,
         'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
+        'base_template': _base_template(request.user),
     })
 
 # ─── CLINICAL STAFF SHARED VIEWS ──────────────────────────────────────────────
@@ -454,6 +468,7 @@ def clinical_detail(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
     return render(request, 'consultations/clinical_detail.html', {
         'consultation': consultation,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -552,6 +567,7 @@ def patient_medical_history(request, patient_pk):
         'date_from': date_from_str,
         'date_to': date_to_str,
         'keyword': keyword,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -721,3 +737,6 @@ def print_consultation(request, pk):
     return render(request, 'consultations/print_consultation.html', {
         'consultation': consultation,
     })
+
+
+

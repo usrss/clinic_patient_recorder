@@ -1,71 +1,93 @@
-{% extends 'core/base.html' %}
+{% extends 'core/base_staff.html' %}
+{% load static%}
 {% block title %}Nurse Dashboard — Clinic Recorder{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }}{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/dashboard_nurse.css' %}">
+{% endblock %}
+
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:960px;margin:0 auto;">
 
-  {# ── Page Header ── #}
-  <div style="margin-bottom:32px;">
-    <p style="font-size:13px;color:#6b7280;margin:0;">Welcome, {{ user.get_full_name|default:user.username }}</p>
-  </div>
+{# ── Quick Actions ── #}
+<div class="sec-label">Quick Actions</div>
+<div class="dash-grid">
 
-  {# ── Action Cards ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Quick Actions</div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:32px;">
-
-    <a href="{% url 'consultations:triage_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
-      <ion-icon name="fitness-outline" style="font-size:24px;color:#0078d4;margin-bottom:10px;display:block;"></ion-icon>
-      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Triage Queue</div>
-      <div style="font-size:12px;color:#94a3b8;"></div>
-    </a>
-
-    <a href="{% url 'inventory:medicine_list' %}" style="background:#fff;border-radius:16px;padding:20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-decoration:none;color:inherit;display:block;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06)'">
-      <ion-icon name="medkit-outline" style="font-size:24px;color:#10b981;margin-bottom:10px;display:block;"></ion-icon>
-      <div style="font-weight:600;font-size:14px;color:#1a1a2e;margin-bottom:4px;">Inventory</div>
-      <div style="font-size:12px;color:#94a3b8;">View and restock medicine</div>
-    </a>
-
-  </div>
-
-  {# ── Responsibilities ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Your Responsibilities</div>
-  <div style="background:#fff;border-radius:16px;padding:24px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
-    <div style="display:flex;flex-direction:column;gap:12px;">
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="pulse-outline" style="font-size:18px;color:#0078d4;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Record patient vitals (blood pressure, temperature, pulse rate)</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="alert-circle-outline" style="font-size:18px;color:#f97316;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Assess condition severity: Low / Medium / High</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="person-add-outline" style="font-size:18px;color:#8b5cf6;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Prepare patient for doctor consultation</span>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;">
-        <ion-icon name="medkit-outline" style="font-size:18px;color:#10b981;flex-shrink:0;"></ion-icon>
-        <span style="font-size:13px;color:#374151;">Manage and restock medicine inventory</span>
-      </div>
-
+  <a href="{% url 'consultations:triage_list' %}" class="dash-card primary-action">
+    <div class="dash-card-icon">
+      <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
     </div>
+    <div class="dash-card-text">
+      <strong>Triage Queue</strong>
+      <span>Assess incoming patients</span>
+    </div>
+  </a>
+
+  <a href="{% url 'patients:patient_list' %}" class="dash-card">
+    <div class="dash-card-icon" style="background:#eff6ff;">
+      <svg width="22" height="22" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="dash-card-text">
+      <strong>Patients</strong>
+      <span>Patient records</span>
+    </div>
+  </a>
+
+  <a href="{% url 'inventory:medicine_list' %}" class="dash-card">
+    <div class="dash-card-icon" style="background:#fff7ed;">
+      <svg width="22" height="22" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+    </div>
+    <div class="dash-card-text">
+      <strong>Inventory</strong>
+      <span>View and restock medicine</span>
+    </div>
+  </a>
+
+</div>
+
+{# ── Responsibilities ── #}
+<div class="sec-label">Your Responsibilities</div>
+<div class="resp-panel">
+  <div class="resp-panel-header">Nurse Workflow</div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#d1fae5;">
+      <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </div>
+    Record patient vitals (blood pressure, temperature, pulse rate)
   </div>
 
-  {# Footer #}
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#fff7ed;">
+      <svg width="15" height="15" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    Assess condition severity: Low / Medium / High
+  </div>
 
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#ede9fe;">
+      <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+    </div>
+    Prepare patient for doctor consultation
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#fef3c7;">
+      <svg width="15" height="15" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+    </div>
+    Manage and restock medicine inventory
+  </div>
 </div>
-</div>
+
+<p style="text-align:center;font-size:11px;color:#9ca3af;">
+  Negros Oriental State University — Medical Dental Clinic
+</p>
+
 {% endblock %}

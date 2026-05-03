@@ -1,106 +1,255 @@
-{% extends 'core/base.html' %}
+{% extends base_template %}
 {% block title %}Patients — Clinic Recorder{% endblock %}
+{% block nav_patients %}active{% endblock %}
+{% block page_title %}Patients{% endblock %}
+{% block page_subtitle %}All registered clinic patients{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .search-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .search-field { flex: 1; min-width: 200px; }
+  .search-label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 7px;
+  }
+  .search-input {
+    width: 100%; padding: 8px 12px;
+    border: 1px solid #e8ecf1; border-radius: 9px;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+    color: #1a1a2e; background: #f8fafc;
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-input:focus {
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.1);
+    background: #fff;
+  }
+  .search-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none;
+    font-family: 'Inter', sans-serif; transition: all 0.15s;
+  }
+  .search-btn-primary { background: #0078d4; color: #fff; }
+  .search-btn-primary:hover { background: #006bbf; }
+  .search-btn-ghost { background: #f3f4f6; color: #374151; text-decoration: none; }
+  .search-btn-ghost:hover { background: #e5e7eb; color: #374151; }
+
+  .pt-stat-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .pt-stat {
+    background: #fff; border-radius: 12px; padding: 14px 18px;
+    border: 1px solid #e8ecf1; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    display: flex; align-items: center; gap: 10px; flex: 1; min-width: 120px;
+  }
+  .pt-stat-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pt-stat-val { font-size: 20px; font-weight: 700; color: #1a1a2e; line-height: 1; }
+  .pt-stat-lbl { font-size: 11px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
+
+  .table-panel {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    overflow: hidden;
+  }
+  .table-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #f0f4f8;
+  }
+  .table-panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+  .table-panel-meta { font-size: 11px; color: #94a3b8; font-weight: 500; }
+
+  .pt-table { width: 100%; border-collapse: collapse; }
+  .pt-table thead tr { background: #f8fafc; border-bottom: 1px solid #e8ecf1; }
+  .pt-table th {
+    padding: 10px 20px; text-align: left;
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap;
+  }
+  .pt-table tbody tr { border-bottom: 1px solid #f5f7fa; transition: background 0.12s; }
+  .pt-table tbody tr:last-child { border-bottom: none; }
+  .pt-table tbody tr:hover { background: #f8fafc; }
+  .pt-table td { padding: 12px 20px; font-size: 13px; color: #374151; vertical-align: middle; }
+
+  .pt-name-cell { display: flex; align-items: center; gap: 10px; }
+  .pt-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; font-weight: 700; color: #065f46;
+  }
+  .pt-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .id-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    color: #6b7280; background: #f3f4f6; border-radius: 6px;
+    padding: 2px 8px; font-family: 'Inter', monospace;
+  }
+  .sex-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; }
+  .sex-badge.m { background: #dbeafe; color: #1e40af; }
+  .sex-badge.f { background: #fce7f3; color: #9d174d; }
+  .college-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    color: #7c3aed; background: #ede9fe; border-radius: 6px; padding: 2px 8px;
+  }
+  .view-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 7px;
+    font-size: 12px; font-weight: 600;
+    color: #374151; background: #f3f4f6;
+    border: 1px solid #e5e7eb; text-decoration: none; transition: all 0.15s;
+  }
+  .view-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #0078d4; }
+
+  .empty-state { padding: 56px 24px; text-align: center; }
+  .empty-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .empty-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .empty-sub { font-size: 12px; color: #94a3b8; }
+  .table-scroll { overflow-x: auto; }
+  .sec-heading {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:960px;margin:0 auto;">
 
-  {# ── Page Header ── #}
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+<div class="pt-stat-row">
+  <div class="pt-stat">
+    <div class="pt-stat-icon" style="background:#f0fdf4;">
+      <svg width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
     <div>
-      <p style="font-size:13px;color:#6b7280;margin:0;">Registered clinic patients</p>
+      <div class="pt-stat-val">{{ patients|length }}</div>
+      <div class="pt-stat-lbl">{{ query|yesno:"Results,Total Patients" }}</div>
     </div>
   </div>
+</div>
 
-  {# ── Search ── #}
-  <div style="background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;">
-    <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Search</label>
-        {{ form.query }}
-      </div>
-      <button type="submit" class="btn btn-primary" style="border-radius:10px;display:flex;align-items:center;gap:6px;">
-        <ion-icon name="search-outline" style="font-size:15px;"></ion-icon>
-        Search
-      </button>
-      {% if query %}
-        <a href="{% url 'patients:patient_list' %}" class="btn btn-secondary" style="border-radius:10px;display:flex;align-items:center;gap:6px;">
-          <ion-icon name="close-outline" style="font-size:15px;"></ion-icon>
-          Clear
-        </a>
-      {% endif %}
-    </form>
+<div class="sec-heading">Search Patients</div>
+<div class="search-card">
+  <form method="get" style="display:contents;">
+    <div class="search-field">
+      <label class="search-label">Name or ID</label>
+      {{ form.query }}
+    </div>
+    <button type="submit" class="search-btn search-btn-primary">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search
+    </button>
+    {% if query %}
+    <a href="{% url 'patients:patient_list' %}" class="search-btn search-btn-ghost">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Clear
+    </a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="sec-heading">
+  {% if query %}Search Results for "{{ query }}"{% else %}All Patients{% endif %}
+</div>
+
+{% if patients %}
+<div class="table-panel">
+  <div class="table-panel-header">
+    <span class="table-panel-title">Patient Records</span>
+    <span class="table-panel-meta">{{ patients|length }} patient{{ patients|length|pluralize }}</span>
   </div>
+  <div class="table-scroll">
+    <table class="pt-table">
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Patient ID</th>
+          <th>Sex</th>
+          <th>Age</th>
+          <th>College / Dept</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for patient in patients %}
+        <tr>
+          <td>
+            <div class="pt-name-cell">
+              <div class="pt-avatar">{{ patient.get_full_name|first|upper }}</div>
+              <span class="pt-name">{{ patient.get_full_name }}</span>
+            </div>
+          </td>
+          <td><span class="id-badge">{{ patient.patient_id }}</span></td>
+          <td>
+            <span class="sex-badge {% if patient.sex == 'M' %}m{% else %}f{% endif %}">
+              {{ patient.get_sex_display }}
+            </span>
+          </td>
+          <td>
+            {% if patient.age %}
+              <span style="font-weight:600;color:#1a1a2e;">{{ patient.age }}</span>
+              <span style="font-size:11px;color:#94a3b8;"> yrs</span>
+            {% else %}
+              <span style="color:#d1d5db;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if patient.college %}
+              <span class="college-badge">{{ patient.college.abbreviation }}</span>
+            {% elif patient.department %}
+              <span style="font-size:12px;color:#6b7280;">{{ patient.department }}</span>
+            {% else %}
+              <span style="color:#d1d5db;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'patients:patient_detail' patient.pk %}" class="view-btn">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-  {# ── Results ── #}
-  {% if patients %}
-  <div style="background:#fff;border-radius:16px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
-    <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:1px solid #e8ecf1;">
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Full Name</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Patient ID</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Sex</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Age</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">College / Dept</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for patient in patients %}
-          <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-            <td style="padding:14px 20px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <ion-icon name="person-outline" style="font-size:14px;color:#065f46;"></ion-icon>
-                </div>
-                <div style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ patient.get_full_name }}</div>
-              </div>
-            </td>
-            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">{{ patient.patient_id }}</td>
-            <td style="padding:14px 20px;font-size:13px;color:#374151;">{{ patient.get_sex_display }}</td>
-            <td style="padding:14px 20px;font-size:13px;color:#374151;">
-              {% if patient.age %}{{ patient.age }} yrs{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
-            </td>
-            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">
-              {% if patient.college %}{{ patient.college.abbreviation }}
-              {% elif patient.department %}{{ patient.department }}
-              {% else %}—{% endif %}
-            </td>
-            <td style="padding:14px 20px;">
-              <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
-                <ion-icon name="eye-outline" style="font-size:13px;"></ion-icon>
-                View
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+{% else %}
+<div class="table-panel">
+  <div class="empty-state">
+    <div class="empty-icon">
+      <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="empty-title">No patients found</div>
+    <div class="empty-sub">
+      {% if query %}No patients match "{{ query }}". Try a different search.
+      {% else %}No patients have been registered yet.{% endif %}
     </div>
   </div>
-
-  {% else %}
-  <div style="background:#fff;border-radius:16px;padding:56px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);text-align:center;">
-    <ion-icon name="people-outline" style="font-size:44px;color:#d1d5db;display:block;margin:0 auto 14px;"></ion-icon>
-    <div style="font-size:15px;font-weight:600;color:#1a1a2e;margin-bottom:6px;">No patients found</div>
-    <p style="font-size:13px;color:#94a3b8;margin:0;">
-      {% if query %}No patients match your search.{% else %}No patients have been registered yet.{% endif %}
-    </p>
-  </div>
-  {% endif %}
-
-  {# Footer #}
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
-
 </div>
-</div>
+{% endif %}
+
 {% endblock %}

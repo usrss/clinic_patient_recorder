@@ -1,61 +1,129 @@
-{% extends 'core/base.html' %}
+{% extends base_template %}
 {% block title %}New Consultation — Clinic Recorder{% endblock %}
+{% block page_title %}New Consultation{% endblock %}
+{% block page_subtitle %}Create on behalf of a walk-in patient{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% block extra_css %}
+<style>
+  .create-page {
+    padding: 0;
+  }
+  .create-wrap { width: 100%; max-width: 680px; }
+
+  .info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 13px;
+    color: #1e40af;
+    margin-bottom: 24px;
+  }
+
+  .card-form {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.04);
+    padding: 28px;
+  }
+
+  .form-group { margin-bottom: 20px; }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+  }
+
+  .reg-input {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .reg-input:focus {
+    border-color: #0078d4;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+  }
+  textarea.reg-input { resize: vertical; min-height: 80px; font-family: 'Inter', sans-serif; }
+  select.reg-input { appearance: none; cursor: pointer; }
+
+  .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 28px; align-items: center; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 22px; background: #0078d4; color: #fff;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+  }
+  .btn-primary:hover { background: #006bbf; box-shadow: 0 4px 14px rgba(0,120,212,0.3); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 22px; background: #fff; color: #4b5563;
+    border: 1px solid #e8ecf1; border-radius: 10px; font-size: 14px;
+    font-weight: 500; text-decoration: none; transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: #f9fafb; border-color: #d1d5db; }
+
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; padding-bottom: 16px; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:660px;margin:0 auto;">
+<div class="create-page">
+<div class="create-wrap">
 
-  {# ── Header ── #}
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
-    <a href="{% url 'consultations:queue' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
-      <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
-    </a>
-    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">New Consultation Request</h1>
+  <div class="info-banner">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <div>Select the patient and fill in their presenting symptoms. This creates a new consultation on their behalf.</div>
   </div>
 
-  {# ── Info Banner ── #}
-  <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:14px 18px;border-radius:12px;margin-bottom:24px;font-size:13px;color:#1e40af;display:flex;gap:10px;align-items:flex-start;">
-    <ion-icon name="information-circle-outline" style="font-size:20px;flex-shrink:0;margin-top:1px;"></ion-icon>
-    <div>Select the patient from the list and fill in the presenting symptoms on their behalf.</div>
-  </div>
-
-  {# ── Form ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Consultation Details</div>
-  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+  <div class="card-form">
     <form method="post" novalidate>
       {% csrf_token %}
 
       <div class="form-group">
-        <label>{{ form.patient.label }}</label>
+        <label>Patient</label>
         {{ form.patient }}
         {% if form.patient.errors %}<div class="form-error">{{ form.patient.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.symptoms.label }}</label>
+        <label>Symptoms</label>
         {{ form.symptoms }}
         {% if form.symptoms.errors %}<div class="form-error">{{ form.symptoms.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.severity_description.label }}</label>
+        <label>Severity Description</label>
         {{ form.severity_description }}
         {% if form.severity_description.errors %}<div class="form-error">{{ form.severity_description.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.medical_history.label }}</label>
+        <label>Medical History</label>
         {{ form.medical_history }}
         {% if form.medical_history.errors %}<div class="form-error">{{ form.medical_history.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.additional_notes.label }}</label>
+        <label>Additional Notes</label>
         {{ form.additional_notes }}
         {% if form.additional_notes.errors %}<div class="form-error">{{ form.additional_notes.errors.0 }}</div>{% endif %}
       </div>
@@ -66,18 +134,18 @@
         </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:24px;">
-        <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
-          <ion-icon name="send-outline" style="font-size:15px;"></ion-icon> Submit Consultation
+      <div class="btn-row">
+        <button type="submit" class="btn-primary">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Submit Consultation
         </button>
-        <a href="{% url 'consultations:queue' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'consultations:queue' %}" class="btn-ghost">Cancel</a>
       </div>
     </form>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
 </div>
 </div>
 {% endblock %}

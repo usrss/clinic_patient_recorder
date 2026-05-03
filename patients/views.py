@@ -14,6 +14,13 @@ from .forms import (
 )
 
 
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
+
+
 @login_required
 @clinical_staff_required
 def patient_list(request):
@@ -47,6 +54,7 @@ def patient_list(request):
         'query': query,
         'total_registered': total_registered,
         'showing_active': patients.count(),
+        'base_template': _base_template(request.user),
     })
 
 
@@ -63,6 +71,7 @@ def patient_detail(request, pk):
         'patient': patient,
         'profile': profile,
         'consultations': consultations,
+        'base_template': _base_template(request.user),
     })
 
 

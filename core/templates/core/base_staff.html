@@ -1,0 +1,583 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Clinic Recorder{% endblock %}</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+
+  <style>
+    :root {
+      --sidebar-w: 230px;
+      --sidebar-bg: #ffffff;
+      --sidebar-border: #e8ecf1;
+      --sidebar-text: #4b5563;
+      --sidebar-text-active: #0078d4;
+      --sidebar-active-bg: #eff6ff;
+      --sidebar-hover-bg: #f5f8ff;
+      --topbar-h: 65px;
+      --page-bg: #f0f4ff;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #e8ecf1;
+      --primary: #0078d4;
+      --primary-lt: #eff6ff;
+      --radius: 10px;
+      --radius-sm: 7px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+      --shadow-md: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── Sidebar ── */
+    .stf-sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 200;
+      transition: transform 0.25s ease;
+      overflow-y: auto;
+    }
+
+    .stf-sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--sidebar-border);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .stf-sidebar-brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .stf-sidebar-brand span {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+    .stf-sidebar-brand small {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: block;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .stf-nav-section {
+      padding: 16px 10px 4px;
+    }
+    .stf-nav-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: #b0b8c8;
+      padding: 0 10px;
+      margin-bottom: 4px;
+    }
+
+    .stf-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--sidebar-text);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .stf-nav-link:hover {
+      background: var(--sidebar-hover-bg);
+      color: var(--text);
+    }
+    .stf-nav-link.active {
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-text-active);
+      font-weight: 600;
+    }
+    .stf-nav-link svg { flex-shrink: 0; opacity: 0.7; }
+    .stf-nav-link.active svg { opacity: 1; }
+
+    /* Role accent colors for active state */
+    .role-doctor  .stf-nav-link.active { color: #7c3aed; background: #ede9fe; }
+    .role-nurse   .stf-nav-link.active { color: #059669; background: #d1fae5; }
+    .role-frontdesk .stf-nav-link.active { color: #0078d4; background: #eff6ff; }
+
+    .stf-sidebar-footer {
+      margin-top: auto;
+      padding: 12px 10px;
+      border-top: 1px solid var(--sidebar-border);
+    }
+    .stf-user-card {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .stf-user-card:hover { background: var(--sidebar-hover-bg); }
+    .stf-user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    /* Avatar gradient by role */
+    .role-doctor   .stf-user-avatar { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+    .role-nurse    .stf-user-avatar { background: linear-gradient(135deg, #059669, #34d399); }
+    .role-frontdesk .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #60a5fa); }
+    .role-admin    .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #3b82f6); }
+
+    .stf-user-info strong {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+    .stf-user-info span {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .stf-logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 2px;
+      font-family: 'Inter', sans-serif;
+    }
+    .stf-logout-btn:hover { background: #fef2f2; }
+
+    /* ── Topbar ── */
+    .stf-topbar {
+      position: fixed;
+      top: 0;
+      left: var(--sidebar-w);
+      right: 0;
+      height: var(--topbar-h);
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 100;
+      gap: 12px;
+    }
+    .stf-topbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .stf-topbar-title small {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+      display: block;
+      line-height: 1.2;
+    }
+    .stf-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stf-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .stf-icon-btn:hover { background: var(--sidebar-hover-bg); color: var(--text); border-color: #c8d4e8; }
+    .stf-icon-btn .dot {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 1px solid #fff;
+    }
+
+    /* ── Main ── */
+    .stf-main {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--topbar-h);
+      flex: 1;
+      min-height: calc(100vh - var(--topbar-h));
+      padding: 28px 28px 48px;
+    }
+
+    /* ── Mobile ── */
+    .stf-mobile-toggle {
+      display: none;
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #fff;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    .stf-sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 199;
+    }
+
+    @media (max-width: 768px) {
+      .stf-sidebar { transform: translateX(-100%); }
+      .stf-sidebar.open { transform: translateX(0); }
+      .stf-sidebar-overlay.open { display: block; }
+      .stf-topbar { left: 0; }
+      .stf-main { margin-left: 0; padding: 20px 16px 40px; }
+      .stf-mobile-toggle { display: flex; }
+    }
+
+    /* ── Toast ── */
+    .toast-container { z-index: 9999; margin-top: 64px; }
+
+    /* ── Logout modal ── */
+    .stf-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    .stf-modal-overlay.open { display: flex; }
+    .stf-modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px 20px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    }
+    .stf-modal h5 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .stf-modal p  { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .stf-modal-btns { display: flex; gap: 8px; justify-content: center; }
+    .stf-btn {
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .stf-btn-ghost  { background: #f3f4f6; color: var(--text); }
+    .stf-btn-ghost:hover  { background: #e5e7eb; }
+    .stf-btn-danger { background: #ef4444; color: #fff; }
+    .stf-btn-danger:hover { background: #dc2626; }
+
+    /* Role pill in topbar */
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .role-pill.doctor   { background: #ede9fe; color: #6d28d9; }
+    .role-pill.nurse    { background: #d1fae5; color: #065f46; }
+    .role-pill.frontdesk { background: #eff6ff; color: #0078d4; }
+    .role-pill.admin    { background: #fef3c7; color: #92400e; }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+{# Add role class to body for scoped CSS accent colors #}
+<body class="role-{{ user.role }}">
+
+  <!-- Sidebar overlay -->
+  <div class="stf-sidebar-overlay" id="staffSidebarOverlay" onclick="stfCloseSidebar()"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside class="stf-sidebar" id="staffSidebar">
+    <a href="{% url 'accounts:dashboard' %}" class="stf-sidebar-brand">
+      <img src="{% static 'core/images/norsu-logo.png' %}" alt="NORSU" onerror="this.style.display='none'">
+      <div>
+        <span>Clinic Recorder</span>
+        <small>NORSU Clinic</small>
+      </div>
+    </a>
+
+    <!-- ── Doctor nav ── -->
+    {% if user.role == 'doctor' %}
+    <div class="stf-nav-section">
+      <div class="stf-nav-section-label">Workspace</div>
+      <a href="{% url 'accounts:dashboard' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'consultations:doctor_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'doctor_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        My Patients
+      </a>
+      <a href="{% url 'patients:patient_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Records
+      </a>
+      <a href="{% url 'inventory:medicine_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+        Inventory
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- ── Nurse nav ── -->
+    {% if user.role == 'nurse' %}
+    <div class="stf-nav-section">
+      <div class="stf-nav-section-label">Workspace</div>
+      <a href="{% url 'accounts:dashboard' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'consultations:triage_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Triage Queue
+      </a>
+      <a href="{% url 'patients:patient_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Patients
+      </a>
+      <a href="{% url 'inventory:medicine_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+        Inventory
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- ── Front Desk nav ── -->
+    {% if user.role == 'frontdesk' %}
+    <div class="stf-nav-section">
+      <div class="stf-nav-section-label">Workspace</div>
+      <a href="{% url 'accounts:dashboard' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'consultations:queue' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'queue' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        Queue
+      </a>
+      <a href="{% url 'consultations:consultation_create' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'consultation_create' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Consultation
+      </a>
+      <a href="{% url 'patients:patient_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Patients
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- ── Account section (all roles) ── -->
+    <div class="stf-nav-section">
+      <div class="stf-nav-section-label">Account</div>
+      <a href="{% url 'accounts:profile_settings' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'profile_settings' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+      <a href="{% url 'notifications:list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        Notifications
+        <span id="sidebar-notif-badge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;line-height:1.6;"></span>
+      </a>
+    </div>
+
+    <!-- Footer: user + logout -->
+    <div class="stf-sidebar-footer">
+      <a href="{% url 'accounts:profile_settings' %}" class="stf-user-card" style="text-decoration:none;">
+        <div class="stf-user-avatar">{{ user.get_full_name|default:user.username|first|upper }}</div>
+        <div class="stf-user-info">
+          <strong>{{ user.get_full_name|default:user.username }}</strong>
+          <span>{{ user.get_role_display|default:user.role|title }}</span>
+        </div>
+      </a>
+      <button class="stf-logout-btn" onclick="document.getElementById('stfLogoutModal').classList.add('open')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Topbar ── -->
+  <header class="stf-topbar">
+    <button class="stf-mobile-toggle" onclick="stfOpenSidebar()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="stf-topbar-title">
+      {% block page_title %}Dashboard{% endblock %}
+      <small>{% block page_subtitle %}{% endblock %}</small>
+    </div>
+    <div class="stf-topbar-actions">
+      <!-- Role pill -->
+      <span class="role-pill {{ user.role }}">
+        {% if user.role == 'doctor' %}
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          Doctor
+        {% elif user.role == 'nurse' %}
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Nurse
+        {% elif user.role == 'frontdesk' %}
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          Front Desk
+        {% endif %}
+      </span>
+    </div>
+  </header>
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    {% for message in messages %}
+    <div class="toast align-items-center border-0 show
+                {% if message.tags == 'error' %}bg-danger
+                {% elif message.tags == 'success' %}bg-success
+                {% elif message.tags == 'warning' %}bg-warning
+                {% else %}bg-primary{% endif %} text-white"
+         role="alert" data-bs-autohide="true" data-bs-delay="4000">
+      <div class="d-flex">
+        <div class="toast-body fw-500">{{ message }}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Main content -->
+  <main class="stf-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Logout modal -->
+  <div class="stf-modal-overlay" id="stfLogoutModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="stf-modal">
+      <h5>Log out?</h5>
+      <p>You'll be redirected to the login page.</p>
+      <div class="stf-modal-btns">
+        <button class="stf-btn stf-btn-ghost" onclick="document.getElementById('stfLogoutModal').classList.remove('open')">Cancel</button>
+        <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="stf-btn stf-btn-danger">Log out</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}"></script>
+
+  <script>
+    function stfOpenSidebar() {
+      document.getElementById('staffSidebar').classList.add('open');
+      document.getElementById('staffSidebarOverlay').classList.add('open');
+    }
+    function stfCloseSidebar() {
+      document.getElementById('staffSidebar').classList.remove('open');
+      document.getElementById('staffSidebarOverlay').classList.remove('open');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // Auto-dismiss toasts
+      document.querySelectorAll('.toast[data-bs-autohide="true"]').forEach(function (el) {
+        new bootstrap.Toast(el, { delay: 4000 }).show();
+      });
+
+      // Mirror unread badge to sidebar
+      const dot = document.getElementById('notif-dot');
+      const sidebarBadge = document.getElementById('sidebar-notif-badge');
+      if (dot && sidebarBadge) {
+        const observer = new MutationObserver(() => {
+          if (dot.style.display !== 'none') {
+            sidebarBadge.style.display = 'inline-block';
+          }
+        });
+        observer.observe(dot, { attributes: true, attributeFilter: ['style'] });
+      }
+    });
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

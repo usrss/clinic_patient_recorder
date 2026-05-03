@@ -151,7 +151,7 @@ class PasswordResetForm(forms.Form):
         return cleaned
 
 
-# ── REGISTRATION FORM ─────────────────────────────────────────────────
+# ── REGISTRATION FORM
 
 class RegistrationForm(forms.Form):
     """Self-registration for students, faculty, and staff with full medical profile."""
@@ -181,6 +181,7 @@ class RegistrationForm(forms.Form):
                  ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'), ('Unknown', 'Unknown')],
         required=False
     )
+
     religion = forms.CharField(max_length=100, required=False)
     civil_status = forms.ChoiceField(
         choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'),
@@ -199,7 +200,7 @@ class RegistrationForm(forms.Form):
     )
     year_level = forms.ChoiceField(
         choices=[('', '—'), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
-                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year'), ('5th Year', '5th Year')],
+                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
         required=False,
         label='Year Level',
     )
