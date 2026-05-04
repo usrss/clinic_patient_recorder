@@ -57,7 +57,7 @@ def print_certificate(request, pk):
         MedicalCertificate.CertificateType.STANDARD: 'certificates/certificate_standard.html',
         MedicalCertificate.CertificateType.FIT_TO_PLAY: 'certificates/certificate_fit_to_play.html',
         MedicalCertificate.CertificateType.FIT_TO_WORK: 'certificates/certificate_fit_to_work.html',
-        MedicalCertificate.CertificateType.DENTAL: 'certificates/certificate_dental.html',
+
     }
 
     template_name = template_map.get(certificate.certificate_type, 'certificates/certificate_standard.html')
