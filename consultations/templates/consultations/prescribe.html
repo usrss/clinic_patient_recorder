@@ -164,7 +164,7 @@
     <div class="alert alert-warning">No medical history recorded for this patient.</div>
     {% endif %}
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-      {% if profile.blood_type %}<span class="badge-pill badge-blue">{{ profile.blood_type }}</span>{% endif %}
+      {% if profile.blood_type %}<span class="badge-pill badge-blue">blood Type: {{ profile.blood_type }}</span>{% endif %}
       {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy">{{ profile.known_allergies }}</span>{% endif %}
       {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">{{ profile.current_medications }}</span>{% endif %}
     </div>
