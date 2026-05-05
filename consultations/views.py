@@ -321,7 +321,8 @@ def triage_form(request, pk):
     return render(request, 'consultations/triage_form.html', {
         'consultation': consultation,
         'form': form,
-        'profile': profile,  # Pass profile for display
+        'profile': profile,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -356,6 +357,7 @@ def triage_edit(request, pk):
         'consultation': consultation,
         'triage': triage,
         'form': form,
+        'base_template': _base_template(request.user),
     })
 
 

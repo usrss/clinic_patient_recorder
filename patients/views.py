@@ -28,7 +28,6 @@ def patient_list(request):
 
     patients = Patient.objects.select_related('college', 'profile').filter(
         is_active=True,
-        has_logged_in=True,
     )
 
     query = ''

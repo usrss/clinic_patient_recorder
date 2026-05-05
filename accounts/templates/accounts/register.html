@@ -264,7 +264,7 @@
           <div class="form-group" id="field-college">
             <label for="id_college">College <span class="req">*</span></label>
             <select id="id_college" name="college" class="reg-input">
-              <option value="">— Select College —</option>
+              <option value=""> Select College </option>
               {% for c in form.college.field.queryset %}
               <option value="{{ c.pk }}">{{ c.abbreviation }} — {{ c.name }}</option>
               {% endfor %}
@@ -272,6 +272,7 @@
             <div class="field-error" id="err-college">Please select your college.</div>
           </div>
           <div class="form-group" id="field-year">
+            <label for="id_year_level">College <span class="req">*</span></label>
             <label for="id_year_level">Year Level</label>
             <select id="id_year_level" name="year_level" class="reg-input">
               <option value="">—</option>

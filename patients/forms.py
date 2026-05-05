@@ -24,7 +24,7 @@ class PatientSearchForm(forms.Form):
         required=False,
         label='Search',
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
+            'class': 'search-input',
             'placeholder': 'Search by name, patient ID, college...',
             'autofocus': True,
         })

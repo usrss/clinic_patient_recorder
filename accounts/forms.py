@@ -194,14 +194,14 @@ class RegistrationForm(forms.Form):
     # College — required for student and faculty, optional for staff
     college = forms.ModelChoiceField(
         queryset=College.objects.all().order_by('name'),
-        required=False,  # enforced conditionally in clean()
+        required=True,  # enforced conditionally in clean()
         label='College',
-        empty_label='— Select College —',
+        empty_label='Select College',
     )
     year_level = forms.ChoiceField(
-        choices=[('', '—'), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
+        choices=[('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
                  ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
-        required=False,
+        required=True,
         label='Year Level',
     )
 
