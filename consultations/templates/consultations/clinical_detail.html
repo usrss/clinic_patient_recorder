@@ -193,16 +193,36 @@
         <span class="tag" style="background:#eff6ff;"><strong>Blood Type:</strong> {{ profile.blood_type }}</span>
       {% endif %}
       {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}
-        <span class="tag" style="background:#fef2f2;color:#dc2626;font-weight:600;">⚠ {{ profile.known_allergies }}</span>
+        <span class="tag" style="background:#fef2f2;color:#dc2626;font-weight:600;">Allergies: {{ profile.known_allergies }}</span>
       {% endif %}
       {% if profile.current_medications and profile.current_medications|lower != 'none' %}
-        <span class="tag" style="background:#fff7ed;">💊 {{ profile.current_medications }}</span>
+        <span class="tag" style="background:#fff7ed;color:#c2410c;">Current Meds: {{ profile.current_medications }}</span>
       {% endif %}
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin:12px 0 6px;">Medical History</div>
+    <div class="tag-row">
       {% if profile.hypertension %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Hypertension</span>{% endif %}
       {% if profile.diabetes %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Diabetes</span>{% endif %}
       {% if profile.asthma %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Asthma</span>{% endif %}
-      {% if profile.cardiac_problems %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Cardiac Problems</span>{% endif %}
+      {% if profile.cardiac_problems %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Cardiac</span>{% endif %}
       {% if profile.arthritis %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Arthritis</span>{% endif %}
+      {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}
+        <span style="color:#94a3b8;font-size:12px;">None recorded</span>
+      {% endif %}
+    </div>
+
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin:12px 0 6px;">Immunization</div>
+    <div class="tag-row">
+      {% if profile.bcg %}<span class="tag" style="background:#f0fdf4;color:#065f46;">BCG</span>{% endif %}
+      {% if profile.dpt %}<span class="tag" style="background:#f0fdf4;color:#065f46;">DPT</span>{% endif %}
+      {% if profile.opv %}<span class="tag" style="background:#f0fdf4;color:#065f46;">OPV</span>{% endif %}
+      {% if profile.hepatitis_b %}<span class="tag" style="background:#f0fdf4;color:#065f46;">Hepatitis B</span>{% endif %}
+      {% if profile.measles %}<span class="tag" style="background:#f0fdf4;color:#065f46;">Measles</span>{% endif %}
+      {% if profile.tt %}<span class="tag" style="background:#f0fdf4;color:#065f46;">TT</span>{% endif %}
+      {% if not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
+        <span style="color:#94a3b8;font-size:12px;">None recorded</span>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -378,6 +398,7 @@
       This will return the consultation to Pending status so front desk can process it again.
     </p>
     <form method="post" action="{% url 'consultations:admin_reopen' consultation.pk %}"
+          onsubmit="return confirm('Reopen consultation #{{ consultation.pk }}?');">
           onsubmit="return confirm('Reopen consultation #{{ consultation.pk }}?');">
       {% csrf_token %}
       <button type="submit"
