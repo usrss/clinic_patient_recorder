@@ -186,6 +186,7 @@ def queue_detail(request, pk):
     return render(request, 'consultations/queue_detail.html', {
         'consultation': consultation,
         'form': form,
+        'base_template': _base_template(request.user),
     })
 
 

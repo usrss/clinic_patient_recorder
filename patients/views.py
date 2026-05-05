@@ -92,16 +92,29 @@ def patient_profile_setup(request, pk):
 
     patient = get_object_or_404(Patient, pk=pk)
     profile, _ = PatientProfile.objects.get_or_create(patient=patient)
-    form = PatientProfileSetupForm(request.POST or None, instance=profile)
+
+    # Use the full profile edit form from accounts
+    from accounts.forms import PatientProfileEditForm
+    form = PatientProfileEditForm(
+        request.POST or None,
+        instance=profile,
+        patient=patient,
+    )
 
     if request.method == 'POST' and form.is_valid():
         form.save()
+        patient.phone = form.cleaned_data.get('phone', '')
+        patient.email = form.cleaned_data.get('email', '')
+        patient.emergency_contact_name = form.cleaned_data.get('emergency_contact_name', '')
+        patient.emergency_contact_phone = form.cleaned_data.get('emergency_contact_phone', '')
+        patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone'])
         messages.success(request, f'Profile updated for {patient.get_full_name()}.')
         return redirect('patients:patient_detail', pk=pk)
 
-    return render(request, 'patients/patient_profile_setup.html', {
+    return render(request, 'accounts/profile_settings_patient.html', {
+        'info_form': form,
         'patient': patient,
-        'form': form,
+        'is_staff_edit': True,
     })
 
 
