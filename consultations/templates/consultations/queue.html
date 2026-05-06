@@ -151,7 +151,9 @@
           <th>Symptoms</th>
           <th>Severity</th>
           <th>Submitted</th>
+           {% if user.role == 'frontdesk' %}
           <th>Action</th>
+          {%endif%}
         </tr>
       </thead>
       <tbody>
@@ -176,10 +178,12 @@
           </td>
           <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
           <td>
+            {% if user.role == 'frontdesk' %}
             <a href="{% url 'consultations:queue_detail' c.pk %}" class="process-btn">
               Process
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
             </a>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
