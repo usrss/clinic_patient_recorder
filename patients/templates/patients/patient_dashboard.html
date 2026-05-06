@@ -333,13 +333,36 @@
           <tr>
             <td style="color:#94a3b8;font-size:11px;">{{ c.pk }}</td>
             <td>
-              {% if c.status == 'pending' %}<span class="status-badge s-pending">⏳ Pending</span>
-              {% elif c.status == 'queued' %}<span class="status-badge s-queued">🗂 Queued</span>
-              {% elif c.status == 'scheduled' %}<span class="status-badge s-scheduled">📅 Scheduled</span>
-              {% elif c.status == 'triaged' %}<span class="status-badge s-triaged">🩺 Triaged</span>
-              {% elif c.status == 'completed' %}<span class="status-badge s-completed">✅ Completed</span>
-              {% elif c.status == 'cancelled' %}<span class="status-badge s-cancelled">✕ Cancelled</span>
-              {% endif %}
+                     {% if c.status == 'pending' %}
+          <span class="status-badge s-pending">
+            <ion-icon name="time-outline"></ion-icon> Pending
+          </span>
+
+        {% elif c.status == 'queued' %}
+          <span class="status-badge s-queued">
+            <ion-icon name="list-outline"></ion-icon> Queued
+          </span>
+
+        {% elif c.status == 'scheduled' %}
+          <span class="status-badge s-scheduled">
+            <ion-icon name="calendar-outline"></ion-icon> Scheduled
+          </span>
+
+        {% elif c.status == 'triaged' %}
+          <span class="status-badge s-triaged">
+            <ion-icon name="medical-outline"></ion-icon> Triaged
+          </span>
+
+        {% elif c.status == 'completed' %}
+          <span class="status-badge s-completed">
+            <ion-icon name="checkmark-circle-outline"></ion-icon> Completed
+          </span>
+
+        {% elif c.status == 'cancelled' %}
+          <span class="status-badge s-cancelled">
+            <ion-icon name="close-circle-outline"></ion-icon> Cancelled
+          </span>
+        {% endif %}
             </td>
             <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
               {{ c.symptoms|truncatechars:60 }}
