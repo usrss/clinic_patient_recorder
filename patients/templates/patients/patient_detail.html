@@ -73,12 +73,6 @@
         <div class="identity-name">{{ patient.get_full_name }}</div>
         <span class="identity-id">{{ patient.patient_id }}</span>
       </div>
-      {% if user.role == 'admin' or user.role == 'frontdesk' %}
-      <a href="{% url 'patients:patient_profile_setup' patient.pk %}" class="edit-btn">
-        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit Profile
-      </a>
-      {% endif %}
     </div>
     <div class="info-grid">
       <div><div class="info-item-label">Full Name</div><div class="info-item-value">{{ patient.get_full_name }}</div></div>
@@ -97,10 +91,10 @@
 <div class="panel panel-full">
   <div class="panel-body">
     <div class="info-grid">
-      <div><div class="info-item-label">Phone</div><div class="info-item-value">{{ patient.phone|default:"—" }}</div></div>
-      <div><div class="info-item-label">Email</div><div class="info-item-value">{{ patient.email|default:"—" }}</div></div>
-      <div><div class="info-item-label">Emergency Contact</div><div class="info-item-value">{{ patient.emergency_contact_name|default:"—" }}</div></div>
-      <div><div class="info-item-label">Emergency Phone</div><div class="info-item-value">{{ patient.emergency_contact_phone|default:"—" }}</div></div>
+      <div><div class="info-item-label">Phone</div><div class="info-item-value">{{ patient.phone|default:" " }}</div></div>
+      <div><div class="info-item-label">Email</div><div class="info-item-value">{{ patient.email|default:" " }}</div></div>
+      <div><div class="info-item-label">Emergency Contact</div><div class="info-item-value">{{ patient.emergency_contact_name|default:" " }}</div></div>
+      <div><div class="info-item-label">Emergency Phone</div><div class="info-item-value">{{ patient.emergency_contact_phone|default:" " }}</div></div>
       {% if profile and profile.address %}
       <div><div class="info-item-label">Address</div><div class="info-item-value">{{ profile.address }}</div></div>
       {% endif %}
