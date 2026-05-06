@@ -1,4 +1,4 @@
-# NORSU Clinic Record SYstem
+# NORSU Clinic Record System
 
 A web-based clinic management system for the NORSU University Clinic.  
 It streamlines patient registration, consultation queues, medical records, inventory, and certificate issuance.
