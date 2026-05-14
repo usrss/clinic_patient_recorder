@@ -19,12 +19,10 @@ urlpatterns = [
     # ── Admin ─────────────────────────────────────────────────────────
     path('<int:pk>/reopen/', views.admin_reopen, name='admin_reopen'),
 
-    # ── Nurse ─────────────────────────────────────────────────────────
+    # ── Doctor (includes triage) ──────────────────────────────────────
     path('triage/', views.triage_list, name='triage_list'),
     path('triage/<int:pk>/', views.triage_form, name='triage_form'),
     path('triage/<int:pk>/edit/', views.triage_edit, name='triage_edit'),
-
-    # ── Doctor ────────────────────────────────────────────────────────
     path('doctor/', views.doctor_list, name='doctor_list'),
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
 
@@ -37,5 +35,4 @@ urlpatterns = [
 
     # Print Consultation
     path('<int:pk>/print/', views.print_consultation, name='print_consultation'),
-
 ]

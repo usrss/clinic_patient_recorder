@@ -103,10 +103,10 @@
   <div class="page-header">
     <div></div>
     <div class="page-header-actions">
+      {%if user.role == 'admin' %}
       <a href="{% url 'inventory:movements' %}" class="header-btn header-btn-ghost">
         <ion-icon name="clipboard-outline" style="font-size:15px;color:#0078d4;"></ion-icon> Stock Log
       </a>
-      {% if user.role == 'admin' %}
       <a href="{% url 'inventory:create' %}" class="header-btn header-btn-primary">
         <ion-icon name="add-outline" style="font-size:15px;"></ion-icon> Add Medicine
       </a>

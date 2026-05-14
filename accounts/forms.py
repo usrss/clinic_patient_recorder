@@ -117,19 +117,27 @@ class PatientProfileEditForm(forms.ModelForm):
 
 
 class PasswordResetRequestForm(forms.Form):
-    email = forms.EmailField(
-        label='Email Address',
-        widget=forms.EmailInput(attrs={
+    patient_id = forms.CharField(
+        label='ID Number',
+        max_length=30,
+        widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter your registered email',
+            'placeholder': 'Enter your Student / Employee ID',
         })
     )
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if not User.objects.filter(email=email, is_active=True).exists():
-            raise forms.ValidationError('No active account found with this email.')
-        return email
+    def clean_patient_id(self):
+        patient_id = self.cleaned_data.get('patient_id', '').strip()
+        # Username is set to patient_id during registration
+        if not User.objects.filter(username=patient_id, is_active=True).exists():
+            raise forms.ValidationError('No active account found with this ID.')
+        user = User.objects.get(username=patient_id, is_active=True)
+        if not user.email:
+            raise forms.ValidationError(
+                'No email address is linked to this account. '
+                'Please contact the clinic.'
+            )
+        return patient_id
 
 
 class PasswordResetForm(forms.Form):

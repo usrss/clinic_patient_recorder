@@ -236,25 +236,31 @@ def forgot_password(request):
 
     form = PasswordResetRequestForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        email = form.cleaned_data['email']
-        user = User.objects.get(email=email, is_active=True)
+        patient_id = form.cleaned_data['patient_id']
+        user = User.objects.get(username=patient_id, is_active=True)
 
         otp = str(random.randint(100000, 999999))
         user.reset_otp = otp
         user.reset_otp_expiry = timezone.now() + timedelta(minutes=3)
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
 
-        print(f'OTP for {email}: {otp}')
+        # Mask email for display: e.g. j***e@gmail.com
+        email = user.email
+        local, domain = email.split('@')
+        masked_email = local[0] + ('*' * (len(local) - 2)) + local[-1] + '@' + domain
 
         send_mail(
             'Password Reset OTP — Clinic Recorder',
-            f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 10 minutes.',
+            f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 3 minutes.',
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
         )
 
-        messages.success(request, 'A 6-digit OTP has been sent to your email.')
+        messages.success(
+            request,
+            f'A 6-digit OTP has been sent to {masked_email}.'
+        )
         return redirect('accounts:verify_otp', user_id=user.pk)
 
     return render(request, 'accounts/forgot_password.html', {'form': form})
@@ -345,7 +351,6 @@ def dashboard(request):
         })
 
     role_template_map = {
-        User.Role.NURSE: 'accounts/dashboard_nurse.html',
         User.Role.DOCTOR: 'accounts/dashboard_doctor.html',
         User.Role.FRONTDESK: 'accounts/dashboard_frontdesk.html',
     }
@@ -359,7 +364,6 @@ def dashboard(request):
             'user': user,
             'total_staff': User.objects.exclude(role=User.Role.PATIENT).count(),
             'total_patients': Patient.objects.filter(is_active=True).count(),
-            'nurses': User.objects.filter(role=User.Role.NURSE).count(),
             'doctors': User.objects.filter(role=User.Role.DOCTOR).count(),
             'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
         }

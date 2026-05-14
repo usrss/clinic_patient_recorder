@@ -35,6 +35,13 @@
   textarea.reg-input { resize: vertical; min-height: 70px; font-family: 'Inter', sans-serif; }
   select.reg-input { appearance: none; cursor: pointer; }
 
+  /* "Other" free-text inputs — hidden until "Other…" is chosen */
+  .other-input {
+    margin-top: 6px;
+    display: none; /* shown by JS */
+  }
+  .other-input.visible { display: block; }
+
   .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
 
   .btn-row { display: flex; gap: 10px; margin-top: 24px; align-items: center; }
@@ -98,6 +105,7 @@
     color: #ef4444; font-size: 16px; padding: 2px 6px; border-radius: 4px; line-height: 1;
   }
   .remove-row-btn:hover { background: #fee2e2; }
+
   #add-medicine-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 10px;
@@ -106,12 +114,22 @@
     font-family: inherit; margin-top: 10px; transition: background 0.15s;
   }
   #add-medicine-btn:hover { background: #eff6ff; }
-  .medicine-row-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr;
-    gap: 10px; padding-right: 32px;
+
+  /* Apply to All bar */
+  .apply-all-bar {
+    display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+    background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 14px;
   }
-  @media (max-width: 700px) { .medicine-row-grid { grid-template-columns: 1fr 1fr; } }
+  .apply-all-bar .apply-col { display: flex; flex-direction: column; flex: 1; min-width: 130px; }
+  .apply-all-bar label { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 4px; text-transform: uppercase; }
+  .btn-apply-all {
+    padding: 10px 18px; background: #0078d4; color: #fff;
+    border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; align-self: flex-end;
+    transition: background 0.15s;
+  }
+  .btn-apply-all:hover { background: #006bbf; }
 
   .info-grid {
     display: grid;
@@ -123,6 +141,21 @@
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
   }
   .info-value { font-size: 14px; font-weight: 500; color: #374151; }
+
+  .mode-toggle-label {
+    font-size: 11px; font-weight: 600; color: #374151; margin-right: 16px; cursor: pointer;
+  }
+  .mode-toggle-label input { margin-right: 4px; }
+
+  /* Col grids inside rows */
+  .inv-grid { display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 0.7fr 1.4fr; gap: 8px; }
+  .cus-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.4fr; gap: 8px; }
+  @media (max-width: 680px) {
+    .inv-grid, .cus-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .field-wrap { display: flex; flex-direction: column; }
+  .field-wrap > label { font-size: 10px; font-weight: 600; color: #64748b; margin-bottom: 3px; }
 </style>
 {% endblock %}
 
@@ -165,8 +198,8 @@
     {% endif %}
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
       {% if profile.blood_type %}<span class="badge-pill badge-blue">Blood Type: {{ profile.blood_type }}</span>{% endif %}
-      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy"> Allergies: {{ profile.known_allergies }}</span>{% endif %}
-      {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">Medical History: {{ profile.current_medications }}</span>{% endif %}
+      {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy">Allergies: {{ profile.known_allergies }}</span>{% endif %}
+      {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">Medications: {{ profile.current_medications }}</span>{% endif %}
     </div>
     <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Medical History</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
@@ -214,13 +247,15 @@
   <div class="card-panel">
     <form method="post" novalidate id="prescription-form">
       {% csrf_token %}
+      <!-- Hidden field: shared instructions for "Apply to All" -->
+      <input type="hidden" name="apply_instructions" id="apply_instructions_hidden">
 
       <div class="sec-label">Diagnosis & Treatment</div>
 
       {% if common_diagnoses %}
       <div class="form-group">
         <label>Common Diagnosis</label>
-        <select name="diagnosis_select" class="reg-input">
+        <select name="diagnosis_select" class="reg-input" id="diagnosis_select_field">
           <option value="">— Select or type below —</option>
           {% for d in common_diagnoses %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}
         </select>
@@ -237,78 +272,234 @@
         {{ prescription_form.treatment_plan }}
       </div>
 
-      {% if inventory_medicines %}
+      <!-- ── MEDICINES SECTION ── -->
       <div class="sec-label sec-label-gap">Medicines Prescribed</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 16px;">Select medicine from inventory. All fields required.</p>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 16px 0;">
+        Select from inventory or add a custom medicine. Use <strong>Apply to All</strong> to set shared dosage/frequency/duration/instructions across all rows at once.
+      </p>
+
       {{ formset.management_form }}
+
+      <!--
+        ╔══════════════════════════════════════════════════════════════╗
+        ║  APPLY TO ALL BAR                                           ║
+        ║  Sets dosage, frequency, duration for all rows at once.     ║
+        ║  Instructions uses ONE shared value (not repeated per row). ║
+        ╚══════════════════════════════════════════════════════════════╝
+      -->
+      <div class="apply-all-bar" id="apply-all-bar">
+        <div class="apply-col">
+          <label>Dosage</label>
+          <select id="ata-dosage" class="reg-input med-select">
+            <option value="">— keep —</option>
+            <option>500mg</option><option>250mg</option><option>200mg</option>
+            <option>100mg</option><option>50mg</option><option>25mg</option>
+            <option>10mg</option><option>5mg</option>
+            <option>10ml</option><option>5ml</option><option>2.5ml</option>
+            <option value="other">Other…</option>
+          </select>
+          <input type="text" id="ata-dosage-other" class="reg-input other-input" placeholder="e.g. 750mg">
+        </div>
+        <div class="apply-col">
+          <label>Frequency</label>
+          <select id="ata-frequency" class="reg-input med-select">
+            <option value="">— keep —</option>
+            <option>Once daily</option><option>2x a day</option><option>3x a day</option>
+            <option>4x a day</option><option>Every 4 hours</option>
+            <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
+            <option value="other">Other…</option>
+          </select>
+          <input type="text" id="ata-frequency-other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+        </div>
+        <div class="apply-col">
+          <label>Duration</label>
+          <select id="ata-duration" class="reg-input med-select">
+            <option value="">— keep —</option>
+            <option>1 day</option><option>3 days</option><option>5 days</option>
+            <option>7 days</option><option>10 days</option><option>14 days</option>
+            <option>1 month</option>
+            <option value="other">Other…</option>
+          </select>
+          <input type="text" id="ata-duration-other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+        </div>
+        <div class="apply-col" style="flex:1.5;">
+          <label>Instructions <span style="font-size:9px;color:#6b7280;">(one shared for all — appears once on print)</span></label>
+          <select id="ata-instructions" class="reg-input med-select">
+            <option value="">— keep —</option>
+            <option>Take after meals</option><option>Take before meals</option>
+            <option>Take on empty stomach</option><option>Take with food</option>
+            <option>Apply topically</option><option>As directed</option>
+            <option value="other">Other…</option>
+          </select>
+          <input type="text" id="ata-instructions-other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+        </div>
+        <div>
+          <button type="button" class="btn-apply-all" id="apply-all-btn">⟳ Apply to All</button>
+        </div>
+      </div>
+
+      <!-- Medicine rows container -->
       <div id="medicine-rows">
         {% for item_form in formset %}
-        <div class="medicine-row">
-          <button type="button" class="remove-row-btn" onclick="removeRow(this)">✕</button>
-          <div class="medicine-row-grid">
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Medicine *</label>
-              {{ item_form.medicine }}
-              {% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Dosage *</label>
-              <select name="{{ item_form.dosage.html_name }}" class="reg-input">
-                <option value="">—</option>
-                <option>500mg</option><option>250mg</option><option>100mg</option>
-                <option>50mg</option><option>10mg</option><option>5mg</option>
-                <option>10ml</option><option>5ml</option>
-              </select>
-              {% if item_form.dosage.errors %}<div class="form-error">{{ item_form.dosage.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Freq *</label>
-              <select name="{{ item_form.frequency.html_name }}" class="reg-input">
-                <option value="">—</option>
-                <option>Once daily</option><option>2x a day</option><option>3x a day</option>
-                <option>4x a day</option><option>Every 4 hours</option>
-                <option>Every 6 hours</option><option>Every 8 hours</option>
-                <option>As needed</option>
-              </select>
-              {% if item_form.frequency.errors %}<div class="form-error">{{ item_form.frequency.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Duration *</label>
-              <select name="{{ item_form.duration.html_name }}" class="reg-input">
-                <option value="">—</option>
-                <option>3 days</option><option>5 days</option><option>7 days</option>
-                <option>10 days</option><option>14 days</option><option>1 month</option>
-              </select>
-              {% if item_form.duration.errors %}<div class="form-error">{{ item_form.duration.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Qty *</label>
-              {{ item_form.quantity }}
-              {% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label style="font-size:11px;">Instructions</label>
-              <select name="{{ item_form.instructions.html_name }}" class="reg-input">
-                <option value="">—</option>
-                <option>Take after meals</option><option>Take before meals</option>
-                <option>Take on empty stomach</option><option>Take with food</option>
-                <option>As directed</option>
-              </select>
-            </div>
+        {# ── Each row: inventory mode + custom mode in SEPARATE divs with UNIQUE names ── #}
+        <div class="medicine-row" data-index="{{ forloop.counter0 }}">
+          <button type="button" class="remove-row-btn" title="Remove row">✕</button>
+
+          <!-- Hidden source field (set by JS when radio changes) -->
+          <input type="hidden" name="meds-{{ forloop.counter0 }}-source" value="inventory" class="source-field">
+
+          <!-- Mode selector radios -->
+          <div style="margin-bottom:12px;">
+            <label class="mode-toggle-label">
+              <input type="radio" name="med_source_{{ forloop.counter0 }}" value="inventory" class="med-source-radio" checked> From Inventory
+            </label>
+            <label class="mode-toggle-label">
+              <input type="radio" name="med_source_{{ forloop.counter0 }}" value="custom" class="med-source-radio"> Custom (not in inventory)
+            </label>
           </div>
-          {% if item_form.non_field_errors %}<div class="form-error" style="margin-top:6px;">{% for error in item_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
+
+          <!-- ── INVENTORY MODE ── -->
+          <div class="med-mode-inventory">
+            <div class="inv-grid">
+              <div class="field-wrap">
+                <label>Medicine</label>
+                <select name="meds-{{ forloop.counter0 }}-medicine" class="reg-input">
+                  <option value="">— Select —</option>
+                  {% for med in inventory_medicines %}
+                  <option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }} left)</option>
+                  {% endfor %}
+                </select>
+                {% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Dosage <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-inv_dosage" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>500mg</option><option>250mg</option><option>200mg</option>
+                  <option>100mg</option><option>50mg</option><option>25mg</option>
+                  <option>10mg</option><option>5mg</option>
+                  <option>10ml</option><option>5ml</option><option>2.5ml</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg">
+                {% if item_form.inv_dosage.errors %}<div class="form-error">{{ item_form.inv_dosage.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Frequency <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-inv_frequency" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>Once daily</option><option>2x a day</option><option>3x a day</option>
+                  <option>4x a day</option><option>Every 4 hours</option>
+                  <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+                {% if item_form.inv_frequency.errors %}<div class="form-error">{{ item_form.inv_frequency.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Duration <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-inv_duration" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>1 day</option><option>3 days</option><option>5 days</option>
+                  <option>7 days</option><option>10 days</option><option>14 days</option>
+                  <option>1 month</option><option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+                {% if item_form.inv_duration.errors %}<div class="form-error">{{ item_form.inv_duration.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Qty <span style="color:#ef4444;">*</span></label>
+                <input type="number" name="meds-{{ forloop.counter0 }}-quantity" class="reg-input" min="1" placeholder="Units">
+                {% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Instructions</label>
+                <select name="meds-{{ forloop.counter0 }}-inv_instructions" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>Take after meals</option><option>Take before meals</option>
+                  <option>Take on empty stomach</option><option>Take with food</option>
+                  <option>Apply topically</option><option>As directed</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+              </div>
+            </div>
+          </div><!-- /inventory mode -->
+
+          <!-- ── CUSTOM MODE (hidden by default) ── -->
+          <div class="med-mode-custom" style="display:none;">
+            <div class="cus-grid">
+              <div class="field-wrap">
+                <label>Medicine Name <span style="color:#ef4444;">*</span></label>
+                <input type="text" name="meds-{{ forloop.counter0 }}-medicine_name" class="reg-input" placeholder="e.g. Betadine Gargle" autocomplete="off">
+                {% if item_form.medicine_name.errors %}<div class="form-error">{{ item_form.medicine_name.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Dosage <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-cus_dosage" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>500mg</option><option>250mg</option><option>200mg</option>
+                  <option>100mg</option><option>50mg</option><option>25mg</option>
+                  <option>10mg</option><option>5mg</option>
+                  <option>10ml</option><option>5ml</option><option>2.5ml</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg">
+                {% if item_form.cus_dosage.errors %}<div class="form-error">{{ item_form.cus_dosage.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Frequency <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-cus_frequency" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>Once daily</option><option>2x a day</option><option>3x a day</option>
+                  <option>4x a day</option><option>Every 4 hours</option>
+                  <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+                {% if item_form.cus_frequency.errors %}<div class="form-error">{{ item_form.cus_frequency.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Duration <span style="color:#ef4444;">*</span></label>
+                <select name="meds-{{ forloop.counter0 }}-cus_duration" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>1 day</option><option>3 days</option><option>5 days</option>
+                  <option>7 days</option><option>10 days</option><option>14 days</option>
+                  <option>1 month</option><option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+                {% if item_form.cus_duration.errors %}<div class="form-error">{{ item_form.cus_duration.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field-wrap">
+                <label>Instructions</label>
+                <select name="meds-{{ forloop.counter0 }}-cus_instructions" class="reg-input med-select">
+                  <option value="">—</option>
+                  <option>Take after meals</option><option>Take before meals</option>
+                  <option>Take on empty stomach</option><option>Take with food</option>
+                  <option>Apply topically</option><option>As directed</option>
+                  <option value="other">Other…</option>
+                </select>
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+              </div>
+            </div>
+          </div><!-- /custom mode -->
+
+          {% if item_form.non_field_errors %}
+          <div class="form-error" style="margin-top:6px;">
+            {% for error in item_form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+          {% endif %}
         </div>
         {% endfor %}
-      </div>
+      </div><!-- #medicine-rows -->
+
       <button type="button" id="add-medicine-btn">+ Add Medicine</button>
-      {% else %}
-      <div class="alert alert-info" style="text-align:center;padding:24px;">
-        <p style="font-weight:600;margin-bottom:4px;">No medicines in inventory</p>
-        <p style="font-size:12px;color:#64748b;margin:0;">You can complete this consultation without medicine.</p>
+
+      {% if prescription_form.non_field_errors %}
+      <div class="alert alert-error" style="margin-top:16px;">
+        {% for error in prescription_form.non_field_errors %}{{ error }}{% endfor %}
       </div>
       {% endif %}
-
-      {% if prescription_form.non_field_errors %}<div class="alert alert-error">{% for error in prescription_form.non_field_errors %}{{ error }}{% endfor %}</div>{% endif %}
 
       <div class="btn-row">
         <button type="submit" class="btn-primary-custom">Save & Complete</button>
@@ -317,54 +508,278 @@
     </form>
   </div>
 
-</div>
+</div><!-- .prescribe-wrap -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.querySelector('[name="diagnosis_select"]')?.addEventListener('change', function() {
-  if (this.value) {
-    document.querySelector('[name="diagnosis"]').value = this.options[this.selectedIndex].text;
-  }
-});
-
 (function () {
-  const container = document.getElementById('medicine-rows');
-  const totalForms = document.querySelector('[name="meds-TOTAL_FORMS"]');
-  const prefix = 'meds';
-  if (!container) return;
+  'use strict';
 
-  function buildRow(index) {
-    const row = document.createElement('div');
-    row.className = 'medicine-row';
-    row.innerHTML = '<button type="button" class="remove-row-btn" onclick="removeRow(this)">✕</button><div class="medicine-row-grid">'
-      + '<div><label style="font-size:11px;">Medicine *</label><select name="' + prefix + '-' + index + '-medicine" class="reg-input"><option value="">— Select —</option>{% for med in inventory_medicines %}<option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }})</option>{% endfor %}</select></div>'
-      + '<div><label style="font-size:11px;">Dosage *</label><select name="' + prefix + '-' + index + '-dosage" class="reg-input"><option value="">—</option><option>500mg</option><option>250mg</option><option>100mg</option><option>50mg</option><option>10mg</option><option>5mg</option><option>10ml</option><option>5ml</option></select></div>'
-      + '<div><label style="font-size:11px;">Freq *</label><select name="' + prefix + '-' + index + '-frequency" class="reg-input"><option value="">—</option><option>Once daily</option><option>2x a day</option><option>3x a day</option><option>4x a day</option><option>Every 4 hours</option><option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option></select></div>'
-      + '<div><label style="font-size:11px;">Duration *</label><select name="' + prefix + '-' + index + '-duration" class="reg-input"><option value="">—</option><option>3 days</option><option>5 days</option><option>7 days</option><option>10 days</option><option>14 days</option><option>1 month</option></select></div>'
-      + '<div><label style="font-size:11px;">Qty *</label><input type="number" name="' + prefix + '-' + index + '-quantity" class="reg-input" min="1" placeholder="Units"></div>'
-      + '<div><label style="font-size:11px;">Instructions</label><select name="' + prefix + '-' + index + '-instructions" class="reg-input"><option value="">—</option><option>Take after meals</option><option>Take before meals</option><option>Take on empty stomach</option><option>Take with food</option><option>As directed</option></select></div>'
-      + '</div>';
-    return row;
+  /* ── Inventory medicine options (for dynamically added rows) ── */
+  var INV_OPTIONS = [
+    '<option value="">— Select —</option>',
+    {% for med in inventory_medicines %}'<option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }} left)</option>',{% endfor %}
+  ].join('');
+  var HAS_INVENTORY = {{ inventory_medicines|yesno:"true,false" }};
+
+  /* ── Select dropdown option HTML snippets ── */
+  var DOSAGE_OPTS    = '<option value="">—</option><option>500mg</option><option>250mg</option><option>200mg</option><option>100mg</option><option>50mg</option><option>25mg</option><option>10mg</option><option>5mg</option><option>10ml</option><option>5ml</option><option>2.5ml</option><option value="other">Other…</option>';
+  var FREQ_OPTS      = '<option value="">—</option><option>Once daily</option><option>2x a day</option><option>3x a day</option><option>4x a day</option><option>Every 4 hours</option><option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option><option value="other">Other…</option>';
+  var DUR_OPTS       = '<option value="">—</option><option>1 day</option><option>3 days</option><option>5 days</option><option>7 days</option><option>10 days</option><option>14 days</option><option>1 month</option><option value="other">Other…</option>';
+  var INSTR_OPTS     = '<option value="">—</option><option>Take after meals</option><option>Take before meals</option><option>Take on empty stomach</option><option>Take with food</option><option>Apply topically</option><option>As directed</option><option value="other">Other…</option>';
+
+  var totalForms = document.getElementById('id_meds-TOTAL_FORMS');
+  var container  = document.getElementById('medicine-rows');
+  var PREFIX     = 'meds';
+
+  /* ════════════════════════════════════════════════════════════
+     1. "Other…" toggle — shows/hides the free-text sibling
+     ════════════════════════════════════════════════════════════ */
+  function wireOtherToggles(scope) {
+    scope.querySelectorAll('select.med-select').forEach(function (sel) {
+      var other = sel.nextElementSibling;
+      if (!other || !other.classList.contains('other-input')) return;
+
+      function sync() {
+        if (sel.value === 'other') {
+          other.classList.add('visible');
+          other.style.display = '';
+          other.focus();
+        } else {
+          other.classList.remove('visible');
+          other.style.display = 'none';
+          other.value = '';
+        }
+      }
+      sel.addEventListener('change', sync);
+      sync(); // initial state
+    });
   }
 
-  document.getElementById('add-medicine-btn').addEventListener('click', function () {
-    container.appendChild(buildRow(parseInt(totalForms.value)));
-    totalForms.value = parseInt(totalForms.value) + 1;
-  });
+  /* Also wire the Apply-to-All bar selects */
+  wireOtherToggles(document.getElementById('apply-all-bar'));
 
-  window.removeRow = function (btn) {
-    const row = btn.closest('.medicine-row');
-    const rows = container.querySelectorAll('.medicine-row');
-    if (rows.length <= 1) { row.querySelectorAll('input, select').forEach(i => i.value = ''); return; }
+  /* ════════════════════════════════════════════════════════════
+     2. Mode toggle (inventory ↔ custom) per row
+     ════════════════════════════════════════════════════════════ */
+  function wireMode(row) {
+    var radios   = row.querySelectorAll('.med-source-radio');
+    var invDiv   = row.querySelector('.med-mode-inventory');
+    var cusDiv   = row.querySelector('.med-mode-custom');
+    var srcField = row.querySelector('.source-field');
+
+    function update() {
+      var active = row.querySelector('.med-source-radio:checked');
+      var isCustom = active && active.value === 'custom';
+      if (invDiv) invDiv.style.display = isCustom ? 'none' : '';
+      if (cusDiv) cusDiv.style.display = isCustom ? ''     : 'none';
+      if (srcField) srcField.value = isCustom ? 'custom' : 'inventory';
+    }
+
+    radios.forEach(function (r) { r.addEventListener('change', update); });
+    update();
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     3. Remove row
+     ════════════════════════════════════════════════════════════ */
+  function removeRow(btn) {
+    var row  = btn.closest('.medicine-row');
+    var rows = container.querySelectorAll('.medicine-row');
+    if (rows.length <= 1) {
+      // Clear all fields instead of removing last row
+      row.querySelectorAll('input:not([type=radio]):not([type=hidden]), select').forEach(function (el) { el.value = ''; });
+      return;
+    }
     row.remove();
-    totalForms.value = container.querySelectorAll('.medicine-row').length;
-    container.querySelectorAll('.medicine-row').forEach((r, idx) => {
-      r.querySelectorAll('input, select').forEach(inp => {
-        inp.name = inp.name.replace(/meds-\d+-/, `meds-${idx}-`);
+    renumber();
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     4. Renumber all rows after add/remove
+     ════════════════════════════════════════════════════════════ */
+  function renumber() {
+    container.querySelectorAll('.medicine-row').forEach(function (row, idx) {
+      row.setAttribute('data-index', idx);
+      row.querySelectorAll('[name^="meds-"]').forEach(function (el) {
+        el.name = el.name.replace(/^meds-\d+-/, PREFIX + '-' + idx + '-');
+        if (el.id) el.id = el.id.replace(/^id_meds-\d+-/, 'id_' + PREFIX + '-' + idx + '-');
       });
     });
-  };
+    totalForms.value = container.querySelectorAll('.medicine-row').length;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     5. Build a fresh row HTML for a given index
+     ════════════════════════════════════════════════════════════ */
+  function buildRowHTML(idx) {
+    var p = PREFIX + '-' + idx + '-';
+    return '' +
+      '<button type="button" class="remove-row-btn" title="Remove row">✕</button>' +
+      '<input type="hidden" name="' + p + 'source" value="inventory" class="source-field">' +
+
+      '<div style="margin-bottom:12px;">' +
+        '<label class="mode-toggle-label"><input type="radio" name="med_source_' + idx + '" value="inventory" class="med-source-radio" checked> From Inventory</label>' +
+        '<label class="mode-toggle-label"><input type="radio" name="med_source_' + idx + '" value="custom" class="med-source-radio"> Custom (not in inventory)</label>' +
+      '</div>' +
+
+      /* inventory */
+      '<div class="med-mode-inventory">' +
+        '<div class="inv-grid">' +
+          '<div class="field-wrap"><label>Medicine</label><select name="' + p + 'medicine" class="reg-input">' + INV_OPTIONS + '</select></div>' +
+          '<div class="field-wrap"><label>Dosage <span style="color:#ef4444;">*</span></label><select name="' + p + 'inv_dosage" class="reg-input med-select">' + DOSAGE_OPTS + '</select><input type="text" name="' + p + 'inv_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg"></div>' +
+          '<div class="field-wrap"><label>Frequency <span style="color:#ef4444;">*</span></label><select name="' + p + 'inv_frequency" class="reg-input med-select">' + FREQ_OPTS + '</select><input type="text" name="' + p + 'inv_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours"></div>' +
+          '<div class="field-wrap"><label>Duration <span style="color:#ef4444;">*</span></label><select name="' + p + 'inv_duration" class="reg-input med-select">' + DUR_OPTS + '</select><input type="text" name="' + p + 'inv_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks"></div>' +
+          '<div class="field-wrap"><label>Qty <span style="color:#ef4444;">*</span></label><input type="number" name="' + p + 'quantity" class="reg-input" min="1" placeholder="Units"></div>' +
+          '<div class="field-wrap"><label>Instructions</label><select name="' + p + 'inv_instructions" class="reg-input med-select">' + INSTR_OPTS + '</select><input type="text" name="' + p + 'inv_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water"></div>' +
+        '</div>' +
+      '</div>' +
+
+      /* custom */
+      '<div class="med-mode-custom" style="display:none;">' +
+        '<div class="cus-grid">' +
+          '<div class="field-wrap"><label>Medicine Name <span style="color:#ef4444;">*</span></label><input type="text" name="' + p + 'medicine_name" class="reg-input" placeholder="e.g. Betadine Gargle" autocomplete="off"></div>' +
+          '<div class="field-wrap"><label>Dosage <span style="color:#ef4444;">*</span></label><select name="' + p + 'cus_dosage" class="reg-input med-select">' + DOSAGE_OPTS + '</select><input type="text" name="' + p + 'cus_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg"></div>' +
+          '<div class="field-wrap"><label>Frequency <span style="color:#ef4444;">*</span></label><select name="' + p + 'cus_frequency" class="reg-input med-select">' + FREQ_OPTS + '</select><input type="text" name="' + p + 'cus_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours"></div>' +
+          '<div class="field-wrap"><label>Duration <span style="color:#ef4444;">*</span></label><select name="' + p + 'cus_duration" class="reg-input med-select">' + DUR_OPTS + '</select><input type="text" name="' + p + 'cus_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks"></div>' +
+          '<div class="field-wrap"><label>Instructions</label><select name="' + p + 'cus_instructions" class="reg-input med-select">' + INSTR_OPTS + '</select><input type="text" name="' + p + 'cus_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water"></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     6. Wire existing rows
+     ════════════════════════════════════════════════════════════ */
+  container.querySelectorAll('.medicine-row').forEach(function (row) {
+    wireMode(row);
+    wireOtherToggles(row);
+    var btn = row.querySelector('.remove-row-btn');
+    if (btn) btn.addEventListener('click', function () { removeRow(btn); });
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     7. Add medicine row button
+     ════════════════════════════════════════════════════════════ */
+  document.getElementById('add-medicine-btn').addEventListener('click', function () {
+    var idx = parseInt(totalForms.value, 10);
+    var row = document.createElement('div');
+    row.className = 'medicine-row';
+    row.setAttribute('data-index', idx);
+    row.innerHTML = buildRowHTML(idx);
+    container.appendChild(row);
+    wireMode(row);
+    wireOtherToggles(row);
+    row.querySelector('.remove-row-btn').addEventListener('click', function () { removeRow(this); });
+    totalForms.value = idx + 1;
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     8. Apply to All
+     Resolves the "other" free-text value for each ATA field.
+     Copies dosage/frequency/duration into each row's ACTIVE mode.
+     Instructions: stored in one hidden field (not copied per-row)
+     so the print view shows it only once.
+     ════════════════════════════════════════════════════════════ */
+  function ataValue(selectId, otherId) {
+    var sel = document.getElementById(selectId);
+    var oth = document.getElementById(otherId);
+    if (!sel || !sel.value) return null;       // "— keep —"
+    if (sel.value === 'other') return (oth && oth.value.trim()) || null;
+    return sel.value;
+  }
+
+  document.getElementById('apply-all-btn').addEventListener('click', function () {
+    var dosage       = ataValue('ata-dosage',       'ata-dosage-other');
+    var frequency    = ataValue('ata-frequency',    'ata-frequency-other');
+    var duration     = ataValue('ata-duration',     'ata-duration-other');
+    var instructions = ataValue('ata-instructions', 'ata-instructions-other');
+
+    // Store shared instructions into the hidden field (submitted once, used by view)
+    if (instructions !== null) {
+      document.getElementById('apply_instructions_hidden').value = instructions;
+    }
+
+    container.querySelectorAll('.medicine-row').forEach(function (row) {
+      var sourceField = row.querySelector('.source-field');
+      var mode = (sourceField && sourceField.value === 'custom') ? 'cus' : 'inv';
+
+      function setSelect(nameSuffix, value) {
+        if (value === null) return;
+        var sel = row.querySelector('[name$="-' + nameSuffix + '"]');
+        if (!sel) return;
+        // Try to match existing option
+        var matched = false;
+        for (var i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === value || sel.options[i].text === value) {
+            sel.value = sel.options[i].value;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          // Fall back to "Other…" + set text field
+          sel.value = 'other';
+          var other = sel.nextElementSibling;
+          if (other && other.classList.contains('other-input')) {
+            other.value = value;
+            other.style.display = '';
+            other.classList.add('visible');
+          }
+        } else {
+          // Hide the other input if the match wasn't "other"
+          var other = sel.nextElementSibling;
+          if (other && other.classList.contains('other-input') && sel.value !== 'other') {
+            other.style.display = 'none';
+            other.classList.remove('visible');
+            other.value = '';
+          }
+        }
+        sel.dispatchEvent(new Event('change'));
+      }
+
+      setSelect(mode + '_dosage',    dosage);
+      setSelect(mode + '_frequency', frequency);
+      setSelect(mode + '_duration',  duration);
+      // Instructions are NOT copied per-row (shared hidden field handles it)
+      // But we clear the per-row instruction selects so there's no conflict
+      if (instructions !== null) {
+        ['inv_instructions', 'cus_instructions'].forEach(function (suffix) {
+          var sel = row.querySelector('[name$="-' + suffix + '"]');
+          if (sel) {
+            sel.value = '';
+            var other = sel.nextElementSibling;
+            if (other && other.classList.contains('other-input')) {
+              other.style.display = 'none';
+              other.classList.remove('visible');
+              other.value = '';
+            }
+          }
+        });
+      }
+    });
+
+    /* Visual feedback */
+    var btn = document.getElementById('apply-all-btn');
+    var orig = btn.textContent;
+    btn.textContent = '✓ Applied!';
+    btn.style.background = '#16a34a';
+    setTimeout(function () { btn.textContent = orig; btn.style.background = ''; }, 1500);
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     9. Diagnosis auto-fill
+     ════════════════════════════════════════════════════════════ */
+  var diagSel = document.getElementById('diagnosis_select_field');
+  if (diagSel) {
+    diagSel.addEventListener('change', function () {
+      if (this.value) {
+        document.querySelector('[name="diagnosis"]').value =
+          this.options[this.selectedIndex].text;
+      }
+    });
+  }
+
 })();
 </script>
 {% endblock %}
