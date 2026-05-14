@@ -22,11 +22,8 @@ def patient_required(view_func):
     return role_required('patient')(view_func)
 
 
-def nurse_required(view_func):
-    return role_required('nurse', 'admin')(view_func)
-
-
 def doctor_required(view_func):
+    """Doctor can triage, consult, and prescribe."""
     return role_required('doctor', 'admin')(view_func)
 
 
@@ -39,5 +36,5 @@ def admin_required(view_func):
 
 
 def clinical_staff_required(view_func):
-    """Any staff role (nurse, doctor, frontdesk, admin)."""
-    return role_required('nurse', 'doctor', 'frontdesk', 'admin')(view_func)
+    """Any staff role (doctor, frontdesk, admin)."""
+    return role_required('doctor', 'frontdesk', 'admin')(view_func)

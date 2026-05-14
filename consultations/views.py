@@ -6,7 +6,7 @@ from notifications.utils import notify_role, notify_user
 from django.core.exceptions import ValidationError
 
 from accounts.decorators import (
-    frontdesk_required, nurse_required, doctor_required,
+    frontdesk_required, doctor_required,
     admin_required, clinical_staff_required, patient_required,
 )
 from inventory.models import Medicine
@@ -28,6 +28,7 @@ def _base_template(user):
     if user.role == 'admin':
         return 'core/base_admin.html'
     return 'core/base_staff.html'
+
 
 @login_required
 @patient_required
@@ -85,7 +86,6 @@ def patient_detail(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk, patient=patient)
     return render(request, 'consultations/patient_consultation_detail.html', {
         'consultation': consultation,
-
     })
 
 
@@ -170,7 +170,7 @@ def queue_detail(request, pk):
             with transaction.atomic():
                 instance.queue_number = assign_next_queue_number()
                 instance.save()
-                notify_role('nurse',
+                notify_role('doctor',
                             'Patient Queued for Triage',
                             f'{consultation.patient.get_full_name()} is ready for triage.',
                             f'/consultations/triage/{consultation.pk}/')
@@ -237,10 +237,10 @@ def admin_reopen(request, pk):
     return redirect('consultations:queue')
 
 
-# ─── NURSE VIEWS ──────────────────────────────────────────────────────────────
+# ─── DOCTOR VIEWS (includes triage + consultations + prescribing) ─────────────
 
 @login_required
-@nurse_required
+@doctor_required
 def triage_list(request):
     consultations = Consultation.objects.filter(
         status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED]
@@ -254,7 +254,7 @@ def triage_list(request):
 
 
 @login_required
-@nurse_required
+@doctor_required
 def triage_form(request, pk):
     consultation = get_object_or_404(
         Consultation, pk=pk,
@@ -283,7 +283,6 @@ def triage_form(request, pk):
         'hepatitis_b': profile.hepatitis_b,
         'measles': profile.measles,
         'tt': profile.tt,
-
     }
 
     form = TriageForm(request.POST or None, initial=initial_profile)
@@ -328,7 +327,7 @@ def triage_form(request, pk):
 
 
 @login_required
-@nurse_required
+@doctor_required
 def triage_edit(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
 
@@ -362,8 +361,6 @@ def triage_edit(request, pk):
     })
 
 
-# ─── DOCTOR VIEWS ─────────────────────────────────────────────────────────────
-
 @login_required
 @doctor_required
 def doctor_list(request):
@@ -390,10 +387,10 @@ def prescribe(request, pk):
     inventory_medicines = Medicine.objects.filter(quantity__gt=0).order_by('name')
 
     if request.method == 'POST':
-        # Check if completing without medicine
         no_medicine = request.POST.get('no_medicine') == '1'
 
         if no_medicine or not inventory_medicines.exists():
+            # ── Complete without any medicine ──────────────────────
             if prescription_form.is_valid():
                 with transaction.atomic():
                     prescription = prescription_form.save(commit=False)
@@ -406,53 +403,70 @@ def prescribe(request, pk):
                 return redirect('consultations:print_consultation', pk=consultation.pk)
             else:
                 messages.error(request, 'Please enter a diagnosis.')
+
         else:
-            forms_valid = prescription_form.is_valid()
+            # ── Complete with medicine ─────────────────────────────
+            forms_valid   = prescription_form.is_valid()
             formset_valid = formset.is_valid()
 
             if forms_valid and formset_valid:
                 item_rows = [f for f in formset if f.has_data()]
 
-                if not item_rows:
-                    messages.error(request, 'At least one medicine must be added.')
-                else:
-                    try:
-                        with transaction.atomic():
-                            prescription = prescription_form.save(commit=False)
-                            prescription.consultation = consultation
-                            prescription.doctor = request.user
-                            prescription.save()
+                # "Apply to All" shared instruction submitted via hidden field by JS.
+                # Used as fallback when the doctor left per-row instructions blank.
+                global_instructions = request.POST.get('apply_instructions', '').strip()
 
-                            for form in item_rows:
-                                med = form.cleaned_data.get('medicine')
-                                qty = form.cleaned_data.get('quantity')
+                try:
+                    with transaction.atomic():
+                        prescription = prescription_form.save(commit=False)
+                        prescription.consultation = consultation
+                        prescription.doctor = request.user
+                        prescription.save()
 
-                                PrescriptionItem.objects.create(
-                                    prescription=prescription,
-                                    medicine=med,
-                                    medicine_name=med.name,
-                                    dosage=form.cleaned_data.get('dosage', '').strip(),
-                                    frequency=form.cleaned_data.get('frequency', '').strip(),
-                                    duration=form.cleaned_data.get('duration', '').strip(),
-                                    instructions=form.cleaned_data.get('instructions', '').strip(),
+                        for form in item_rows:
+                            med           = form.cleaned_data.get('medicine')
+                            medicine_name = form.cleaned_data.get('medicine_name', '').strip()
+                            qty           = form.cleaned_data.get('quantity')
+
+                            # Per-row instructions win; global is the fallback
+                            row_instructions   = form.cleaned_data.get('instructions', '').strip()
+                            final_instructions = row_instructions or global_instructions
+
+                            PrescriptionItem.objects.create(
+                                prescription=prescription,
+                                medicine=med,
+                                medicine_name=med.name if med else medicine_name,
+                                dosage=form.cleaned_data.get('dosage', '').strip(),
+                                frequency=form.cleaned_data.get('frequency', '').strip(),
+                                duration=form.cleaned_data.get('duration', '').strip(),
+                                instructions=final_instructions,
+                            )
+
+                            if med and qty:
+                                deduct_medicine_stock(
+                                    medicine_id=med.pk,
+                                    quantity=qty,
+                                    reason=(
+                                        f'Consultation #{consultation.pk} — '
+                                        f'{consultation.patient.get_full_name()}'
+                                    ),
+                                    user=request.user,
                                 )
 
-                                if med and qty:
-                                    deduct_medicine_stock(
-                                        medicine_id=med.pk,
-                                        quantity=qty,
-                                        reason=f'Consultation #{consultation.pk} — {consultation.patient.get_full_name()}',
-                                        user=request.user,
-                                    )
+                        consultation.status = Consultation.Status.COMPLETED
+                        consultation.save(update_fields=['status'])
 
-                            consultation.status = Consultation.Status.COMPLETED
-                            consultation.save(update_fields=['status'])
+                    messages.success(
+                        request,
+                        f'Prescription saved. Consultation #{consultation.pk} completed.',
+                    )
+                    return redirect('consultations:print_consultation', pk=consultation.pk)
 
-                        messages.success(request, f'Prescription saved. Consultation #{consultation.pk} completed.')
-                        return redirect('consultations:print_consultation', pk=consultation.pk)
-
-                    except Exception:
-                        messages.error(request, 'An unexpected error occurred. Please try again.')
+                except Exception as exc:
+                    messages.error(
+                        request,
+                        f'An unexpected error occurred: {exc}. Please try again.',
+                    )
 
     return render(request, 'consultations/prescribe.html', {
         'consultation': consultation,
@@ -462,6 +476,7 @@ def prescribe(request, pk):
         'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
         'base_template': _base_template(request.user),
     })
+
 
 # ─── CLINICAL STAFF SHARED VIEWS ──────────────────────────────────────────────
 
@@ -663,7 +678,6 @@ def patient_medical_history_pdf(request, patient_pk):
     else:
         for c in consultations:
             story.append(Spacer(1, 0.2*cm))
-            # Entry header
             status_txt = c.get_status_display()
             header_txt = (
                 f'<b>Consultation #{c.pk}</b> — '
@@ -720,6 +734,7 @@ def patient_medical_history_pdf(request, patient_pk):
     )
     return response
 
+
 # ─── PRINTABLE CONSULTATION ────────────────────────────────────────────────────
 
 @login_required
@@ -740,6 +755,3 @@ def print_consultation(request, pk):
     return render(request, 'consultations/print_consultation.html', {
         'consultation': consultation,
     })
-
-
-

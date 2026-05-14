@@ -124,7 +124,6 @@
 
     /* Role accent colors for active state */
     .role-doctor  .stf-nav-link.active { color: #7c3aed; background: #ede9fe; }
-    .role-nurse   .stf-nav-link.active { color: #059669; background: #d1fae5; }
     .role-frontdesk .stf-nav-link.active { color: #0078d4; background: #eff6ff; }
 
     .stf-sidebar-footer {
@@ -157,7 +156,6 @@
     }
     /* Avatar gradient by role */
     .role-doctor   .stf-user-avatar { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
-    .role-nurse    .stf-user-avatar { background: linear-gradient(135deg, #059669, #34d399); }
     .role-frontdesk .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #60a5fa); }
     .role-admin    .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #3b82f6); }
 
@@ -343,7 +341,6 @@
       font-weight: 600;
     }
     .role-pill.doctor   { background: #ede9fe; color: #6d28d9; }
-    .role-pill.nurse    { background: #d1fae5; color: #065f46; }
     .role-pill.frontdesk { background: #eff6ff; color: #0078d4; }
     .role-pill.admin    { background: #fef3c7; color: #92400e; }
   </style>
@@ -376,6 +373,11 @@
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Dashboard
       </a>
+      <a href="{% url 'consultations:triage_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Triage Queue
+      </a>
       <a href="{% url 'consultations:doctor_list' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'doctor_list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -385,33 +387,6 @@
          class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Records
-      </a>
-      <a href="{% url 'inventory:medicine_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
-        Inventory
-      </a>
-    </div>
-    {% endif %}
-
-    <!-- ── Nurse nav ── -->
-    {% if user.role == 'nurse' %}
-    <div class="stf-nav-section">
-      <div class="stf-nav-section-label">Workspace</div>
-      <a href="{% url 'accounts:dashboard' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
-      </a>
-      <a href="{% url 'consultations:triage_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        Triage Queue
-      </a>
-      <a href="{% url 'patients:patient_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Patients
       </a>
       <a href="{% url 'inventory:medicine_list' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
@@ -495,9 +470,6 @@
         {% if user.role == 'doctor' %}
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           Doctor
-        {% elif user.role == 'nurse' %}
-          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Nurse
         {% elif user.role == 'frontdesk' %}
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
           Front Desk

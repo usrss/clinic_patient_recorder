@@ -363,128 +363,240 @@ class PrescriptionForm(forms.ModelForm):
         }
 
 
+# ── Choice constants shared between PrescriptionItemForm and the template ──────
+
+DOSAGE_CHOICES = [
+    ('', '— Select —'),
+    ('500mg', '500mg'), ('250mg', '250mg'), ('200mg', '200mg'),
+    ('100mg', '100mg'), ('50mg', '50mg'), ('25mg', '25mg'),
+    ('10mg', '10mg'), ('5mg', '5mg'),
+    ('10ml', '10ml'), ('5ml', '5ml'), ('2.5ml', '2.5ml'),
+    ('other', 'Other (type below)…'),
+]
+
+FREQUENCY_CHOICES = [
+    ('', '— Select —'),
+    ('Once daily', 'Once daily'),
+    ('2x a day', '2x a day'),
+    ('3x a day', '3x a day'),
+    ('4x a day', '4x a day'),
+    ('Every 4 hours', 'Every 4 hours'),
+    ('Every 6 hours', 'Every 6 hours'),
+    ('Every 8 hours', 'Every 8 hours'),
+    ('As needed', 'As needed'),
+    ('other', 'Other (type below)…'),
+]
+
+DURATION_CHOICES = [
+    ('', '— Select —'),
+    ('1 day', '1 day'),
+    ('3 days', '3 days'),
+    ('5 days', '5 days'),
+    ('7 days', '7 days'),
+    ('10 days', '10 days'),
+    ('14 days', '14 days'),
+    ('1 month', '1 month'),
+    ('other', 'Other (type below)…'),
+]
+
+INSTRUCTIONS_CHOICES = [
+    ('', '— Select —'),
+    ('Take after meals', 'Take after meals'),
+    ('Take before meals', 'Take before meals'),
+    ('Take on empty stomach', 'Take on empty stomach'),
+    ('Take with food', 'Take with food'),
+    ('Apply topically', 'Apply topically'),
+    ('As directed', 'As directed'),
+    ('other', 'Other (type below)…'),
+]
+
+_SELECT_ATTRS = {'class': 'reg-input med-select'}
+_TEXT_ATTRS   = {'class': 'reg-input med-other', 'autocomplete': 'off', 'placeholder': 'Specify…'}
+
+
 class PrescriptionItemForm(forms.Form):
     """
-    Combined medicine row: inventory dropdown + free-text dosing fields.
-    Doctor can select from inventory OR type a custom medicine name.
-    Auto-deducts stock when inventory medicine is selected.
+    One medicine row in the prescription formset.
+
+    KEY DESIGN: inventory mode and custom mode use completely separate field names
+    (inv_dosage vs cus_dosage, etc.) so there are never two <input name="meds-N-dosage">
+    elements in the DOM at the same time — which was the root cause of the original bug.
+
+    clean() reads the active mode from the hidden `source` field, resolves any
+    "Other…" free-text overrides, then writes the canonical keys
+    (dosage / frequency / duration / instructions) so views.py is unchanged.
     """
+
+    # ── source selector (set by JS when radio changes) ─────────────────────────
+    source = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={'class': 'med-source-hidden'}),
+    )
+
+    # ── inventory mode fields ───────────────────────────────────────────────────
     medicine = forms.ModelChoiceField(
         queryset=Medicine.objects.filter(quantity__gt=0).order_by('name'),
         required=False,
         label='Medicine',
-        widget=forms.Select(attrs={
-            'class': 'form-control',
-        }),
+        widget=forms.Select(attrs={'class': 'reg-input'}),
     )
+    inv_dosage = forms.ChoiceField(
+        choices=DOSAGE_CHOICES, required=False, label='Dosage',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    inv_dosage_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. 750mg'}),
+    )
+    inv_frequency = forms.ChoiceField(
+        choices=FREQUENCY_CHOICES, required=False, label='Frequency',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    inv_frequency_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. Every 12 hours'}),
+    )
+    inv_duration = forms.ChoiceField(
+        choices=DURATION_CHOICES, required=False, label='Duration',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    inv_duration_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. 3 weeks'}),
+    )
+    inv_instructions = forms.ChoiceField(
+        choices=INSTRUCTIONS_CHOICES, required=False, label='Instructions',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    inv_instructions_other = forms.CharField(
+        required=False, max_length=200,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. Dissolve in water'}),
+    )
+    quantity = forms.IntegerField(
+        required=False, min_value=1, label='Qty',
+        widget=forms.NumberInput(attrs={'class': 'reg-input', 'min': 1, 'placeholder': 'Units'}),
+    )
+
+    # ── custom mode fields ──────────────────────────────────────────────────────
     medicine_name = forms.CharField(
-        required=False,
-        max_length=200,
-        label='Or custom medicine name',
+        required=False, max_length=200, label='Medicine Name',
         widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Type if not in inventory',
+            'class': 'reg-input',
+            'placeholder': 'e.g. Betadine Gargle',
             'autocomplete': 'off',
         }),
     )
-    dosage = forms.CharField(
-        required=False,
-        max_length=100,
-        label='Dosage',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'e.g. 500mg',
-        }),
+    cus_dosage = forms.ChoiceField(
+        choices=DOSAGE_CHOICES, required=False, label='Dosage',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
     )
-    frequency = forms.CharField(
-        required=False,
-        max_length=100,
-        label='Frequency',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'e.g. 3x a day',
-        }),
+    cus_dosage_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. 750mg'}),
     )
-    duration = forms.CharField(
-        required=False,
-        max_length=100,
-        label='Duration',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'e.g. 7 days',
-        }),
+    cus_frequency = forms.ChoiceField(
+        choices=FREQUENCY_CHOICES, required=False, label='Frequency',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
     )
-    quantity = forms.IntegerField(
-        required=False,
-        min_value=1,
-        label='Quantity to dispense',
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'min': 1,
-            'placeholder': 'Number of units',
-        }),
+    cus_frequency_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. Every 12 hours'}),
     )
-    instructions = forms.CharField(
-        required=False,
-        max_length=200,
-        label='Instructions (optional)',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'e.g. Take after meals',
-        }),
+    cus_duration = forms.ChoiceField(
+        choices=DURATION_CHOICES, required=False, label='Duration',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    cus_duration_other = forms.CharField(
+        required=False, max_length=100,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. 3 weeks'}),
+    )
+    cus_instructions = forms.ChoiceField(
+        choices=INSTRUCTIONS_CHOICES, required=False, label='Instructions',
+        widget=forms.Select(attrs=_SELECT_ATTRS),
+    )
+    cus_instructions_other = forms.CharField(
+        required=False, max_length=200,
+        widget=forms.TextInput(attrs={**_TEXT_ATTRS, 'placeholder': 'e.g. Dissolve in water'}),
     )
 
+    # ── helpers ─────────────────────────────────────────────────────────────────
+
+    def _resolve(self, select_val, other_val):
+        """Return the free-text value if 'other' was chosen, else the select value."""
+        if select_val == 'other':
+            return (other_val or '').strip()
+        return (select_val or '').strip()
+
     def has_data(self):
-        """Return True if this row has any meaningful input."""
         cd = getattr(self, 'cleaned_data', {})
-        return bool(
-            cd.get('medicine') or
-            cd.get('medicine_name') or
-            cd.get('dosage')
-        )
+        return bool(cd.get('medicine') or cd.get('medicine_name', '').strip())
 
     def clean(self):
         cleaned = super().clean()
-        medicine = cleaned.get('medicine')
-        medicine_name = cleaned.get('medicine_name', '').strip()
-        dosage = cleaned.get('dosage', '').strip()
-        frequency = cleaned.get('frequency', '').strip()
-        duration = cleaned.get('duration', '').strip()
-        quantity = cleaned.get('quantity')
-        instructions = cleaned.get('instructions', '').strip()
+        source        = (cleaned.get('source') or 'inventory').strip()
+        medicine      = cleaned.get('medicine')
+        medicine_name = (cleaned.get('medicine_name') or '').strip()
 
-        # If any field has data, validate the row
-        any_filled = any([medicine, medicine_name, dosage, frequency, duration, quantity, instructions])
-        if any_filled:
-            # Either inventory medicine OR custom name required
-            if not medicine and not medicine_name:
-                self.add_error('medicine', 'Select a medicine from inventory or type a custom name.')
-                self.add_error('medicine_name', 'Select a medicine from inventory or type a custom name.')
-            if not dosage:
-                self.add_error('dosage', 'Dosage is required.')
-            if not frequency:
-                self.add_error('frequency', 'Frequency is required.')
-            if not duration:
-                self.add_error('duration', 'Duration is required.')
+        # Determine active mode
+        if source == 'custom' or (not medicine and medicine_name):
+            mode = 'custom'
+        else:
+            mode = 'inventory'
 
-            # If inventory medicine selected, quantity is required and must not exceed stock
-            if medicine:
-                if not quantity:
-                    self.add_error('quantity', 'Quantity is required when dispensing from inventory.')
-                elif quantity > medicine.quantity:
-                    self.add_error(
-                        'quantity',
-                        f'Insufficient stock — only {medicine.quantity} {medicine.get_unit_display()}(s) available.'
-                    )
+        # Empty row — nothing to validate
+        if mode == 'inventory' and not medicine:
+            return cleaned
+        if mode == 'custom' and not medicine_name:
+            return cleaned
+
+        # Resolve canonical field values from whichever mode is active
+        if mode == 'inventory':
+            dosage       = self._resolve(cleaned.get('inv_dosage', ''),       cleaned.get('inv_dosage_other', ''))
+            frequency    = self._resolve(cleaned.get('inv_frequency', ''),    cleaned.get('inv_frequency_other', ''))
+            duration     = self._resolve(cleaned.get('inv_duration', ''),     cleaned.get('inv_duration_other', ''))
+            instructions = self._resolve(cleaned.get('inv_instructions', ''), cleaned.get('inv_instructions_other', ''))
+            quantity     = cleaned.get('quantity')
+        else:
+            dosage       = self._resolve(cleaned.get('cus_dosage', ''),       cleaned.get('cus_dosage_other', ''))
+            frequency    = self._resolve(cleaned.get('cus_frequency', ''),    cleaned.get('cus_frequency_other', ''))
+            duration     = self._resolve(cleaned.get('cus_duration', ''),     cleaned.get('cus_duration_other', ''))
+            instructions = self._resolve(cleaned.get('cus_instructions', ''), cleaned.get('cus_instructions_other', ''))
+            quantity     = None  # custom medicines never deduct from inventory
+
+        # Write canonical keys so views.py reads them uniformly
+        cleaned['dosage']       = dosage
+        cleaned['frequency']    = frequency
+        cleaned['duration']     = duration
+        cleaned['instructions'] = instructions
+        cleaned['quantity']     = quantity
+        cleaned['_mode']        = mode
+
+        # Validation
+        prefix = 'inv' if mode == 'inventory' else 'cus'
+        if not dosage:
+            self.add_error(f'{prefix}_dosage', 'Dosage is required.')
+        if not frequency:
+            self.add_error(f'{prefix}_frequency', 'Frequency is required.')
+        if not duration:
+            self.add_error(f'{prefix}_duration', 'Duration is required.')
+
+        if mode == 'inventory' and medicine:
+            if not quantity:
+                self.add_error('quantity', 'Quantity is required when dispensing from inventory.')
+            elif quantity and quantity > medicine.quantity:
+                self.add_error(
+                    'quantity',
+                    f'Insufficient stock — only {medicine.quantity} '
+                    f'{medicine.get_unit_display()}(s) available.',
+                )
+
         return cleaned
 
 
-# Replace the formset
-PrescriptionMedicineFormSet = formset_factory(PrescriptionItemForm, extra=1)
+# ── Formsets ────────────────────────────────────────────────────────────────────
 
-
-# Used by the existing inventory-linked prescribe view (kept for backward compat)
 class PrescriptionItemInventoryForm(forms.Form):
+    """Legacy inventory-only form — kept for backward compatibility."""
     medicine = forms.ModelChoiceField(
         queryset=Medicine.objects.all().order_by('name'),
         required=False,
@@ -523,13 +635,13 @@ class PrescriptionItemInventoryForm(forms.Form):
                 self.add_error(
                     'quantity',
                     f'Insufficient stock — only {medicine.quantity} '
-                    f'{medicine.get_unit_display()}(s) available.'
+                    f'{medicine.get_unit_display()}(s) available.',
                 )
         return cleaned
 
 
-# The formset used in the existing inventory-based prescribe view
+# The legacy inventory-based formset (kept for backward compat)
 PrescriptionItemFormSet = formset_factory(PrescriptionItemInventoryForm, extra=3)
 
-# The new free-text medicine formset for the doctor prescription form
+# The active formset used by the prescribe view
 PrescriptionMedicineFormSet = formset_factory(PrescriptionItemForm, extra=1)

@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from accounts.decorators import nurse_required, admin_required, clinical_staff_required
+from accounts.decorators import doctor_required, admin_required, clinical_staff_required
 from .models import Medicine, StockMovement
 from .forms import MedicineForm, MedicineRestockForm, MedicineSearchForm
 
@@ -91,7 +91,7 @@ def medicine_edit(request, pk):
 
 
 @login_required
-@nurse_required
+@doctor_required
 def medicine_restock(request, pk):
     """Add stock to a medicine."""
     medicine = get_object_or_404(Medicine, pk=pk)
@@ -143,7 +143,7 @@ def medicine_restock(request, pk):
 
 
 @login_required
-@nurse_required
+@doctor_required
 def medicine_deduct(request, pk):
     """Manually deduct stock from a medicine."""
     from .forms import MedicineDeductForm
@@ -194,7 +194,7 @@ def medicine_delete(request, pk):
 
 
 @login_required
-@nurse_required
+@doctor_required
 def stock_movements(request, medicine_pk=None):
     """View stock movement audit trail."""
     movements = StockMovement.objects.all().select_related('medicine')

@@ -20,6 +20,16 @@
 <div class="sec-label">Quick Actions</div>
 <div class="dash-grid">
 
+  <a href="{% url 'consultations:triage_list' %}" class="dash-card primary-action">
+    <div class="dash-card-icon">
+      <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </div>
+    <div class="dash-card-text">
+      <strong>Triage Queue</strong>
+      <span>Assess incoming patients</span>
+    </div>
+  </a>
+
   <a href="{% url 'consultations:doctor_list' %}" class="dash-card">
     <div class="dash-card-icon" style="background:#ede9fe;">
       <svg width="22" height="22" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -58,15 +68,22 @@
   <div class="resp-panel-header">Doctor Workflow</div>
 
   <div class="resp-item">
-    <div class="resp-item-icon" style="background:#ede9fe;">
-      <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+    <div class="resp-item-icon" style="background:#d1fae5;">
+      <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
     </div>
-    Review triaged patients forwarded by the nurse
+    Record patient vitals (BP, temperature, pulse)
   </div>
 
   <div class="resp-item">
-    <div class="resp-item-icon" style="background:#eff6ff;">
-      <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <div class="resp-item-icon" style="background:#fff7ed;">
+      <svg width="15" height="15" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    Assess condition severity: Low / Medium / High
+  </div>
+
+  <div class="resp-item">
+    <div class="resp-item-icon" style="background:#ede9fe;">
+      <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
     </div>
     Perform medical diagnosis
   </div>
@@ -76,13 +93,6 @@
       <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
     </div>
     Prescribe medication — stock is deducted automatically
-  </div>
-
-  <div class="resp-item">
-    <div class="resp-item-icon" style="background:#fdf4ff;">
-      <svg width="15" height="15" fill="none" stroke="#8b5cf6" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    </div>
-    Provide treatment plan or recommendations
   </div>
 
   <div class="resp-item">

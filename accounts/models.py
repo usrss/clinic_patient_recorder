@@ -11,7 +11,6 @@ class User(AbstractUser):
 
     class Role(models.TextChoices):
         PATIENT  = 'patient',  'Patient'
-        NURSE    = 'nurse',    'Nurse'
         DOCTOR   = 'doctor',   'Doctor'
         FRONTDESK = 'frontdesk', 'Front Desk'
         ADMIN    = 'admin',    'Admin'
@@ -35,10 +34,6 @@ class User(AbstractUser):
         return self.role == self.Role.PATIENT
 
     @property
-    def is_nurse(self):
-        return self.role == self.Role.NURSE
-
-    @property
     def is_doctor(self):
         return self.role == self.Role.DOCTOR
 
@@ -53,7 +48,6 @@ class User(AbstractUser):
     @property
     def is_clinical_staff(self):
         return self.role in (
-            self.Role.NURSE,
             self.Role.DOCTOR,
             self.Role.FRONTDESK,
             self.Role.ADMIN,
