@@ -1,21 +1,27 @@
+from datetime import date
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Prefetch
+
+from accounts.models import User
 from notifications.utils import notify_role, notify_user
 from django.core.exceptions import ValidationError
 
 from accounts.decorators import (
-    frontdesk_required, doctor_required,
-    admin_required, clinical_staff_required, patient_required,
+frontdesk_required, doctor_required,
+admin_required, clinical_staff_required, patient_required,
 )
 from inventory.models import Medicine
 from patients.models import PatientProfile
-from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis
+from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpRequest, \
+FollowUpProgress
 from .forms import (
-    ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
-    PrescriptionForm, PrescriptionItemFormSet, PrescriptionMedicineFormSet,
-    PatientConsultationForm,
+ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
+PrescriptionForm, PrescriptionItemFormSet, PrescriptionMedicineFormSet,
+PatientConsultationForm, FollowUpProgressForm, CloseConsultationForm, ConsultationStatusUpdateForm,
 )
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
@@ -30,8 +36,9 @@ def _base_template(user):
     return 'core/base_staff.html'
 
 
-@login_required
-@patient_required
+
+
+
 def patient_home(request):
     """Patient's own consultation history."""
     patient = request.user.get_patient_record()
@@ -43,35 +50,181 @@ def patient_home(request):
         patient=patient
     ).order_by('-created_at')
 
+    # Get pending follow-up requests: consultation_id -> FollowUpRequest pk
+    pending_follow_ups = {
+        r.consultation_id: r.pk
+        for r in FollowUpRequest.objects.filter(
+            patient=patient,
+            request_status='pending',
+        ).only('pk', 'consultation_id')
+    }
+
     return render(request, 'consultations/patient_home.html', {
         'consultations': consultations,
         'patient': patient,
+        'pending_follow_ups': pending_follow_ups,
     })
 
 
 @login_required
 @patient_required
 def patient_submit(request):
-    """Patient submits a new consultation request."""
+    """
+    Patient consultation page:
+    - Shows active follow-up consultations (marked by doctor)
+    - Option to create a new consultation
+    """
     patient = request.user.get_patient_record()
     if patient is None:
         messages.error(request, 'Patient record not found.')
         return redirect('accounts:dashboard')
 
+    # Active follow-up consultations (doctor-marked only)
+    active_follow_ups = Consultation.objects.filter(
+        patient=patient,
+        is_original_case=True,
+        status=Consultation.Status.ACTIVE_FOLLOW_UP,
+    ).order_by('-created_at')
+
+    # New consultation form
     form = PatientConsultationForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        consultation = form.save(commit=False)
-        consultation.patient = patient
-        consultation.status = Consultation.Status.PENDING
-        consultation.save()
-        notify_role('frontdesk',
-                    'New Consultation Request',
-                    f'{patient.get_full_name()} submitted a consultation request.',
-                    f'/consultations/queue/{consultation.pk}/')
-        messages.success(request, 'Your consultation request has been submitted.')
+
+    if request.method == 'POST' and 'submit_new' in request.POST:
+        if form.is_valid():
+            consultation = form.save(commit=False)
+            consultation.patient = patient
+            consultation.status = Consultation.Status.PENDING
+            consultation.is_original_case = True
+            consultation.save()
+            notify_role('frontdesk',
+                        'New Consultation Request',
+                        f'{patient.get_full_name()} submitted a new consultation request.',
+                        f'/consultations/queue/{consultation.pk}/')
+            messages.success(request, 'Your new consultation request has been submitted.')
+            return redirect('consultations:patient_home')
+
+    return render(request, 'consultations/patient_submit.html', {
+        'form': form,
+        'active_follow_ups': active_follow_ups,
+    })
+
+
+@login_required
+@patient_required
+def request_follow_up(request, consultation_pk):
+    """
+    Patient requests a follow-up visit for an active consultation.
+    Creates a FollowUpRequest queue entry for front desk processing.
+    """
+    if request.method != 'POST':
         return redirect('consultations:patient_home')
 
-    return render(request, 'consultations/patient_submit.html', {'form': form})
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    consultation = get_object_or_404(
+        Consultation,
+        pk=consultation_pk,
+        patient=patient,
+        is_original_case=True,
+        status=Consultation.Status.ACTIVE_FOLLOW_UP,
+    )
+
+    # Prevent duplicate pending requests
+    existing_request = FollowUpRequest.objects.filter(
+        consultation=consultation,
+        patient=patient,
+        request_status='pending',
+    ).first()
+    if existing_request:
+        messages.info(
+            request,
+            f'You already have a pending follow-up request for Consultation #{consultation_pk}. '
+            f'Please wait for the clinic to process it.'
+        )
+        return redirect('consultations:patient_home')
+
+    # Create follow-up request queue entry
+    FollowUpRequest.objects.create(
+        consultation=consultation,
+        patient=patient,
+        request_status='pending',
+    )
+
+    # Notify front desk
+    notify_role(
+        'frontdesk',
+        'Follow-up Visit Requested',
+        f'{patient.get_full_name()} is requesting a follow-up for Consultation #{consultation_pk}.',
+        f'/consultations/queue/'
+    )
+
+    messages.success(
+        request,
+        f'Your follow-up visit request for Consultation #{consultation_pk} has been submitted. '
+        f'Please proceed to the clinic.'
+    )
+    return redirect('consultations:patient_home')
+
+
+
+
+
+@login_required
+@doctor_required
+def consultation_complete(request, pk):
+    """
+    Doctor completes a consultation and decides whether follow-up is needed.
+    """
+    consultation = get_object_or_404(
+        Consultation,
+        pk=pk,
+        status=Consultation.Status.TRIAGED,
+    )
+
+    if not consultation.prescriptions.exists():
+        messages.error(request, 'Please complete the prescription first.')
+        return redirect('consultations:prescribe', pk=pk)
+
+    if request.method == 'POST':
+        requires_follow_up = request.POST.get('requires_follow_up') == '1'
+        recommended_date = request.POST.get('recommended_follow_up_date', '').strip()
+
+        if requires_follow_up and not recommended_date:
+            messages.error(request, 'Please set a recommended follow-up date.')
+        else:
+            if requires_follow_up:
+                consultation.status = Consultation.Status.ACTIVE_FOLLOW_UP
+                consultation.recommended_follow_up_date = recommended_date
+            else:
+                consultation.status = Consultation.Status.COMPLETED
+
+            consultation.save(update_fields=['status', 'recommended_follow_up_date'])
+
+            patient_user = User.objects.filter(username=consultation.patient.patient_id).first()
+            if patient_user:
+                notify_user(
+                    patient_user,
+                    'Consultation Completed',
+                    f'Consultation #{pk} has been completed. '
+                    + ('A follow-up has been recommended.' if requires_follow_up else ''),
+                    f'/consultations/my/{pk}/'
+                )
+
+            messages.success(
+                request,
+                f'Consultation #{pk} completed.'
+                + (' Follow-up recommended.' if requires_follow_up else '')
+            )
+            return redirect('consultations:print_consultation', pk=pk)
+
+    return render(request, 'consultations/consultation_complete.html', {
+        'consultation': consultation,
+        'base_template': _base_template(request.user),
+        'today': date.today(),
+    })
 
 
 @login_required
@@ -87,6 +240,40 @@ def patient_detail(request, pk):
     return render(request, 'consultations/patient_consultation_detail.html', {
         'consultation': consultation,
     })
+
+
+@login_required
+@patient_required
+def cancel_follow_up_request(request, follow_up_pk):
+    """Patient cancels a pending follow-up request."""
+    if request.method != 'POST':
+        return redirect('consultations:patient_home')
+
+    patient = request.user.get_patient_record()
+    if patient is None:
+        messages.error(request, 'Patient record not found.')
+        return redirect('accounts:dashboard')
+
+    follow_up_req = get_object_or_404(
+        FollowUpRequest,
+        pk=follow_up_pk,
+        patient=patient,
+        request_status='pending',
+    )
+    follow_up_req.request_status = 'cancelled'
+    follow_up_req.save(update_fields=['request_status'])
+    messages.success(
+        request,
+        f'Follow-up request for Consultation #{follow_up_req.consultation_id} has been cancelled.'
+    )
+
+    # Notify front desk that a follow-up request was cancelled
+    notify_role('frontdesk',
+                'Follow-up Request Cancelled',
+                f'Patient {patient.get_full_name()} cancelled their follow-up request for Consultation #{follow_up_req.consultation_id}.',
+                link=f'/consultations/queue/')
+
+    return redirect('consultations:patient_home')
 
 
 @login_required
@@ -116,12 +303,20 @@ def patient_cancel(request, pk):
 @login_required
 @frontdesk_required
 def queue(request):
-    """List pending consultation requests for front desk to process."""
+    """List pending consultation requests and follow-up requests for front desk to process."""
     consultations = Consultation.objects.filter(
         status=Consultation.Status.PENDING
     ).select_related('patient', 'patient__college').order_by('created_at')
+
+    follow_up_requests = FollowUpRequest.objects.filter(
+        request_status='pending'
+    ).select_related(
+        'patient', 'consultation', 'patient__college'
+    ).order_by('-created_at')
+
     return render(request, 'consultations/queue.html', {
         'consultations': consultations,
+        'follow_up_requests': follow_up_requests,
         'base_template': _base_template(request.user),
     })
 
@@ -129,24 +324,137 @@ def queue(request):
 @login_required
 @frontdesk_required
 def consultation_create(request):
-    """Front desk creates a consultation on behalf of a walk-in patient."""
+    """Front desk creates a consultation on behalf of a walk-in patient.
+
+    Supports walk-in patients who are not yet registered:
+    - If the patient ID matches an existing Patient → use that record.
+    - Otherwise → create a minimal Patient + PatientProfile + User account.
+    """
+    from patients.models import Patient, PatientProfile
+    from accounts.utils import create_patient_user
+
+    # ── One-time credentials from a successful creation (PRG pattern) ──────────
+    new_patient_credentials = request.session.pop('new_patient_credentials', None)
+
+    # Persist the last looked-up patient_id across POST requests
+    looked_up_patient_id = request.session.get('looked_up_patient_id', '')
+    looked_up_patient = None
+    if looked_up_patient_id:
+        looked_up_patient = Patient.objects.filter(
+            patient_id=looked_up_patient_id
+        ).first()
+
     form = ConsultationSubmitForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        consultation = form.save(commit=False)
-        consultation.status = Consultation.Status.PENDING
-        consultation.save()
-        notify_role('frontdesk',
-                    'New Consultation Request',
-                    f'{consultation.patient.get_full_name()} submitted a consultation request.'
-                    f'/consultations/queue/{consultation.pk}/')
-        messages.success(
-            request,
-            f'Consultation created for {consultation.patient.get_full_name()}.'
-        )
-        return redirect('consultations:queue')
+
+    if request.method == 'POST':
+        # ── Handle Lookup action ────────────────────────────────────────
+        if 'lookup' in request.POST:
+            pid = request.POST.get('patient_id', '').strip()
+            existing = Patient.objects.filter(patient_id=pid).first()
+            if existing:
+                request.session['looked_up_patient_id'] = pid
+                messages.success(
+                    request,
+                    f'Patient found: {existing.get_full_name()} ({existing.patient_id})'
+                )
+            else:
+                request.session['looked_up_patient_id'] = ''
+                if pid:
+                    messages.info(
+                        request,
+                        'Patient not found. Complete the registration fields below.'
+                    )
+
+            # Re-render same page with POST data preserved — no redirect, no data loss
+            form = ConsultationSubmitForm(request.POST)
+            return render(request, 'consultations/consultation_create.html', {
+                'form': form,
+                'base_template': _base_template(request.user),
+                'looked_up_patient': existing if existing else None,
+            })
+
+        # ── Handle Create Consultation action ───────────────────────────
+        if form.is_valid():
+            cd = form.cleaned_data
+            patient = cd.get('_patient')  # existing Patient or None
+            is_new_patient = patient is None
+            temp_password = None
+
+            with transaction.atomic():
+                if is_new_patient:
+                    # Create minimal Patient record
+                    patient = Patient.objects.create(
+                        patient_id=cd['patient_id'],
+                        first_name=cd['first_name'],
+                        last_name=cd['last_name'],
+                        sex=cd['sex'],
+                        phone=cd.get('contact_number', ''),
+                        is_active=True,
+                    )
+                    # Create PatientProfile with birthday
+                    PatientProfile.objects.create(
+                        patient=patient,
+                        birthday=cd['birthdate'],
+                    )
+                    # Auto-create User account
+                    user, temp_password = create_patient_user(patient)
+
+                # Create Consultation
+                consultation = Consultation(
+                    patient=patient,
+                    symptoms=cd['symptoms'],
+                    medical_history=cd.get('medical_history', ''),
+                    severity_description=cd['severity_description'],
+                    additional_notes=cd.get('additional_notes', ''),
+                    status=Consultation.Status.PENDING,
+                    is_original_case=True,
+                )
+                consultation.save()
+
+            # Notify front desk
+            notify_role(
+                'frontdesk',
+                'New Consultation Request',
+                f'{patient.get_full_name()} submitted a consultation request.',
+                f'/consultations/queue/{consultation.pk}/'
+            )
+
+            # Clear session lookup
+            request.session.pop('looked_up_patient_id', None)
+
+            if is_new_patient and temp_password:
+                # Store credentials in session (one-time) and redirect (PRG)
+                request.session['new_patient_credentials'] = {
+                    'username': patient.patient_id,
+                    'password': temp_password,
+                    'name': patient.get_full_name(),
+                }
+                messages.success(
+                    request,
+                    f'Consultation created for {patient.get_full_name()}. '
+                    'Patient registered successfully.'
+                )
+                # Also include password in messages for recovery
+                messages.info(
+                    request,
+                    f'Patient credentials — Username: {patient.patient_id} | '
+                    f'Password: {temp_password}'
+                )
+                # Redirect to create page to show credentials box via session
+                return redirect('consultations:consultation_create')
+            else:
+                messages.success(
+                    request,
+                    f'Consultation created for {patient.get_full_name()}.'
+                )
+                # PRG: Redirect to queue for existing patients
+                return redirect('consultations:queue')
+
     return render(request, 'consultations/consultation_create.html', {
         'form': form,
         'base_template': _base_template(request.user),
+        'looked_up_patient': looked_up_patient,
+        'new_patient_credentials': new_patient_credentials,
     })
 
 
@@ -188,6 +496,49 @@ def queue_detail(request, pk):
         'form': form,
         'base_template': _base_template(request.user),
     })
+
+
+@login_required
+@frontdesk_required
+def process_follow_up(request, follow_up_pk):
+    """
+    Front desk processes a follow-up request, making it visible in the doctor's triage queue.
+    """
+    if request.method != 'POST':
+        return redirect('consultations:queue')
+
+    follow_up_req = get_object_or_404(
+        FollowUpRequest,
+        pk=follow_up_pk,
+        request_status='pending',
+    )
+
+    consultation = follow_up_req.consultation
+
+    with transaction.atomic():
+        follow_up_req.request_status = 'queued'
+        follow_up_req.queue_number = assign_next_queue_number()
+        follow_up_req.save(update_fields=['request_status', 'queue_number'])
+
+        # Change consultation status to queued so it appears in triage list
+        consultation.status = Consultation.Status.QUEUED
+        consultation.queue_number = follow_up_req.queue_number
+        consultation.save(update_fields=['status', 'queue_number'])
+
+    notify_role(
+        'doctor',
+        'Follow-up Ready for Triage',
+        f'{follow_up_req.patient.get_full_name()} is ready for triage '
+        f'(follow-up for Consultation #{consultation.pk}).',
+        f'/consultations/triage/{consultation.pk}/'
+    )
+
+    messages.success(
+        request,
+        f'Follow-up request #{follow_up_pk} processed. '
+        f'Consultation #{consultation.pk} is now in the triage queue.'
+    )
+    return redirect('consultations:queue')
 
 
 @login_required
@@ -261,7 +612,12 @@ def triage_form(request, pk):
         status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED],
     )
 
-    if hasattr(consultation, 'triage'):
+    if consultation.triages.exists():
+        # If this consultation already has a prescription, it's a follow-up case.
+        # Redirect doctor to the follow-up creation form instead.
+        if consultation.prescriptions.exists():
+            messages.info(request, f'This is a follow-up visit. Recording follow-up progress.')
+            return redirect('consultations:follow_up_create', consultation_pk=consultation.pk)
         messages.info(request, f'Consultation #{consultation.pk} has already been triaged.')
         return redirect('consultations:triage_list')
 
@@ -290,7 +646,7 @@ def triage_form(request, pk):
     if request.method == 'POST' and form.is_valid():
         triage = form.save(commit=False)
         triage.consultation = consultation
-        triage.nurse = request.user
+        triage.triaged_by = request.user
         triage.save()
 
         # Update patient profile from triage form
@@ -316,7 +672,7 @@ def triage_form(request, pk):
                     f'{consultation.patient.get_full_name()} has been triaged and is ready.',
                     f'/consultations/prescribe/{consultation.pk}/')
         messages.success(request, f'Triage complete for Consultation #{consultation.pk}.')
-        return redirect('consultations:triage_list')
+        return redirect('consultations:prescribe', pk=consultation.pk)
 
     return render(request, 'consultations/triage_form.html', {
         'consultation': consultation,
@@ -331,7 +687,7 @@ def triage_form(request, pk):
 def triage_edit(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
 
-    if not hasattr(consultation, 'triage'):
+    if not consultation.triages.exists():
         messages.error(request, f'Consultation #{pk} has not been triaged yet.')
         return redirect('consultations:triage_list')
 
@@ -339,7 +695,7 @@ def triage_edit(request, pk):
         messages.error(request, 'Triage records cannot be amended after a consultation is completed.')
         return redirect('consultations:triage_list')
 
-    triage = consultation.triage
+    triage = consultation.triages.first()
     form = TriageEditForm(request.POST or None, instance=triage)
 
     if request.method == 'POST' and form.is_valid():
@@ -366,7 +722,7 @@ def triage_edit(request, pk):
 def doctor_list(request):
     consultations = Consultation.objects.filter(
         status=Consultation.Status.TRIAGED
-    ).select_related('patient', 'triage', 'patient__college').order_by('created_at')
+    ).select_related('patient', 'patient__college').prefetch_related('triages').order_by('created_at')
     return render(request, 'consultations/doctor_list.html', {
         'consultations': consultations,
         'base_template': _base_template(request.user),
@@ -378,7 +734,7 @@ def doctor_list(request):
 def prescribe(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
-    if hasattr(consultation, 'prescription'):
+    if consultation.prescriptions.exists():
         messages.info(request, f'Consultation #{consultation.pk} already has a prescription.')
         return redirect('consultations:print_consultation', pk=consultation.pk)
 
@@ -397,10 +753,8 @@ def prescribe(request, pk):
                     prescription.consultation = consultation
                     prescription.doctor = request.user
                     prescription.save()
-                    consultation.status = Consultation.Status.COMPLETED
-                    consultation.save(update_fields=['status'])
                 messages.success(request, f'Consultation #{consultation.pk} completed.')
-                return redirect('consultations:print_consultation', pk=consultation.pk)
+                return redirect('consultations:consultation_complete', pk=consultation.pk)
             else:
                 messages.error(request, 'Please enter a diagnosis.')
 
@@ -453,14 +807,11 @@ def prescribe(request, pk):
                                     user=request.user,
                                 )
 
-                        consultation.status = Consultation.Status.COMPLETED
-                        consultation.save(update_fields=['status'])
-
                     messages.success(
                         request,
                         f'Prescription saved. Consultation #{consultation.pk} completed.',
                     )
-                    return redirect('consultations:print_consultation', pk=consultation.pk)
+                    return redirect('consultations:consultation_complete', pk=consultation.pk)
 
                 except Exception as exc:
                     messages.error(
@@ -509,8 +860,8 @@ def patient_medical_history(request, patient_pk):
     consultations_qs = (
         Consultation.objects
         .filter(patient=patient)
-        .select_related('triage', 'prescription')
-        .prefetch_related('prescription__items')
+        .prefetch_related('triages', 'prescriptions')
+        .prefetch_related('prescriptions__items')
         .order_by('-created_at')
     )
 
@@ -535,8 +886,8 @@ def patient_medical_history(request, patient_pk):
 
     if keyword:
         consultations_qs = consultations_qs.filter(
-            Q(prescription__diagnosis__icontains=keyword) |
-            Q(prescription__items__medicine_name__icontains=keyword)
+            Q(prescriptions__diagnosis__icontains=keyword) |
+            Q(prescriptions__items__medicine_name__icontains=keyword)
         ).distinct()
 
     consultations = list(consultations_qs)
@@ -609,8 +960,7 @@ def patient_medical_history_pdf(request, patient_pk):
     consultations = (
         Consultation.objects
         .filter(patient=patient)
-        .select_related('triage', 'prescription')
-        .prefetch_related('prescription__items')
+        .prefetch_related('triages', 'prescriptions__items')
         .order_by('-created_at')
     )
 
@@ -634,7 +984,7 @@ def patient_medical_history_pdf(request, patient_pk):
     story = []
 
     # Header
-    story.append(Paragraph('CLINIC RECORDER', title_style))
+    story.append(Paragraph('PATIENT RECORD SYSTEM', title_style))
     story.append(Paragraph('Patient Medical History', styles['Heading2']))
     story.append(HRFlowable(width='100%', thickness=1, color=colors.lightgrey))
     story.append(Spacer(1, 0.3*cm))
@@ -688,8 +1038,8 @@ def patient_medical_history_pdf(request, patient_pk):
             if c.severity_description:
                 story.append(Paragraph(f'<i>Severity:</i> {c.severity_description}', small_style))
 
-            if hasattr(c, 'triage') and c.triage:
-                t = c.triage
+            t = c.triages.first()
+            if t:
                 story.append(Paragraph(
                     f'<i>Vitals:</i> BP {t.blood_pressure} | '
                     f'Temp {t.temperature}°C | Pulse {t.pulse_rate} bpm | '
@@ -697,8 +1047,8 @@ def patient_medical_history_pdf(request, patient_pk):
                     small_style
                 ))
 
-            if hasattr(c, 'prescription') and c.prescription:
-                rx = c.prescription
+            rx = c.prescriptions.first()
+            if rx:
                 story.append(Paragraph(f'<i>Diagnosis:</i> {rx.diagnosis}', small_style))
                 if rx.treatment_plan:
                     story.append(Paragraph(f'<i>Treatment Plan:</i> {rx.treatment_plan}', small_style))
@@ -720,7 +1070,7 @@ def patient_medical_history_pdf(request, patient_pk):
 
     story.append(Spacer(1, 0.5*cm))
     story.append(Paragraph(
-        f'Generated: {date.today().strftime("%B %d, %Y")} | Clinic Recorder',
+        f'Generated: {date.today().strftime("%B %d, %Y")} | Patient Record System',
         small_style
     ))
 
@@ -735,6 +1085,162 @@ def patient_medical_history_pdf(request, patient_pk):
     return response
 
 
+# ─── FOLLOW-UP / CONSULTATION CONTINUATION VIEWS ─────────────────────────────
+
+@login_required
+@doctor_required
+def follow_up_create(request, consultation_pk):
+    """
+    Doctor records a follow-up visit for an existing consultation.
+    This creates a FollowUpProgress entry linked to the original consultation.
+    """
+    original_consultation = get_object_or_404(
+        Consultation,
+        pk=consultation_pk,
+        is_original_case=True,
+    )
+
+    # Determine next visit number
+    last_visit = original_consultation.progress_entries.order_by(
+        '-visit_number'
+    ).first()
+    next_visit_number = (last_visit.visit_number + 1) if last_visit else 1
+
+    form = FollowUpProgressForm(request.POST or None)
+
+    if request.method == 'POST' and form.is_valid():
+        progress = form.save(commit=False)
+        progress.consultation = original_consultation
+        progress.visit_number = next_visit_number
+        progress.doctor = request.user
+        progress.follow_up_status = 'completed'
+        progress.save()
+
+        # Update original consultation
+        original_consultation.follow_up_count = next_visit_number
+        original_consultation.last_follow_up_date = progress.created_at
+
+
+        if form.cleaned_data.get('requires_follow_up'):
+            original_consultation.status = Consultation.Status.ACTIVE_FOLLOW_UP
+            original_consultation.recommended_follow_up_date = form.cleaned_data.get('recommended_follow_up_date')
+        else:
+            original_consultation.status = Consultation.Status.COMPLETED
+
+        original_consultation.save(
+            update_fields=[
+                'follow_up_count', 'last_follow_up_date', 'status', 'recommended_follow_up_date'
+            ]
+        )
+
+        messages.success(
+            request,
+            f'Follow-up visit #{next_visit_number} recorded for '
+            f'Consultation #{consultation_pk}.'
+        )
+        return redirect(
+            'consultations:consultation_timeline',
+            pk=consultation_pk
+        )
+
+    return render(request, 'consultations/follow_up_form.html', {
+        'form': form,
+        'consultation': original_consultation,
+        'visit_number': next_visit_number,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@clinical_staff_required
+def consultation_timeline(request, pk):
+    """
+    Staff view: Full timeline of a consultation case including all follow-ups.
+    """
+    consultation = get_object_or_404(
+        Consultation.objects.select_related(
+            'patient', 'patient__college',
+        ).prefetch_related(
+            'progress_entries',
+            'triages',
+            'prescriptions',
+        ),
+        pk=pk,
+    )
+
+    # Get all progress entries ordered by visit number
+    progress_entries = consultation.progress_entries.all().order_by('visit_number')
+
+    return render(request, 'consultations/timeline.html', {
+        'consultation': consultation,
+        'progress_entries': progress_entries,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@doctor_required
+def close_consultation(request, pk):
+    """
+    Doctor closes a consultation case — no more follow-ups allowed.
+    """
+    consultation = get_object_or_404(
+        Consultation,
+        pk=pk,
+        is_original_case=True,
+    )
+
+    if consultation.status == Consultation.Status.CLOSED:
+        messages.info(request, f'Consultation #{pk} is already closed.')
+        return redirect('consultations:consultation_timeline', pk=pk)
+
+    form = CloseConsultationForm(request.POST or None)
+
+    if request.method == 'POST' and form.is_valid():
+        consultation.status = Consultation.Status.CLOSED
+        consultation.closure_notes = form.cleaned_data['closure_notes']
+        from django.utils import timezone
+        consultation.closed_at = timezone.now()
+        consultation.save(
+            update_fields=['status', 'closure_notes', 'closed_at']
+        )
+        messages.success(request, f'Consultation case #{pk} has been closed.')
+        return redirect('consultations:consultation_timeline', pk=pk)
+
+    return render(request, 'consultations/close_consultation.html', {
+        'form': form,
+        'consultation': consultation,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@doctor_required
+def patient_active_cases(request, patient_pk):
+    """
+    List all active/open consultation cases for a specific patient.
+    """
+    from patients.models import Patient
+
+    patient = get_object_or_404(Patient, pk=patient_pk)
+
+    active_cases = Consultation.objects.filter(
+        patient=patient,
+        is_original_case=True,
+        status__in=[
+            Consultation.Status.ACTIVE_FOLLOW_UP,
+            Consultation.Status.TRIAGED,
+            Consultation.Status.COMPLETED,
+        ]
+    ).order_by('-created_at')
+
+    return render(request, 'consultations/patient_active_cases.html', {
+        'patient': patient,
+        'active_cases': active_cases,
+        'base_template': _base_template(request.user),
+    })
+
+
 # ─── PRINTABLE CONSULTATION ────────────────────────────────────────────────────
 
 @login_required
@@ -743,12 +1249,24 @@ def print_consultation(request, pk):
     """
     Printable/single-page view of a consultation with all vitals,
     diagnosis, prescriptions — optimised for printing.
+    Also includes follow-up visit records when available.
     """
+    progress_entries_prefetch = Prefetch(
+        'progress_entries',
+        queryset=FollowUpProgress.objects
+            .select_related('doctor')
+            .prefetch_related('triages')
+            .order_by('visit_number'),
+    )
+
     consultation = get_object_or_404(
         Consultation.objects.select_related(
             'patient', 'patient__college', 'patient__profile',
-            'triage', 'prescription',
-        ).prefetch_related('prescription__items'),
+        ).prefetch_related(
+            'triages',
+            'prescriptions__items',
+            progress_entries_prefetch,
+        ),
         pk=pk,
     )
 

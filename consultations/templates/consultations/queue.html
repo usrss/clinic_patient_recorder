@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Consultation Queue — Clinic Recorder{% endblock %}
+{% block title %}Consultation Queue — Patient Record System{% endblock %}
 {% block nav_queue %}active{% endblock %}
 {% block page_title %}Consultation Queue{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} pending request{{ consultations.count|pluralize }}{% endblock %}
@@ -138,7 +138,7 @@
 {% if consultations %}
 <div class="table-panel">
   <div class="table-panel-header">
-    <span class="table-panel-title">Queue</span>
+    <span class="table-panel-title">New Consultations</span>
     <span class="table-panel-meta">{{ consultations.count }} pending</span>
   </div>
   <div class="table-scroll">
@@ -191,15 +191,79 @@
     </table>
   </div>
 </div>
+{% endif %}
 
-{% else %}
+{# ── Follow-up Requests Section ── #}
+{% if follow_up_requests %}
+<div class="toolbar" style="margin-top:32px;">
+  <div class="sec-heading" style="margin:0;">Follow-up Visit Requests</div>
+</div>
+<div class="table-panel">
+  <div class="table-panel-header">
+    <span class="table-panel-title">Follow-ups</span>
+    <span class="table-panel-meta">{{ follow_up_requests.count }} pending</span>
+  </div>
+  <div class="table-scroll">
+    <table class="q-table">
+      <thead>
+        <tr>
+          <th>Req #</th>
+          <th>Patient</th>
+          <th>Patient ID</th>
+          <th>Original Consultation</th>
+          <th>Notes</th>
+          <th>Requested</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in follow_up_requests %}
+        <tr>
+          <td style="color:#94a3b8;font-size:11px;font-weight:600;">{{ req.pk }}</td>
+          <td>
+            <div class="patient-cell">
+              <div class="patient-avatar">{{ req.patient.get_full_name|first|upper }}</div>
+              <div>
+                <div class="patient-name">{{ req.patient.get_full_name }}</div>
+                {% if req.patient.college %}
+                <div class="patient-college">{{ req.patient.college.abbreviation }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td><span class="id-badge">{{ req.patient.patient_id }}</span></td>
+          <td>
+            <span class="id-badge">#{{ req.consultation.pk }}</span>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ req.consultation.symptoms|truncatechars:40 }}</div>
+          </td>
+          <td><div class="symptom-cell">{{ req.notes|default:"—" }}</div></td>
+          <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ req.created_at|date:"M d, H:i" }}</td>
+          <td>
+            <form method="post" action="{% url 'consultations:process_follow_up' req.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="process-btn" style="background:#f59e0b;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                Process
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ── Empty state (no consultations AND no follow-ups) ── #}
+{% if not consultations and not follow_up_requests %}
 <div class="table-panel">
   <div class="empty-state">
     <div class="empty-icon">
-      <svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg width="24" height="24" fill="none" stroke="#0078d4" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <div class="empty-title">Queue is clear</div>
-    <div class="empty-sub">No pending consultation requests at this time.</div>
+    <div class="empty-sub">No pending consultation or follow-up requests at this time.</div>
   </div>
 </div>
 {% endif %}

@@ -1,5 +1,5 @@
 {% extends 'core/base_admin.html' %}
-{% block title %}{{ action }} Medicine — Clinic Recorder{% endblock %}
+{% block title %}{{ action }} Medicine — Patient Record System{% endblock %}
 {% block nav_inventory %}active{% endblock %}
 {% block page_title %}{{ action }} Medicine{% endblock %}
 {% block page_subtitle %}{% if medicine %}Editing {{ medicine.name }}{% else %}Add a new medicine to inventory{% endif %}{% endblock %}
@@ -54,12 +54,12 @@
   .back-btn:hover { box-shadow:0 4px 12px rgba(0,0,0,0.1); transform:translateY(-1px); color:#374151; }
   .submit-btn {
     display:inline-flex; align-items:center; gap:8px; padding:12px 22px;
-    background:linear-gradient(135deg,#0078d4,#1a56db); color:#fff;
+    background:#0078d4; color:#fff;
     border:none; border-radius:12px; font-size:14px; font-weight:600;
-    cursor:pointer; box-shadow:0 2px 8px rgba(0,120,212,0.35);
+    cursor:pointer; box-shadow:0 2px 8px rgba(0,120,212,0.25);
     transition:all 0.2s; font-family:'Inter',sans-serif;
   }
-  .submit-btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,120,212,0.45); }
+  .submit-btn:hover { background:#006cbd; transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,120,212,0.35); }
   .cancel-btn {
     display:inline-flex; align-items:center; gap:6px; padding:12px 18px;
     background:#fff; border:1px solid #e8ecf1; border-radius:12px;
@@ -195,7 +195,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
         <div>
           <label class="field-label">
-            <ion-icon name="layers-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+            <ion-icon name="layers-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
             Quantity <span style="color:#ef4444;">*</span>
           </label>
           {{ form.quantity }}
@@ -268,7 +268,7 @@
         </div>
         <div>
           <label class="field-label">
-            <ion-icon name="cash-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+            <ion-icon name="cash-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
             Cost per Unit (₱)
           </label>
           {{ form.cost_per_unit }}

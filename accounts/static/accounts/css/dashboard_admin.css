@@ -8,10 +8,10 @@
 
   .stat-card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 20px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -75,10 +75,10 @@
   }
   .action-card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 18px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     text-decoration: none;
     color: inherit;
     display: flex;
@@ -98,8 +98,8 @@
     color: #fff;
   }
   .action-card.primary-action:hover {
-    background: #006bbf;
-    border-color: #006bbf;
+    background: #006cbd;
+    border-color: #006cbd;
     box-shadow: 0 4px 20px rgba(0,120,212,.25);
     color: #fff;
   }
@@ -143,9 +143,9 @@
   /* ── Panel card ── */
   .panel {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     overflow: hidden;
   }
   .panel-header {
@@ -207,9 +207,9 @@
   /* ── Workflow ── */
   .workflow-panel {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     padding: 20px 22px;
     margin-bottom: 28px;
   }
@@ -294,4 +294,47 @@
   @media (max-width: 600px) {
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
     .action-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Chart Grid ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 860px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-grid .chart-card:nth-child(5) { grid-column: span 1 !important; }
+  }
+  .chart-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.05);
+    overflow: hidden;
+  }
+  .chart-card-header {
+    padding: 10px 14px 0;
+  }
+  .chart-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .chart-canvas-wrap {
+    padding: 8px 12px 12px;
+    position: relative;
+    min-height: 160px;
+  }
+  .chart-canvas-wrap canvas {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 140px;
+  }
+  .chart-grid .chart-card:nth-child(5) .chart-canvas-wrap {
+    min-height: 120px;
+  }
+  .chart-grid .chart-card:nth-child(5) .chart-canvas-wrap canvas {
+    min-height: 100px;
   }

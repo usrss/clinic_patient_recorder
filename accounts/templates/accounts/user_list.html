@@ -1,5 +1,5 @@
 {% extends 'core/base_admin.html' %}
-{% block title %}Staff Users — Clinic Recorder{% endblock %}
+{% block title %}Staff Users — Patient Record System{% endblock %}
 {% block nav_staff %}active{% endblock %}
 {% block page_title %}Staff Users{% endblock %}
 {% block page_subtitle %}Manage staff accounts and access{% endblock %}
@@ -12,72 +12,71 @@
 {% block content %}
 
   {# ── Header row ── #}
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+  <div class="d-flex align-items-center justify-content-between flex-wrap" style="margin-bottom:22px;gap:12px;">
     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
       {{ users|length }} staff member{{ users|length|pluralize }}
     </div>
-    <a href="{% url 'accounts:user_create' %}" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#0078d4;color:#fff;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:background 0.15s;box-shadow:0 2px 8px rgba(0,120,212,0.2);"
-       onmouseover="this.style.background='#006bbf'" onmouseout="this.style.background='#0078d4'">
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary" style="gap:6px;">
       <ion-icon name="person-add-outline" style="font-size:15px;"></ion-icon>
       Add Staff
     </a>
   </div>
 
   {# ── Table Card ── #}
-  <div style="background:#fff;border-radius:14px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);overflow:hidden;">
+  <div class="card-panel">
     <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;">
+      <table class="cr-table" style="width:100%;border-collapse:collapse;">
         <thead>
-          <tr style="background:#f8fafc;border-bottom:1px solid #e8ecf1;">
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Name</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Username</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Role</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Email</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Status</th>
-            <th style="padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">Actions</th>
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for u in users %}
-          <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-            <td style="padding:14px 20px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#e0e7ff,#c7d2fe);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <ion-icon name="person-outline" style="font-size:14px;color:#4f46e5;"></ion-icon>
+          <tr class="cr-table-row">
+            <td class="cr-td-name">
+              <div class="d-flex align-items-center" style="gap:8px;">
+                <div class="cr-avatar-icon">
+                  <ion-icon name="person-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
                 </div>
                 <div>
-                  <div style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ u.get_full_name|default:"—" }}</div>
+                  <div class="cr-name">{{ u.get_full_name|default:"—" }}</div>
                   {% if u.force_password_change %}
-                    <span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:2px;">TEMP PW</span>
+                    <span class="tag-chip tag-warning" style="font-size:10px;padding:1px 6px;margin-top:2px;">TEMP PW</span>
                   {% endif %}
                 </div>
               </div>
             </td>
-            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">{{ u.username }}</td>
-            <td style="padding:14px 20px;">
+            <td class="cr-td-meta">{{ u.username }}</td>
+            <td class="cr-td">
               <span class="role-badge role-{{ u.role }}">{{ u.get_role_display }}</span>
             </td>
-            <td style="padding:14px 20px;font-size:12px;color:#6b7280;">{{ u.email|default:"—" }}</td>
-            <td style="padding:14px 20px;">
+            <td class="cr-td-meta">{{ u.email|default:"—" }}</td>
+            <td class="cr-td">
               {% if u.is_active %}
-                <span style="display:inline-flex;align-items:center;gap:5px;background:#dcfce7;color:#166534;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;">
-                  <span style="width:5px;height:5px;border-radius:50%;background:#16a34a;display:inline-block;"></span>Active
+                <span class="s-badge" style="background:#dcfce7;color:#166534;">
+                  <span class="status-dot active"></span>Active
                 </span>
               {% else %}
-                <span style="display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;">
-                  <span style="width:5px;height:5px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>Inactive
+                <span class="s-badge" style="background:#f1f5f9;color:#64748b;">
+                  <span class="status-dot inactive"></span>Inactive
                 </span>
               {% endif %}
             </td>
-            <td style="padding:14px 20px;">
-              <div style="display:flex;gap:8px;align-items:center;">
-                <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-secondary btn-sm" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
+            <td class="cr-td">
+              <div class="d-flex align-items-center" style="gap:8px;">
+                <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-secondary" style="gap:4px;">
                   <ion-icon name="create-outline" style="font-size:13px;"></ion-icon>Edit
                 </a>
                 {% if u != request.user %}
                 <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" style="display:inline;">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}" style="border-radius:8px;display:inline-flex;align-items:center;gap:4px;">
+                  <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}" style="gap:4px;">
                     <ion-icon name="{% if u.is_active %}close-circle-outline{% else %}checkmark-circle-outline{% endif %}" style="font-size:13px;"></ion-icon>
                     {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
                   </button>
@@ -88,10 +87,14 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6" style="text-align:center;padding:48px 20px;">
-              <ion-icon name="people-outline" style="font-size:36px;color:#d1d5db;display:block;margin:0 auto 12px;"></ion-icon>
-              <div style="font-size:14px;color:#9ca3af;font-weight:500;">No staff users yet</div>
-              <a href="{% url 'accounts:user_create' %}" style="display:inline-block;margin-top:12px;font-size:13px;color:#0078d4;font-weight:600;text-decoration:none;">Add your first staff member →</a>
+            <td colspan="6" class="empty-state">
+              <div class="empty-state-icon">
+                <ion-icon name="people-outline" style="font-size:22px;color:#9ca3af;"></ion-icon>
+              </div>
+              <div class="empty-state-title">No staff users yet</div>
+              <p class="empty-state-sub" style="margin-top:8px;">
+                <a href="{% url 'accounts:user_create' %}" style="color:#0078d4;font-weight:600;text-decoration:none;">Add your first staff member →</a>
+              </p>
             </td>
           </tr>
           {% endfor %}

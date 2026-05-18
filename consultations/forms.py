@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import formset_factory
 
-from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis
+from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpProgress
 from inventory.models import Medicine
 import re
 
@@ -37,45 +37,130 @@ class PatientConsultationForm(forms.ModelForm):
         }
 
 
-class ConsultationSubmitForm(forms.ModelForm):
-    """Used by front desk staff to create a consultation on behalf of a patient."""
-    class Meta:
-        model = Consultation
-        fields = ['patient', 'symptoms', 'medical_history',
-                  'severity_description', 'additional_notes']
-        widgets = {
-            'patient': forms.Select(attrs={'class': 'form-control'}),
-            'symptoms': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 4,
-                'placeholder': 'Describe symptoms in detail...',
-            }),
-            'medical_history': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Existing conditions, allergies, medications... (optional)',
-            }),
-            'severity_description': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
-                'placeholder': 'e.g. Mild headache since yesterday, moderate fever...',
-            }),
-            'additional_notes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
-                'placeholder': 'Anything else the clinic should know... (optional)',
-            }),
-        }
-        labels = {
-            'patient': 'Patient *',
-            'symptoms': 'Symptoms *',
-            'medical_history': 'Medical History',
-            'severity_description': 'Severity Description *',
-            'additional_notes': 'Additional Notes',
-        }
+class ConsultationSubmitForm(forms.Form):
+    """
+    Used by front desk staff to create a consultation on behalf of a patient.
+    Supports walk-in patients who are not yet registered.
+    """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    # ── Patient lookup fields (always visible) ──────────────────────────────
+    patient_id = forms.CharField(
+        max_length=30,
+        label='Patient ID Number *',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 2023-01234',
+            'autocomplete': 'off',
+        }),
+    )
+    first_name = forms.CharField(
+        max_length=150,
+        label='First Name *',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'First name',
+        }),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        label='Last Name *',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Last name',
+        }),
+    )
+    birthdate = forms.DateField(
+        label='Birthdate *',
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+        }),
+    )
+
+    # ── New patient fields (shown only when patient NOT found) ──────────────
+    sex = forms.ChoiceField(
+        choices=[('', '— Select —'), ('M', 'Male'), ('F', 'Female')],
+        required=False,
+        label='Sex *',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    contact_number = forms.CharField(
+        max_length=30,
+        required=False,
+        label='Contact Number',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. 09171234567',
+        }),
+    )
+
+    # ── Consultation fields ─────────────────────────────────────────────────
+    symptoms = forms.CharField(
+        label='Symptoms *',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 4,
+            'placeholder': 'Describe symptoms in detail...',
+        }),
+    )
+    severity_description = forms.CharField(
+        label='Severity Description *',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 2,
+            'placeholder': 'e.g. Mild headache since yesterday, moderate fever...',
+        }),
+    )
+    medical_history = forms.CharField(
+        required=False,
+        label='Medical History',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'Existing conditions, allergies, medications... (optional)',
+        }),
+    )
+    additional_notes = forms.CharField(
+        required=False,
+        label='Additional Notes',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 2,
+            'placeholder': 'Anything else the clinic should know... (optional)',
+        }),
+    )
+
+    def clean_patient_id(self):
+        pid = self.cleaned_data['patient_id'].strip()
+        if not pid:
+            raise forms.ValidationError('Patient ID is required.')
+        return pid
+
+    def clean(self):
+        cleaned = super().clean()
+        patient_id = cleaned.get('patient_id', '').strip()
+
         from patients.models import Patient
-        self.fields['patient'].queryset = Patient.objects.filter(
-            is_active=True
-        ).order_by('last_name', 'first_name')
+        from accounts.models import User
+
+        existing_patient = Patient.objects.filter(patient_id=patient_id).first()
+
+        if existing_patient:
+            # Patient found — new patient fields not required
+            cleaned['_patient'] = existing_patient
+            return cleaned
+
+        # Patient NOT found — validate new patient fields
+        sex = cleaned.get('sex', '')
+        if not sex:
+            self.add_error('sex', 'Sex is required for new patients.')
+
+        # Check that a User with this patient_id doesn't already exist
+        if User.objects.filter(username=patient_id).exists():
+            self.add_error(
+                'patient_id',
+                'This ID is already linked to a user account but no patient record was found. '
+                'Please contact an administrator.'
+            )
+
+        cleaned['_patient'] = None
+        return cleaned
 
 
 class QueueAssignForm(forms.ModelForm):
@@ -645,3 +730,118 @@ PrescriptionItemFormSet = formset_factory(PrescriptionItemInventoryForm, extra=3
 
 # The active formset used by the prescribe view
 PrescriptionMedicineFormSet = formset_factory(PrescriptionItemForm, extra=1)
+
+# ─── FOLLOW-UP / CONSULTATION CONTINUATION FORMS ─────────────────────────────
+
+
+class FollowUpProgressForm(forms.ModelForm):
+    """
+    Form for recording each follow-up visit's clinical data.
+    Used by doctors/staff when continuing a consultation.
+    """
+    requires_follow_up = forms.BooleanField(
+        required=False,
+        label='Patient requires another follow-up visit',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+    recommended_follow_up_date = forms.DateField(
+        required=False,
+        label='Recommended follow-up date',
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+        }),
+    )
+
+    class Meta:
+        model = FollowUpProgress
+        fields = [
+            'symptoms', 'assessment', 'treatment_notes',
+            'recommendations', 'notes',
+        ]
+        widgets = {
+            'symptoms': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Current symptoms since last visit...',
+            }),
+            'assessment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Doctor assessment for this follow-up visit...',
+            }),
+            'treatment_notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Treatment administered or adjusted...',
+            }),
+            'recommendations': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Recommendations for the patient...',
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Additional notes...',
+            }),
+        }
+        labels = {
+            'symptoms': 'Current Symptoms *',
+            'assessment': 'Assessment',
+            'treatment_notes': 'Treatment Notes',
+            'recommendations': 'Recommendations',
+            'notes': 'Additional Notes',
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        requires_follow_up = cleaned.get('requires_follow_up')
+        recommended_date = cleaned.get('recommended_follow_up_date')
+
+        if requires_follow_up and not recommended_date:
+            self.add_error(
+                'recommended_follow_up_date',
+                'Please set a recommended follow-up date when follow-up is required.'
+            )
+        return cleaned
+
+
+class CloseConsultationForm(forms.ModelForm):
+    """
+    Form for closing a consultation case.
+    """
+    class Meta:
+        model = Consultation
+        fields = ['closure_notes']
+        widgets = {
+            'closure_notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Reason for closing this case (e.g., Patient recovered, referred to specialist)...',
+            }),
+        }
+        labels = {
+            'closure_notes': 'Closure Notes *',
+        }
+
+
+class ConsultationStatusUpdateForm(forms.ModelForm):
+    """
+    Allow staff to update consultation status manually.
+    """
+    class Meta:
+        model = Consultation
+        fields = ['status']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Limit status choices based on current state
+        self.fields['status'].choices = [
+            (Consultation.Status.ACTIVE_FOLLOW_UP, 'Active - Follow-up'),
+            (Consultation.Status.CLOSED, 'Closed'),
+            (Consultation.Status.COMPLETED, 'Completed'),
+        ]

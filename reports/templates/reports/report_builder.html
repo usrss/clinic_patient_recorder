@@ -1,6 +1,6 @@
 {% extends 'core/base_admin.html' %}
 {% load static %}
-{% block title %}Custom Report Builder — Clinic Recorder{% endblock %}
+{% block title %}Custom Report Builder — Patient Record System{% endblock %}
 {% block nav_reports %}active{% endblock %}
 {% block page_title %}Custom Report Builder{% endblock %}
 {% block page_subtitle %}Select filters and metrics to generate a custom report{% endblock %}
@@ -359,7 +359,7 @@
       <tr>
         <td>
           {% if results.grouping == 'college' %}{{ row.patient__college__abbreviation|default:"—" }}
-          {% elif results.grouping == 'diagnosis' %}{{ row.prescription__diagnosis|truncatechars:70|default:"—" }}
+          {% elif results.grouping == 'diagnosis' %}{{ row.prescriptions__diagnosis|truncatechars:70|default:"—" }}
           {% endif %}
         </td>
         <td style="font-weight:600;color:#0078d4;">{{ row.count }}</td>

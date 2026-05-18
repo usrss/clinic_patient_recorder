@@ -70,11 +70,12 @@ def _build_disease_queryset(keyword, date_from, date_to, patient_type, college_i
     qs = (
         Consultation.objects
         .filter(status=Consultation.Status.COMPLETED)
-        .select_related('prescription', 'patient', 'patient__college')
+                .select_related('patient', 'patient__college')
+        .prefetch_related('prescriptions')
     )
 
     if keyword:
-        qs = qs.filter(prescription__diagnosis__icontains=keyword)
+        qs = qs.filter(prescriptions__diagnosis__icontains=keyword)
     if date_from:
         qs = qs.filter(created_at__gte=_make_aware_dt(date_from))
     if date_to:
@@ -128,6 +129,7 @@ def disease_report(request):
                                            patient__position__gt='')
                                    .values('patient').distinct().count(),
     }
+    by_type['other'] = max(0, total_affected - sum(by_type.values()))
 
     by_college = (
         consultations
@@ -164,7 +166,7 @@ def _disease_csv(consultations):
         'Type', 'College / Department', 'Diagnosis', 'Treatment Plan',
     ])
     for c in consultations:
-        rx = getattr(c, 'prescription', None)
+        rx = c.prescriptions.first()
         p  = c.patient
         if p.college:
             p_type, p_org = 'Student', p.college.abbreviation
@@ -270,10 +272,12 @@ def summary_report(request):
 
     total_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED).count()
     total_cancelled = Consultation.objects.filter(status=Consultation.Status.CANCELLED).count()
+    total_closed = Consultation.objects.filter(status=Consultation.Status.CLOSED).count()
     total_all = Consultation.objects.count()
 
-    completion_rate = round(total_completed / total_all * 100, 1) if total_all else 0
-    cancellation_rate = round(total_cancelled / total_all * 100, 1) if total_all else 0
+    resolved = total_completed + total_cancelled + total_closed
+    completion_rate = round(total_completed / resolved * 100, 1) if resolved else 0
+    cancellation_rate = round(total_cancelled / resolved * 100, 1) if resolved else 0
 
     top_medicines = (
         StockMovement.objects
@@ -416,7 +420,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
     if college_id:
         base_qs = base_qs.filter(patient__college_id=college_id)
     if keyword:
-        base_qs = base_qs.filter(prescription__diagnosis__icontains=keyword)
+        base_qs = base_qs.filter(prescriptions__diagnosis__icontains=keyword)
 
     completed_qs  = base_qs.filter(status=Consultation.Status.COMPLETED)
     cancelled_qs  = base_qs.filter(status=Consultation.Status.CANCELLED)
@@ -438,14 +442,20 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
 
     if 'completion_rate' in metrics:
         completed_count = completed_qs.count()
+        cancelled_count = cancelled_qs.count()
+        closed_count = base_qs.filter(status=Consultation.Status.CLOSED).count()
+        resolved = completed_count + cancelled_count + closed_count
         results['completion_rate'] = (
-            round(completed_count / total_count * 100, 1) if total_count else 0
+            round(completed_count / resolved * 100, 1) if resolved else 0
         )
 
     if 'cancellation_rate' in metrics:
+        completed_count = completed_qs.count()
         cancelled_count = cancelled_qs.count()
+        closed_count = base_qs.filter(status=Consultation.Status.CLOSED).count()
+        resolved = completed_count + cancelled_count + closed_count
         results['cancellation_rate'] = (
-            round(cancelled_count / total_count * 100, 1) if total_count else 0
+            round(cancelled_count / resolved * 100, 1) if resolved else 0
         )
 
     if 'avg_per_day' in metrics:
@@ -486,19 +496,26 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         )
 
     if 'cases_by_patient_type' in metrics:
+        students    = base_qs.filter(patient__college__isnull=False).count()
+        staff       = base_qs.filter(patient__college__isnull=True,
+                                     patient__department__gt='').count()
+        instructors = base_qs.filter(patient__college__isnull=True,
+                                     patient__position__gt='').count()
+        classified  = students + staff + instructors
         results['cases_by_patient_type'] = {
-            'students':    base_qs.filter(patient__college__isnull=False).count(),
-            'staff':       base_qs.filter(patient__college__isnull=True,
-                                          patient__department__gt='').count(),
-            'instructors': base_qs.filter(patient__college__isnull=True,
-                                          patient__position__gt='').count(),
+            'students':    students,
+            'staff':       staff,
+            'instructors': instructors,
+            'other':       max(0, total_count - classified),
         }
 
     if 'urgency_breakdown' in metrics:
         from consultations.models import Triage
         results['urgency_breakdown'] = list(
             Triage.objects.filter(consultation__in=base_qs)
-            .values('urgency').annotate(count=Count('id')).order_by('-count')
+            .values('urgency')
+            .annotate(count=Count('consultation', distinct=True))
+            .order_by('-count')
         )
 
     if 'medicine_dispensed' in metrics:
@@ -516,15 +533,22 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
 
     if 'new_patients' in metrics:
         results['new_patients'] = Patient.objects.filter(
-            has_logged_in=True, is_active=True,
+            is_active=True,
             created_at__gte=_make_aware_dt(date_from),
             created_at__lte=_make_aware_dt(date_to, 23, 59, 59),
         ).count()
 
     if 'repeat_patients' in metrics:
-        patient_counts = base_qs.values('patient').annotate(count=Count('id'))
-        repeat_count = sum(1 for p in patient_counts if p['count'] > 1)
-        new_count = sum(1 for p in patient_counts if p['count'] == 1)
+        # Get distinct patients who had consultations in this date range
+        patient_ids = base_qs.values_list('patient', flat=True).distinct()
+        # Count their lifetime consultations (all-time, not just in range)
+        lifetime_counts = (
+            Consultation.objects.filter(patient__in=patient_ids)
+            .values('patient')
+            .annotate(count=Count('id'))
+        )
+        repeat_count = sum(1 for p in lifetime_counts if p['count'] > 1)
+        new_count = sum(1 for p in lifetime_counts if p['count'] == 1)
         total_unique = repeat_count + new_count
         results['repeat_patients'] = {
             'repeat': repeat_count, 'new': new_count,
@@ -548,7 +572,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, per
         )
     elif grouping == 'diagnosis':
         results['grouped'] = list(
-            completed_qs.values('prescription__diagnosis')
+            completed_qs.values('prescriptions__diagnosis')
             .annotate(count=Count('id')).order_by('-count')[:20]
         )
 
@@ -771,7 +795,7 @@ def _report_pdf(results, date_from, date_to):
     primary = colors.HexColor('#1D9E75')
 
     story = []
-    story.append(Paragraph('CLINIC RECORDER', h1))
+    story.append(Paragraph('PATIENT RECORD SYSTEM', h1))
     story.append(Paragraph(f'Custom Report: {date_from} to {date_to}', styles['Heading2']))
     story.append(HRFlowable(width='100%', thickness=1, color=colors.lightgrey))
     story.append(Spacer(1, 0.4*cm))
@@ -817,7 +841,7 @@ def _report_pdf(results, date_from, date_to):
                       [[r['label'], str(r['count'])] for r in results['trend']])
 
     story.append(Spacer(1, 0.5*cm))
-    story.append(Paragraph(f'Generated: {date.today().strftime("%B %d, %Y")} | Clinic Recorder', small))
+    story.append(Paragraph(f'Generated: {date.today().strftime("%B %d, %Y")} | Patient Record System', small))
 
     doc.build(story)
     buffer.seek(0)

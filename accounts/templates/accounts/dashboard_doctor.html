@@ -1,17 +1,126 @@
 {% extends 'core/base_staff.html' %}
-{% load static%}
-{% block title %}Doctor Dashboard — Clinic Recorder{% endblock %}
+{% load static %}
+{% block title %}Doctor Dashboard — Patient Record System{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Welcome back, Dr. {{ user.get_full_name|default:user.username }}{% endblock %}
+{% block page_subtitle %}
+  <span style="display:inline-flex;align-items:center;gap:6px;">
+    <span style="display:inline-block;width:20px;height:20px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#ede9fe,#c4b5fd);flex-shrink:0;">
+      {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+      {% else %}
+        <span style="font-size:9px;font-weight:700;color:#5b21b6;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">{{ user.get_full_name|default:user.username|first|upper }}</span>
+      {% endif %}
+    </span>
+    Welcome back, Dr. {{ user.get_full_name|default:user.username }}
+  </span>
+{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ── 1. Urgency breakdown (bar) ──
+  const ctx1 = document.getElementById('chart-urgency');
+  if (ctx1) {
+    const urgencyData = {{ urgency_data_json|safe }};
+    new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(urgencyData),
+        datasets: [{
+          label: 'Triages',
+          data: Object.values(urgencyData),
+          backgroundColor: ['#10b981', '#f97316', '#ef4444'],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+        }
+      }
+    });
+  }
+
+  // ── 2. Daily activity (line) ──
+  const ctx2 = document.getElementById('chart-activity');
+  if (ctx2) {
+    const activityData = {{ daily_activity_json|safe }};
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: activityData.map(d => d.date),
+        datasets: [{
+          label: 'Consultations',
+          data: activityData.map(d => d.count),
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124,58,237,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#7c3aed',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+        }
+      }
+    });
+  }
+});
+</script>
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'accounts/css/dashboard_doctor.css' %}">
+<link rel="stylesheet" href="{% static 'accounts/css/dashboard_shared.css' %}">
+<style>
+  .role-doctor {
+    --primary-action-bg: #7c3aed;
+    --primary-action-hover: #6d28d9;
+  }
+  .doc-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 700px) {
+    .doc-chart-grid { grid-template-columns: 1fr; }
+  }
+  .doc-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .doc-chart-header {
+    padding: 14px 18px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .doc-chart-body {
+    padding: 12px 14px 14px;
+    min-height: 180px;
+  }
+  .doc-chart-body canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -41,8 +150,8 @@
   </a>
 
   <a href="{% url 'patients:patient_list' %}" class="dash-card">
-    <div class="dash-card-icon" style="background:#d1fae5;">
-      <svg width="22" height="22" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <div class="dash-card-icon" style="background:#eff6ff;">
+      <svg width="22" height="22" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     </div>
     <div class="dash-card-text">
       <strong>Records</strong>
@@ -62,14 +171,53 @@
 
 </div>
 
+{# ── Analytics ── #}
+{% if urgency_data_json or daily_activity_json %}
+<div class="sec-label">Analytics</div>
+<div class="doc-chart-grid">
+  <div class="doc-chart-card">
+    <div class="doc-chart-header">Triage Urgency (Last 30 Days)</div>
+    <div class="doc-chart-body">
+      <canvas id="chart-urgency" height="180"></canvas>
+    </div>
+  </div>
+  <div class="doc-chart-card">
+    <div class="doc-chart-header">Daily Activity (Last 7 Days)</div>
+    <div class="doc-chart-body">
+      <canvas id="chart-activity" height="180"></canvas>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Recent Consultations ── #}
+{% if recent_consults %}
+<div class="sec-label">Recent Consultations</div>
+<div class="resp-panel" style="margin-bottom:28px;">
+  <div class="resp-panel-header">Recently handled</div>
+  {% for c in recent_consults %}
+  <a href="{% url 'consultations:clinical_detail' c.pk %}" class="resp-item" style="text-decoration:none;color:inherit;cursor:pointer;">
+    <div class="resp-item-icon" style="background:#ede9fe;">
+      <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div style="flex:1;">
+      <strong style="font-size:13px;">{{ c.patient.get_full_name }}</strong>
+      <span style="font-size:11px;color:#6b7280;display:block;">{{ c.get_status_display }} &middot; {{ c.updated_at|date:'M d, H:i' }}</span>
+    </div>
+    <svg width="14" height="14" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
 {# ── Responsibilities ── #}
 <div class="sec-label">Your Responsibilities</div>
 <div class="resp-panel">
   <div class="resp-panel-header">Doctor Workflow</div>
 
   <div class="resp-item">
-    <div class="resp-item-icon" style="background:#d1fae5;">
-      <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    <div class="resp-item-icon" style="background:#eff6ff;">
+      <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
     </div>
     Record patient vitals (BP, temperature, pulse)
   </div>
@@ -89,22 +237,22 @@
   </div>
 
   <div class="resp-item">
-    <div class="resp-item-icon" style="background:#d1fae5;">
-      <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+    <div class="resp-item-icon" style="background:#eff6ff;">
+      <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
     </div>
     Prescribe medication — stock is deducted automatically
   </div>
 
   <div class="resp-item">
-    <div class="resp-item-icon" style="background:#dcfce7;">
-      <svg width="15" height="15" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    <div class="resp-item-icon" style="background:#eff6ff;">
+      <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     Mark consultation as Completed
   </div>
 </div>
 
 <p style="text-align:center;font-size:11px;color:#9ca3af;">
-  Negros Oriental State University — Medical Clinic
+  NORSU — Medical Dental Clinic
 </p>
 
 {% endblock %}

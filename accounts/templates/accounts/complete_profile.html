@@ -1,0 +1,408 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Complete Profile — Patient Record System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/register.css' %}">
+<style>
+  .readonly-field {
+    padding: 10px 13px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #6b7280;
+    background: #f3f4f6;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: not-allowed;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reg-page">
+<div class="reg-wrap">
+
+  <!-- Branding -->
+  <div class="reg-brand">
+    <h1>Complete Your Profile</h1>
+    <p>NORSU Medical Dental Clinic</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Progress indicator (2 steps) -->
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="step-item active" id="prog-1">
+        <div class="step-circle"><span class="step-num">1</span></div>
+        <div class="step-label">Personal Info</div>
+      </div>
+      <div class="step-item" id="prog-2">
+        <div class="step-circle"><span class="step-num">2</span></div>
+        <div class="step-label">Medical Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form card -->
+  <div class="reg-card">
+    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form">
+      {% csrf_token %}
+      <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
+
+      <!-- ══════════════════════════════════════════
+           STEP 1 — Personal & Academic Info
+      ══════════════════════════════════════════ -->
+      <div class="step-panel active" id="step-1">
+
+        <div class="sec-label">Personal Information</div>
+
+        <!-- Role -->
+        <div class="form-group">
+          <label for="id_role">Role <span class="req">*</span></label>
+          <select id="id_role" name="role" class="reg-input" onchange="updateRoleFields()" required>
+            <option value="student" {% if form.role.value == 'student' %}selected{% endif %}>Student</option>
+            <option value="faculty" {% if form.role.value == 'faculty' %}selected{% endif %}>Faculty</option>
+            <option value="staff" {% if form.role.value == 'staff' %}selected{% endif %}>Staff</option>
+          </select>
+        </div>
+
+        <!-- Full Name (readonly) -->
+        <div class="sec-label sec-label-gap">Full Name</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>First Name <span class="req">*</span></label>
+            <div class="readonly-field">{{ patient.first_name }}</div>
+            <input type="hidden" name="first_name" value="{{ patient.first_name }}">
+          </div>
+          <div class="form-group">
+            <label>Middle Name</label>
+            <div class="readonly-field">{{ patient.middle_name|default:'—' }}</div>
+            <input type="hidden" name="middle_name" value="{{ patient.middle_name }}">
+          </div>
+          <div class="form-group">
+            <label>Last Name <span class="req">*</span></label>
+            <div class="readonly-field">{{ patient.last_name }}</div>
+            <input type="hidden" name="last_name" value="{{ patient.last_name }}">
+          </div>
+        </div>
+
+        <!-- Sex + Birthday (readonly) -->
+        <div class="sec-label sec-label-gap">Basic Details</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Sex <span class="req">*</span></label>
+            <div class="readonly-field">{{ patient.get_sex_display }}</div>
+            <input type="hidden" name="sex" value="{{ patient.sex }}">
+          </div>
+          <div class="form-group">
+            <label>Date of Birth <span class="req">*</span></label>
+            <div class="readonly-field">{{ profile.birthday|date:'F d, Y'|default:'—' }}</div>
+            <input type="hidden" name="birthday" value="{{ profile.birthday|date:'Y-m-d' }}">
+          </div>
+        </div>
+
+        <!-- Blood Type, Civil Status -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_blood_type">Blood Type</label>
+            <select id="id_blood_type" name="blood_type" class="reg-input">
+              <option value="">— Unknown —</option>
+              <option value="A+" {% if form.blood_type.value == 'A+' %}selected{% endif %}>A+</option>
+              <option value="A-" {% if form.blood_type.value == 'A-' %}selected{% endif %}>A-</option>
+              <option value="B+" {% if form.blood_type.value == 'B+' %}selected{% endif %}>B+</option>
+              <option value="B-" {% if form.blood_type.value == 'B-' %}selected{% endif %}>B-</option>
+              <option value="AB+" {% if form.blood_type.value == 'AB+' %}selected{% endif %}>AB+</option>
+              <option value="AB-" {% if form.blood_type.value == 'AB-' %}selected{% endif %}>AB-</option>
+              <option value="O+" {% if form.blood_type.value == 'O+' %}selected{% endif %}>O+</option>
+              <option value="O-" {% if form.blood_type.value == 'O-' %}selected{% endif %}>O-</option>
+              <option value="Unknown" {% if form.blood_type.value == 'Unknown' %}selected{% endif %}>Unknown</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="id_civil_status">Civil Status</label>
+            <select id="id_civil_status" name="civil_status" class="reg-input">
+              <option value="">— Select —</option>
+              <option value="Single" {% if form.civil_status.value == 'Single' %}selected{% endif %}>Single</option>
+              <option value="Married" {% if form.civil_status.value == 'Married' %}selected{% endif %}>Married</option>
+              <option value="Widowed" {% if form.civil_status.value == 'Widowed' %}selected{% endif %}>Widowed</option>
+              <option value="Separated" {% if form.civil_status.value == 'Separated' %}selected{% endif %}>Separated</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Height, Weight -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_height_cm">Height (cm)</label>
+            <input type="number" id="id_height_cm" name="height_cm" class="reg-input" step="0.1" min="50" max="250"
+                   placeholder="e.g. 165" value="{{ form.height_cm.value|default_if_none:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_weight_kg">Weight (kg)</label>
+            <input type="number" id="id_weight_kg" name="weight_kg" class="reg-input" step="0.1" min="10" max="300"
+                   placeholder="e.g. 60" value="{{ form.weight_kg.value|default_if_none:'' }}">
+          </div>
+        </div>
+
+        <!-- Religion, Address -->
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_religion">Religion</label>
+            <input type="text" id="id_religion" name="religion" class="reg-input" placeholder="e.g. Roman Catholic"
+                   value="{{ form.religion.value|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_address">Address</label>
+            <input type="text" id="id_address" name="address" class="reg-input" placeholder="City, Province"
+                   value="{{ form.address.value|default:'' }}">
+          </div>
+        </div>
+
+        <!-- Academic Info -->
+        <div class="sec-label sec-label-gap">Academic &amp; Employment Info</div>
+
+        <div class="form-group" id="field-college" {% if form.role.value != 'student' %}style="display:none;"{% endif %}>
+          <label for="id_college">College <span class="req">*</span></label>
+          <select id="id_college" name="college" class="reg-input">
+            <option value=""> Select College </option>
+            {% for c in form.college.field.queryset %}
+            <option value="{{ c.pk }}" {% if form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" id="field-year" {% if form.role.value != 'student' %}style="display:none;"{% endif %}>
+          <label for="id_year_level">Year Level</label>
+          <select id="id_year_level" name="year_level" class="reg-input">
+            <option value="">—</option>
+            <option value="1st Year" {% if form.year_level.value == '1st Year' %}selected{% endif %}>1st Year</option>
+            <option value="2nd Year" {% if form.year_level.value == '2nd Year' %}selected{% endif %}>2nd Year</option>
+            <option value="3rd Year" {% if form.year_level.value == '3rd Year' %}selected{% endif %}>3rd Year</option>
+            <option value="4th Year" {% if form.year_level.value == '4th Year' %}selected{% endif %}>4th Year</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="field-department" {% if form.role.value == 'student' %}style="display:none;"{% endif %}>
+          <label for="id_department">Department <span class="req">*</span></label>
+          <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS"
+                 value="{{ form.department.value|default:'' }}">
+        </div>
+
+        <div class="form-group" id="field-position" {% if form.role.value == 'student' %}style="display:none;"{% endif %}>
+          <label for="id_position">Position / Designation</label>
+          <input type="text" id="id_position" name="position" class="reg-input" placeholder="e.g. Department Head"
+                 value="{{ form.position.value|default:'' }}">
+        </div>
+
+        <!-- Profile Picture -->
+        <div class="sec-label sec-label-gap">Profile Picture</div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;">
+            {% if patient.profile_picture %}
+              <img src="{{ patient.profile_picture.url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+              <span style="font-size:24px;font-weight:700;color:#065f46;">{{ patient.get_full_name|first|upper }}</span>
+            {% endif %}
+          </div>
+          <div style="flex:1;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Upload Picture</label>
+            <input type="file" id="id_profile_picture" name="profile_picture" class="reg-input" accept="image/jpeg,image/png,image/webp">
+          </div>
+        </div>
+
+        <!-- Contact & Emergency -->
+        <div class="sec-label sec-label-gap">Contact &amp; Emergency</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_phone">Phone Number</label>
+            <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX"
+                   value="{{ form.phone.value|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_email">Email Address</label>
+            <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph"
+                   value="{{ form.email.value|default:'' }}">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="id_emergency_contact_name">Emergency Contact Name</label>
+            <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input"
+                   value="{{ form.emergency_contact_name.value|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_emergency_contact_phone">Emergency Contact Phone</label>
+            <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input"
+                   value="{{ form.emergency_contact_phone.value|default:'' }}">
+          </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="btn-row">
+          <button type="button" class="btn-next" onclick="goNext(1)">
+            Continue to Medical Profile
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           STEP 2 — Medical Profile
+      ══════════════════════════════════════════ -->
+      <div class="step-panel" id="step-2">
+
+        <div class="sec-label">Medical History (Optional)</div>
+        <div class="check-panel">
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="hypertension" {% if form.hypertension.value %}checked{% endif %}> Hypertension</label>
+            <label class="check-item"><input type="checkbox" name="diabetes" {% if form.diabetes.value %}checked{% endif %}> Diabetes</label>
+            <label class="check-item"><input type="checkbox" name="asthma" {% if form.asthma.value %}checked{% endif %}> Asthma</label>
+            <label class="check-item"><input type="checkbox" name="cardiac_problems" {% if form.cardiac_problems.value %}checked{% endif %}> Cardiac Problems</label>
+            <label class="check-item"><input type="checkbox" name="arthritis" {% if form.arthritis.value %}checked{% endif %}> Arthritis</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_other_conditions">Other Conditions</label>
+          <textarea id="id_other_conditions" name="other_conditions" class="reg-input" rows="2" placeholder="List any other diagnosed conditions…">{{ form.other_conditions.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="id_known_allergies">Known Allergies</label>
+          <textarea id="id_known_allergies" name="known_allergies" class="reg-input" rows="2" placeholder="e.g. Penicillin, shellfish, dust…">{{ form.known_allergies.value|default:'' }}</textarea>
+        </div>
+
+        <div class="sec-label sec-label-gap">Immunization History</div>
+        <div class="check-panel imm">
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" name="bcg" {% if form.bcg.value %}checked{% endif %}> BCG</label>
+            <label class="check-item"><input type="checkbox" name="dpt" {% if form.dpt.value %}checked{% endif %}> DPT</label>
+            <label class="check-item"><input type="checkbox" name="opv" {% if form.opv.value %}checked{% endif %}> OPV</label>
+            <label class="check-item"><input type="checkbox" name="hepatitis_b" {% if form.hepatitis_b.value %}checked{% endif %}> Hepatitis B</label>
+            <label class="check-item"><input type="checkbox" name="measles" {% if form.measles.value %}checked{% endif %}> Measles</label>
+            <label class="check-item"><input type="checkbox" name="tt" {% if form.tt.value %}checked{% endif %}> TT (Tetanus)</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_immunization_others">Other Immunizations</label>
+          <textarea id="id_immunization_others" name="immunization_others" class="reg-input" rows="2" placeholder="e.g. COVID-19 vaccine, Flu shot…">{{ form.immunization_others.value|default:'' }}</textarea>
+        </div>
+
+        <div class="sec-label sec-label-gap">Medical Background</div>
+        <div class="form-group">
+          <label for="id_current_medications">Current Medications</label>
+          <textarea id="id_current_medications" name="current_medications" class="reg-input" rows="2" placeholder="List any medications you currently take…">{{ form.current_medications.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="id_previous_illnesses">Previous Illnesses</label>
+          <textarea id="id_previous_illnesses" name="previous_illnesses" class="reg-input" rows="2" placeholder="e.g. Dengue, Typhoid fever…">{{ form.previous_illnesses.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="id_previous_hospitalizations">Previous Hospitalizations</label>
+          <textarea id="id_previous_hospitalizations" name="previous_hospitalizations" class="reg-input" rows="2" placeholder="Reason and year if applicable…">{{ form.previous_hospitalizations.value|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="id_vices">Vices / Lifestyle Habits</label>
+          <textarea id="id_vices" name="vices" class="reg-input" rows="2" placeholder="e.g. Smoking, alcohol use…">{{ form.vices.value|default:'' }}</textarea>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="btn-row">
+          <button type="button" class="btn-back" onclick="goBack(2)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back
+          </button>
+          <button type="submit" class="btn-submit">✅ Complete Profile</button>
+        </div>
+      </div>
+
+    </form>
+  </div><!-- /reg-card -->
+
+  <p class="reg-footer">
+    Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a>
+  </p>
+  <p class="reg-copy">Negros Oriental State University — Medical Clinic</p>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ── State ──────────────────────────────────────────────────────────
+  let currentStep = parseInt(document.getElementById('current_step').value) || 1;
+
+  // ── Step navigation ────────────────────────────────────────────────
+  function showStep(n) {
+    document.getElementById('current_step').value = n;
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step-' + n).classList.add('active');
+
+    for (let i = 1; i <= 2; i++) {
+      const prog = document.getElementById('prog-' + i);
+      prog.classList.remove('active', 'done');
+      if (i < n) prog.classList.add('done');
+      else if (i === n) prog.classList.add('active');
+    }
+    currentStep = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goNext(step) {
+    if (step === 1) {
+      let valid = true;
+
+      // Validate required Step 1 fields
+      const required = ['role'];
+      required.forEach(f => {
+        const el = document.getElementById('id_' + f);
+        if (el && !el.value) {
+          el.classList.add('error');
+          valid = false;
+        } else if (el) {
+          el.classList.remove('error');
+        }
+      });
+
+      if (valid) showStep(2);
+    }
+  }
+
+  function goBack(step) {
+    if (step === 2) showStep(1);
+  }
+
+  // ── Role → show/hide college vs department ────────────────────────
+  function updateRoleFields() {
+    const role = document.getElementById('id_role').value;
+    const isStudent = role === 'student';
+    document.getElementById('field-college').style.display    = isStudent ? '' : 'none';
+    document.getElementById('field-year').style.display       = isStudent ? '' : 'none';
+    document.getElementById('field-department').style.display = isStudent ? 'none' : '';
+    document.getElementById('field-position').style.display   = isStudent ? 'none' : '';
+  }
+
+  // ── Restore step after failed POST ─────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    const stepVal = parseInt(document.getElementById('current_step').value);
+    if (stepVal > 1) showStep(stepVal);
+    updateRoleFields();
+  });
+</script>
+{% endblock %}

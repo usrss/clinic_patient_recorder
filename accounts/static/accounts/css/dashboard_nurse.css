@@ -6,10 +6,10 @@
   }
   .dash-card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 22px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     text-decoration: none;
     color: inherit;
     display: flex;
@@ -23,10 +23,10 @@
     color: inherit;
   }
   .dash-card.primary-action {
-    background: #059669;
-    border-color: #059669;
+    background: #0078d4;
+    border-color: #0078d4;
   }
-  .dash-card.primary-action:hover { background: #047857; }
+  .dash-card.primary-action:hover { background: #006cbd; }
   .dash-card.primary-action .dash-card-text strong,
   .dash-card.primary-action .dash-card-text span { color: #fff; }
   .dash-card.primary-action .dash-card-text span { opacity: 0.75; }
@@ -45,7 +45,7 @@
 
   .resp-panel {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid #e8ecf1;
     box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
     overflow: hidden;

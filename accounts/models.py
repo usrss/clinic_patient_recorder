@@ -22,10 +22,20 @@ class User(AbstractUser):
     )
 
     phone = models.CharField(max_length=20, blank=True)
+
+    # ── Profile Picture ────────────────────────────────────────────────────
+    profile_picture = models.ImageField(
+        upload_to='staff/',
+        null=True,
+        blank=True,
+        help_text='Optional profile picture (JPG, PNG, WebP)',
+    )
+
     force_password_change = models.BooleanField(default=False)
     failed_login_attempts = models.PositiveIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
-    reset_otp = models.CharField(max_length=6, null=True, blank=True)
+    # FIX: Increased max_length from 6 to 255 to support hashed OTPs (make_password produces ~128+ chars)
+    reset_otp = models.CharField(max_length=255, null=True, blank=True)
     reset_otp_expiry = models.DateTimeField(null=True, blank=True)
 
     # ── convenience properties ──────────────────────────────────────────

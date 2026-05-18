@@ -1,0 +1,297 @@
+{% extends base_template %}
+{% block title %}Complete Consultation — #{{ consultation.pk }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .complete-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 28px 24px 48px;
+  }
+  .complete-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .back-link {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .back-link:hover { color: #0078d4; }
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: -0.3px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .success-banner {
+    background: #d1fae5;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #065f46;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #a7f3d0;
+  }
+
+  .case-summary {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .case-summary .cs-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .cs-label { color: #94a3b8; font-size: 11px; font-weight: 600; }
+  .cs-value { color: #374151; font-weight: 500; }
+
+  .form-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .form-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 16px;
+  }
+
+  .choice-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .choice-card {
+    flex: 1;
+    padding: 18px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .choice-card:hover {
+    border-color: #bfdbfe;
+    background: #f8faff;
+  }
+  .choice-card.selected {
+    border-color: #0078d4;
+    background: #eff6ff;
+  }
+  .choice-card input[type="radio"] {
+    display: none;
+  }
+  .choice-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  .choice-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .choice-desc {
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .date-row {
+    margin-top: 16px;
+    display: none;
+  }
+  .date-row.visible {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .date-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+  }
+  .date-row input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #374151;
+  }
+  .date-row input[type="date"]:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.1);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 32px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="complete-page">
+<div class="complete-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <a href="{% url 'consultations:prescribe' consultation.pk %}" class="back-link">← Back to Prescription</a>
+    <div>
+      <div class="page-title">Complete Consultation</div>
+      <div class="page-sub">Consultation #{{ consultation.pk }} — {{ consultation.patient.get_full_name }}</div>
+    </div>
+  </div>
+
+  <!-- Success Banner -->
+  <div class="success-banner">
+    <span style="font-size:20px;">✅</span>
+    <div>
+      <strong>Prescription saved successfully.</strong><br>
+      <span style="font-size:11px;">Now decide if the patient needs a follow-up visit.</span>
+    </div>
+  </div>
+
+  <!-- Case Summary -->
+  <div class="case-summary">
+    <div class="cs-row">
+      <span class="cs-label">Patient</span>
+      <span class="cs-value">{{ consultation.patient.get_full_name }}</span>
+    </div>
+    <div class="cs-row">
+      <span class="cs-label">Diagnosis</span>
+      <span class="cs-value">{{ consultation.prescriptions.first.diagnosis|truncatechars:80 }}</span>
+    </div>
+    <div class="cs-row">
+      <span class="cs-label">Date</span>
+      <span class="cs-value">{{ consultation.created_at|date:"F d, Y" }}</span>
+    </div>
+  </div>
+
+  <!-- Decision Form -->
+  <div class="form-card">
+    <div class="form-section-label">Follow-up Decision</div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="choice-row">
+        <label class="choice-card" id="choice-no">
+          <input type="radio" name="requires_follow_up" value="0" checked>
+          <div class="choice-icon">✅</div>
+          <div class="choice-label">No Follow-up Needed</div>
+          <div class="choice-desc">Consultation is complete. No further visits required.</div>
+        </label>
+        <label class="choice-card" id="choice-yes">
+          <input type="radio" name="requires_follow_up" value="1">
+          <div class="choice-icon">🔄</div>
+          <div class="choice-label">Follow-up Required</div>
+          <div class="choice-desc">Patient should return for monitoring or further treatment.</div>
+        </label>
+      </div>
+
+      <div class="date-row" id="date-row">
+        <label for="follow-up-date">Recommended Follow-up Date:</label>
+        <input type="date" name="recommended_follow_up_date" id="follow-up-date"
+               min="{{ today|date:'Y-m-d' }}">
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">Complete Consultation</button>
+        <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-secondary">Skip</a>
+      </div>
+    </form>
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+
+<script>
+  const choiceYes = document.getElementById('choice-yes');
+  const choiceNo = document.getElementById('choice-no');
+  const dateRow = document.getElementById('date-row');
+  const radioYes = choiceYes.querySelector('input');
+  const radioNo = choiceNo.querySelector('input');
+
+  function updateSelection() {
+    if (radioYes.checked) {
+      choiceYes.classList.add('selected');
+      choiceNo.classList.remove('selected');
+      dateRow.classList.add('visible');
+    } else {
+      choiceNo.classList.add('selected');
+      choiceYes.classList.remove('selected');
+      dateRow.classList.remove('visible');
+    }
+  }
+
+  radioYes.addEventListener('change', updateSelection);
+  radioNo.addEventListener('change', updateSelection);
+
+  // Click on entire card
+  choiceYes.addEventListener('click', function() { radioYes.checked = true; updateSelection(); });
+  choiceNo.addEventListener('click', function() { radioNo.checked = true; updateSelection(); });
+
+  // Initial state
+  updateSelection();
+</script>
+{% endblock %}

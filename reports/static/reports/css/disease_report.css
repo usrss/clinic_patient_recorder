@@ -15,9 +15,9 @@
 /* ── Filter card ── */
 .filter-card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #e8ecf1;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
   padding: 22px;
   margin-bottom: 20px;
 }
@@ -66,15 +66,16 @@
   background: #0078d4;
   color: #fff;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .15s;
+  box-shadow: 0 2px 8px rgba(0,120,212,0.25);
+  transition: background .15s, box-shadow .15s;
   font-family: 'Inter', sans-serif;
   white-space: nowrap;
 }
-.btn-primary:hover { background: #006bbf; }
+.btn-primary:hover { background: #006cbd; box-shadow: 0 4px 14px rgba(0,120,212,0.35); }
 .btn-secondary-sm {
   padding: 8px 14px;
   background: #fff;
@@ -111,11 +112,11 @@
 }
 .stat-card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 18px 14px;
   text-align: center;
   border: 1px solid #e8ecf1;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
 }
 .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
 .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
@@ -123,9 +124,9 @@
 /* ── Panel ── */
 .panel {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #e8ecf1;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
   overflow: hidden;
   margin-bottom: 20px;
 }

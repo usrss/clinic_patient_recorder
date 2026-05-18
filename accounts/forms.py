@@ -1,8 +1,30 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm
+from django.core.exceptions import ValidationError
 from .models import User
+from .utils import calculate_graduation_year
 from patients.models import Patient, PatientProfile
 from colleges.models import College
+
+
+# ── Shared file validation helpers ──────────────────────────────────────
+
+ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def validate_profile_picture(file):
+    """Server-side validation for profile picture uploads."""
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise ValidationError(
+            f'Unsupported file type "{file.content_type}". '
+            'Allowed types: JPG, PNG, WebP.'
+        )
+    if file.size > MAX_IMAGE_SIZE_BYTES:
+        raise ValidationError(
+            f'File size ({file.size // 1024} KB) exceeds the maximum allowed size '
+            f'of {MAX_IMAGE_SIZE_BYTES // (1024 * 1024)} MB.'
+        )
 
 
 class LoginForm(AuthenticationForm):
@@ -39,12 +61,23 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
-                  'role', 'phone', 'is_active']
+                  'role', 'phone', 'profile_picture', 'is_active']
+        widgets = {
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+        self.fields['profile_picture'].required = False
+        self.fields['profile_picture'].label = 'Profile Picture'
+
+    def clean_profile_picture(self):
+        file = self.cleaned_data.get('profile_picture')
+        if file:
+            validate_profile_picture(file)
+        return file
 
 
 class StaffPasswordChangeForm(PasswordChangeForm):
@@ -61,17 +94,39 @@ class UserProfileForm(forms.ModelForm):
     """Staff user edits their own profile info."""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'profile_picture']
+        widgets = {
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+        self.fields['profile_picture'].required = False
+        self.fields['profile_picture'].label = 'Profile Picture'
+
+    def clean_profile_picture(self):
+        file = self.cleaned_data.get('profile_picture')
+        if file:
+            validate_profile_picture(file)
+        return file
 
 
 class PatientProfileEditForm(forms.ModelForm):
     """Patient edits their full profile + contact info."""
     phone = forms.CharField(max_length=30, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    profile_picture = forms.ImageField(
+        required=False,
+        label='Profile Picture',
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        validators=[validate_profile_picture],
+    )
+    remove_picture = forms.BooleanField(
+        required=False,
+        label='Remove current picture',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
     email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control'}))
     emergency_contact_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     emergency_contact_phone = forms.CharField(max_length=30, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -114,6 +169,136 @@ class PatientProfileEditForm(forms.ModelForm):
         for field in ['hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',
                        'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt']:
             self.fields[field].widget.attrs['class'] = 'form-check-input'
+
+
+# ── PROFILE COMPLETION FORM (Walk-in patient first login) ────────────────
+
+class ProfileCompletionForm(forms.Form):
+    """
+    2-step form for walk-in patients completing their profile on first login.
+    Pre-fills name, sex, birthday from existing Patient record (readonly in template).
+    """
+
+    ROLE_CHOICES = [
+        ('student', 'Student'),
+        ('faculty', 'Faculty'),
+        ('staff', 'Staff'),
+    ]
+
+    # ── Pre-filled fields (readonly in template) ──
+    first_name = forms.CharField(max_length=150, required=True)
+    middle_name = forms.CharField(max_length=100, required=False)
+    last_name = forms.CharField(max_length=150, required=True)
+    sex = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')], required=True)
+    birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), required=False)
+
+    # ── Editable fields ──
+    role = forms.ChoiceField(choices=ROLE_CHOICES, label='Role')
+    phone = forms.CharField(max_length=30, required=False, label='Phone Number')
+    email = forms.EmailField(required=False, label='Email Address')
+
+    # ── Personal Info ──
+    address = forms.CharField(max_length=300, required=False)
+    blood_type = forms.ChoiceField(
+        choices=[('', '—'), ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
+                 ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'), ('Unknown', 'Unknown')],
+        required=False
+    )
+    religion = forms.CharField(max_length=100, required=False)
+    civil_status = forms.ChoiceField(
+        choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'),
+                 ('Widowed', 'Widowed'), ('Separated', 'Separated')],
+        required=False
+    )
+    height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
+    weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
+
+    # ── Profile Picture ──
+    profile_picture = forms.ImageField(
+        required=False,
+        label='Profile Picture',
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        validators=[validate_profile_picture],
+    )
+
+    # College — required for student and faculty (enforced in clean())
+    college = forms.ModelChoiceField(
+        queryset=College.objects.all().order_by('name'),
+        required=False,
+        label='College',
+        empty_label='Select College',
+    )
+    year_level = forms.ChoiceField(
+        choices=[('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
+                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
+        required=False,
+        label='Year Level',
+    )
+    department = forms.CharField(max_length=200, required=False, label='Department')
+    position = forms.CharField(max_length=200, required=False, label='Position / Designation')
+
+    # ── Emergency Contact ──
+    emergency_contact_name = forms.CharField(max_length=200, required=False)
+    emergency_contact_phone = forms.CharField(max_length=30, required=False)
+
+    # ── Medical History ──
+    hypertension = forms.BooleanField(required=False)
+    diabetes = forms.BooleanField(required=False)
+    asthma = forms.BooleanField(required=False)
+    cardiac_problems = forms.BooleanField(required=False)
+    arthritis = forms.BooleanField(required=False)
+    other_conditions = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    known_allergies = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+    # ── Immunization ──
+    bcg = forms.BooleanField(required=False)
+    dpt = forms.BooleanField(required=False)
+    opv = forms.BooleanField(required=False)
+    hepatitis_b = forms.BooleanField(required=False)
+    measles = forms.BooleanField(required=False)
+    tt = forms.BooleanField(required=False)
+    immunization_others = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+    # ── Medical Background ──
+    current_medications = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    vices = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    previous_illnesses = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    previous_hospitalizations = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+    def clean(self):
+        cleaned = super().clean()
+        role = cleaned.get('role')
+
+        # College required for student and faculty
+        college = cleaned.get('college')
+        if role in ('student', 'faculty') and not college:
+            self.add_error('college', 'Please select your college.')
+
+        # Year level required for students
+        year = cleaned.get('year_level')
+        if role == 'student' and not year:
+            self.add_error('year_level', 'Year level is required for students.')
+
+        # Department required for faculty and staff
+        department = cleaned.get('department')
+        if role in ('faculty', 'staff') and not department:
+            self.add_error('department', 'Please enter your department.')
+
+        # Calculate expected graduation year
+        if role == 'student' and year:
+            cleaned['_expected_graduation_year'] = calculate_graduation_year(year)
+        else:
+            cleaned['_expected_graduation_year'] = None
+
+        # Clear irrelevant fields
+        if role == 'staff':
+            cleaned['college'] = None
+            cleaned['year_level'] = ''
+        if role == 'student':
+            cleaned['department'] = ''
+            cleaned['position'] = ''
+
+        return cleaned
 
 
 class PasswordResetRequestForm(forms.Form):
@@ -282,6 +467,12 @@ class RegistrationForm(forms.Form):
         department = cleaned.get('department')
         if role in ('faculty', 'staff') and not department:
             self.add_error('department', 'Please enter your department.')
+
+        # Calculate expected graduation year
+        if role == 'student' and year:
+            cleaned['_expected_graduation_year'] = calculate_graduation_year(year)
+        else:
+            cleaned['_expected_graduation_year'] = None
 
         # Clear college/year for staff; clear department for students
         if role == 'staff':

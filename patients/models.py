@@ -2,6 +2,7 @@ import re
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from accounts.models import User
 
 
 def validate_phone(value):
@@ -72,6 +73,36 @@ class Patient(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    # ── Academic Year & Archiving ──────────────────────────────────────────
+    expected_graduation_year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Calculated when student registers based on year level (1st Yr→+4, 2nd Yr→+3, etc.)',
+    )
+    is_archived = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='True when the patient has been automatically archived (graduated / inactive).',
+    )
+    archived_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the patient was archived.',
+    )
+    archived_reason = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Reason for archiving (e.g. Graduated — no activity after academic year end).',
+    )
+
+    # ── Profile Picture ────────────────────────────────────────────────────
+    profile_picture = models.ImageField(
+        upload_to='patients/',
+        null=True,
+        blank=True,
+        help_text='Optional profile picture (JPG, PNG, WebP)',
+    )
+
     # ── Login tracking ───────────────────────────────────────────────────────
     has_logged_in = models.BooleanField(
         default=False,
@@ -120,7 +151,47 @@ class Patient(models.Model):
             models.Index(fields=['patient_id']),
             models.Index(fields=['last_name', 'first_name']),
             models.Index(fields=['has_logged_in']),
+            models.Index(fields=['is_archived']),
         ]
+
+
+
+# ── ACADEMIC YEAR SETTINGS (Singleton) ─────────────────────────────────────
+
+class AcademicYearSettings(models.Model):
+    """
+    Singleton model for admin-configurable academic year settings.
+    Only one row is ever created; the save() method enforces this.
+    """
+    academic_year_end = models.DateField(
+        help_text='When the current academic year officially ends (e.g. 2026-05-31).',
+    )
+    archive_after_months = models.PositiveIntegerField(
+        default=5,
+        help_text='Months of inactivity after year end before archiving students.',
+    )
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='academic_year_settings',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Academic Year Settings'
+        verbose_name_plural = 'Academic Year Settings'
+
+    def save(self, *args, **kwargs):
+        # Enforce singleton: delete any existing row before saving
+        if self.pk is None and AcademicYearSettings.objects.exists():
+            AcademicYearSettings.objects.all().delete()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        end = self.academic_year_end.strftime('%B %d, %Y') if self.academic_year_end else 'Not set'
+        return f'Academic Year ends {end} — Archive after {self.archive_after_months} months'
 
 
 class PatientProfile(models.Model):

@@ -1,13 +1,11 @@
 {% extends base_template %}
-{% block title %}New Consultation — Clinic Recorder{% endblock %}
+{% block title %}New Consultation — Patient Record System{% endblock %}
 {% block page_title %}New Consultation{% endblock %}
 {% block page_subtitle %}Create on behalf of a walk-in patient{% endblock %}
 
 {% block extra_css %}
 <style>
-  .create-page {
-    padding: 0;
-  }
+  .create-page { padding: 0; }
   .create-wrap { width: 100%; max-width: 680px; }
 
   .info-banner {
@@ -29,6 +27,18 @@
     border: 1px solid #e8ecf1;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.04);
     padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0078d4;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e8ecf1;
   }
 
   .form-group { margin-bottom: 20px; }
@@ -64,15 +74,24 @@
 
   .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
 
-  .btn-row { display: flex; gap: 10px; margin-top: 28px; align-items: center; }
+  .btn-row { display: flex; gap: 10px; margin-top: 28px; align-items: center; flex-wrap: wrap; }
   .btn-primary {
     display: inline-flex; align-items: center; gap: 7px;
     padding: 11px 22px; background: #0078d4; color: #fff;
     border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
     cursor: pointer; transition: all 0.2s;
     box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+    font-family: 'Inter', sans-serif;
   }
   .btn-primary:hover { background: #006bbf; box-shadow: 0 4px 14px rgba(0,120,212,0.3); }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; background: #fff; color: #0078d4;
+    border: 1.5px solid #bfdbfe; border-radius: 10px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-outline:hover { background: #eff6ff; border-color: #0078d4; }
   .btn-ghost {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 11px 22px; background: #fff; color: #4b5563;
@@ -81,7 +100,107 @@
   }
   .btn-ghost:hover { background: #f9fafb; border-color: #d1d5db; }
 
+  /* ── Patient Found Card ── */
+  .patient-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .patient-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .patient-card-info h3 { margin: 0; font-size: 15px; color: #065f46; }
+  .patient-card-info p { margin: 2px 0 0; font-size: 12px; color: #6b7280; }
+  .patient-card .check-icon {
+    color: #16a34a;
+    flex-shrink: 0;
+  }
+
+  /* ── Lookup row ── */
+  .lookup-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .lookup-row .form-group { flex: 1; margin-bottom: 0; }
+
+  /* ── Inline two-column layout ── */
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* ── Credentials Success ── */
+  .credentials-box {
+    background: #fffbeb;
+    border: 2px solid #fcd34d;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .credentials-box h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #92400e;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cred-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .cred-field .label {
+    font-weight: 600;
+    color: #92400e;
+    min-width: 75px;
+  }
+  .cred-field .value {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: 0.5px;
+  }
+  .cred-note {
+    font-size: 12px;
+    color: #b45309;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; padding-bottom: 16px; }
+
+  /* ── New patient fields hidden by default, shown when needed ── */
+  .new-patient-fields {
+    display: none;
+  }
+  .new-patient-fields.visible {
+    display: block;
+  }
 </style>
 {% endblock %}
 
@@ -91,39 +210,136 @@
 
   <div class="info-banner">
     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-    <div>Select the patient and fill in their presenting symptoms. This creates a new consultation on their behalf.</div>
+    <div>Enter the patient's ID to look them up. If not found, complete the registration fields below. Consultation details are always required.</div>
   </div>
 
+  {# ── Credentials success box ── #}
+  {% if new_patient_credentials %}
+  <div class="credentials-box">
+    <h3>
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Patient Registered Successfully
+    </h3>
+    <div class="cred-field">
+      <span class="label">Patient</span>
+      <span class="value">{{ new_patient_credentials.name }}</span>
+    </div>
+    <div class="cred-field">
+      <span class="label">Username</span>
+      <span class="value">{{ new_patient_credentials.username }}</span>
+    </div>
+    <div class="cred-field">
+      <span class="label">Password</span>
+      <span class="value">{{ new_patient_credentials.password }}</span>
+    </div>
+    <p class="cred-note">
+      <strong>Give these credentials to the patient.</strong>
+      Have them log in at the patient portal and change their password.
+      Their detailed medical profile is their responsibility to complete after login.
+    </p>
+    <div class="btn-row">
+      <a href="{% url 'consultations:queue' %}" class="btn-primary">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Go to Queue
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── SECTION 1: Patient Lookup ── #}
   <div class="card-form">
-    <form method="post" novalidate>
+    <div class="section-label">Step 1 — Patient Information</div>
+
+    <form method="post" id="consultation-form">
       {% csrf_token %}
 
-      <div class="form-group">
-        <label>Patient</label>
-        {{ form.patient }}
-        {% if form.patient.errors %}<div class="form-error">{{ form.patient.errors.0 }}</div>{% endif %}
+      {# ── Patient ID with Lookup button ── #}
+      <div class="lookup-row">
+        <div class="form-group">
+          <label>{{ form.patient_id.label }}</label>
+          {{ form.patient_id }}
+          {% if form.patient_id.errors %}<div class="form-error">{{ form.patient_id.errors.0 }}</div>{% endif %}
+        </div>
+        <button type="submit" name="lookup" value="1" class="btn-outline" style="margin-top:27px;">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Check
+        </button>
       </div>
 
+      {# ── Patient Found Card ── #}
+      {% if looked_up_patient %}
+      <div class="patient-card">
+        <div class="patient-card-avatar">
+          {{ looked_up_patient.first_name|first }}{{ looked_up_patient.last_name|first }}
+        </div>
+        <div class="patient-card-info">
+          <h3>{{ looked_up_patient.get_full_name }}</h3>
+          <p>ID: {{ looked_up_patient.patient_id }} · Sex: {{ looked_up_patient.get_sex_display }} · Age: {{ looked_up_patient.age|default:"—" }}</p>
+        </div>
+        <svg class="check-icon" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      {% endif %}
+
+      {# ── Name fields (always visible) ── #}
+      <div class="form-row-2">
+        <div class="form-group">
+          <label>{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# ── Birthdate ── #}
       <div class="form-group">
-        <label>Symptoms</label>
+        <label>{{ form.birthdate.label }}</label>
+        {{ form.birthdate }}
+        {% if form.birthdate.errors %}<div class="form-error">{{ form.birthdate.errors.0 }}</div>{% endif %}
+      </div>
+
+      {# ── New patient fields (visible only when no match) ── #}
+      <div class="new-patient-fields {% if not looked_up_patient %}visible{% endif %}">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>{{ form.sex.label }}</label>
+            {{ form.sex }}
+            {% if form.sex.errors %}<div class="form-error">{{ form.sex.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>{{ form.contact_number.label }}</label>
+            {{ form.contact_number }}
+            {% if form.contact_number.errors %}<div class="form-error">{{ form.contact_number.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# ── SECTION 2: Consultation Details ── #}
+      <div class="section-label" style="margin-top: 28px;">Step 2 — Consultation Details</div>
+
+      <div class="form-group">
+        <label>{{ form.symptoms.label }}</label>
         {{ form.symptoms }}
         {% if form.symptoms.errors %}<div class="form-error">{{ form.symptoms.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>Severity Description</label>
+        <label>{{ form.severity_description.label }}</label>
         {{ form.severity_description }}
         {% if form.severity_description.errors %}<div class="form-error">{{ form.severity_description.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>Medical History</label>
+        <label>{{ form.medical_history.label }}</label>
         {{ form.medical_history }}
         {% if form.medical_history.errors %}<div class="form-error">{{ form.medical_history.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>Additional Notes</label>
+        <label>{{ form.additional_notes.label }}</label>
         {{ form.additional_notes }}
         {% if form.additional_notes.errors %}<div class="form-error">{{ form.additional_notes.errors.0 }}</div>{% endif %}
       </div>
@@ -137,10 +353,11 @@
       <div class="btn-row">
         <button type="submit" class="btn-primary">
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Submit Consultation
+          Create Consultation
         </button>
         <a href="{% url 'consultations:queue' %}" class="btn-ghost">Cancel</a>
       </div>
+
     </form>
   </div>
 
@@ -148,4 +365,23 @@
 
 </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Toggle visibility of new patient fields based on whether a patient
+  // was found from the lookup.
+  document.addEventListener('DOMContentLoaded', function () {
+    const newPatientFields = document.querySelector('.new-patient-fields');
+    const patientFound = {{ looked_up_patient|yesno:"true,false" }};
+
+    if (newPatientFields) {
+      if (patientFound) {
+        newPatientFields.classList.remove('visible');
+      } else {
+        newPatientFields.classList.add('visible');
+      }
+    }
+  });
+</script>
 {% endblock %}

@@ -1,13 +1,160 @@
 {% extends 'core/base_admin.html' %}
-{% load static%}
-{% block title %}Admin Dashboard — Clinic Recorder{% endblock %}
+{% load static %}
+{% block title %}Admin Dashboard — Patient Record System{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Welcome back, {{ user.get_full_name|default:user.username }}{% endblock %}
+{% block page_subtitle %}
+  <span style="display:inline-flex;align-items:center;gap:6px;">
+    <span style="display:inline-block;width:20px;height:20px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#eff6ff,#bfdbfe);flex-shrink:0;">
+      {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+      {% else %}
+        <span style="font-size:9px;font-weight:700;color:#1e40af;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">{{ user.get_full_name|default:user.username|first|upper }}</span>
+      {% endif %}
+    </span>
+    Welcome back, {{ user.get_full_name|default:user.username }}
+  </span>
+{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const colors = ['#0078d4', '#8b5cf6', '#f97316', '#10b981', '#ef4444', '#6b7280'];
+  const blueGradient = 'rgba(0,120,212,';
+  const purpleGradient = 'rgba(139,92,246,';
+
+  // ── 1. Consultation Status (donut) ──
+  const ctx1 = document.getElementById('chart-status');
+  if (ctx1) {
+    new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: {{ consultation_status_labels|safe }},
+        datasets: [{
+          data: {{ consultation_status_data|safe }},
+          backgroundColor: colors,
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { padding: 8, usePointStyle: true, font: { size: 10 } } },
+        },
+        cutout: '72%',
+      }
+    });
+  }
+
+  // ── 2. Daily Consultations (line) ──
+  const ctx2 = document.getElementById('chart-daily');
+  if (ctx2) {
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: {{ daily_labels|safe }},
+        datasets: [{
+          label: 'Consultations',
+          data: {{ daily_consultations|safe }},
+          borderColor: '#0078d4',
+          backgroundColor: blueGradient + '0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointBackgroundColor: '#0078d4',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+        }
+      }
+    });
+  }
+
+  // ── 3. Patient Sex Distribution (pie) ──
+  const ctx3 = document.getElementById('chart-sex');
+  if (ctx3) {
+    new Chart(ctx3, {
+      type: 'pie',
+      data: {
+        labels: ['Male', 'Female'],
+        datasets: [{
+          data: [{{ male_count }}, {{ female_count }}],
+          backgroundColor: ['#0078d4', '#ec4899'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { padding: 8, usePointStyle: true, font: { size: 10 } } },
+        }
+      }
+    });
+  }
+
+  // ── 4. Patients by College (bar) ──
+  const ctx4 = document.getElementById('chart-college');
+  if (ctx4) {
+    new Chart(ctx4, {
+      type: 'bar',
+      data: {
+        labels: {{ college_labels|safe }},
+        datasets: [{
+          label: 'Patients',
+          data: {{ college_data|safe }},
+          backgroundColor: '#8b5cf6',
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+        }
+      }
+    });
+  }
+
+  // ── 5. Medical Conditions (horizontal bar) ──
+  const ctx5 = document.getElementById('chart-conditions');
+  if (ctx5) {
+    new Chart(ctx5, {
+      type: 'bar',
+      data: {
+        labels: ['Hypertension', 'Diabetes', 'Asthma', 'Cardiac', 'Arthritis'],
+        datasets: [{
+          label: 'Patients',
+          data: [{{ cond_hypertension }}, {{ cond_diabetes }}, {{ cond_asthma }}, {{ cond_cardiac }}, {{ cond_arthritis }}],
+          backgroundColor: ['#ef4444', '#f97316', '#10b981', '#8b5cf6', '#0078d4'],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } },
+          y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+});
+</script>
 {% endblock %}
 
 {% block extra_css %}
@@ -51,11 +198,11 @@
 
   <div class="stat-card">
     <div class="stat-card-top">
-      <div class="stat-icon" style="background:#f0fdf4;">
-        <svg width="18" height="18" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="stat-icon" style="background:#eff6ff;">
+        <svg width="18" height="18" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
     </div>
-    <div class="stat-value" style="color:#10b981;">{{ total_patients }}</div>
+    <div class="stat-value" style="color:#0078d4;">{{ total_patients }}</div>
     <div class="stat-label">Total Patients</div>
   </div>
 
@@ -81,6 +228,57 @@
 
 </div>
 
+{# ── ANALYTICS SECTION ── #}
+<div class="sec-heading">Analytics</div>
+<div class="chart-grid">
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-title">Consultation Status</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-status"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-title">Consultations (Last 30 Days)</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-daily" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-title">Patient Sex</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-sex"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-title">Patients by College</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-college" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card" style="grid-column: span 2;">
+    <div class="chart-card-header">
+      <span class="chart-title">Patient Medical Conditions</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-conditions" height="120"></canvas>
+    </div>
+  </div>
+
+</div>
+
 {# ── Quick Actions ── #}
 <div class="sec-heading">Quick Actions</div>
 <div class="action-grid">
@@ -96,8 +294,8 @@
   </a>
 
   <a href="{% url 'patients:patient_list' %}" class="action-card">
-    <div class="action-icon" style="background:#f0fdf4;">
-      <svg width="20" height="20" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <div class="action-icon" style="background:#eff6ff;">
+      <svg width="20" height="20" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     </div>
     <div class="action-text">
       <strong>Patients</strong>
@@ -147,6 +345,30 @@
 
 </div>
 
+{# ── Low Stock Alerts ── #}
+{% if low_stock_medicines %}
+<div class="sec-heading">Low Stock Alerts</div>
+<div class="panel" style="margin-bottom:28px;">
+  <div class="panel-header">
+    <span class="panel-title">Medicines Needing Restock</span>
+    <a href="{% url 'inventory:medicine_list' %}" class="panel-link">Manage Inventory →</a>
+  </div>
+  <div class="panel-body">
+    {% for med in low_stock_medicines %}
+    <div class="role-row">
+      <div class="role-row-left">
+        <div class="role-dot" style="background:#ef4444;"></div>
+        <span>{{ med.name }}</span>
+      </div>
+      <span class="role-count" style="color:#ef4444;">
+        {{ med.quantity }} / {{ med.low_stock_threshold }} {{ med.get_unit_display }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {# ── Two-column panels ── #}
 <div class="dash-cols">
 
@@ -176,7 +398,7 @@
           <div class="role-dot" style="background:#f97316;"></div>
           <span>Front Desk</span>
         </div>
-        <span class="role-count">{{ total_staff|add:"-1"|add:"-"|add:doctors }}</span>
+        <span class="role-count">{{ front_desk_count }}</span>
       </div>
       {% if total_staff == 0 %}
       <div class="panel-empty">No staff users yet. <a href="{% url 'accounts:user_create' %}">Create one →</a></div>
@@ -217,7 +439,7 @@
 
 {# ── Footer ── #}
 <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:8px;">
-  Negros Oriental State University — Medical Clinic
+  NORSU — Medical Dental Clinic
 </p>
 
 {% endblock %}

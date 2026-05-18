@@ -41,7 +41,7 @@ class ConsultationAdmin(admin.ModelAdmin):
 
 @admin.register(Triage)
 class TriageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'consultation', 'nurse', 'urgency', 'temperature', 'pulse_rate', 'triaged_at')
+    list_display = ('id', 'consultation', 'triaged_by', 'urgency', 'temperature', 'pulse_rate', 'triaged_at')
     list_filter = ('urgency', 'triaged_at')
     readonly_fields = ('triaged_at',)
 

@@ -6,10 +6,10 @@
   }
   .dash-card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 22px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     text-decoration: none;
     color: inherit;
     display: flex;
@@ -46,9 +46,9 @@
 
   .resp-panel {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     overflow: hidden;
     margin-bottom: 28px;
   }

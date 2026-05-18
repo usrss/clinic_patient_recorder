@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% block title %}Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block title %}Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -270,12 +270,12 @@
   {% endwith %}
 
   <!-- Vital Signs -->
-  {% with t=consultation.triage %}
+  {% with t=consultation.triages.first %}
   {% if t %}
   <div class="card">
     <div class="card-header">
       <span class="card-title">
-        <span class="card-icon" style="background:#f0fdf4;color:#10b981;">
+        <span class="card-icon" style="background:#eff6ff;color:#0078d4;">
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         </span>
         Vital Signs
@@ -294,13 +294,13 @@
     <div class="info-label">Nurse Notes</div>
     <div class="content-text" style="margin-top:4px;">{{ t.notes }}</div>
     {% endif %}
-    <div class="signature">Triaged by {{ t.nurse.get_full_name|default:t.nurse.username }} on {{ t.triaged_at|date:"M d, Y H:i" }}</div>
+    <div class="signature">Triaged by {{ t.triaged_by.get_full_name|default:t.triaged_by.username }} on {{ t.triaged_at|date:"M d, Y H:i" }}</div>
   </div>
   {% endif %}
   {% endwith %}
 
   <!-- Prescription -->
-  {% with rx=consultation.prescription %}
+  {% with rx=consultation.prescriptions.first %}
   {% if rx %}
   <div class="card">
     <div class="card-header">

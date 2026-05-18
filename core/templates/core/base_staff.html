@@ -4,15 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Clinic Recorder{% endblock %}</title>
+  <title>{% block title %}Patient Record System{% endblock %}</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
 
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
   <style>
     :root {
-      --sidebar-w: 230px;
+      --sidebar-w: 260px;
       --sidebar-bg: #ffffff;
       --sidebar-border: #e8ecf1;
       --sidebar-text: #4b5563;
@@ -98,6 +101,21 @@
       margin-bottom: 4px;
     }
 
+    /* ── Collapsible section ── */
+    .stf-collapsible-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 10px 4px; cursor: pointer; user-select: none;
+    }
+    .stf-collapsible-header:hover .stf-nav-section-label { color: #94a3b8; }
+    .stf-collapsible-arrow {
+      font-size: 12px; color: #b0b8c8; transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .stf-collapsible-header:hover .stf-collapsible-arrow { color: #94a3b8; }
+    .stf-collapsible.collapsed .stf-collapsible-arrow { transform: rotate(-90deg); }
+    .stf-collapsible-items { overflow: hidden; transition: max-height 0.25s ease; }
+    .stf-collapsible.collapsed .stf-collapsible-items { max-height: 0 !important; }
+
     .stf-nav-link {
       display: flex;
       align-items: center;
@@ -123,8 +141,9 @@
     .stf-nav-link.active svg { opacity: 1; }
 
     /* Role accent colors for active state */
-    .role-doctor  .stf-nav-link.active { color: #7c3aed; background: #ede9fe; }
+    .role-doctor    .stf-nav-link.active { color: #7c3aed; background: #ede9fe; }
     .role-frontdesk .stf-nav-link.active { color: #0078d4; background: #eff6ff; }
+    .role-nurse     .stf-nav-link.active { color: #059669; background: #d1fae5; }
 
     .stf-sidebar-footer {
       margin-top: auto;
@@ -157,6 +176,7 @@
     /* Avatar gradient by role */
     .role-doctor   .stf-user-avatar { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
     .role-frontdesk .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #60a5fa); }
+    .role-nurse    .stf-user-avatar { background: linear-gradient(135deg, #059669, #6ee7b7); }
     .role-admin    .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #3b82f6); }
 
     .stf-user-info strong {
@@ -342,7 +362,10 @@
     }
     .role-pill.doctor   { background: #ede9fe; color: #6d28d9; }
     .role-pill.frontdesk { background: #eff6ff; color: #0078d4; }
+    .role-pill.nurse    { background: #d1fae5; color: #059669; }
     .role-pill.admin    { background: #fef3c7; color: #92400e; }
+
+
   </style>
 
   {% block extra_css %}{% endblock %}
@@ -359,15 +382,19 @@
     <a href="{% url 'accounts:dashboard' %}" class="stf-sidebar-brand">
       <img src="{% static 'core/images/norsu-logo.png' %}" alt="NORSU" onerror="this.style.display='none'">
       <div>
-        <span>Clinic Recorder</span>
-        <small>NORSU Clinic</small>
+        <span>Patient Record System</span>
+        <small>NORSU Medical Dental Clinic</small>
       </div>
     </a>
 
     <!-- ── Doctor nav ── -->
     {% if user.role == 'doctor' %}
-    <div class="stf-nav-section">
-      <div class="stf-nav-section-label">Workspace</div>
+    <div class="stf-nav-section stf-collapsible">
+      <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
+        <div class="stf-nav-section-label">Workspace</div>
+        <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="stf-collapsible-items">
       <a href="{% url 'accounts:dashboard' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -377,11 +404,13 @@
          class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         Triage Queue
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'consultations:doctor_list' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'doctor_list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         My Patients
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'patients:patient_list' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
@@ -394,12 +423,17 @@
         Inventory
       </a>
     </div>
+    </div>
     {% endif %}
 
     <!-- ── Front Desk nav ── -->
     {% if user.role == 'frontdesk' %}
-    <div class="stf-nav-section">
-      <div class="stf-nav-section-label">Workspace</div>
+    <div class="stf-nav-section stf-collapsible">
+      <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
+        <div class="stf-nav-section-label">Workspace</div>
+        <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="stf-collapsible-items">
       <a href="{% url 'accounts:dashboard' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -409,6 +443,7 @@
          class="stf-nav-link {% if request.resolver_match.url_name == 'queue' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
         Queue
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'consultations:consultation_create' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'consultation_create' %}active{% endif %}">
@@ -423,9 +458,46 @@
     </div>
     {% endif %}
 
+    <!-- ── Nurse nav ── -->
+    {% if user.role == 'nurse' %}
+    <div class="stf-nav-section stf-collapsible">
+      <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
+        <div class="stf-nav-section-label">Workspace</div>
+        <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="stf-collapsible-items">
+      <a href="{% url 'accounts:dashboard' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'consultations:triage_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Triage Queue
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
+      </a>
+      <a href="{% url 'patients:patient_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Patients
+      </a>
+      <a href="{% url 'inventory:medicine_list' %}"
+         class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+        Inventory
+      </a>
+    </div>
+    </div>
+    {% endif %}
+
     <!-- ── Account section (all roles) ── -->
-    <div class="stf-nav-section">
-      <div class="stf-nav-section-label">Account</div>
+    <div class="stf-nav-section stf-collapsible">
+      <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
+        <div class="stf-nav-section-label">Account</div>
+        <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="stf-collapsible-items">
       <a href="{% url 'accounts:profile_settings' %}"
          class="stf-nav-link {% if request.resolver_match.url_name == 'profile_settings' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -435,14 +507,21 @@
          class="stf-nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         Notifications
-        <span id="sidebar-notif-badge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;line-height:1.6;"></span>
+        <span id="sidebar-notif-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
+    </div>
     </div>
 
     <!-- Footer: user + logout -->
     <div class="stf-sidebar-footer">
       <a href="{% url 'accounts:profile_settings' %}" class="stf-user-card" style="text-decoration:none;">
-        <div class="stf-user-avatar">{{ user.get_full_name|default:user.username|first|upper }}</div>
+        <div class="stf-user-avatar" style="overflow:hidden;">
+          {% if user.profile_picture %}
+            <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+            {{ user.get_full_name|default:user.username|first|upper }}
+          {% endif %}
+        </div>
         <div class="stf-user-info">
           <strong>{{ user.get_full_name|default:user.username }}</strong>
           <span>{{ user.get_role_display|default:user.role|title }}</span>
@@ -463,8 +542,7 @@
     <div class="stf-topbar-title">
       {% block page_title %}Dashboard{% endblock %}
       <small>{% block page_subtitle %}{% endblock %}</small>
-    </div>
-    <div class="stf-topbar-actions">
+    </div>      <div class="stf-topbar-actions">
       <!-- Role pill -->
       <span class="role-pill {{ user.role }}">
         {% if user.role == 'doctor' %}
@@ -473,6 +551,9 @@
         {% elif user.role == 'frontdesk' %}
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
           Front Desk
+        {% elif user.role == 'nurse' %}
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Nurse
         {% endif %}
       </span>
     </div>
@@ -530,24 +611,45 @@
       document.getElementById('staffSidebarOverlay').classList.remove('open');
     }
 
+    // ── Collapsible sidebar sections ──
+    function toggleStfSection(header) {
+      var section = header.parentElement;
+      var items = section.querySelector('.stf-collapsible-items');
+      var isCollapsed = section.classList.toggle('collapsed');
+      if (!isCollapsed) {
+        items.style.maxHeight = items.scrollHeight + 'px';
+      }
+      localStorage.setItem('stf-section-' + header.textContent.trim().toLowerCase(), isCollapsed ? 'collapsed' : 'open');
+    }
+
+    // ── Restore section states from localStorage ──
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.stf-collapsible').forEach(function(section) {
+        var label = section.querySelector('.stf-nav-section-label');
+        if (label) {
+          var key = 'stf-section-' + label.textContent.trim().toLowerCase();
+          var state = localStorage.getItem(key);
+          if (state === 'collapsed') {
+            section.classList.add('collapsed');
+            var items = section.querySelector('.stf-collapsible-items');
+            if (items) items.style.maxHeight = '0';
+          } else {
+            var items = section.querySelector('.stf-collapsible-items');
+            if (items) items.style.maxHeight = items.scrollHeight + 'px';
+          }
+        }
+      });
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
       // Auto-dismiss toasts
       document.querySelectorAll('.toast[data-bs-autohide="true"]').forEach(function (el) {
         new bootstrap.Toast(el, { delay: 4000 }).show();
       });
 
-      // Mirror unread badge to sidebar
-      const dot = document.getElementById('notif-dot');
-      const sidebarBadge = document.getElementById('sidebar-notif-badge');
-      if (dot && sidebarBadge) {
-        const observer = new MutationObserver(() => {
-          if (dot.style.display !== 'none') {
-            sidebarBadge.style.display = 'inline-block';
-          }
-        });
-        observer.observe(dot, { attributes: true, attributeFilter: ['style'] });
-      }
+      // Sidebar notification badge is now updated by base.js
     });
+
   </script>
 
   {% block extra_js %}{% endblock %}

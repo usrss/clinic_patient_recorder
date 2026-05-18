@@ -1,0 +1,399 @@
+{% extends base_template %}
+{% block title %}Consultation Timeline — #{{ consultation.pk }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .timeline-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 28px 24px 48px;
+  }
+  .timeline-wrap { width: 100%; max-width: 860px; margin: 0 auto; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: -0.3px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-outline:hover { background: #f9fafb; }
+  .btn-warning { background: #f59e0b; color: #fff; }
+  .btn-warning:hover { background: #d97706; }
+  .btn-danger { background: #ef4444; color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+
+  /* ── Case Info Card ── */
+  .case-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .case-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .case-id { font-size: 13px; color: #94a3b8; font-weight: 600; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .s-active-follow-up { background: #fef3c7; color: #92400e; }
+  .s-completed { background: #d1fae5; color: #065f46; }
+  .s-closed { background: #e5e7eb; color: #4b5563; }
+  .s-triaged { background: #ffedd5; color: #9a3412; }
+
+  .case-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+  }
+  @media (max-width: 600px) { .case-grid { grid-template-columns: 1fr; } }
+  .case-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 3px;
+  }
+  .case-value { font-size: 13px; color: #374151; }
+
+  /* ── Timeline ── */
+  .timeline-section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 12px;
+  }
+
+  .tl-track {
+    position: relative;
+    padding-left: 32px;
+  }
+  .tl-track::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: #e5e7eb;
+    border-radius: 1px;
+  }
+
+  .tl-node {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .tl-dot {
+    position: absolute;
+    left: -22px;
+    top: 6px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid #0078d4;
+    z-index: 1;
+  }
+  .tl-dot.original { background: #0078d4; }
+  .tl-dot.follow-up { border-color: #f59e0b; }
+  .tl-dot.closed { background: #9ca3af; border-color: #9ca3af; }
+
+  .tl-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 16px 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .tl-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tl-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  .tl-date {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .tl-doctor {
+    font-size: 11px;
+    color: #6b7280;
+  }
+  .tl-content {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+  }
+  .tl-field {
+    margin-bottom: 8px;
+  }
+  .tl-field-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+  }
+  .tl-empty {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 24px;
+  }
+
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 32px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timeline-page">
+<div class="timeline-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Consultation Timeline — #{{ consultation.pk }}</div>
+      <div class="page-sub">{{ consultation.patient.get_full_name }}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-outline">🖨 Print</a>
+      {% if consultation.status != 'closed' %}
+      <a href="{% url 'consultations:follow_up_create' consultation.pk %}" class="btn btn-warning">+ Follow-up Visit</a>
+      <a href="{% url 'consultations:close_consultation' consultation.pk %}" class="btn btn-danger">Close Case</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Case Info -->
+  <div class="case-card">
+    <div class="case-header">
+      <span class="case-id">Case #{{ consultation.pk }}</span>
+      {% if consultation.status == 'active_follow_up' %}
+        <span class="status-badge s-active-follow-up">🔄 Active Follow-up</span>
+      {% elif consultation.status == 'completed' %}
+        <span class="status-badge s-completed">✅ Completed</span>
+      {% elif consultation.status == 'closed' %}
+        <span class="status-badge s-closed">🔒 Closed</span>
+      {% elif consultation.status == 'triaged' %}
+        <span class="status-badge s-triaged">🩺 Triaged</span>
+      {% endif %}
+    </div>
+    <div class="case-grid">
+      <div>
+        <div class="case-label">Patient</div>
+        <div class="case-value">{{ consultation.patient.get_full_name }}</div>
+      </div>
+      <div>
+        <div class="case-label">Created</div>
+        <div class="case-value">{{ consultation.created_at|date:"F d, Y — h:i A" }}</div>
+      </div>
+      <div>
+        <div class="case-label">Follow-up Visits</div>
+        <div class="case-value">{{ consultation.follow_up_count }}</div>
+      </div>
+      <div>
+        <div class="case-label">Last Follow-up</div>
+        <div class="case-value">{{ consultation.last_follow_up_date|date:"F d, Y"|default:"—" }}</div>
+      </div>
+      {% if consultation.recommended_follow_up_date %}
+      <div>
+        <div class="case-label">Recommended Follow-up</div>
+        <div class="case-value" style="color:#f59e0b;font-weight:600;">{{ consultation.recommended_follow_up_date|date:"F d, Y" }}</div>
+      </div>
+      {% endif %}
+      {% if consultation.status == 'closed' %}
+      <div>
+        <div class="case-label">Closed</div>
+        <div class="case-value">{{ consultation.closed_at|date:"F d, Y" }}</div>
+      </div>
+      <div>
+        <div class="case-label">Closure Notes</div>
+        <div class="case-value">{{ consultation.closure_notes|default:"—" }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline-section">
+    <div class="section-label">Consultation Timeline</div>
+
+    <div class="tl-track">
+
+      <!-- Original Consultation -->
+      <div class="tl-node">
+        <div class="tl-dot original"></div>
+        <div class="tl-card">
+          <div class="tl-card-header">
+            <span class="tl-title">📋 Original Consultation</span>
+            <span class="tl-date">{{ consultation.created_at|date:"F d, Y — h:i A" }}</span>
+          </div>
+          <div class="tl-content">
+            <div class="tl-field">
+              <div class="tl-field-label">Symptoms</div>
+              <div>{{ consultation.symptoms }}</div>
+            </div>
+            {% if consultation.severity_description %}
+            <div class="tl-field">
+              <div class="tl-field-label">Severity</div>
+              <div>{{ consultation.severity_description }}</div>
+            </div>
+            {% endif %}
+            {% if consultation.triages.first %}
+            <div class="tl-field">
+              <div class="tl-field-label">Vitals</div>
+              <div>BP: {{ consultation.triages.first.blood_pressure }} | Temp: {{ consultation.triages.first.temperature }}°C | Pulse: {{ consultation.triages.first.pulse_rate }} bpm</div>
+            </div>
+            {% endif %}
+            {% if consultation.prescriptions.first %}
+            <div class="tl-field">
+              <div class="tl-field-label">Diagnosis</div>
+              <div>{{ consultation.prescriptions.first.diagnosis }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Follow-up Visits -->
+      {% for entry in progress_entries %}
+      <div class="tl-node">
+        <div class="tl-dot follow-up"></div>
+        <div class="tl-card">
+          <div class="tl-card-header">
+            <span class="tl-title">🔄 Follow-up Visit #{{ entry.visit_number }}</span>
+            <span class="tl-date">{{ entry.created_at|date:"F d, Y — h:i A" }}</span>
+          </div>
+          {% if entry.doctor %}
+          <div class="tl-doctor" style="margin-bottom:8px;">Doctor: Dr. {{ entry.doctor.get_full_name|default:entry.doctor.username }}</div>
+          {% endif %}
+          <div class="tl-content">
+            <div class="tl-field">
+              <div class="tl-field-label">Symptoms</div>
+              <div>{{ entry.symptoms }}</div>
+            </div>
+            {% if entry.assessment %}
+            <div class="tl-field">
+              <div class="tl-field-label">Assessment</div>
+              <div>{{ entry.assessment }}</div>
+            </div>
+            {% endif %}
+            {% if entry.treatment_notes %}
+            <div class="tl-field">
+              <div class="tl-field-label">Treatment</div>
+              <div>{{ entry.treatment_notes }}</div>
+            </div>
+            {% endif %}
+            {% if entry.recommendations %}
+            <div class="tl-field">
+              <div class="tl-field-label">Recommendations</div>
+              <div>{{ entry.recommendations }}</div>
+            </div>
+            {% endif %}
+            {% if entry.notes %}
+            <div class="tl-field">
+              <div class="tl-field-label">Notes</div>
+              <div>{{ entry.notes }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="tl-empty">No follow-up visits recorded yet.</div>
+      {% endfor %}
+
+      <!-- Closed marker -->
+      {% if consultation.status == 'closed' %}
+      <div class="tl-node">
+        <div class="tl-dot closed"></div>
+        <div class="tl-card" style="background:#f9fafb;">
+          <div class="tl-card-header">
+            <span class="tl-title">🔒 Case Closed</span>
+            <span class="tl-date">{{ consultation.closed_at|date:"F d, Y — h:i A" }}</span>
+          </div>
+          <div class="tl-content">
+            <div class="tl-field">
+              <div class="tl-field-label">Closure Notes</div>
+              <div>{{ consultation.closure_notes|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+{% endblock %}
