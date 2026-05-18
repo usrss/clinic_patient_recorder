@@ -16,13 +16,14 @@ def create_certificate(request, consultation_pk):
     if hasattr(consultation, 'certificate'):
         return redirect('certificates:print_certificate', pk=consultation.certificate.pk)
 
-    if not hasattr(consultation, 'prescription'):
+    if not consultation.prescriptions.exists():
         messages.error(request, 'The consultation must have a prescription before issuing a certificate.')
         return redirect('consultations:clinical_detail', pk=consultation.pk)
 
     # Pre-fill diagnosis from prescription
+    rx = consultation.prescriptions.first()
     initial = {
-        'diagnosis': consultation.prescription.diagnosis,
+        'diagnosis': rx.diagnosis,
     }
 
     form = MedicalCertificateForm(request.POST or None, initial=initial)
@@ -47,8 +48,8 @@ def print_certificate(request, pk):
     certificate = get_object_or_404(
         MedicalCertificate.objects.select_related(
             'consultation__patient', 'consultation__patient__college',
-            'consultation__prescription', 'doctor',
-        ),
+            'doctor',
+        ).prefetch_related('consultation__prescriptions'),
         pk=pk,
     )
 

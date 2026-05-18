@@ -1,85 +1,196 @@
 {% extends base_template %}
-{% block title %}Feedback — Clinic Recorder{% endblock %}
+{% block title %}Feedback — Patient Record System{% endblock %}
 {% block page_title %}Patient Feedback{% endblock %}
 {% block page_subtitle %}Reviews and ratings from consultations{% endblock %}
 
 {% block extra_css %}
 <style>
-  .feedback-wrap { width: 100%; max-width: 960px; }
-
-  .card-panel {
-    background: #fff;
-    border-radius: 14px;
+  .fb-page { width: 100%; max-width: 1100px; margin: 0 auto; }
+  .fb-card {
+    background: #fff; border-radius: 16px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
     overflow: hidden;
   }
-
+  .fb-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px; border-bottom: 1px solid #e8ecf1; flex-wrap: wrap;
+  }
+  .fb-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 300px; }
+  .fb-search-wrap ion-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; color: #94a3b8; pointer-events: none;
+  }
+  .fb-search {
+    width: 100%; padding: 9px 12px 9px 34px; border: 1.5px solid #e1e5eb;
+    border-radius: 10px; font-size: 13px; color: #1a1a2e; background: #fafbfc;
+    outline: none; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  }
+  .fb-search:focus { border-color: #0078d4; background: #fff; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+  .fb-filter-select {
+    padding: 9px 32px 9px 12px; border: 1.5px solid #e1e5eb; border-radius: 10px;
+    font-size: 13px; color: #374151; background: #fafbfc; outline: none;
+    cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+    appearance: none;
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22/%3E%3C/svg%3E');
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .fb-filter-select:focus { border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+  .fb-toolbar-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .fb-toolbar-right { display: flex; align-items: center; gap: 8px; }
+  .fb-btn-export {
+    display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px;
+    border-radius: 10px; font-size: 12px; font-weight: 500; border: 1px solid #e8ecf1;
+    background: #fff; color: #374151; cursor: pointer; transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .fb-btn-export:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+  .fb-btn-export-dropdown { position: relative; display: inline-block; }
+  .fb-export-menu {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 4px;
+    background: #fff; border-radius: 10px; border: 1px solid #e8ecf1;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 50; min-width: 130px; overflow: hidden;
+  }
+  .fb-export-menu.show { display: block; }
+  .fb-export-menu a {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    font-size: 13px; color: #374151; text-decoration: none; transition: background 0.1s;
+  }
+  .fb-export-menu a:hover { background: #f5f8ff; color: #0078d4; }
   .fb-table { width: 100%; border-collapse: collapse; }
   .fb-table th {
-    padding: 12px 18px;
-    background: #f8fafc;
-    text-align: left;
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    border-bottom: 1px solid #e8ecf1;
+    padding: 12px 18px; background: #f8fafc; text-align: left; font-size: 10px;
+    font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px;
+    border-bottom: 1px solid #e8ecf1; white-space: nowrap;
   }
   .fb-table td {
-    padding: 14px 18px;
-    font-size: 13px;
-    color: #374151;
-    border-bottom: 1px solid #f5f7fa;
-    vertical-align: middle;
+    padding: 14px 18px; font-size: 13px; color: #374151;
+    border-bottom: 1px solid #f5f7fa; vertical-align: middle;
   }
   .fb-table tbody tr:hover td { background: #f8fafc; }
   .fb-table tbody tr:last-child td { border-bottom: none; }
-
-  .star-row {
-    display: inline-flex;
-    gap: 2px;
-    color: #f59e0b;
+  .patient-name-cell { font-weight: 600; color: #1a1a2e; }
+  .patient-id-cell { color: #6b7280; font-size: 12px; }
+  .consult-no-cell { color: #6b7280; }
+  .star-row { display: inline-flex; gap: 2px; color: #f59e0b; }
+  .comment-cell { max-width: 260px; white-space: normal; line-height: 1.5; }
+  .fb-date-cell { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+  .fb-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-top: 1px solid #e8ecf1; flex-wrap: wrap; gap: 10px;
   }
-
-  .empty-state {
-    padding: 56px 24px;
-    text-align: center;
+  .fb-entry-count { font-size: 12px; color: #94a3b8; }
+  .fb-pagination { display: flex; align-items: center; gap: 3px; }
+  .fb-page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px;
+    font-size: 12px; font-weight: 500; text-decoration: none;
+    border: 1px solid #e8ecf1; background: #fff; color: #374151; transition: all 0.15s;
   }
-  .empty-icon-wrap {
-    width: 52px; height: 52px;
-    border-radius: 14px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 14px;
+  .fb-page-btn:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+  .fb-page-btn.active { background: #0078d4; border-color: #0078d4; color: #fff; }
+  .fb-page-btn.disabled { opacity: 0.4; pointer-events: none; }
+  .fb-empty { padding: 60px 24px; text-align: center; }
+  .fb-empty-icon {
+    width: 56px; height: 56px; border-radius: 14px; background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px; color: #9ca3af; font-size: 24px;
   }
-  .empty-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1a1a2e;
-    margin-bottom: 4px;
+  .fb-empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+  .fb-empty-sub { font-size: 12px; color: #94a3b8; }
+  .skeleton-row {
+    display: flex; padding: 14px 18px; border-bottom: 1px solid #f5f7fa;
+    gap: 16px; align-items: center;
   }
-  .empty-sub {
-    font-size: 12px;
-    color: #94a3b8;
+  .skeleton-cell {
+    height: 14px;
+    background: linear-gradient(90deg, #e8ecf1 25%, #f0f4ff 50%, #e8ecf1 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 6px;
   }
-
-  .comment-cell {
-    max-width: 240px;
-    white-space: normal;
-    line-height: 1.5;
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .review-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 1000; align-items: center; justify-content: center; padding: 24px;
   }
+  .review-modal-overlay.open { display: flex; }
+  .review-modal {
+    background: #fff; border-radius: 16px; padding: 28px 24px;
+    width: 100%; max-width: 480px; box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  }
+  .review-modal h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
+  .review-modal .meta { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+  .review-modal .content { font-size: 14px; color: #374151; line-height: 1.7; }
+  .review-modal .close-btn {
+    margin-top: 20px; padding: 9px 20px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; background: #f3f4f6;
+    color: #374151; border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .review-modal .close-btn:hover { background: #e5e7eb; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="feedback-wrap">
+<div class="fb-page">
+  <div class="fb-card">
 
-  <div class="card-panel">
-    {% if feedbacks %}
+    <div id="skeletonLoader" style="display:none;">
+      <div class="fb-toolbar" style="border-bottom:1px solid #e8ecf1;">
+        <div style="flex:1;max-width:300px;"><div class="skeleton-cell" style="width:100%;height:38px;"></div></div>
+        <div><div class="skeleton-cell" style="width:100px;height:38px;"></div></div>
+        <div><div class="skeleton-cell" style="width:40px;height:38px;"></div></div>
+      </div>
+      {% for i in "12345" %}
+      <div class="skeleton-row">
+        <div class="skeleton-cell" style="width:25%;"></div>
+        <div class="skeleton-cell" style="width:18%;"></div>
+        <div class="skeleton-cell" style="width:12%;"></div>
+        <div class="skeleton-cell" style="width:15%;"></div>
+        <div class="skeleton-cell" style="width:30%;"></div>
+        <div class="skeleton-cell" style="width:12%;"></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <form method="get" id="feedbackForm" autocomplete="off">
+      <div class="fb-toolbar">
+        <div class="fb-toolbar-left">
+          <div class="fb-search-wrap">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" name="search" class="fb-search" placeholder="Search patient name or ID..." value="{{ search }}" oninput="debouncedSubmit()">
+          </div>
+          <select name="rating" class="fb-filter-select" onchange="this.form.submit()">
+            <option value="">All Ratings</option>
+            <option value="5" {% if rating_filter == '5' %}selected{% endif %}>★★★★★ (5)</option>
+            <option value="4" {% if rating_filter == '4' %}selected{% endif %}>★★★★☆ (4)</option>
+            <option value="3" {% if rating_filter == '3' %}selected{% endif %}>★★★☆☆ (3)</option>
+            <option value="2" {% if rating_filter == '2' %}selected{% endif %}>★★☆☆☆ (2)</option>
+            <option value="1" {% if rating_filter == '1' %}selected{% endif %}>★☆☆☆☆ (1)</option>
+          </select>
+        </div>
+        <div class="fb-toolbar-right">
+          <div class="fb-btn-export-dropdown">
+            <button type="button" class="fb-btn-export" onclick="toggleExportMenu()">
+              <ion-icon name="download-outline"></ion-icon>
+              Export
+              <ion-icon name="chevron-down-outline" style="font-size:12px;"></ion-icon>
+            </button>
+            <div class="fb-export-menu" id="exportMenu">
+              <a href="#" onclick="exportCSV(); return false;">
+                <ion-icon name="document-text-outline"></ion-icon>
+                Export CSV
+              </a>
+              <a href="#" onclick="showToast('PDF export coming soon'); return false;">
+                <ion-icon name="document-outline"></ion-icon>
+                Export PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    {% if page_obj.object_list %}
     <div style="overflow-x:auto;">
       <table class="fb-table">
         <thead>
@@ -93,14 +204,14 @@
           </tr>
         </thead>
         <tbody>
-          {% for f in feedbacks %}
+          {% for f in page_obj.object_list %}
           <tr>
             <td style="font-weight:600;color:#1a1a2e;">{{ f.consultation.patient.get_full_name }}</td>
             <td style="color:#6b7280;font-size:12px;">{{ f.consultation.patient.patient_id }}</td>
             <td style="color:#6b7280;">#{{ f.consultation.pk }}</td>
             <td>
               <span class="star-row">
-                {% for i in "12345" %}
+                {% for star in "12345" %}
                   {% if forloop.counter <= f.rating %}
                     <svg width="16" height="16" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   {% else %}
@@ -109,23 +220,142 @@
                 {% endfor %}
               </span>
             </td>
-            <td class="comment-cell">{{ f.comment|default:"—" }}</td>
+            <td class="comment-cell">
+              {{ f.comment|default:"—"|truncatechars:80 }}
+              {% if f.comment|length > 80 %}
+                <a href="#" onclick="openReviewModal(
+                  '{{ f.consultation.patient.get_full_name|escapejs }}',
+                  '{{ f.consultation.patient.patient_id|escapejs }}',
+                  {{ f.rating }},
+                  '{{ f.comment|escapejs }}',
+                  '{{ f.created_at|date:"M d, Y" }}'
+                ); return false;" style="color:#0078d4;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;">View full</a>
+              {% endif %}
+            </td>
             <td style="color:#94a3b8;font-size:12px;white-space:nowrap;">{{ f.created_at|date:"M d, Y" }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    {# ── Footer: entry count + pagination ── #}
+    <div class="fb-footer">
+      <span class="fb-entry-count">
+        Showing {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} of {{ paginator.count }} entries
+      </span>
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="fb-pagination">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+        </a>
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        {% for p in page_obj.paginator.page_range %}
+          {% if p == page_obj.number or p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" or p == 1 or p == page_obj.paginator.num_pages %}
+            {% if p == 1 and page_obj.number > 4 %}
+              <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn">1</a>
+              {% if page_obj.number > 5 %}<span style="color:#94a3b8;font-size:12px;padding:0 2px;">&hellip;</span>{% endif %}
+            {% endif %}
+            <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ p }}" class="fb-page-btn {% if p == page_obj.number %}active{% endif %}">{{ p }}</a>
+            {% if p == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
+              <span style="color:#94a3b8;font-size:12px;padding:0 2px;">&hellip;</span>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.next_page_number }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
     {% else %}
-    <div class="empty-state">
-      <div class="empty-icon-wrap">
+    <div class="fb-empty">
+      <div class="fb-empty-icon">
         <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
-      <div class="empty-title">No feedback yet</div>
-      <div class="empty-sub">Patient reviews will appear here once submitted.</div>
+      <div class="fb-empty-title">No feedback yet</div>
+      <div class="fb-empty-sub">Patient reviews will appear here once submitted.</div>
     </div>
     {% endif %}
   </div>
-
 </div>
+
+{# ── Review Detail Modal ── #}
+<div class="review-modal-overlay" id="reviewModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="review-modal">
+    <h4 id="reviewModalName"></h4>
+    <div class="meta" id="reviewModalMeta"></div>
+    <div class="content" id="reviewModalContent"></div>
+    <button class="close-btn" onclick="document.getElementById('reviewModal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+  // ── Search debounce ──
+  var debounceTimer;
+  window.debouncedSubmit = function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() {
+      document.getElementById('feedbackForm').submit();
+    }, 400);
+  };
+
+  // ── Export menu ──
+  window.toggleExportMenu = function() {
+    var menu = document.getElementById('exportMenu');
+    menu.classList.toggle('show');
+  };
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.fb-btn-export-dropdown')) {
+      document.getElementById('exportMenu').classList.remove('show');
+    }
+  });
+
+  // ── CSV Export ──
+  window.exportCSV = function() {
+    var rows = [['Patient Name','Patient ID','Consultation #','Rating','Review','Date']];
+    {% for f in page_obj.object_list %}
+    rows.push([
+      '{{ f.consultation.patient.get_full_name|addslashes }}',
+      '{{ f.consultation.patient.patient_id }}',
+      '#{{ f.consultation.pk }}',
+      '{{ f.rating }}',
+      '{{ f.comment|default:""|addslashes }}',
+      '{{ f.created_at|date:"Y-m-d" }}'
+    ]);
+    {% endfor %}
+    var csv = rows.map(function(r) { return r.join(','); }).join('\n');
+    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'feedback_export_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    document.getElementById('exportMenu').classList.remove('show');
+    showToast('CSV exported successfully');
+  };
+
+  // ── Review Modal ──
+  window.openReviewModal = function(name, pid, rating, comment, date) {
+    document.getElementById('reviewModalName').textContent = name;
+    document.getElementById('reviewModalMeta').textContent = pid + ' \u00b7 ' + rating + '/5 stars \u00b7 ' + date;
+    document.getElementById('reviewModalContent').textContent = comment;
+    document.getElementById('reviewModal').classList.add('open');
+  };
+
+  // ── Show skeleton on load (brief flash) ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var skeleton = document.getElementById('skeletonLoader');
+    if (skeleton) {
+      skeleton.style.display = 'block';
+      setTimeout(function() { skeleton.style.display = 'none'; }, 400);
+    }
+  });
+</script>
 {% endblock %}

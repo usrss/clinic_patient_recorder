@@ -1,16 +1,19 @@
+import datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
 from django.db.models import Q
 
-from accounts.decorators import clinical_staff_required
+from accounts.decorators import clinical_staff_required, admin_required
 from accounts.models import User
 from consultations.models import Consultation
-from .models import Patient, PatientProfile
+from .models import Patient, PatientProfile, AcademicYearSettings
 from .forms import (
     PatientProfileSetupForm,
     PatientSearchForm, PatientContactForm,
+    AcademicYearSettingsForm,
 )
 
 
@@ -26,9 +29,16 @@ def _base_template(user):
 def patient_list(request):
     form = PatientSearchForm(request.GET or None)
 
+    # ── Determine show_archived from query params ──────────────────────────
+    show_archived = request.GET.get('archived') == '1'
+
     patients = Patient.objects.select_related('college', 'profile').filter(
         is_active=True,
     )
+
+    # By default, hide archived patients unless explicitly requested
+    if not show_archived:
+        patients = patients.filter(is_archived=False)
 
     query = ''
     if form.is_valid():
@@ -45,14 +55,25 @@ def patient_list(request):
             )
 
     patients = patients.order_by('last_name', 'first_name')
-    total_registered = Patient.objects.filter(is_active=True).count()
+
+    # ── Pagination: 25 patients per page ─────────────────────────────────
+    paginator = Paginator(patients, 25)
+    page = request.GET.get('page', 1)
+    try:
+        patients_page = paginator.page(page)
+    except PageNotAnInteger:
+        patients_page = paginator.page(1)
+    except EmptyPage:
+        patients_page = paginator.page(paginator.num_pages)
 
     return render(request, 'patients/patient_list.html', {
-        'patients': patients,
+        'patients': patients_page,
         'form': form,
         'query': query,
-        'total_registered': total_registered,
-        'showing_active': patients.count(),
+        'show_archived': show_archived,
+        'is_paginated': patients_page.has_other_pages(),
+        'page_obj': patients_page,
+        'paginator': paginator,
         'base_template': _base_template(request.user),
     })
 
@@ -64,7 +85,7 @@ def patient_detail(request, pk):
     profile = getattr(patient, 'profile', None)
     consultations = Consultation.objects.filter(
         patient=patient
-    ).select_related('triage', 'prescription').order_by('-created_at')
+    ).prefetch_related('triages', 'prescriptions').order_by('-created_at')
 
     return render(request, 'patients/patient_detail.html', {
         'patient': patient,
@@ -95,8 +116,10 @@ def patient_profile_setup(request, pk):
 
     # Use the full profile edit form from accounts
     from accounts.forms import PatientProfileEditForm
+    from accounts.utils import calculate_graduation_year
     form = PatientProfileEditForm(
         request.POST or None,
+        request.FILES or None,
         instance=profile,
         patient=patient,
     )
@@ -107,7 +130,20 @@ def patient_profile_setup(request, pk):
         patient.email = form.cleaned_data.get('email', '')
         patient.emergency_contact_name = form.cleaned_data.get('emergency_contact_name', '')
         patient.emergency_contact_phone = form.cleaned_data.get('emergency_contact_phone', '')
-        patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone'])
+        # Recalculate expected_graduation_year if year_level changed
+        new_year_level = form.cleaned_data.get('year_level', '')
+        if new_year_level:
+            patient.expected_graduation_year = calculate_graduation_year(new_year_level)
+        else:
+            patient.expected_graduation_year = None
+        # Handle profile picture upload
+        if 'profile_picture' in request.FILES:
+            patient.profile_picture = request.FILES['profile_picture']
+        elif form.cleaned_data.get('remove_picture'):
+            patient.profile_picture = None
+        patient.save(update_fields=['phone', 'email', 'emergency_contact_name',
+                                     'emergency_contact_phone', 'profile_picture',
+                                     'expected_graduation_year'])
         messages.success(request, f'Profile updated for {patient.get_full_name()}.')
         return redirect('patients:patient_detail', pk=pk)
 
@@ -139,3 +175,93 @@ def patient_contact_edit(request, pk):
         'patient': patient,
         'form': form,
     })
+
+
+# ─── ACADEMIC YEAR & ARCHIVE ADMIN VIEWS ────────────────────────────────────
+
+
+@login_required
+@admin_required
+def archive_settings(request):
+    """
+    Admin configures the academic year end date and archive-after-months threshold.
+    """
+    settings, _ = AcademicYearSettings.objects.get_or_create(
+        defaults={
+            'academic_year_end': datetime.date(datetime.date.today().year, 5, 31),
+            'archive_after_months': 5,
+        }
+    )
+
+    if request.method == 'POST':
+        form = AcademicYearSettingsForm(request.POST)
+        if form.is_valid():
+            settings.academic_year_end = form.cleaned_data['academic_year_end']
+            settings.archive_after_months = form.cleaned_data['archive_after_months']
+            settings.updated_by = request.user
+            settings.save()
+            messages.success(request, 'Academic year settings updated.')
+            return redirect('patients:archive_settings')
+    else:
+        form = AcademicYearSettingsForm(initial={
+            'academic_year_end': settings.academic_year_end,
+            'archive_after_months': settings.archive_after_months,
+        })
+
+    return render(request, 'patients/archive_settings.html', {
+        'form': form,
+        'settings': settings,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@admin_required
+def archive_browser(request):
+    """
+    Admin views/search archived patients by ID or name.
+    """
+    query = request.GET.get('q', '').strip()
+
+    archived_base = Patient.objects.filter(is_archived=True).select_related('college')
+    total_archived = archived_base.count()  # Compute total BEFORE search filter
+
+    archived_patients = archived_base
+    if query:
+        archived_patients = archived_patients.filter(
+            Q(patient_id__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(middle_name__icontains=query)
+        )
+
+    archived_patients = archived_patients.order_by('-archived_at', 'last_name', 'first_name')
+
+    return render(request, 'patients/archive_browser.html', {
+        'archived_patients': archived_patients,
+        'query': query,
+        'total_archived': total_archived,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@admin_required
+def unarchive_patient(request, pk):
+    """
+    Admin restores a patient from archive.
+    """
+    if request.method != 'POST':
+        return redirect('patients:archive_browser')
+
+    patient = get_object_or_404(Patient, pk=pk, is_archived=True)
+    patient.is_archived = False
+    patient.archived_at = None
+    patient.archived_reason = ''
+    patient.save(update_fields=['is_archived', 'archived_at', 'archived_reason'])
+
+    messages.success(
+        request,
+        f'{patient.get_full_name()} ({patient.patient_id}) has been restored from archive.'
+    )
+    return redirect('patients:archive_browser')

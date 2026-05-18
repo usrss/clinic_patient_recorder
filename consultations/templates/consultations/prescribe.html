@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Prescribe — Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block title %}Prescribe — Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 {% block page_title %}Prescribe{% endblock %}
 {% block page_subtitle %}Consultation #{{ consultation.pk }}{% endblock %}
 
@@ -225,7 +225,7 @@
   {% endwith %}
 
   <!-- Triage Vitals -->
-  {% with t=consultation.triage %}
+  {% with t=consultation.triages.first %}
   {% if t %}
   <div class="card-panel">
     <div class="sec-label">Triage Vitals</div>

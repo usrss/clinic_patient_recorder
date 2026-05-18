@@ -1,6 +1,6 @@
-# NORSU Clinic Record System
+# NORSU — Patient Record System
 
-A web-based clinic management system for the NORSU University Clinic.  
+A web-based clinic management system for the NORSU Medical Dental Clinic.  
 It streamlines patient registration, consultation queues, medical records, inventory, and certificate issuance.
 
 ---
@@ -62,7 +62,7 @@ It streamlines patient registration, consultation queues, medical records, inven
 ```bash
 # Clone the repository
 git clone https://github.com/usrss/clinic_patient_recorder.git
-cd norsu-clinic-recorder
+cd clinic-patient-recorder
 
 # Create and activate a virtual environment
 python -m venv venv

@@ -10,7 +10,6 @@ class Notification(models.Model):
 
     class RecipientRole(models.TextChoices):
         FRONTDESK = 'frontdesk', 'Front Desk'
-        NURSE = 'nurse', 'Nurse'
         DOCTOR = 'doctor', 'Doctor'
         ADMIN = 'admin', 'Admin'
         PATIENT = 'patient', 'Patient'

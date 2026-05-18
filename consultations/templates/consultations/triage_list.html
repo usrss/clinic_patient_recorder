@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Triage Queue — Clinic Recorder{% endblock %}
+{% block title %}Triage Queue — Patient Record System{% endblock %}
 {% block page_title %}Triage Queue{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} patient{{ consultations.count|pluralize }} awaiting triage{% endblock %}
 
@@ -66,11 +66,11 @@
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 13px; border-radius: 8px;
     font-size: 12px; font-weight: 600;
-    color: #fff; background: #059669;
+    color: #fff; background: #0078d4;
     text-decoration: none; border: none;
     transition: background 0.15s; white-space: nowrap;
   }
-  .triage-btn:hover { background: #047857; color: #fff; }
+  .triage-btn:hover { background: #006cbd; color: #fff; }
 
   .vitals-cell { font-size: 12px; color: #6b7280; line-height: 1.7; }
   .vitals-cell strong { color: #1a1a2e; }
@@ -135,11 +135,11 @@
             {% else %}—{% endif %}
           </td>
           <td class="vitals-cell">
-            {% if c.triage %}
-              BP: <strong>{{ c.triage.blood_pressure }}</strong><br>
-              Temp: <strong>{{ c.triage.temperature }}°C</strong><br>
-              Pulse: <strong>{{ c.triage.pulse_rate }} bpm</strong>
-            {% else %}—{% endif %}
+            {% with tc=c.triages.first %}{% if tc %}
+              BP: <strong>{{ tc.blood_pressure }}</strong><br>
+              Temp: <strong>{{ tc.temperature }}°C</strong><br>
+              Pulse: <strong>{{ tc.pulse_rate }} bpm</strong>
+            {% else %}—{% endif %}{% endwith %}
           </td>
           <td style="font-size:12px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             {{ c.severity_description|truncatechars:35 }}
@@ -162,7 +162,7 @@
 <div class="table-panel">
   <div class="empty-state">
     <div class="empty-icon">
-      <svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg width="24" height="24" fill="none" stroke="#0078d4" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <div class="empty-title">Triage queue is clear</div>
     <div class="empty-sub">No patients are waiting to be triaged.</div>

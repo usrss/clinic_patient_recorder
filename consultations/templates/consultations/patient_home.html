@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
-{% block title %}My Consultations — Clinic Recorder{% endblock %}
+{% load consultation_extras %}
+{% block title %}My Consultations — Patient Record System{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -20,6 +21,16 @@
     margin-bottom: 28px;
     flex-wrap: wrap;
     gap: 14px;
+  }
+
+    .follow-up-recommended {
+    font-size: 12px;
+    color: #f59e0b;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
   }
   .page-header h1 {
     font-size: 22px;
@@ -78,6 +89,11 @@
     transform: translateY(-1px);
   }
 
+  /* ── Active follow-up highlight ── */
+  .consult-card.follow-up-active {
+    border-left: 4px solid #f59e0b;
+  }
+
   .consult-top {
     display: flex;
     align-items: center;
@@ -100,12 +116,26 @@
     font-size: 11px;
     font-weight: 600;
   }
-  .s-pending   { background:#fef3c7; color:#92400e; }
-  .s-queued    { background:#dbeafe; color:#1e40af; }
-  .s-scheduled { background:#e0f2fe; color:#0369a1; }
-  .s-triaged   { background:#ffedd5; color:#9a3412; }
-  .s-completed { background:#d1fae5; color:#065f46; }
-  .s-cancelled { background:#fee2e2; color:#991b1b; }
+  .s-pending      { background:#fef3c7; color:#92400e; }
+  .s-queued       { background:#dbeafe; color:#1e40af; }
+  .s-scheduled    { background:#e0f2fe; color:#0369a1; }
+  .s-triaged      { background:#ffedd5; color:#9a3412; }
+  .s-completed    { background:#d1fae5; color:#065f46; }
+  .s-cancelled    { background:#fee2e2; color:#991b1b; }
+  .s-active-follow-up { background:#fef3c7; color:#92400e; }
+  .s-closed       { background:#e5e7eb; color:#4b5563; }
+
+  .follow-up-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fef3c7;
+    color: #92400e;
+  }
 
   .consult-symptoms {
     font-size: 13px;
@@ -132,6 +162,7 @@
     margin-left: auto;
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .btn-sm-ghost {
     display: inline-flex;
@@ -146,16 +177,23 @@
     background: #fff;
     color: #374151;
     transition: all 0.15s;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
   }
   .btn-sm-ghost:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
   .btn-sm-danger {
     background: none;
     border: 1px solid #fecaca;
     color: #dc2626;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
   }
   .btn-sm-danger:hover { background: #fef2f2; }
+
+  .btn-sm-continue {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+  }
+  .btn-sm-continue:hover { background: #fef3c7; border-color: #f59e0b; }
 
   .empty-card {
     background: #fff;
@@ -208,7 +246,7 @@
     </div>
     <a href="{% url 'consultations:patient_submit' %}" class="btn-primary-new">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Request
+      New / Follow-up Request
     </a>
   </div>
 
@@ -216,7 +254,7 @@
   <div class="sec-label">Your Consultations</div>
   <div class="consult-list">
     {% for c in consultations %}
-    <div class="consult-card">
+    <div class="consult-card {% if c.status == 'active_follow_up' %}follow-up-active{% endif %}">
       <div class="consult-top">
         <span class="consult-id">#{{ c.pk }}</span>
         {% if c.status == 'pending' %}
@@ -231,10 +269,27 @@
           <span class="status-badge s-completed">✅ Completed</span>
         {% elif c.status == 'cancelled' %}
           <span class="status-badge s-cancelled">✕ Cancelled</span>
+        {% elif c.status == 'active_follow_up' %}
+          <span class="status-badge s-active-follow-up">🔄 Active Follow-up</span>
+        {% elif c.status == 'closed' %}
+          <span class="status-badge s-closed">🔒 Closed</span>
+        {% endif %}
+
+        {% if c.follow_up_count > 0 %}
+        <span class="follow-up-badge">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          {{ c.follow_up_count }} follow-up{{ c.follow_up_count|pluralize }}
+        </span>
         {% endif %}
       </div>
 
       <div class="consult-symptoms">{{ c.symptoms|truncatechars:120 }}</div>
+      {% if c.recommended_follow_up_date and c.status == 'active_follow_up' %}
+      <div class="follow-up-recommended">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Recommended follow-up: {{ c.recommended_follow_up_date|date:"F d, Y" }}
+      </div>
+      {% endif %}
 
       <div class="consult-meta">
         <span class="consult-date">
@@ -243,9 +298,32 @@
         </span>
 
         <span class="consult-actions">
+            {% if c.status == 'active_follow_up' %}
+              {% if c.pk in pending_follow_ups %}
+              <span class="btn-sm-ghost btn-sm-continue" style="cursor:default;opacity:0.7;">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Request Submitted
+                      <form method="post" action="{% url 'consultations:cancel_follow_up_request' pending_follow_ups|dict_key:c.pk %}" style="display:inline;" data-confirm="Cancel your follow-up request for Consultation #{{ c.pk }}?">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-sm-ghost btn-sm-danger">
+                          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          Cancel Request
+                        </button>
+                      </form>
+              </span>
+              {% else %}
+              <form method="post" action="{% url 'consultations:request_follow_up' c.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-sm-ghost btn-sm-continue">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                  Request Follow-Up
+                </button>
+              </form>
+              {% endif %}
+            {% endif %}
           <a href="{% url 'consultations:patient_detail' c.pk %}" class="btn-sm-ghost">View Details</a>
           {% if c.status == 'pending' %}
-          <form method="post" action="{% url 'consultations:patient_cancel' c.pk %}" onsubmit="return confirm('Cancel this consultation request?');">
+          <form method="post" action="{% url 'consultations:patient_cancel' c.pk %}" data-confirm="Cancel this consultation request?" style="display:inline;">
             {% csrf_token %}
             <button type="submit" class="btn-sm-ghost btn-sm-danger">Cancel</button>
           </form>
@@ -255,6 +333,7 @@
     </div>
     {% endfor %}
   </div>
+
 
   {% else %}
   <div class="empty-card">

@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% block title %}My Dashboard — Clinic Recorder{% endblock %}
+{% block title %}My Dashboard — Patient Record System{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -7,17 +7,22 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-  /* ── Page shell ── */
+<style>    /* ── Page shell ── */
   .pt-page {
     min-height: 100vh;
-    background: #f0f4ff;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
     padding: 32px 24px 56px;
   }
   .pt-inner {
     width: 100%;
     max-width: 960px;
     margin: 0 auto;
+    animation: ptFadeIn 0.4s ease;
+  }
+
+  @keyframes ptFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   /* ── Page header ── */
@@ -50,9 +55,9 @@
   /* ── Panel ── */
   .panel {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     overflow: hidden;
     margin-bottom: 24px;
   }
@@ -106,22 +111,34 @@
   }
   .action-card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 20px;
     border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
     text-decoration: none;
     color: inherit;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
   }
   .action-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0,0,0,.09);
-    border-color: #c8d8f0;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,.10);
+    border-color: #bfdbfe;
     color: inherit;
+  }
+  .action-card:active {
+    transform: translateY(-1px);
+  }
+  .action-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 100%);
+    pointer-events: none;
   }
   .action-card.primary {
     background: #0078d4;
@@ -129,8 +146,8 @@
     color: #fff;
   }
   .action-card.primary:hover {
-    background: #006bbf;
-    border-color: #006bbf;
+    background: #006cbd;
+    border-color: #006cbd;
     box-shadow: 0 4px 20px rgba(0,120,212,.25);
     color: #fff;
   }
@@ -247,11 +264,37 @@
 <div class="pt-page">
 <div class="pt-inner">
 
-  {# ── Page Header ── #}
-  <div class="pt-page-header">
-    <h1>Patient Portal</h1>
-    <p>Welcome back, {{ patient.get_full_name }}</p>
+  {# ── Page Header with Avatar ── #}
+  <div class="pt-page-header" style="display:flex;align-items:center;gap:16px;">
+    <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;">
+      {% if patient.profile_picture %}
+        <img src="{{ patient.profile_picture.url }}" alt="{{ patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
+      {% else %}
+        <span style="font-size:22px;font-weight:700;color:#1e40af;">{{ patient.get_full_name|first|upper }}</span>
+      {% endif %}
+    </div>
+    <div>
+      <h1>Patient Portal</h1>
+      <p>Welcome back, {{ patient.get_full_name }}</p>
+    </div>
   </div>
+
+  {# ── Incomplete Profile Banner ── #}
+  {% if not patient.is_profile_complete %}
+  <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+    <div style="width:36px;height:36px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="18" height="18" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:700;color:#92400e;">Profile Incomplete</div>
+      <div style="font-size:12px;color:#b45309;margin-top:2px;">Please complete your profile to access all features.</div>
+    </div>
+    <a href="{% url 'accounts:complete_profile' %}" style="display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;color:#fff;background:#d97706;text-decoration:none;white-space:nowrap;transition:background 0.15s;" onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
+      Complete Profile
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+    </a>
+  </div>
+  {% endif %}
 
   {# ── Patient Info Card ── #}
   <div class="sec-heading">Your Information</div>
@@ -297,8 +340,8 @@
     </a>
 
     <a href="{% url 'consultations:patient_home' %}" class="action-card">
-      <div class="action-icon" style="background:#f0fdf4;">
-        <svg width="20" height="20" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <div class="action-icon" style="background:#eff6ff;">
+        <svg width="20" height="20" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       </div>
       <div>
         <div class="action-card-title">My Consultations</div>

@@ -1,7 +1,7 @@
 {% extends base_template %}
-{% block title %}Process Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block title %}Process Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 {% block page_title %}Consultation #{{ consultation.pk }}{% endblock %}
-{% block page_subtitle %}Process and route to nurse{% endblock %}
+{% block page_subtitle %}Process consultation request{% endblock %}
 
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -333,7 +333,7 @@
     <div class="panel-body">
 
       <div class="info-banner">
-        <svg width="15" height="15" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Selecting <strong style="margin:0 3px;">Queued</strong> will automatically assign the next available queue number for today.
       </div>
 
@@ -358,7 +358,7 @@
         <div class="form-actions">
           <button type="submit" class="submit-btn">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            Save & Route to Nurse
+            Save & Route to Queue
           </button>
           <a href="{% url 'consultations:queue' %}" class="cancel-link">Cancel</a>
         </div>
@@ -378,7 +378,7 @@
         Use this if the patient did not show up, submitted in error, or requested cancellation in person.
       </p>
       <form method="post" action="{% url 'consultations:frontdesk_cancel' consultation.pk %}"
-            onsubmit="return confirm('Cancel consultation #{{ consultation.pk }}?');">
+            data-confirm="Cancel consultation #{{ consultation.pk }}?">
         {% csrf_token %}
         <button type="submit" class="cancel-btn">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>

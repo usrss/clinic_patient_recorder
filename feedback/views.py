@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
+from django.db.models import Q
 from consultations.models import Consultation
 from .models import ConsultationFeedback
 from accounts.decorators import admin_required
@@ -48,7 +50,29 @@ def feedback_list(request):
         'consultation__patient'
     ).order_by('-created_at')
 
+    # ── Search ──
+    search = request.GET.get('search', '').strip()
+    if search:
+        feedbacks = feedbacks.filter(
+            Q(consultation__patient__first_name__icontains=search) |
+            Q(consultation__patient__last_name__icontains=search) |
+            Q(consultation__patient__patient_id__icontains=search) |
+            Q(comment__icontains=search)
+        )
+
+    # ── Rating filter ──
+    rating = request.GET.get('rating', '')
+    if rating in ('1','2','3','4','5'):
+        feedbacks = feedbacks.filter(rating=int(rating))
+
+    # ── Pagination ──
+    paginator = Paginator(feedbacks, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'feedback/feedback_list.html', {
-        'feedbacks': feedbacks,
+        'page_obj': page_obj,
+        'search': search,
+        'rating_filter': rating,
         'base_template': _base_template(request.user),
     })

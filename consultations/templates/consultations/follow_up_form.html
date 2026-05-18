@@ -1,0 +1,269 @@
+{% extends base_template %}
+{% block title %}Follow-up Visit — Consultation #{{ consultation.pk }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 28px 24px 48px;
+  }
+  .form-wrap { width: 100%; max-width: 760px; margin: 0 auto; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .back-link {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .back-link:hover { color: #0078d4; }
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: -0.3px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .info-banner {
+    background: #eff6ff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #1e40af;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .info-banner strong { font-weight: 700; }
+
+  .form-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    padding: 24px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .form-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 5px;
+  }
+  .form-group textarea,
+  .form-group input[type="date"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #374151;
+    background: #fff;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .form-group textarea:focus,
+  .form-group input:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.1);
+  }
+  .form-error {
+    font-size: 12px;
+    color: #dc2626;
+    margin-top: 4px;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #0078d4;
+  }
+  .checkbox-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .date-row input[type="date"] {
+    width: auto;
+    min-width: 180px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 32px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-page">
+<div class="form-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <a href="{% url 'consultations:consultation_timeline' consultation.pk %}" class="back-link">← Back to Timeline</a>
+    <div>
+      <div class="page-title">Follow-up Visit #{{ visit_number }}</div>
+      <div class="page-sub">Consultation #{{ consultation.pk }} — {{ consultation.patient.get_full_name }}</div>
+    </div>
+  </div>
+
+  <!-- Info Banner -->
+  <div class="info-banner">
+    <span style="font-size:18px;">ℹ️</span>
+    <div>
+      <strong>Original case:</strong> {{ consultation.symptoms|truncatechars:80 }}<br>
+      <span style="font-size:11px;">Created {{ consultation.created_at|date:"F d, Y" }} · {{ consultation.follow_up_count }} prior follow-up{{ consultation.follow_up_count|pluralize }}</span>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-card">
+    <div class="form-section-label">Follow-up Progress Notes</div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>{{ form.symptoms.label }}</label>
+        {{ form.symptoms }}
+        {% if form.symptoms.errors %}<div class="form-error">{{ form.symptoms.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.assessment.label }}</label>
+        {{ form.assessment }}
+        {% if form.assessment.errors %}<div class="form-error">{{ form.assessment.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.treatment_notes.label }}</label>
+        {{ form.treatment_notes }}
+        {% if form.treatment_notes.errors %}<div class="form-error">{{ form.treatment_notes.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.recommendations.label }}</label>
+        {{ form.recommendations }}
+        {% if form.recommendations.errors %}<div class="form-error">{{ form.recommendations.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.notes.label }}</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
+      </div>
+
+      <hr style="border:0;border-top:1px solid #e5e7eb;margin:20px 0;">
+
+      <div class="checkbox-group">
+        {{ form.requires_follow_up }}
+        <label for="{{ form.requires_follow_up.id_for_label }}">{{ form.requires_follow_up.label }}</label>
+      </div>
+
+      <div class="date-row" id="follow-up-date-row" style="display:none;">
+        <label style="font-size:12px;font-weight:600;color:#374151;">{{ form.recommended_follow_up_date.label }}</label>
+        {{ form.recommended_follow_up_date }}
+        {% if form.recommended_follow_up_date.errors %}<div class="form-error">{{ form.recommended_follow_up_date.errors.0 }}</div>{% endif %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-error" style="margin-bottom:12px;">
+          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">Save Follow-up Visit</button>
+        <a href="{% url 'consultations:consultation_timeline' consultation.pk %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+
+<script>
+  // Show/hide recommended follow-up date based on checkbox
+  const requiresCheckbox = document.querySelector('input[name="requires_follow_up"]');
+  const dateRow = document.getElementById('follow-up-date-row');
+
+  function toggleDateRow() {
+    dateRow.style.display = requiresCheckbox.checked ? 'flex' : 'none';
+  }
+
+  if (requiresCheckbox) {
+    requiresCheckbox.addEventListener('change', toggleDateRow);
+    toggleDateRow(); // initial state
+  }
+</script>
+{% endblock %}

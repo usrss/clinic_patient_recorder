@@ -43,44 +43,42 @@
       }
     }
 
-    /* ── HEADER ─────────────────────────────────────── */
+    /* ══ HEADER ═════════════════════════════════════════ */
     .header {
+      margin-bottom: 8px;
+    }
+    .header-img {
+      width: 100%;
+      display: block;
+    }
+    /* Sub-unit + form title */
+    .header-subunit {
       text-align: center;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #000;
+      margin-top: 4px;
+      line-height: 1.35;
     }
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 2px;
-    }
-    .header-logo {
-      width: 58px;
-      height: 58px;
-    }
-    .header-text .univ-name {
-      font-size: 13.5pt;
+    .header-subunit .campus-label {
+      color: red;
+      font-size: 10.5pt;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
-    .header-text .clinic-name {
+    .header-subunit .clinic-label {
       font-size: 11pt;
-      font-weight: 600;
+      font-weight: 700;
     }
-    .header-text .address {
-      font-size: 8pt;
-      color: #444;
+    .header-divider {
+      border: none;
+      border-top: 1.5px solid #000;
+      margin: 5px 0 4px;
     }
     .form-title {
       font-size: 12pt;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 2.5px;
-      margin-top: 8px;
+      text-align: center;
+      margin-top: 6px;
+      margin-bottom: 4px;
     }
 
     /* ── SECTION ───────────────────────────────────── */
@@ -192,8 +190,8 @@
     .consult-lower td {
       border: 1px solid #000;
       vertical-align: top;
-      padding: 8px 10px;
-      height: 220px;
+      padding: 6px 8px;
+      height: 110px;
     }
     .consult-lower .col-label {
       font-size: 8.5pt;
@@ -208,9 +206,15 @@
     .consult-lower .col-intervention { width: 44%; }
     .consult-lower .col-performed    { width: 26%; position: relative; }
 
+    /* ── FOLLOW-UP SECTION ─────────────────────────── */
+    .follow-up-section {
+      margin-top: 6px;
+      page-break-inside: avoid;
+    }
+
     /* ── SIGNATURE ─────────────────────────────────── */
     .sig-block {
-      margin-top: 28px;
+      margin-top: 20px;
       border-top: 1px solid #000;
       padding-top: 3px;
     }
@@ -261,16 +265,23 @@
 
     <!-- ══════════════ HEADER ══════════════ -->
     <div class="header">
-      <div class="header-top">
-        <img src="{% static 'consultations/images/norsu-logo.png' %}" alt="NORSU Logo" class="header-logo">
-        <div class="header-text">
-          <div class="univ-name">Negros Oriental State University</div>
-          <div class="clinic-name">Medical Clinic</div>
-          <div class="address">Bayawan City, Negros Oriental, Philippines</div>
-        </div>
+
+      <!-- Letterhead image — use your actual static path/filename -->
+      <img src="{% static 'consultations/images/header_image1.png' %}"
+           alt="NORSU Letterhead"
+           class="header-img">
+
+      <!-- Sub-unit lines -->
+      <div class="header-subunit">
+        <div class="campus-label">NORSU-BSC</div>
+        <div class="clinic-label">MEDICAL DENTAL CLINIC</div>
       </div>
+
+      <!-- Divider + form title -->
+      <hr class="header-divider">
       <div class="form-title">Medical Consultation Form</div>
-    </div>
+
+    </div><!-- end header -->
 
     <!-- ══════════════ PATIENT INFORMATION ══════════════ -->
     <div class="section">
@@ -283,7 +294,7 @@
         </div>
         <div class="info-cell">
           <span class="lbl">Age:</span>
-          <span class="val">{{ consultation.patient.age|default:"—" }}</span>
+          <span class="val">{{ consultation.patient.age|default:"Not provided" }}</span>
         </div>
         <div class="info-cell">
           <span class="lbl">Sex:</span>
@@ -297,12 +308,12 @@
           <span class="val md">
             {% if consultation.patient.position %}{{ consultation.patient.position }}
             {% elif consultation.patient.college %}Student
-            {% else %}—{% endif %}
+            {% else %}Not provided{% endif %}
           </span>
         </div>
         <div class="info-cell grow">
           <span class="lbl">Address:</span>
-          <span class="val full">{{ consultation.patient.profile.address|default:"—" }}</span>
+          <span class="val full">{{ consultation.patient.profile.address|default:"Not provided" }}</span>
         </div>
       </div>
 
@@ -310,7 +321,7 @@
         <div class="info-cell">
           <span class="lbl">Date of Birth:</span>
           <span class="val lg">
-            {% if consultation.patient.profile.birthday %}{{ consultation.patient.profile.birthday|date:"F d, Y" }}{% else %}—{% endif %}
+            {% if consultation.patient.profile.birthday %}{{ consultation.patient.profile.birthday|date:"F d, Y" }}{% else %}Not provided{% endif %}
           </span>
         </div>
         <div class="info-cell">
@@ -318,11 +329,12 @@
           <span class="val lg">
             {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% endif %}
             {% if consultation.patient.profile.year_level %} — {{ consultation.patient.profile.year_level }}{% endif %}
+            {% if not consultation.patient.college and not consultation.patient.profile.year_level %}Not provided{% endif %}
           </span>
         </div>
         <div class="info-cell grow">
           <span class="lbl">Religion:</span>
-          <span class="val full">{{ consultation.patient.profile.religion|default:"—" }}</span>
+          <span class="val full">{{ consultation.patient.profile.religion|default:"Not provided" }}</span>
         </div>
       </div>
 
@@ -330,13 +342,13 @@
         <div class="info-cell">
           <span class="lbl">Weight:</span>
           <span class="val">
-            {% if consultation.patient.profile.weight_kg %}{{ consultation.patient.profile.weight_kg }} kg{% else %}—{% endif %}
+            {% if consultation.patient.profile.weight_kg %}{{ consultation.patient.profile.weight_kg }} kg{% else %}Not provided{% endif %}
           </span>
         </div>
         <div class="info-cell">
           <span class="lbl">Height:</span>
           <span class="val">
-            {% if consultation.patient.profile.height_cm %}{{ consultation.patient.profile.height_cm }} cm{% else %}—{% endif %}
+            {% if consultation.patient.profile.height_cm %}{{ consultation.patient.profile.height_cm }} cm{% else %}Not provided{% endif %}
           </span>
         </div>
       </div>
@@ -348,11 +360,11 @@
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Name:</span>
-          <span class="val lg">{{ consultation.patient.emergency_contact_name|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.emergency_contact_name|default:"Not provided" }}</span>
         </div>
         <div class="info-cell grow">
           <span class="lbl">Address &amp; Contact No.:</span>
-          <span class="val full">{{ consultation.patient.emergency_contact_phone|default:"—" }}</span>
+          <span class="val full">{{ consultation.patient.emergency_contact_phone|default:"Not provided" }}</span>
         </div>
       </div>
     </div>
@@ -391,13 +403,13 @@
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Allergies (Medications):</span>
-          <span class="val lg">{{ consultation.patient.profile.known_allergies|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.profile.known_allergies|default:"None" }}</span>
         </div>
       </div>
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Previous Illness:</span>
-          <span class="val lg">{{ consultation.patient.profile.previous_illnesses|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.profile.previous_illnesses|default:"None" }}</span>
         </div>
       </div>
     </div>
@@ -440,19 +452,19 @@
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Meds Taken:</span>
-          <span class="val lg">{{ consultation.patient.profile.current_medications|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.profile.current_medications|default:"None" }}</span>
         </div>
       </div>
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Vices:</span>
-          <span class="val lg">{{ consultation.patient.profile.vices|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.profile.vices|default:"None" }}</span>
         </div>
       </div>
       <div class="info-row">
         <div class="info-cell">
           <span class="lbl">Previous Hospitalization:</span>
-          <span class="val lg">{{ consultation.patient.profile.previous_hospitalizations|default:"—" }}</span>
+          <span class="val lg">{{ consultation.patient.profile.previous_hospitalizations|default:"None" }}</span>
         </div>
       </div>
     </div>
@@ -473,7 +485,7 @@
       </div>
 
       <!-- Vital Signs -->
-      {% with t=consultation.triage %}
+      {% with t=consultation.triages.first %}
       {% if t %}
       <table class="vitals-table">
         <thead>
@@ -491,9 +503,9 @@
             <td>{{ t.temperature }}</td>
             <td>{{ t.blood_pressure }}</td>
             <td>{{ t.pulse_rate }}</td>
-            <td>{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</td>
-            <td>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}{% else %}—{% endif %}</td>
-            <td>{% if t.weight is not None %}{{ t.weight }}{% else %}—{% endif %}</td>
+            <td>{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}Not taken{% endif %}</td>
+            <td>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}{% else %}Not taken{% endif %}</td>
+            <td>{% if t.weight is not None %}{{ t.weight }}{% else %}Not taken{% endif %}</td>
           </tr>
         </tbody>
       </table>
@@ -506,7 +518,7 @@
           <td class="col-complaints">
             <div class="col-label">Complaints / Diagnosis</div>
             <strong>Chief Complaint:</strong>&nbsp;{{ consultation.symptoms }}<br><br>
-            {% with rx=consultation.prescription %}
+            {% with rx=consultation.prescriptions.first %}
             {% if rx %}
               <strong>Diagnosis:</strong>&nbsp;{{ rx.diagnosis }}
             {% endif %}
@@ -515,7 +527,7 @@
 
           <td class="col-intervention">
             <div class="col-label">Medical Intervention / Action Plan</div>
-            {% with rx=consultation.prescription %}
+            {% with rx=consultation.prescriptions.first %}
             {% if rx %}
               {% if rx.treatment_plan %}{{ rx.treatment_plan }}<br>{% endif %}
               {% if rx.items.all %}
@@ -533,16 +545,12 @@
           </td>
 
           <td class="col-performed" style="padding:0;">
-            <div style="display:flex; flex-direction:column; height:100%; padding:8px 10px; min-height:200px; box-sizing:border-box;">
+            <div style="display:flex; flex-direction:column; height:100%; padding:6px 8px; min-height:100px; box-sizing:border-box;">
               <div>
                 <div class="col-label">Performed By</div>
-                {% if consultation.triage and consultation.triage.nurse %}
-                  {{ consultation.triage.nurse.get_full_name|default:consultation.triage.nurse.username }}<br>
-                  <span style="font-size:8.5pt; color:#333;">(Nurse)</span>
-                {% else %}—{% endif %}
               </div>
               <div style="flex:1;"></div>
-              {% with rx=consultation.prescription %}
+              {% with rx=consultation.prescriptions.first %}
               {% if rx and rx.doctor %}
               <div class="sig-block">
                 <div class="sig-name">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}</div>
@@ -556,6 +564,100 @@
       </table>
 
     </div>
+
+    <!-- ══════════════ FOLLOW-UP CONSULTATION RECORDS ══════════════ -->
+    {% with progress_entries=consultation.progress_entries.all %}
+    {% if progress_entries %}
+    {% for entry in progress_entries %}
+    <div class="section follow-up-section">
+      <div class="section-title">Consultation Record (Follow-up No.{{ entry.visit_number }})</div>
+
+      <div class="consult-meta">
+        <div class="info-cell">
+          <span class="lbl">Date:</span>
+          <span class="val lg">{{ entry.created_at|date:"F d, Y" }}</span>
+        </div>
+        <div class="info-cell">
+          <span class="lbl">Time:</span>
+          <span class="val">{{ entry.created_at|date:"h:i A" }}</span>
+        </div>
+      </div>
+
+      <!-- Vital Signs for this follow-up -->
+      {% with t=entry.triages.first %}
+      {% if t %}
+      <table class="vitals-table">
+        <thead>
+          <tr>
+            <th>Temp (°C)</th>
+            <th>BP (mmHg)</th>
+            <th>PR (bpm)</th>
+            <th>RR (breaths/min)</th>
+            <th>SpO₂ (%)</th>
+            <th>Wt. (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ t.temperature }}</td>
+            <td>{{ t.blood_pressure }}</td>
+            <td>{{ t.pulse_rate }}</td>
+            <td>{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}Not taken{% endif %}</td>
+            <td>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}{% else %}Not taken{% endif %}</td>
+            <td>{% if t.weight is not None %}{{ t.weight }}{% else %}Not taken{% endif %}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% endif %}
+      {% endwith %}
+
+      <!-- 3-Column: Complaints | Intervention | Performed By -->
+      <table class="consult-lower">
+        <tr>
+          <td class="col-complaints">
+            <div class="col-label">Complaints / Diagnosis</div>
+            <strong>Symptoms:</strong>&nbsp;{{ entry.symptoms }}<br><br>
+            {% if entry.assessment %}
+              <strong>Assessment:</strong>&nbsp;{{ entry.assessment }}
+            {% endif %}
+          </td>
+
+          <td class="col-intervention">
+            <div class="col-label">Medical Intervention / Action Plan</div>
+            {% if entry.treatment_notes %}
+              <strong>Treatment Notes:</strong><br>
+              {{ entry.treatment_notes }}<br><br>
+            {% endif %}
+            {% if entry.recommendations %}
+              <strong>Recommendations:</strong><br>
+              {{ entry.recommendations }}<br>
+            {% endif %}
+            {% if entry.notes %}
+              <br><em>Notes: {{ entry.notes }}</em>
+            {% endif %}
+          </td>
+
+          <td class="col-performed" style="padding:0;">
+            <div style="display:flex; flex-direction:column; height:100%; padding:6px 8px; min-height:100px; box-sizing:border-box;">
+              <div>
+                <div class="col-label">Performed By</div>
+              </div>
+              <div style="flex:1;"></div>
+              {% if entry.doctor %}
+              <div class="sig-block">
+                <div class="sig-name">Dr. {{ entry.doctor.get_full_name|default:entry.doctor.username }}</div>
+                <div class="sig-sub">Signature over Printed Name</div>
+              </div>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      </table>
+
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 
   </div><!-- end page-wrapper -->
 

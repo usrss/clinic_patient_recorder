@@ -1,0 +1,114 @@
+{% extends base_template %}
+{% block title %}Archive Settings — Patient Record System{% endblock %}
+{% block page_title %}Academic Year Settings{% endblock %}
+{% block page_subtitle %}Configure when the academic year ends and when students get archived{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+    padding: 28px 32px;
+    max-width: 640px;
+    margin-top: 8px;
+  }
+  .settings-row {
+    margin-bottom: 20px;
+  }
+  .settings-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+  .settings-help {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  .preview-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #166534;
+    line-height: 1.5;
+  }
+  .preview-box strong {
+    color: #15803d;
+  }
+  .meta-info {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f4f8;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .btn-save {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 24px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none;
+    font-family: 'Inter', sans-serif;
+    background: #0078d4; color: #fff;
+    transition: background 0.15s;
+  }
+  .btn-save:hover { background: #006bbf; }
+  .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="settings-card">
+    <div class="settings-row">
+      <label class="settings-label" for="{{ form.academic_year_end.id_for_label }}">Academic Year End Date</label>
+      {{ form.academic_year_end }}
+      {% if form.academic_year_end.errors %}
+        <div style="color:#dc2626;font-size:12px;margin-top:4px;">{{ form.academic_year_end.errors }}</div>
+      {% endif %}
+      <div class="settings-help">The official end date of the current academic year (e.g., May 31, 2026).</div>
+    </div>
+
+    <div class="settings-row">
+      <label class="settings-label" for="{{ form.archive_after_months.id_for_label }}">Archive After (months)</label>
+      {{ form.archive_after_months }}
+      {% if form.archive_after_months.errors %}
+        <div style="color:#dc2626;font-size:12px;margin-top:4px;">{{ form.archive_after_months.errors }}</div>
+      {% endif %}
+      <div class="settings-help">Months of inactivity after the academic year end before students are automatically archived.</div>
+    </div>
+
+    <div class="preview-box">
+      <strong>Preview:</strong>
+      Students graduating before or during
+      <strong>{{ settings.academic_year_end|date:"F j, Y" }}</strong>
+      with no activity after
+      <strong>{{ settings.academic_year_end|date:"F j, Y" }}</strong>
+      (plus
+      <strong>{{ settings.archive_after_months }} month{{ settings.archive_after_months|pluralize }}</strong>
+      of inactivity) will be archived.
+    </div>
+
+    <div class="meta-info">
+      Last updated: <strong>{{ settings.updated_at|date:"F j, Y \a\t g:i A" }}</strong>
+      {% if settings.updated_by %}
+        by {{ settings.updated_by.get_full_name|default:settings.updated_by.username }}
+      {% endif %}
+    </div>
+
+    <div style="margin-top: 20px;">
+      <button type="submit" class="btn-save">Save Settings</button>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

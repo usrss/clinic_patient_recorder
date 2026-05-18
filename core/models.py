@@ -6,12 +6,12 @@ class SiteSettings(models.Model):
 
     site_name = models.CharField(
         max_length=100,
-        default="Clinic Recorder",
+        default="Patient Record System",
         help_text="Brand name shown in the navbar and footer.",
     )
     site_title = models.CharField(
         max_length=200,
-        default="Clinic Recorder — NORSU Medical Dental Clinic",
+        default="Patient Record System — NORSU Medical Dental Clinic",
         help_text="Browser tab title for the home page.",
     )
 

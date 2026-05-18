@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Medical History — {{ patient.get_full_name }} — Clinic Recorder{% endblock %}
+{% block title %}Medical History — {{ patient.get_full_name }} — Patient Record System{% endblock %}
 {% block page_title %}Medical History{% endblock %}
 {% block page_subtitle %}{{ patient.get_full_name }} · {{ patient.patient_id }}{% endblock %}
 
@@ -144,7 +144,7 @@
     </div>
     <div class="profile-section">
       <div class="profile-section-title">
-        <svg width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        <svg width="14" height="14" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
         Physical Information
       </div>
       <div class="profile-grid">
@@ -247,34 +247,34 @@
         <div style="font-size:13px;color:#374151;">{{ c.symptoms }}</div>
       </div>
 
-      {% if c.triage %}
+      {% with t=c.triages.first %}{% if t %}
       <div class="vital-block">
         <div style="font-size:10px;font-weight:700;color:#065f46;text-transform:uppercase;margin-bottom:6px;">Vital Signs</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;">
-          <span>BP <strong>{{ c.triage.blood_pressure }}</strong></span>
-          <span>Temp <strong>{{ c.triage.temperature }}°C</strong></span>
-          <span>Pulse <strong>{{ c.triage.pulse_rate }} bpm</strong></span>
-          <span>RR <strong>{% if c.triage.respiratory_rate is not None %}{{ c.triage.respiratory_rate }}{% else %}—{% endif %}</strong></span>
-          <span>SpO₂ <strong>{% if c.triage.oxygen_saturation is not None %}{{ c.triage.oxygen_saturation }}%{% else %}—{% endif %}</strong></span>
-          <span>Wt <strong>{% if c.triage.weight is not None %}{{ c.triage.weight }} kg{% else %}—{% endif %}</strong></span>
+          <span>BP <strong>{{ t.blood_pressure }}</strong></span>
+          <span>Temp <strong>{{ t.temperature }}°C</strong></span>
+          <span>Pulse <strong>{{ t.pulse_rate }} bpm</strong></span>
+          <span>RR <strong>{% if t.respiratory_rate is not None %}{{ t.respiratory_rate }}{% else %}—{% endif %}</strong></span>
+          <span>SpO₂ <strong>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}</strong></span>
+          <span>Wt <strong>{% if t.weight is not None %}{{ t.weight }} kg{% else %}—{% endif %}</strong></span>
         </div>
-        <div style="font-size:11px;margin-top:6px;">Urgency: {% if c.triage.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">High</span>{% elif c.triage.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">Medium</span>{% else %}<span style="color:#10b981;font-weight:600;">Low</span>{% endif %}</div>
+        <div style="font-size:11px;margin-top:6px;">Urgency: {% if t.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">High</span>{% elif t.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">Medium</span>{% else %}<span style="color:#10b981;font-weight:600;">Low</span>{% endif %}</div>
       </div>
-      {% endif %}
+      {% endif %}{% endwith %}
 
-      {% if c.prescription %}
+      {% with rx=c.prescriptions.first %}{% if rx %}
       <div class="rx-block">
-        <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Diagnosis</div><div style="font-size:14px;font-weight:600;">{{ c.prescription.diagnosis }}</div></div>
-        {% if c.prescription.treatment_plan %}<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Treatment Plan</div><div style="font-size:13px;">{{ c.prescription.treatment_plan }}</div></div>{% endif %}
-        {% if c.prescription.items.all %}
+        <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Diagnosis</div><div style="font-size:14px;font-weight:600;">{{ rx.diagnosis }}</div></div>
+        {% if rx.treatment_plan %}<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Treatment Plan</div><div style="font-size:13px;">{{ rx.treatment_plan }}</div></div>{% endif %}
+        {% if rx.items.all %}
         <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:6px;">Medicines</div>
-        {% for item in c.prescription.items.all %}
+        {% for item in rx.items.all %}
         <div class="medicine-pill"><span style="font-weight:600;">{{ item.get_display_name }}</span>{% if item.dosage %}<span style="color:#6b7280;">{{ item.dosage }}</span>{% endif %}{% if item.frequency %}<span>· {{ item.frequency }}</span>{% endif %}{% if item.duration %}<span>for {{ item.duration }}</span>{% endif %}</div>
         {% endfor %}
         {% endif %}
-        <div style="font-size:11px;color:#94a3b8;margin-top:10px;">Dr. {{ c.prescription.doctor.get_full_name|default:c.prescription.doctor.username }} · {{ c.prescription.prescribed_at|date:"M d, Y H:i" }}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:10px;">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }} · {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
       </div>
-      {% endif %}
+      {% endif %}{% endwith %}
     </div>
     {% endfor %}
   </div>

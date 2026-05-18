@@ -418,7 +418,7 @@
   .btn-submit {
     flex: 1;
     padding: 12px;
-    background: linear-gradient(135deg, #0078d4 0%, #005ea2 100%);
+    background: #0078d4;
     color: #fff;
     border: none;
     border-radius: 10px;

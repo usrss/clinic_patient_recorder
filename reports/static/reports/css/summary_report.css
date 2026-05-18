@@ -7,11 +7,11 @@
 }
 .stat-card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 18px;
   text-align: center;
   border: 1px solid #e8ecf1;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
 }
 .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
 .stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
@@ -45,15 +45,15 @@
   background: #fff;
   transition: all .15s;
 }
-.period-tab:hover { background: #f5f8ff; color: #0078d4; border-color: #c8d4e8; text-decoration: none; }
+.period-tab:hover { background: #f0f4ff; color: #0078d4; border-color: #a0b8d4; text-decoration: none; }
 .period-tab.active { background: #0078d4; color: #fff; border-color: #0078d4; text-decoration: none; }
 
 /* ── Panel ── */
 .panel {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #e8ecf1;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
   overflow: hidden;
   margin-bottom: 20px;
 }

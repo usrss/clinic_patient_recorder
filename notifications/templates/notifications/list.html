@@ -1,13 +1,95 @@
 {% extends base_template %}
-{% block title %}Notifications — Clinic Recorder{% endblock %}
+{% load static %}
+{% block title %}Notifications — Patient Record System{% endblock %}
 {% block page_title %}Notifications{% endblock %}
-{% block page_subtitle %}{% if notifications %}{{ notifications|length }} notification{{ notifications|length|pluralize }}{% endif %}{% endblock %}
+{% block page_subtitle %}
+  {% if result.total_count %}
+    {{ result.total_count }} notification{{ result.total_count|pluralize }}
+    {% if result.unread_count %}
+      · <span style="color:#ef4444;">{{ result.unread_count }} unread</span>
+    {% endif %}
+  {% endif %}
+{% endblock %}
 
 {% block extra_css %}
 <style>
   .notif-page { padding: 0; }
-  .notif-wrap { width: 100%; max-width: 640px; }
+  .notif-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
 
+  /* ── Filter tabs ── */
+  .notif-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .notif-tab {
+    flex: 1;
+    text-align: center;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .notif-tab:hover { color: #374151; }
+  .notif-tab.active {
+    background: #fff;
+    color: #0078d4;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .notif-tab .tab-count {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 11px;
+    background: #e5e7eb;
+    padding: 0 6px;
+    border-radius: 10px;
+    line-height: 1.6;
+  }
+  .notif-tab.active .tab-count {
+    background: #eff6ff;
+    color: #0078d4;
+  }
+
+  /* ── Action bar ── */
+  .notif-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .notif-actions-left { display: flex; gap: 6px; align-items: center; }
+  .notif-actions-right { display: flex; gap: 6px; align-items: center; }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid #e8ecf1;
+    background: #fff;
+    color: #374151;
+    transition: all 0.15s;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+  }
+  .btn-action:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+  .btn-action.danger:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
+
+  /* ── Card ── */
   .notif-card {
     display: flex;
     align-items: flex-start;
@@ -18,19 +100,26 @@
     background: #fff;
     border: 1px solid #e8ecf1;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    text-decoration: none;
-    color: inherit;
     transition: all 0.15s;
+    position: relative;
   }
   .notif-card:hover {
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transform: translateY(-1px);
   }
   .notif-card.unread {
     background: #eff6ff;
     border-color: #bfdbfe;
   }
   .notif-card.unread:hover { background: #dbeafe; }
+
+  .notif-card-body {
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .notif-card-body:hover .notif-title { color: #0078d4; }
 
   .notif-icon {
     width: 42px; height: 42px;
@@ -41,10 +130,74 @@
     flex-shrink: 0;
   }
   .notif-content { flex: 1; min-width: 0; }
-  .notif-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 3px; }
+  .notif-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 3px; transition: color 0.15s; }
   .notif-message { font-size: 13px; color: #6b7280; line-height: 1.5; }
   .notif-time { font-size: 11px; color: #94a3b8; margin-top: 6px; }
 
+  .notif-unread-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  /* ── Card action buttons ── */
+  .notif-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .notif-card:hover .notif-card-actions { opacity: 1; }
+  .notif-card-actions .btn-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .notif-card-actions .btn-icon:hover { background: #f3f4f6; border-color: #e8ecf1; color: #374151; }
+  .notif-card-actions .btn-icon.danger:hover { background: #fef2f2; border-color: #fecaca; color: #ef4444; }
+
+  /* ── Pagination ── */
+  .notif-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 20px;
+  }
+  .page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid #e8ecf1;
+    background: #fff;
+    color: #374151;
+    transition: all 0.15s;
+  }
+  .page-btn:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+  .page-btn.active { background: #0078d4; border-color: #0078d4; color: #fff; }
+  .page-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ── Empty state ── */
   .empty-card {
     text-align: center;
     padding: 56px 24px;
@@ -64,22 +217,6 @@
   }
   .empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
   .empty-sub { font-size: 12px; color: #94a3b8; }
-
-  .btn-mark-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 14px;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
-    border: 1px solid #e8ecf1;
-    background: #fff;
-    color: #374151;
-    transition: all 0.15s;
-  }
-  .btn-mark-all:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
 </style>
 {% endblock %}
 
@@ -87,40 +224,121 @@
 <div class="notif-page">
 <div class="notif-wrap">
 
-  {% if notifications %}
-  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
-    <a href="{% url 'notifications:mark_all_read' %}?next={% url 'notifications:list' %}" class="btn-mark-all">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      Mark All Read
+  {# ── Filter tabs ── #}
+  <div class="notif-tabs">
+    <a href="{% url 'notifications:list' %}?filter=all" class="notif-tab {% if filter_by == 'all' %}active{% endif %}">
+      All
+      <span class="tab-count">{{ result.total_count }}</span>
+    </a>
+    <a href="{% url 'notifications:list' %}?filter=unread" class="notif-tab {% if filter_by == 'unread' %}active{% endif %}">
+      Unread
+      <span class="tab-count">{{ result.unread_count }}</span>
     </a>
   </div>
 
-  {% for n in notifications %}
-  <a href="{% url 'notifications:mark_read' n.pk %}" class="notif-card {% if not n.is_read %}unread{% endif %}">
-    <div class="notif-icon" style="background:{% if not n.is_read %}#dbeafe{% else %}#f3f4f6{% endif %};color:{% if not n.is_read %}#3b82f6{% else %}#9ca3af{% endif %};">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        {% if n.recipient_role == 'nurse' %}<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-        {% elif n.recipient_role == 'doctor' %}<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-        {% else %}<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>{% endif %}
-      </svg>
+  {# ── Action bar ── #}
+  <div class="notif-actions">
+    <div class="notif-actions-left">
+      {% if result.unread_count %}
+        <form method="post" action="{% url 'notifications:mark_all_read' %}?next={{ request.get_full_path|urlencode }}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="btn-action">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Mark All Read
+          </button>
+        </form>
+      {% endif %}
     </div>
-    <div class="notif-content">
-      <div class="notif-title">{{ n.title }}</div>
-      <div class="notif-message">{{ n.message }}</div>
-      <div class="notif-time">{{ n.created_at|date:"M d, Y · h:i A" }}</div>
+    <div class="notif-actions-right">
+      {% if result.total_count > 0 and result.total_count > result.unread_count %}
+        <form method="post" action="{% url 'notifications:delete_read_notifications' %}?next={{ request.get_full_path|urlencode }}" style="margin:0;" data-confirm="Delete all read notifications? This cannot be undone.">
+          {% csrf_token %}
+          <button type="submit" class="btn-action danger">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear Read
+          </button>
+        </form>
+      {% endif %}
     </div>
-    {% if not n.is_read %}
-    <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:6px;"></div>
+  </div>
+
+  {# ── Notification list ── #}
+  {% if result.notifications %}
+    {% for n in result.notifications %}
+    <div class="notif-card {% if not n.is_read %}unread{% endif %}">
+
+      {# Main clickable body — marks as read and navigates to link #}
+      <a href="{% url 'notifications:mark_read' n.pk %}" class="notif-card-body">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <div class="notif-icon" style="background:{% if not n.is_read %}#dbeafe{% else %}#f3f4f6{% endif %};color:{% if not n.is_read %}#3b82f6{% else %}#9ca3af{% endif %};">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              {% if n.recipient_role == 'doctor' %}<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              {% else %}<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>{% endif %}
+            </svg>
+          </div>
+          <div class="notif-content">
+            <div class="notif-title">{{ n.title }}</div>
+            <div class="notif-message">{{ n.message }}</div>
+            <div class="notif-time">{{ n.created_at|date:"M d, Y · h:i A" }}</div>
+          </div>
+          {% if not n.is_read %}
+            <div class="notif-unread-dot"></div>
+          {% endif %}
+        </div>
+      </a>
+
+      {# ── Card action buttons (visible on hover) ── #}
+      <div class="notif-card-actions">
+        {% if not n.is_read %}
+        <form method="post" action="{% url 'notifications:mark_read_no_redirect' n.pk %}" style="margin:0;" title="Mark as read">
+          {% csrf_token %}
+          <button type="submit" class="btn-icon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'notifications:delete_notification' n.pk %}" style="margin:0;" title="Delete" data-confirm="Delete this notification?">
+          {% csrf_token %}
+          <button type="submit" class="btn-icon danger">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+
+    {# ── Pagination ── #}
+    {% if result.total_pages > 1 %}
+    <div class="notif-pagination">
+      <a href="{% url 'notifications:list' %}?filter={{ filter_by }}&page=1" class="page-btn {% if result.page == 1 %}disabled{% endif %}">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      </a>
+      <a href="{% url 'notifications:list' %}?filter={{ filter_by }}&page={% if result.page > 1 %}{{ result.page|add:-1 }}{% else %}1{% endif %}" class="page-btn {% if result.page == 1 %}disabled{% endif %}">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+
+      {% for i in ""|center:result.total_pages %}
+        <a href="{% url 'notifications:list' %}?filter={{ filter_by }}&page={{ forloop.counter }}" class="page-btn {% if forloop.counter == result.page %}active{% endif %}">{{ forloop.counter }}</a>
+      {% endfor %}
+
+      <a href="{% url 'notifications:list' %}?filter={{ filter_by }}&page={% if result.page < result.total_pages %}{{ result.page|add:1 }}{% else %}{{ result.total_pages }}{% endif %}" class="page-btn {% if result.page == result.total_pages %}disabled{% endif %}">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <a href="{% url 'notifications:list' %}?filter={{ filter_by }}&page={{ result.total_pages }}" class="page-btn {% if result.page == result.total_pages %}disabled{% endif %}">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+      </a>
+    </div>
     {% endif %}
-  </a>
-  {% endfor %}
 
   {% else %}
   <div class="empty-card">
     <div class="empty-icon-wrap">
       <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
     </div>
-    <div class="empty-title">No notifications</div>
+    <div class="empty-title">
+      {% if filter_by == 'unread' %}No unread notifications{% else %}No notifications{% endif %}
+    </div>
     <div class="empty-sub">You're all caught up.</div>
   </div>
   {% endif %}

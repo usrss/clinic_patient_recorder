@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Consultation #{{ consultation.pk }} — Clinic Recorder{% endblock %}
+{% block title %}Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 {% block page_title %}Consultation #{{ consultation.pk }}{% endblock %}
 {% block page_subtitle %}{{ consultation.get_status_display }}{% endblock %}
 
@@ -260,7 +260,7 @@
 </div>
 
 {# ── Vital Signs ── #}
-{% with t=consultation.triage %}
+{% with t=consultation.triages.first %}
 {% if t %}
 <div class="sec-label">Vital Signs</div>
 <div class="detail-panel">
@@ -302,13 +302,13 @@
     </div>
 
     <div style="font-size:12px;color:#94a3b8;">
-      Triaged by {{ t.nurse.get_full_name|default:t.nurse.username }} at {{ t.triaged_at|date:"M d, Y H:i" }}
+      Triaged by {{ t.triaged_by.get_full_name|default:t.triaged_by.username }} at {{ t.triaged_at|date:"M d, Y H:i" }}
     </div>
     {% if t.notes %}
     <div style="margin-top:10px;font-size:13px;color:#6b7280;white-space:pre-line;">{{ t.notes }}</div>
     {% endif %}
 
-    {% if user.role == 'nurse' or user.role == 'admin' %}
+    {% if user.role == 'doctor' or user.role == 'admin' %}
       {% if consultation.status != 'completed' %}
       <div style="margin-top:14px;">
         <a href="{% url 'consultations:triage_edit' consultation.pk %}"
@@ -327,7 +327,7 @@
 
 {# ── Prescription ── #}
 {% if user.role != 'frontdesk' %}
-{% with rx=consultation.prescription %}
+{% with rx=consultation.prescriptions.first %}
 {% if rx %}
 <div class="sec-label">Prescription</div>
 <div class="detail-panel">
@@ -398,8 +398,7 @@
       This will return the consultation to Pending status so front desk can process it again.
     </p>
     <form method="post" action="{% url 'consultations:admin_reopen' consultation.pk %}"
-          onsubmit="return confirm('Reopen consultation #{{ consultation.pk }}?');">
-          onsubmit="return confirm('Reopen consultation #{{ consultation.pk }}?');">
+          data-confirm="Reopen consultation #{{ consultation.pk }}?">
       {% csrf_token %}
       <button type="submit"
         style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:#0078d4;border:none;cursor:pointer;font-family:'Inter',sans-serif;">

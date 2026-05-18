@@ -2,7 +2,74 @@ from django.db import models
 from django.conf import settings
 
 
+class ConsultationManager(models.Manager):
+    """
+    Reusable query methods for the Consultation model.
+    Centralizes common filters so views don't duplicate query logic.
+    """
+
+    def active_queue(self):
+        """Pending consultations awaiting front desk processing."""
+        return self.filter(
+            status=Consultation.Status.PENDING
+        ).select_related('patient', 'patient__college').order_by('created_at')
+
+    def for_triage(self):
+        """Consultations queued or scheduled, ready for doctor triage."""
+        return self.filter(
+            status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED]
+        ).select_related('patient', 'patient__college').order_by(
+            'queue_number', 'scheduled_at', 'created_at'
+        )
+
+    def triaged_ready(self):
+        """Consultations triaged and awaiting doctor consultation/prescription."""
+        return self.filter(
+            status=Consultation.Status.TRIAGED
+        ).select_related('patient', 'patient__college').prefetch_related('triages').order_by('created_at')
+
+    def for_patient(self, patient):
+        """All consultations for a given patient, ordered by most recent first."""
+        return self.filter(patient=patient).order_by('-created_at')
+
+    def patient_history(self, patient):
+        """Full patient history with related triages and prescriptions prefetched."""
+        return self.filter(patient=patient).prefetch_related(
+            'triages', 'prescriptions__items'
+        ).order_by('-created_at')
+
+    def active_follow_ups(self, patient):
+        """Active follow-up consultations for a patient (doctor-marked only)."""
+        return self.filter(
+            patient=patient,
+            is_original_case=True,
+            status=Consultation.Status.ACTIVE_FOLLOW_UP,
+        ).order_by('-created_at')
+
+    def active_cases(self, patient):
+        """All open/active consultation cases for a patient."""
+        return self.filter(
+            patient=patient,
+            is_original_case=True,
+            status__in=[
+                Consultation.Status.ACTIVE_FOLLOW_UP,
+                Consultation.Status.TRIAGED,
+                Consultation.Status.COMPLETED,
+            ]
+        ).order_by('-created_at')
+
+    def today_queue_numbers(self):
+        """Get queue numbers assigned today (for assign_next_queue_number)."""
+        from django.utils import timezone
+        today = timezone.localdate()
+        return self.filter(
+            queue_number__isnull=False,
+            created_at__date=today
+        ).values_list('queue_number', flat=True)
+
+
 class Consultation(models.Model):
+    objects = ConsultationManager()
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         QUEUED = 'queued', 'Queued'
@@ -10,6 +77,8 @@ class Consultation(models.Model):
         TRIAGED = 'triaged', 'Triaged'
         COMPLETED = 'completed', 'Completed'
         CANCELLED = 'cancelled', 'Cancelled'
+        ACTIVE_FOLLOW_UP = 'active_follow_up', 'Active - Follow-up'
+        CLOSED = 'closed', 'Closed'
 
     patient = models.ForeignKey(
         'patients.Patient',
@@ -48,6 +117,119 @@ class Consultation(models.Model):
             models.Index(fields=['patient', '-created_at']),
         ]
 
+    # Add these to the Consultation model:
+    parent_consultation = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='follow_up_visits',
+        help_text='Link to the original consultation if this is a follow-up'
+    )
+    is_original_case = models.BooleanField(
+        default=True,
+        help_text='True if this is the initial consultation (case file)'
+    )
+    follow_up_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Number of follow-up visits for this case'
+    )
+    last_follow_up_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Date of the most recent follow-up'
+    )
+    closed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the consultation case was closed'
+    )
+    closure_notes = models.TextField(
+        blank=True,
+        help_text='Reason/notes for closing the consultation case'
+    )
+
+    recommended_follow_up_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Recommended date for the next follow-up visit'
+    )
+
+class FollowUpProgress(models.Model):
+    """
+    Stores each follow-up visit's clinical data, linked to the original consultation.
+    This avoids duplicating entire consultation records.
+    """
+    consultation = models.ForeignKey(
+        Consultation,
+        on_delete=models.CASCADE,
+        related_name='progress_entries',
+        help_text='The original consultation case this follow-up belongs to'
+    )
+    visit_number = models.PositiveIntegerField(
+        help_text='Sequential number of this follow-up visit (1, 2, 3...)'
+    )
+    # Clinical data for this follow-up visit
+    symptoms = models.TextField(
+        help_text='Current symptoms reported during this follow-up'
+    )
+    assessment = models.TextField(
+        blank=True,
+        help_text='Doctor assessment for this visit'
+    )
+    treatment_notes = models.TextField(
+        blank=True,
+        help_text='Treatment administered or adjusted during this visit'
+    )
+    recommendations = models.TextField(
+        blank=True,
+        help_text='Recommendations for the patient after this visit'
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text='Additional notes specific to this follow-up visit'
+    )
+    # Doctor who conducted this follow-up
+    doctor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='follow_up_visits_conducted'
+    )
+    # Status of this specific follow-up
+    FOLLOW_UP_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    follow_up_status = models.CharField(
+        max_length=20,
+        choices=FOLLOW_UP_STATUS_CHOICES,
+        default='pending',
+        db_index=True
+    )
+    requires_follow_up = models.BooleanField(
+        default=False,
+        help_text='Whether another follow-up is needed after this visit'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Follow-up Progress Entry'
+        verbose_name_plural = 'Follow-up Progress Entries'
+        ordering = ['consultation', '-visit_number']
+        unique_together = ['consultation', 'visit_number']
+        indexes = [
+            models.Index(fields=['consultation', '-visit_number']),
+            models.Index(fields=['follow_up_status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'Follow-up #{self.visit_number} — Consultation #{self.consultation_id}'
+
 
 class Triage(models.Model):
     class Urgency(models.TextChoices):
@@ -55,16 +237,26 @@ class Triage(models.Model):
         MEDIUM = 'medium', 'Medium'
         HIGH = 'high', 'High'
 
-    consultation = models.OneToOneField(
+    consultation = models.ForeignKey(
         Consultation,
         on_delete=models.CASCADE,
-        related_name='triage',
+        related_name='triages',
     )
-    nurse = models.ForeignKey(
+
+    follow_up_progress = models.ForeignKey(
+        FollowUpProgress,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='triages',
+        help_text='Link to specific follow-up visit if applicable'
+    )
+    triaged_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='triages_performed',
+        verbose_name='Triaged by',
     )
     blood_pressure = models.CharField(max_length=20, help_text='e.g. 120/80')
     temperature = models.DecimalField(
@@ -102,11 +294,60 @@ class Triage(models.Model):
         verbose_name_plural = 'Triages'
 
 
-class Prescription(models.Model):
-    consultation = models.OneToOneField(
+class FollowUpRequest(models.Model):
+    """
+    A queue entry created when a patient requests a follow-up visit
+    for a consultation marked as ACTIVE_FOLLOW_UP by the doctor.
+    This is processed by front desk like a regular consultation queue entry.
+    """
+    consultation = models.ForeignKey(
         Consultation,
         on_delete=models.CASCADE,
-        related_name='prescription',
+        related_name='follow_up_requests',
+        help_text='The original consultation case this follow-up request belongs to'
+    )
+    patient = models.ForeignKey(
+        'patients.Patient',
+        on_delete=models.CASCADE,
+        related_name='follow_up_requests',
+    )
+    REQUEST_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('queued', 'Queued'),
+        ('scheduled', 'Scheduled'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    request_status = models.CharField(
+        max_length=20,
+        choices=REQUEST_STATUS_CHOICES,
+        default='pending',
+        db_index=True,
+    )
+    queue_number = models.PositiveIntegerField(null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Follow-up Request'
+        verbose_name_plural = 'Follow-up Requests'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['request_status', '-created_at']),
+            models.Index(fields=['consultation', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'Follow-up Request #{self.pk} — Consultation #{self.consultation_id}'
+
+class Prescription(models.Model):
+    consultation = models.ForeignKey(
+        Consultation,
+        on_delete=models.CASCADE,
+        related_name='prescriptions',
     )
     doctor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -117,6 +358,15 @@ class Prescription(models.Model):
     diagnosis = models.TextField()
     treatment_plan = models.TextField(blank=True)
     prescribed_at = models.DateTimeField(auto_now_add=True)
+
+    follow_up_progress = models.ForeignKey(
+        FollowUpProgress,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='prescriptions',
+        help_text='Link to specific follow-up visit if applicable'
+    )
 
     def __str__(self):
         return f'Prescription #{self.pk} — Consultation #{self.consultation_id}'
@@ -207,3 +457,4 @@ class CommonDiagnosis(models.Model):
 
     def __str__(self):
         return self.name
+

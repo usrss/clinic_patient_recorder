@@ -151,8 +151,8 @@ class Migration(migrations.Migration):
             name='SiteSettings',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('site_name', models.CharField(default='Clinic Recorder', help_text='Brand name shown in the navbar and footer.', max_length=100)),
-                ('site_title', models.CharField(default='Clinic Recorder — NORSU Medical Dental Clinic', help_text='Browser tab title for the home page.', max_length=200)),
+                ('site_name', models.CharField(default='Patient Record System', help_text='Brand name shown in the navbar and footer.', max_length=100)),
+                ('site_title', models.CharField(default='Patient Record System — NORSU Medical Dental Clinic', help_text='Browser tab title for the home page.', max_length=200)),
             ],
             options={
                 'verbose_name': 'Site Settings',

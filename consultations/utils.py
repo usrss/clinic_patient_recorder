@@ -1,6 +1,3 @@
-from django.utils import timezone
-
-
 def assign_next_queue_number():
     """
     Auto-generate the next queue number for today.
@@ -8,12 +5,6 @@ def assign_next_queue_number():
     """
     from .models import Consultation
 
-    today = timezone.localdate()
-    last = (
-        Consultation.objects
-        .filter(queue_number__isnull=False, created_at__date=today)
-        .order_by('-queue_number')
-        .values_list('queue_number', flat=True)
-        .first()
-    )
-    return (last or 0) + 1
+    numbers = list(Consultation.objects.today_queue_numbers())
+    last = max(numbers) if numbers else 0
+    return last + 1

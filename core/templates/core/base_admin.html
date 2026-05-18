@@ -4,15 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Admin — Clinic Recorder{% endblock %}</title>
+  <title>{% block title %}Admin — Patient Record System{% endblock %}</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
 
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
   <style>
     :root {
-      --sidebar-w: 230px;
+      --sidebar-w: 260px;
       --sidebar-bg: #ffffff;
       --sidebar-border: #e8ecf1;
       --sidebar-text: #4b5563;
@@ -77,6 +80,21 @@
       padding: 0 10px; margin-bottom: 4px;
     }
 
+    /* ── Collapsible section ── */
+    .adm-collapsible-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 10px 4px; cursor: pointer; user-select: none;
+    }
+    .adm-collapsible-header:hover .adm-nav-section-label { color: #94a3b8; }
+    .adm-collapsible-arrow {
+      font-size: 12px; color: #b0b8c8; transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .adm-collapsible-header:hover .adm-collapsible-arrow { color: #94a3b8; }
+    .adm-collapsible.collapsed .adm-collapsible-arrow { transform: rotate(-90deg); }
+    .adm-collapsible-items { overflow: hidden; transition: max-height 0.25s ease; }
+    .adm-collapsible.collapsed .adm-collapsible-items { max-height: 0 !important; }
+
     .adm-nav-link {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 10px; border-radius: var(--radius-sm);
@@ -88,12 +106,7 @@
     .adm-nav-link.active { background: var(--sidebar-active-bg); color: var(--sidebar-text-active); font-weight: 600; }
     .adm-nav-link svg { flex-shrink: 0; opacity: 0.7; }
     .adm-nav-link.active svg { opacity: 1; }
-    .adm-nav-link .nav-badge {
-      margin-left: auto; background: #ef4444; color: #fff;
-      font-size: 10px; font-weight: 700; padding: 1px 6px;
-      border-radius: 20px; line-height: 1.6;
-    }
-    .adm-nav-link .nav-badge.amber { background: #f97316; }
+
 
     .adm-sidebar-footer { margin-top: auto; padding: 12px 10px; border-top: 1px solid var(--sidebar-border); }
     .adm-user-card {
@@ -210,6 +223,8 @@
     .adm-btn-ghost:hover { background: #e5e7eb; }
     .adm-btn-danger { background: #ef4444; color: #fff; }
     .adm-btn-danger:hover { background: #dc2626; }
+
+
   </style>
 
   {% block extra_css %}{% endblock %}
@@ -223,14 +238,18 @@
     <a href="{% url 'accounts:dashboard' %}" class="adm-sidebar-brand">
       <img src="{% static 'core/images/norsu-logo.png' %}" alt="NORSU" onerror="this.style.display='none'">
       <div>
-        <span>Clinic Recorder</span>
-        <small>NORSU Clinic</small>
+        <span>Patient Record System</span>
+        <small>NORSU Medical Dental Clinic</small>
       </div>
     </a>
 
     <!-- Overview -->
-    <div class="adm-nav-section">
-      <div class="adm-nav-section-label">Overview</div>
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">Overview</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
       <a href="{% url 'accounts:dashboard' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -242,10 +261,15 @@
         Reports
       </a>
     </div>
+    </div>
 
     <!-- People -->
-    <div class="adm-nav-section">
-      <div class="adm-nav-section-label">People</div>
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">People</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
       <a href="{% url 'patients:patient_list' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -257,16 +281,20 @@
         Staff
       </a>
     </div>
-
-
+    </div>
 
     <!-- Operations -->
-    <div class="adm-nav-section">
-      <div class="adm-nav-section-label">Operations</div>
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">Operations</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
       <a href="{% url 'consultations:queue' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'queue' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
         Queue
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'inventory:medicine_list' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
@@ -274,10 +302,36 @@
         Inventory
       </a>
     </div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">Data Management</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
+      <a href="{% url 'patients:archive_settings' %}"
+         class="adm-nav-link {% if request.resolver_match.url_name == 'archive_settings' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M4 7v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7"/><path d="M12 7v10"/><path d="M8 7v10"/><path d="M16 7v10"/></svg>
+        Archive Settings
+        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
+      </a>
+      <a href="{% url 'patients:archive_browser' %}"
+         class="adm-nav-link {% if request.resolver_match.url_name == 'archive_browser' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+        Archived Patients
+      </a>
+    </div>
+    </div>
 
     <!-- Account -->
-    <div class="adm-nav-section">
-      <div class="adm-nav-section-label">Account</div>
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">Account</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
       <a href="{% url 'accounts:profile_settings' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'profile_settings' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -287,7 +341,7 @@
          class="adm-nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         Notifications
-        <span id="sidebar-notif-badge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;line-height:1.6;"></span>
+        <span id="sidebar-notif-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
 
       <a href="{% url 'feedback:feedback_list' %}"
@@ -296,20 +350,32 @@
         Feedback
       </a>
     </div>
+    </div>
 
     <!-- System -->
-    <div class="adm-nav-section">
-      <div class="adm-nav-section-label">System</div>
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">System</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
       <a href="/admin/" class="adm-nav-link">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Admin Panel
       </a>
     </div>
+    </div>
 
     <!-- Footer -->
     <div class="adm-sidebar-footer">
       <a href="{% url 'accounts:profile_settings' %}" class="adm-user-card" style="text-decoration:none;">
-        <div class="adm-user-avatar">{{ user.get_full_name|default:user.username|first|upper }}</div>
+        <div class="adm-user-avatar" style="overflow:hidden;">
+          {% if user.profile_picture %}
+            <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+            {{ user.get_full_name|default:user.username|first|upper }}
+          {% endif %}
+        </div>
         <div class="adm-user-info">
           <strong>{{ user.get_full_name|default:user.username }}</strong>
           <span>Administrator</span>
@@ -330,8 +396,7 @@
     <div class="adm-topbar-title">
       {% block page_title %}Dashboard{% endblock %}
       <small>{% block page_subtitle %}{% endblock %}</small>
-    </div>
-    <div class="adm-topbar-actions">
+    </div>      <div class="adm-topbar-actions">
       <span class="role-pill admin">
         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Admin
@@ -391,21 +456,44 @@
       document.getElementById('sidebarOverlay').classList.remove('open');
     }
 
+    // ── Collapsible sidebar sections ──
+    function toggleAdmSection(header) {
+      var section = header.parentElement;
+      var items = section.querySelector('.adm-collapsible-items');
+      var isCollapsed = section.classList.toggle('collapsed');
+      if (!isCollapsed) {
+        items.style.maxHeight = items.scrollHeight + 'px';
+      }
+      localStorage.setItem('adm-section-' + header.textContent.trim().toLowerCase(), isCollapsed ? 'collapsed' : 'open');
+    }
+
+    // ── Restore section states from localStorage ──
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.adm-collapsible').forEach(function(section) {
+        var label = section.querySelector('.adm-nav-section-label');
+        if (label) {
+          var key = 'adm-section-' + label.textContent.trim().toLowerCase();
+          var state = localStorage.getItem(key);
+          if (state === 'collapsed') {
+            section.classList.add('collapsed');
+            var items = section.querySelector('.adm-collapsible-items');
+            if (items) items.style.maxHeight = '0';
+          } else {
+            var items = section.querySelector('.adm-collapsible-items');
+            if (items) items.style.maxHeight = items.scrollHeight + 'px';
+          }
+        }
+      });
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('.toast[data-bs-autohide="true"]').forEach(function (el) {
         new bootstrap.Toast(el, { delay: 4000 }).show();
       });
 
-      // Mirror unread badge to sidebar
-      const dot = document.getElementById('notif-dot');
-      const sidebarBadge = document.getElementById('sidebar-notif-badge');
-      if (dot && sidebarBadge) {
-        const observer = new MutationObserver(() => {
-          if (dot.style.display !== 'none') sidebarBadge.style.display = 'inline-block';
-        });
-        observer.observe(dot, { attributes: true, attributeFilter: ['style'] });
-      }
+      // Sidebar notification badge is now updated by base.js
     });
+
   </script>
 
   {% block extra_js %}{% endblock %}

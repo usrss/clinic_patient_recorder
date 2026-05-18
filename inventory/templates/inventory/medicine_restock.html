@@ -1,5 +1,5 @@
 {% extends 'core/base_admin.html' %}
-{% block title %}Restock {{ medicine.name }} — Clinic Recorder{% endblock %}
+{% block title %}Restock {{ medicine.name }} — Patient Record System{% endblock %}
 {% block nav_inventory %}active{% endblock %}
 {% block page_title %}Restock Medicine{% endblock %}
 {% block page_subtitle %}{{ medicine.name }}{% endblock %}
@@ -55,12 +55,12 @@
   .field-error { font-size:12px; color:#ef4444; margin-top:4px; }
   .submit-btn {
     display:inline-flex; align-items:center; gap:8px; padding:12px 22px;
-    background:linear-gradient(135deg,#0078d4,#1a56db); color:#fff;
+    background:#0078d4; color:#fff;
     border:none; border-radius:12px; font-size:14px; font-weight:600;
-    cursor:pointer; box-shadow:0 2px 8px rgba(0,120,212,0.35); transition:all 0.2s;
+    cursor:pointer; box-shadow:0 2px 8px rgba(0,120,212,0.25); transition:all 0.2s;
     font-family:'Inter',sans-serif;
   }
-  .submit-btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,120,212,0.45); }
+  .submit-btn:hover { background:#006cbd; transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,120,212,0.35); }
   .cancel-btn {
     display:inline-flex; align-items:center; gap:6px; padding:12px 18px;
     background:#fff; border:1px solid #e8ecf1; border-radius:12px;
@@ -96,7 +96,7 @@
 
       <div style="margin-bottom:18px;">
         <label class="field-label">
-          <ion-icon name="add-circle-outline" style="font-size:14px;color:#10b981;"></ion-icon>
+          <ion-icon name="add-circle-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
           Quantity to Add <span style="color:#ef4444;">*</span>
         </label>
         {{ form.quantity }}

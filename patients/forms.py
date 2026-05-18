@@ -1,5 +1,5 @@
 from django import forms
-from .models import PatientProfile, Patient
+from .models import PatientProfile, Patient, AcademicYearSettings
 
 
 class PatientProfileSetupForm(forms.ModelForm):
@@ -84,3 +84,19 @@ class PatientContactForm(forms.ModelForm):
             if not re.match(r'^\d{7,15}$', cleaned):
                 raise forms.ValidationError('Enter a valid phone number (7–15 digits).')
         return phone
+
+
+# ─── ACADEMIC YEAR SETTINGS FORM ───────────────────────────────────────────────
+
+class AcademicYearSettingsForm(forms.Form):
+    """Admin configures the academic year end date and archive threshold."""
+    academic_year_end = forms.DateField(
+        label='Academic Year End Date',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    archive_after_months = forms.IntegerField(
+        label='Archive After Months',
+        min_value=1,
+        max_value=24,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 24}),
+    )

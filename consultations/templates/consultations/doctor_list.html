@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% block title %}Triaged Patients — Clinic Recorder{% endblock %}
+{% block title %}Triaged Patients — Patient Record System{% endblock %}
 {% block page_title %}My Patients{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} patient{{ consultations.count|pluralize }} ready for consultation{% endblock %}
 
@@ -117,28 +117,28 @@
           </td>
           <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
           <td>
-            {% if c.triage %}
-              {% if c.triage.urgency == 'high' %}
+            {% with tc=c.triages.first %}{% if tc %}
+              {% if tc.urgency == 'high' %}
                 <span class="urgency-badge urgency-high">🔴 High</span>
-              {% elif c.triage.urgency == 'medium' %}
+              {% elif tc.urgency == 'medium' %}
                 <span class="urgency-badge urgency-med">🟡 Medium</span>
               {% else %}
                 <span class="urgency-badge urgency-low">🟢 Low</span>
               {% endif %}
-            {% else %}—{% endif %}
+            {% else %}—{% endif %}{% endwith %}
           </td>
           <td class="vitals-cell">
-            {% if c.triage %}
-              BP: <strong>{{ c.triage.blood_pressure }}</strong><br>
-              Temp: <strong>{{ c.triage.temperature }}°C</strong><br>
-              Pulse: <strong>{{ c.triage.pulse_rate }} bpm</strong>
-            {% else %}—{% endif %}
+            {% with tc=c.triages.first %}{% if tc %}
+              BP: <strong>{{ tc.blood_pressure }}</strong><br>
+              Temp: <strong>{{ tc.temperature }}°C</strong><br>
+              Pulse: <strong>{{ tc.pulse_rate }} bpm</strong>
+            {% else %}—{% endif %}{% endwith %}
           </td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#374151;">
             {{ c.symptoms|truncatechars:55 }}
           </td>
           <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">
-            {% if c.triage %}{{ c.triage.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}
+            {% with tc=c.triages.first %}{% if tc %}{{ tc.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}{% endwith %}
           </td>
           <td>
             <a href="{% url 'consultations:prescribe' c.pk %}" class="prescribe-btn">
@@ -157,7 +157,7 @@
 <div class="table-panel">
   <div class="empty-state">
     <div class="empty-icon">
-      <svg width="24" height="24" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg width="24" height="24" fill="none" stroke="#0078d4" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <div class="empty-title">No patients waiting</div>
     <div class="empty-sub">All triaged patients have been attended to.</div>
