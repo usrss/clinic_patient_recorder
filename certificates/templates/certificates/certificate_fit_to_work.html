@@ -228,7 +228,7 @@
     <div class="signature-section">
       <div class="signature-line">
         <div class="sig-name">
-          Dr. {{ certificate.doctor.get_full_name|default:certificate.doctor.username }}
+          {% if certificate.doctor %}Dr. {{ certificate.doctor.get_full_name|default:certificate.doctor.username }}{% else %}Attending Physician{% endif %}
         </div>
         <div class="sig-title">Attending Physician</div>
       </div>

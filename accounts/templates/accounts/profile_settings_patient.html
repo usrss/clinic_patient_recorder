@@ -40,6 +40,14 @@
       <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
         {% csrf_token %}
 
+        {# ── Form-level error summary ── #}
+        {% if info_form.errors %}
+        <div style="margin-bottom:16px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:8px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;">
+          <ion-icon name="alert-circle" style="font-size:16px;flex-shrink:0;margin-top:1px;"></ion-icon>
+          <div>Please correct the errors below before saving.</div>
+        </div>
+        {% endif %}
+
         {% if user.role == 'patient' %}
 
         {# ── Profile Picture ── #}
@@ -57,35 +65,33 @@
               Choose Picture
             </label>
             {{ info_form.profile_picture }}
-            <div id="fileName" style="font-size:12px;color:#6b7280;margin-top:6px;display:none;"></div>
-            {% if patient.profile_picture %}
-            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#dc2626;cursor:pointer;margin-top:8px;">
-              {{ info_form.remove_picture }}
-              <ion-icon name="trash-outline"></ion-icon>
-              Remove current picture
-            </label>
+            {% if info_form.profile_picture.errors %}
+              {% for error in info_form.profile_picture.errors %}
+                <div style="font-size:11px;color:#dc2626;margin-top:6px;display:flex;align-items:center;gap:4px;"><ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ error }}</div>
+              {% endfor %}
             {% endif %}
+            <div id="fileName" style="font-size:12px;color:#6b7280;margin-top:6px;display:none;"></div>
           </div>
         </div>
 
         {# Contact #}
         <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">Contact</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Phone</label>{{ info_form.phone }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email</label>{{ info_form.email }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Name</label>{{ info_form.emergency_contact_name }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Phone</label>{{ info_form.emergency_contact_phone }}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Phone</label>{{ info_form.phone }}{% if info_form.phone.errors %}{% for error in info_form.phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email</label>{{ info_form.email }}{% if info_form.email.errors %}{% for error in info_form.email.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Name</label>{{ info_form.emergency_contact_name }}{% if info_form.emergency_contact_name.errors %}{% for error in info_form.emergency_contact_name.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Phone</label>{{ info_form.emergency_contact_phone }}{% if info_form.emergency_contact_phone.errors %}{% for error in info_form.emergency_contact_phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
         </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Address</label>{{ info_form.address }}</div>
+        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Address</label>{{ info_form.address }}{% if info_form.address.errors %}{% for error in info_form.address.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
         {# Demographics #}
         <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Demographics</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>{{ info_form.religion }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>{{ info_form.civil_status }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>{{ info_form.year_level }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>{{ info_form.height_cm }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>{{ info_form.weight_kg }}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>{{ info_form.religion }}{% if info_form.religion.errors %}{% for error in info_form.religion.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>{{ info_form.civil_status }}{% if info_form.civil_status.errors %}{% for error in info_form.civil_status.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>{{ info_form.year_level }}{% if info_form.year_level.errors %}{% for error in info_form.year_level.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>{{ info_form.height_cm }}{% if info_form.height_cm.errors %}{% for error in info_form.height_cm.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>{{ info_form.weight_kg }}{% if info_form.weight_kg.errors %}{% for error in info_form.weight_kg.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
         </div>
 
         {# Medical History #}
@@ -97,7 +103,7 @@
             {% endif %}
           {% endfor %}
         </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>{{ info_form.other_conditions }}</div>
+        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>{{ info_form.other_conditions }}{% if info_form.other_conditions.errors %}{% for error in info_form.other_conditions.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
         {# Immunization #}
         <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Immunization</div>
@@ -108,15 +114,15 @@
             {% endif %}
           {% endfor %}
         </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Immunizations</label>{{ info_form.immunization_others }}</div>
+        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Immunizations</label>{{ info_form.immunization_others }}{% if info_form.immunization_others.errors %}{% for error in info_form.immunization_others.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
         {# Medical Background #}
         <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical Background</div>
         <div style="display:grid;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Current Medications</label>{{ info_form.current_medications }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Vices</label>{{ info_form.vices }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Illnesses</label>{{ info_form.previous_illnesses }}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Hospitalizations</label>{{ info_form.previous_hospitalizations }}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Current Medications</label>{{ info_form.current_medications }}{% if info_form.current_medications.errors %}{% for error in info_form.current_medications.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Vices</label>{{ info_form.vices }}{% if info_form.vices.errors %}{% for error in info_form.vices.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Illnesses</label>{{ info_form.previous_illnesses }}{% if info_form.previous_illnesses.errors %}{% for error in info_form.previous_illnesses.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Hospitalizations</label>{{ info_form.previous_hospitalizations }}{% if info_form.previous_hospitalizations.errors %}{% for error in info_form.previous_hospitalizations.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
         </div>
 
         {% endif %}
@@ -195,6 +201,7 @@
   input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0078d4; cursor: pointer; flex-shrink: 0; }
   select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
   input[type="file"] { display: none; }
+  .field-error { font-size:11px;color:#dc2626;margin-top:6px;display:flex;align-items:center;gap:4px; }
   .file-upload-btn:hover { border-color: #0078d4; color: #0078d4; background: #eff6ff; }
   @media (max-width: 600px) {
     div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }

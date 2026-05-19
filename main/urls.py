@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
+from core.views import home
 
 urlpatterns = [
-    path('', lambda request: render(request, 'core/home.html'), name='home'),
+    path('', home, name='home'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
@@ -17,5 +17,8 @@ urlpatterns = [
     path('feedback/', include('feedback.urls', namespace='feedback')),
 ]
 
+# Media files — served by Django only in development (DEBUG=True).
+# In production (PythonAnywhere), configure the Web tab's static file mappings
+# for /media/ -> /home/your-username/.../media instead.
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

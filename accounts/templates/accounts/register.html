@@ -71,13 +71,13 @@
         <div class="form-group">
           <label for="id_patient_id">ID Number <span class="req">*</span></label>
           <input type="text" id="id_patient_id" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required>
-          <div class="field-error" id="err-patient_id">Please enter your ID number.</div>
+          <div class="field-error" id="err-patient_id">{% if form.patient_id.errors %}{{ form.patient_id.errors.0 }}{% else %}Please enter your ID number.{% endif %}</div>
         </div>
 
         <div class="form-group">
           <label for="id_email">Email Address <span class="req">*</span></label>
           <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph" required>
-          <div class="field-error" id="err-email">Please enter a valid email address.</div>
+          <div class="field-error" id="err-email">{% if form.email.errors %}{{ form.email.errors.0 }}{% else %}Please enter a valid email address.{% endif %}</div>
           <div class="field-hint">An OTP will be sent to this email to verify your account.</div>
         </div>
 
@@ -105,7 +105,7 @@
               </div>
               <div class="strength-text" id="strength-text">Too short</div>
             </div>
-            <div class="field-error" id="err-password1">Password must be at least 8 characters.</div>
+            <div class="field-error" id="err-password1">{% if form.password1.errors %}{{ form.password1.errors.0 }}{% else %}Password must be at least 8 characters.{% endif %}</div>
           </div>
 
           <div class="form-group">
@@ -122,7 +122,7 @@
                 </svg>
               </button>
             </div>
-            <div class="field-error" id="err-password2">Passwords do not match.</div>
+            <div class="field-error" id="err-password2">{% if form.password2.errors %}{{ form.password2.errors.0 }}{% else %}Passwords do not match.{% endif %}</div>
           </div>
         </div>
 
@@ -185,7 +185,7 @@
           <div class="form-group">
             <label for="id_first_name">First Name <span class="req">*</span></label>
             <input type="text" id="id_first_name" name="first_name" class="reg-input" required>
-            <div class="field-error" id="err-first_name">Required.</div>
+            <div class="field-error" id="err-first_name">{% if form.first_name.errors %}{{ form.first_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_middle_name">Middle Name</label>
@@ -194,7 +194,7 @@
           <div class="form-group">
             <label for="id_last_name">Last Name <span class="req">*</span></label>
             <input type="text" id="id_last_name" name="last_name" class="reg-input" required>
-            <div class="field-error" id="err-last_name">Required.</div>
+            <div class="field-error" id="err-last_name">{% if form.last_name.errors %}{{ form.last_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
 
@@ -207,12 +207,12 @@
               <option value="M">Male</option>
               <option value="F">Female</option>
             </select>
-            <div class="field-error" id="err-sex">Please select your sex.</div>
+            <div class="field-error" id="err-sex">{% if form.sex.errors %}{{ form.sex.errors.0 }}{% else %}Please select your sex.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_birthday">Date of Birth <span class="req">*</span></label>
             <input type="date" id="id_birthday" name="birthday" class="reg-input" required>
-            <div class="field-error" id="err-birthday">Required.</div>
+            <div class="field-error" id="err-birthday">{% if form.birthday.errors %}{{ form.birthday.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
 
@@ -269,7 +269,7 @@
               <option value="{{ c.pk }}">{{ c.abbreviation }} — {{ c.name }}</option>
               {% endfor %}
             </select>
-            <div class="field-error" id="err-college">Please select your college.</div>
+            <div class="field-error" id="err-college">{% if form.college.errors %}{{ form.college.errors.0 }}{% else %}Please select your college.{% endif %}</div>
           </div>
           <div class="form-group" id="field-year">
             <label for="id_year_level">College <span class="req">*</span></label>
@@ -279,11 +279,12 @@
               <option>1st Year</option><option>2nd Year</option>
               <option>3rd Year</option><option>4th Year</option>
             </select>
+            <div class="field-error" id="err-year_level">{% if form.year_level.errors %}{{ form.year_level.errors.0 }}{% else %}Please select your year level.{% endif %}</div>
           </div>
           <div class="form-group" id="field-department" style="display:none;">
             <label for="id_department">Department <span class="req">*</span></label>
             <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS">
-            <div class="field-error" id="err-department">Please enter your department.</div>
+            <div class="field-error" id="err-department">{% if form.department.errors %}{{ form.department.errors.0 }}{% else %}Please enter your department.{% endif %}</div>
           </div>
           <div class="form-group" id="field-position" style="display:none;">
             <label for="id_position">Position / Designation</label>
@@ -296,7 +297,7 @@
           <div class="form-group">
             <label for="id_phone">Phone Number <span class="req">*</span></label>
             <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX" required>
-            <div class="field-error" id="err-phone">Please enter a valid phone number.</div>
+            <div class="field-error" id="err-phone">{% if form.phone.errors %}{{ form.phone.errors.0 }}{% else %}Please enter a valid phone number.{% endif %}</div>
           </div>
           <div class="form-group">
             <!-- spacer -->
@@ -306,12 +307,12 @@
           <div class="form-group">
             <label for="id_emergency_contact_name">Emergency Contact Name <span class="req">*</span></label>
             <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input" required>
-            <div class="field-error" id="err-emergency_contact_name">Required.</div>
+            <div class="field-error" id="err-emergency_contact_name">{% if form.emergency_contact_name.errors %}{{ form.emergency_contact_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_emergency_contact_phone">Emergency Contact Phone <span class="req">*</span></label>
             <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input" required>
-            <div class="field-error" id="err-emergency_contact_phone">Required.</div>
+            <div class="field-error" id="err-emergency_contact_phone">{% if form.emergency_contact_phone.errors %}{{ form.emergency_contact_phone.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
 

@@ -89,7 +89,16 @@ def patient_submit(request):
     # New consultation form
     form = PatientConsultationForm(request.POST or None)
 
-    if request.method == 'POST' and 'submit_new' in request.POST:
+    consultation_fields = {
+        'symptoms', 'medical_history',
+        'severity_description', 'additional_notes',
+    }
+    is_new_consultation_post = (
+        'submit_new' in request.POST
+        or any(field in request.POST for field in consultation_fields)
+    )
+
+    if request.method == 'POST' and is_new_consultation_post:
         if form.is_valid():
             consultation = form.save(commit=False)
             consultation.patient = patient

@@ -15,11 +15,16 @@ MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 def validate_profile_picture(file):
     """Server-side validation for profile picture uploads."""
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise ValidationError(
-            f'Unsupported file type "{file.content_type}". '
-            'Allowed types: JPG, PNG, WebP.'
-        )
+    if not file:
+        return
+    content_type = getattr(file, 'content_type', None) or ''
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        name = getattr(file, 'name', '').lower()
+        ext_ok = name.endswith(('.jpg', '.jpeg', '.png', '.webp'))
+        if not ext_ok:
+            raise ValidationError(
+                'Unsupported file type. Allowed types: JPG, PNG, WebP.'
+            )
     if file.size > MAX_IMAGE_SIZE_BYTES:
         raise ValidationError(
             f'File size ({file.size // 1024} KB) exceeds the maximum allowed size '
@@ -63,7 +68,10 @@ class UserEditForm(forms.ModelForm):
         fields = ['username', 'first_name', 'last_name', 'email',
                   'role', 'phone', 'profile_picture', 'is_active']
         widgets = {
-            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+            'profile_picture': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/jpeg,image/png,image/webp',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -91,20 +99,40 @@ class StaffPasswordChangeForm(PasswordChangeForm):
 
 
 class UserProfileForm(forms.ModelForm):
-    """Staff user edits their own profile info."""
+    """
+    Staff user edits their own profile info.
+
+    FIX: 'profile_picture' is intentionally excluded from Meta.fields.
+    The view handles image saving explicitly to avoid a race condition
+    between form.save() and the remove_picture logic.
+    """
+    remove_picture = forms.BooleanField(
+        required=False,
+        label='Remove current picture',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+    # Declared here so the widget renders in the template, but NOT in Meta.fields
+    # so form.save() does not touch it — the view handles it manually.
+    profile_picture = forms.ImageField(
+        required=False,
+        label='Profile Picture',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/webp',
+        }),
+        validators=[validate_profile_picture],
+    )
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone', 'profile_picture']
-        widgets = {
-            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
-        }
+        # FIX: 'profile_picture' removed — handled manually in the view
+        fields = ['first_name', 'last_name', 'email', 'phone']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
-        self.fields['profile_picture'].required = False
-        self.fields['profile_picture'].label = 'Profile Picture'
+        for name, field in self.fields.items():
+            if name not in ('remove_picture',):
+                field.widget.attrs.setdefault('class', 'form-control')
 
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
@@ -115,11 +143,33 @@ class UserProfileForm(forms.ModelForm):
 
 class PatientProfileEditForm(forms.ModelForm):
     """Patient edits their full profile + contact info."""
-    phone = forms.CharField(max_length=30, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    # ── Extra fields that live on Patient, not PatientProfile ──
+    phone = forms.CharField(
+        max_length=30, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={'class': 'form-control'}),
+    )
+    emergency_contact_name = forms.CharField(
+        max_length=200, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    emergency_contact_phone = forms.CharField(
+        max_length=30, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+
+    # ── Profile picture (lives on Patient, handled manually in the view) ──
     profile_picture = forms.ImageField(
         required=False,
         label='Profile Picture',
-        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/webp',
+        }),
         validators=[validate_profile_picture],
     )
     remove_picture = forms.BooleanField(
@@ -127,9 +177,6 @@ class PatientProfileEditForm(forms.ModelForm):
         label='Remove current picture',
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
-    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    emergency_contact_name = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    emergency_contact_phone = forms.CharField(max_length=30, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = PatientProfile
@@ -138,9 +185,11 @@ class PatientProfileEditForm(forms.ModelForm):
             'height_cm', 'weight_kg',
             'hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',
             'other_conditions',
+            'known_allergies',          # FIX: was missing — caused silent data loss
             'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt',
             'immunization_others',
-            'current_medications', 'vices', 'previous_illnesses', 'previous_hospitalizations',
+            'current_medications', 'vices', 'previous_illnesses',
+            'previous_hospitalizations',
             'address',
         ]
         widgets = {
@@ -150,6 +199,7 @@ class PatientProfileEditForm(forms.ModelForm):
             'height_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'weight_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'other_conditions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'known_allergies': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'immunization_others': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'current_medications': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'vices': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -161,14 +211,23 @@ class PatientProfileEditForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         patient = kwargs.pop('patient', None)
         super().__init__(*args, **kwargs)
+        # Pre-fill Patient fields into form initials
         if patient:
             self.fields['phone'].initial = patient.phone
             self.fields['email'].initial = patient.email
             self.fields['emergency_contact_name'].initial = patient.emergency_contact_name
             self.fields['emergency_contact_phone'].initial = patient.emergency_contact_phone
-        for field in ['hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',
-                       'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt']:
-            self.fields[field].widget.attrs['class'] = 'form-check-input'
+
+        # Apply checkbox styling
+        for name in ('hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',
+                     'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt'):
+            self.fields[name].widget.attrs['class'] = 'form-check-input'
+
+    def clean_profile_picture(self):
+        file = self.cleaned_data.get('profile_picture')
+        if file:
+            validate_profile_picture(file)
+        return file
 
 
 # ── PROFILE COMPLETION FORM (Walk-in patient first login) ────────────────
@@ -190,7 +249,9 @@ class ProfileCompletionForm(forms.Form):
     middle_name = forms.CharField(max_length=100, required=False)
     last_name = forms.CharField(max_length=150, required=True)
     sex = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')], required=True)
-    birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), required=False)
+    birthday = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}), required=False
+    )
 
     # ── Editable fields ──
     role = forms.ChoiceField(choices=ROLE_CHOICES, label='Role')
@@ -200,15 +261,20 @@ class ProfileCompletionForm(forms.Form):
     # ── Personal Info ──
     address = forms.CharField(max_length=300, required=False)
     blood_type = forms.ChoiceField(
-        choices=[('', '—'), ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
-                 ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'), ('Unknown', 'Unknown')],
-        required=False
+        choices=[
+            ('', '—'), ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
+            ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'),
+            ('Unknown', 'Unknown'),
+        ],
+        required=False,
     )
     religion = forms.CharField(max_length=100, required=False)
     civil_status = forms.ChoiceField(
-        choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'),
-                 ('Widowed', 'Widowed'), ('Separated', 'Separated')],
-        required=False
+        choices=[
+            ('', '—'), ('Single', 'Single'), ('Married', 'Married'),
+            ('Widowed', 'Widowed'), ('Separated', 'Separated'),
+        ],
+        required=False,
     )
     height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
     weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
@@ -217,7 +283,10 @@ class ProfileCompletionForm(forms.Form):
     profile_picture = forms.ImageField(
         required=False,
         label='Profile Picture',
-        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/webp',
+        }),
         validators=[validate_profile_picture],
     )
 
@@ -229,8 +298,10 @@ class ProfileCompletionForm(forms.Form):
         empty_label='Select College',
     )
     year_level = forms.ChoiceField(
-        choices=[('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
-                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
+        choices=[
+            ('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
+            ('3rd Year', '3rd Year'), ('4th Year', '4th Year'),
+        ],
         required=False,
         label='Year Level',
     )
@@ -247,8 +318,12 @@ class ProfileCompletionForm(forms.Form):
     asthma = forms.BooleanField(required=False)
     cardiac_problems = forms.BooleanField(required=False)
     arthritis = forms.BooleanField(required=False)
-    other_conditions = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    known_allergies = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    other_conditions = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    known_allergies = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     # ── Immunization ──
     bcg = forms.BooleanField(required=False)
@@ -257,13 +332,23 @@ class ProfileCompletionForm(forms.Form):
     hepatitis_b = forms.BooleanField(required=False)
     measles = forms.BooleanField(required=False)
     tt = forms.BooleanField(required=False)
-    immunization_others = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    immunization_others = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     # ── Medical Background ──
-    current_medications = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    vices = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    previous_illnesses = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    previous_hospitalizations = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    current_medications = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    vices = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    previous_illnesses = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    previous_hospitalizations = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     def clean(self):
         cleaned = super().clean()
@@ -290,7 +375,7 @@ class ProfileCompletionForm(forms.Form):
         else:
             cleaned['_expected_graduation_year'] = None
 
-        # Clear irrelevant fields
+        # Clear irrelevant fields to avoid stale data
         if role == 'staff':
             cleaned['college'] = None
             cleaned['year_level'] = ''
@@ -308,12 +393,11 @@ class PasswordResetRequestForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Enter your Student / Employee ID',
-        })
+        }),
     )
 
     def clean_patient_id(self):
         patient_id = self.cleaned_data.get('patient_id', '').strip()
-        # Username is set to patient_id during registration
         if not User.objects.filter(username=patient_id, is_active=True).exists():
             raise forms.ValidationError('No active account found with this ID.')
         user = User.objects.get(username=patient_id, is_active=True)
@@ -344,7 +428,7 @@ class PasswordResetForm(forms.Form):
         return cleaned
 
 
-# ── REGISTRATION FORM
+# ── REGISTRATION FORM ──────────────────────────────────────────────────────
 
 class RegistrationForm(forms.Form):
     """Self-registration for students, faculty, and staff with full medical profile."""
@@ -370,16 +454,20 @@ class RegistrationForm(forms.Form):
     birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     address = forms.CharField(max_length=300, required=False)
     blood_type = forms.ChoiceField(
-        choices=[('', '—'), ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
-                 ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'), ('Unknown', 'Unknown')],
-        required=False
+        choices=[
+            ('', '—'), ('A+', 'A+'), ('A-', 'A-'), ('B+', 'B+'), ('B-', 'B-'),
+            ('AB+', 'AB+'), ('AB-', 'AB-'), ('O+', 'O+'), ('O-', 'O-'),
+            ('Unknown', 'Unknown'),
+        ],
+        required=False,
     )
-
     religion = forms.CharField(max_length=100, required=False)
     civil_status = forms.ChoiceField(
-        choices=[('', '—'), ('Single', 'Single'), ('Married', 'Married'),
-                 ('Widowed', 'Widowed'), ('Separated', 'Separated')],
-        required=False
+        choices=[
+            ('', '—'), ('Single', 'Single'), ('Married', 'Married'),
+            ('Widowed', 'Widowed'), ('Separated', 'Separated'),
+        ],
+        required=False,
     )
     height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
     weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
@@ -387,13 +475,15 @@ class RegistrationForm(forms.Form):
     # College — required for student and faculty, optional for staff
     college = forms.ModelChoiceField(
         queryset=College.objects.all().order_by('name'),
-        required=True,  # enforced conditionally in clean()
+        required=True,   # enforced conditionally in clean()
         label='College',
         empty_label='Select College',
     )
     year_level = forms.ChoiceField(
-        choices=[('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
-                 ('3rd Year', '3rd Year'), ('4th Year', '4th Year')],
+        choices=[
+            ('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
+            ('3rd Year', '3rd Year'), ('4th Year', '4th Year'),
+        ],
         required=True,
         label='Year Level',
     )
@@ -413,8 +503,12 @@ class RegistrationForm(forms.Form):
     asthma = forms.BooleanField(required=False)
     cardiac_problems = forms.BooleanField(required=False)
     arthritis = forms.BooleanField(required=False)
-    other_conditions = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    known_allergies = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    other_conditions = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    known_allergies = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     # ── Immunization ──
     bcg = forms.BooleanField(required=False)
@@ -423,13 +517,23 @@ class RegistrationForm(forms.Form):
     hepatitis_b = forms.BooleanField(required=False)
     measles = forms.BooleanField(required=False)
     tt = forms.BooleanField(required=False)
-    immunization_others = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    immunization_others = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     # ── Medical Background ──
-    current_medications = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    vices = forms.CharField(max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    previous_illnesses = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
-    previous_hospitalizations = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    current_medications = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    vices = forms.CharField(
+        max_length=300, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    previous_illnesses = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
+    previous_hospitalizations = forms.CharField(
+        max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
+    )
 
     def clean_patient_id(self):
         patient_id = self.cleaned_data['patient_id']
@@ -474,7 +578,7 @@ class RegistrationForm(forms.Form):
         else:
             cleaned['_expected_graduation_year'] = None
 
-        # Clear college/year for staff; clear department for students
+        # Clear irrelevant fields to avoid stale data
         if role == 'staff':
             cleaned['college'] = None
             cleaned['year_level'] = ''

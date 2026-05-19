@@ -272,7 +272,7 @@
         <div class="medicine-pill"><span style="font-weight:600;">{{ item.get_display_name }}</span>{% if item.dosage %}<span style="color:#6b7280;">{{ item.dosage }}</span>{% endif %}{% if item.frequency %}<span>· {{ item.frequency }}</span>{% endif %}{% if item.duration %}<span>for {{ item.duration }}</span>{% endif %}</div>
         {% endfor %}
         {% endif %}
-        <div style="font-size:11px;color:#94a3b8;margin-top:10px;">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }} · {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:10px;">Dr. {% if rx.doctor %}{{ rx.doctor.get_full_name|default:rx.doctor.username }}{% else %}Unknown{% endif %} · {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
       </div>
       {% endif %}{% endwith %}
     </div>
