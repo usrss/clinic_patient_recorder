@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
-# Create your views here.
+
+def home(request):
+    """Homepage — redirects logged-in users to their dashboard."""
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+    return render(request, 'core/home.html')

@@ -234,6 +234,14 @@
     <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
       {% csrf_token %}
 
+      {# ── Form-level error summary ── #}
+      {% if info_form.errors %}
+      <div style="margin-bottom:16px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:8px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;">
+        <ion-icon name="alert-circle" style="font-size:16px;flex-shrink:0;margin-top:1px;"></ion-icon>
+        <div>Please correct the errors below before saving.</div>
+      </div>
+      {% endif %}
+
       {% if user.role == 'patient' %}
         {# ── Patient Profile Picture ── #}
         <div class="avatar-section">
@@ -250,14 +258,12 @@
               Choose Picture
             </label>
             {{ info_form.profile_picture }}
-            <div class="file-name" id="fileName"></div>
-            {% if patient.profile_picture %}
-            <label class="remove-pic-label">
-              {{ info_form.remove_picture }}
-              <ion-icon name="trash-outline"></ion-icon>
-              Remove current picture
-            </label>
+            {% if info_form.profile_picture.errors %}
+              {% for error in info_form.profile_picture.errors %}
+                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
+              {% endfor %}
             {% endif %}
+            <div class="file-name" id="fileName"></div>
           </div>
         </div>
 
@@ -378,7 +384,19 @@
               Choose Picture
             </label>
             {{ info_form.profile_picture }}
+            {% if info_form.profile_picture.errors %}
+              {% for error in info_form.profile_picture.errors %}
+                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
+              {% endfor %}
+            {% endif %}
             <div class="file-name" id="fileName"></div>
+            {% if user.profile_picture %}
+            <label class="remove-pic-label">
+              {{ info_form.remove_picture }}
+              <ion-icon name="trash-outline"></ion-icon>
+              Remove current picture
+            </label>
+            {% endif %}
           </div>
         </div>
 
@@ -396,7 +414,7 @@
         </div>
 
         {% for field in info_form %}
-          {% if field.name not in 'first_name,last_name,profile_picture' %}
+          {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
           <div class="field-group">
             <label class="field-label">{{ field.label }}</label>
             <div class="field-wrap">

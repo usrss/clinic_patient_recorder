@@ -153,7 +153,7 @@
           {% else %}—{% endif %}
         </td>
         <td style="font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          {% with rx=c.prescriptions.first %}{% if rx %}{{ rx.diagnosis|truncatechars:65 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
+          {% with rx=c.prescriptions.first %}{% if rx %}{{ rx.diagnosis|truncatechars:65 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}{% endwith %}
         </td>
       </tr>
       {% endfor %}

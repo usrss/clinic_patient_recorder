@@ -302,7 +302,7 @@
     </div>
 
     <div style="font-size:12px;color:#94a3b8;">
-      Triaged by {{ t.triaged_by.get_full_name|default:t.triaged_by.username }} at {{ t.triaged_at|date:"M d, Y H:i" }}
+      Triaged by {% if t.triaged_by %}{{ t.triaged_by.get_full_name|default:t.triaged_by.username }}{% else %}Unknown{% endif %} at {{ t.triaged_at|date:"M d, Y H:i" }}
     </div>
     {% if t.notes %}
     <div style="margin-top:10px;font-size:13px;color:#6b7280;white-space:pre-line;">{{ t.notes }}</div>
@@ -359,7 +359,7 @@
     <p style="font-size:13px;color:#94a3b8;">No medicines were prescribed.</p>
     {% endif %}
     <div style="font-size:12px;color:#94a3b8;margin-top:12px;">
-      Prescribed by Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}
+      Prescribed by Dr. {% if rx.doctor %}{{ rx.doctor.get_full_name|default:rx.doctor.username }}{% else %}Unknown{% endif %}
       on {{ rx.prescribed_at|date:"M d, Y H:i" }}
     </div>
   </div>

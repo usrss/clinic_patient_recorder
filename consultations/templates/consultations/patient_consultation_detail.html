@@ -294,7 +294,7 @@
     <div class="info-label">Nurse Notes</div>
     <div class="content-text" style="margin-top:4px;">{{ t.notes }}</div>
     {% endif %}
-    <div class="signature">Triaged by {{ t.triaged_by.get_full_name|default:t.triaged_by.username }} on {{ t.triaged_at|date:"M d, Y H:i" }}</div>
+    <div class="signature">Triaged by {% if t.triaged_by %}{{ t.triaged_by.get_full_name|default:t.triaged_by.username }}{% else %}Unknown{% endif %} on {{ t.triaged_at|date:"M d, Y H:i" }}</div>
   </div>
   {% endif %}
   {% endwith %}
@@ -335,7 +335,7 @@
     </div>
     {% endfor %}
     {% endif %}
-    <div class="signature">Prescribed by Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }} on {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
+    <div class="signature">Prescribed by Dr. {% if rx.doctor %}{{ rx.doctor.get_full_name|default:rx.doctor.username }}{% else %}Unknown{% endif %} on {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
   </div>
   {% endif %}
   {% endwith %}

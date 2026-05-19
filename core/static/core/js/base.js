@@ -163,7 +163,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loadingAttr === 'false') return;
     if (loadingAttr !== null && loadingAttr !== 'true') return; // custom value, skip
 
-    form.addEventListener('submit', function() {
+    form.addEventListener('submit', function(event) {
+      var active = document.activeElement;
+      var submitter = event.submitter;
+      if (!submitter && active && active.form === form && active.type === 'submit') {
+        submitter = active;
+      }
+      if (submitter && submitter.name && !submitter.disabled) {
+        var preserved = document.createElement('input');
+        preserved.type = 'hidden';
+        preserved.name = submitter.name;
+        preserved.value = submitter.value || '';
+        preserved.setAttribute('data-preserved-submit', 'true');
+        form.appendChild(preserved);
+      }
+
       var buttons = form.querySelectorAll('[type="submit"]');
       buttons.forEach(function(btn) {
         btn.classList.add('btn-loading');

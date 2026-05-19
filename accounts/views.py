@@ -35,6 +35,7 @@ def _base_template(user):
         return 'core/base_admin.html'
     return 'core/base_staff.html'
 
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
@@ -164,7 +165,6 @@ def register(request):
         messages.success(request, f'Welcome, {user.first_name}! Your account has been created.')
         return redirect('accounts:dashboard')
 
-    # Pass current_step back so JS can restore the correct step on failed submission
     current_step = request.POST.get('current_step', '1') if request.method == 'POST' else '1'
     return render(request, 'accounts/register.html', {
         'form': form,
@@ -247,12 +247,10 @@ def forgot_password(request):
         user = User.objects.get(username=patient_id, is_active=True)
 
         otp = str(random.randint(100000, 999999))
-        # FIX: Hash the OTP before storing to prevent plaintext exposure in DB
         user.reset_otp = make_password(otp)
         user.reset_otp_expiry = timezone.now() + timedelta(minutes=3)
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
 
-        # Mask email for display: e.g. j***e@gmail.com
         email = user.email
         local, domain = email.split('@')
         masked_email = local[0] + ('*' * (len(local) - 2)) + local[-1] + '@' + domain
@@ -292,12 +290,10 @@ def verify_otp(request, user_id):
             messages.error(request, 'OTP expired.')
             return redirect('accounts:forgot_password')
 
-        # FIX: Use check_password() since OTP is now hashed
         if not check_password(otp, user.reset_otp):
             messages.error(request, 'Invalid OTP.')
             return render(request, 'accounts/verify_otp.html', {'user_id': user_id})
 
-        # FIX: Clear OTP fields regardless — reset to None (the hash is cleared)
         user.reset_otp = None
         user.reset_otp_expiry = None
         user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
@@ -349,7 +345,6 @@ def dashboard(request):
             logout(request)
             return redirect('accounts:login')
 
-        # Check for unreviewed completed consultations
         unreviewed = Consultation.objects.filter(
             patient=patient,
             status=Consultation.Status.COMPLETED,
@@ -363,9 +358,7 @@ def dashboard(request):
     if user.role == User.Role.DOCTOR:
         now = timezone.now()
         thirty_days_ago = now - timedelta(days=30)
-        seven_days_ago = now - timedelta(days=7)
 
-        # Doctor's triage urgency breakdown (last 30 days)
         doctor_triages = Triage.objects.filter(
             triaged_by=user,
             triaged_at__gte=thirty_days_ago
@@ -373,7 +366,6 @@ def dashboard(request):
         urgency_counts = doctor_triages.values('urgency').annotate(count=Count('pk'))
         urgency_data = {u['urgency']: u['count'] for u in urgency_counts}
 
-        # Doctor's consultations handled per day (last 7 days)
         daily_activity = []
         for i in range(6, -1, -1):
             day = now.date() - timedelta(days=i)
@@ -383,7 +375,6 @@ def dashboard(request):
             ).count()
             daily_activity.append({'date': day.strftime('%a'), 'count': count})
 
-        # Doctor's recent consultations
         recent_consults = Consultation.objects.filter(
             triages__triaged_by=user
         ).select_related('patient').order_by('-updated_at')[:5]
@@ -407,14 +398,12 @@ def dashboard(request):
         now = timezone.now()
         thirty_days_ago = now - timedelta(days=30)
 
-        # ── Consultation Status Breakdown (donut chart) ──
         status_counts = Consultation.objects.values('status').annotate(count=Count('pk'))
         status_data = {s['status']: s['count'] for s in status_counts}
         status_labels = ['Pending', 'Queued', 'Triaged', 'Completed', 'Cancelled', 'Closed']
         status_keys = ['pending', 'queued', 'triaged', 'completed', 'cancelled', 'closed']
         consultation_status_data = [status_data.get(k, 0) for k in status_keys]
 
-        # ── Consultations per Day (last 30 days — line chart) ──
         daily_consultations = []
         daily_labels = []
         for i in range(29, -1, -1):
@@ -423,11 +412,9 @@ def dashboard(request):
             daily_labels.append(day.strftime('%b %d'))
             daily_consultations.append(count)
 
-        # ── Patient Sex Distribution (pie chart) ──
         male_count = Patient.objects.filter(is_archived=False, sex='M').count()
         female_count = Patient.objects.filter(is_archived=False, sex='F').count()
 
-        # ── Patients by College (bar chart) ──
         college_data = []
         college_labels = []
         for college in College.objects.annotate(patient_count=Count('patients', filter=Q(patients__is_archived=False))):
@@ -435,14 +422,12 @@ def dashboard(request):
                 college_labels.append(college.abbreviation)
                 college_data.append(college.patient_count)
 
-        # ── Patient Medical Conditions (horizontal bar) ──
         cond_hypertension = PatientProfile.objects.filter(hypertension=True).count()
         cond_diabetes = PatientProfile.objects.filter(diabetes=True).count()
         cond_asthma = PatientProfile.objects.filter(asthma=True).count()
         cond_cardiac = PatientProfile.objects.filter(cardiac_problems=True).count()
         cond_arthritis = PatientProfile.objects.filter(arthritis=True).count()
 
-        # ── Low Stock Alerts ──
         low_stock_medicines = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
 
         staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
@@ -454,7 +439,6 @@ def dashboard(request):
             'doctors': doctor_count,
             'front_desk_count': max(staff_count - 1 - doctor_count, 0),
             'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
-            # Chart data
             'consultation_status_labels': status_labels,
             'consultation_status_data': consultation_status_data,
             'daily_labels': daily_labels,
@@ -489,7 +473,6 @@ def change_password(request):
         update_session_auth_hash(request, user)
         messages.success(request, 'Password changed successfully.')
 
-        # If patient, redirect to profile completion if not yet completed
         if user.role == User.Role.PATIENT:
             patient = user.get_patient_record()
             if patient and not patient.is_profile_complete:
@@ -560,55 +543,104 @@ def profile_settings(request):
         profile = None
         patient = None
 
+    # ── Initialize forms for GET (overridden on POST below) ──
+    if user.role == User.Role.PATIENT:
+        info_form = PatientProfileEditForm(instance=profile, patient=patient)
+    else:
+        info_form = UserProfileForm(instance=user)
+    password_form = StaffPasswordChangeForm(user)
+
     if request.method == 'POST':
-        if 'save_info' in request.POST:
+        password_fields = {'old_password', 'new_password1', 'new_password2'}
+        is_password_post = (
+            'save_password' in request.POST
+            or any(field in request.POST for field in password_fields)
+        )
+        is_info_post = 'save_info' in request.POST or not is_password_post
+
+        # ── Save Profile Info ──────────────────────────────────────────
+        if is_info_post:
             if user.role == User.Role.PATIENT:
-                info_form = PatientProfileEditForm(request.POST, request.FILES, instance=profile, patient=patient)
+                info_form = PatientProfileEditForm(
+                    request.POST, request.FILES, instance=profile, patient=patient
+                )
             else:
                 info_form = UserProfileForm(request.POST, request.FILES, instance=user)
+
             password_form = StaffPasswordChangeForm(user)
 
             if info_form.is_valid():
                 if user.role == User.Role.PATIENT:
+                    # Save PatientProfile model fields (all Meta.fields)
                     info_form.save()
+
+                    # Manually propagate extra form fields onto the Patient record
                     patient.phone = info_form.cleaned_data.get('phone', '')
                     patient.email = info_form.cleaned_data.get('email', '')
                     patient.emergency_contact_name = info_form.cleaned_data.get('emergency_contact_name', '')
                     patient.emergency_contact_phone = info_form.cleaned_data.get('emergency_contact_phone', '')
-                    # Handle profile picture upload
-                    if 'profile_picture' in request.FILES:
-                        patient.profile_picture = request.FILES['profile_picture']
+
+                    update_fields = [
+                        'phone', 'email',
+                        'emergency_contact_name', 'emergency_contact_phone',
+                    ]
+
+                    # FIX: use cleaned_data for image (not raw request.FILES) so
+                    # validators have already run and the value is normalised.
+                    picture = info_form.cleaned_data.get('profile_picture')
+                    if picture:
+                        # A new file was uploaded and validated
+                        patient.profile_picture = picture
+                        update_fields.append('profile_picture')
                     elif info_form.cleaned_data.get('remove_picture'):
+                        # Explicit removal requested
                         patient.profile_picture = None
-                    patient.save(update_fields=['phone', 'email', 'emergency_contact_name', 'emergency_contact_phone', 'profile_picture'])
+                        update_fields.append('profile_picture')
+
+                    patient.save(update_fields=update_fields)
+
                 else:
-                    info_form.save()
-                messages.success(request, 'Profile updated.')
+                    # ── Staff branch ─────────────────────────────────────
+                    # FIX: profile_picture is removed from UserProfileForm.Meta.fields
+                    # so we handle it here explicitly — prevents info_form.save()
+                    # racing with the remove_picture logic.
+                    info_form.save()  # saves first_name, last_name, email, phone
+
+                    picture = info_form.cleaned_data.get('profile_picture')
+                    if picture:
+                        user.profile_picture = picture
+                        user.save(update_fields=['profile_picture'])
+                    elif info_form.cleaned_data.get('remove_picture'):
+                        user.profile_picture = None
+                        user.save(update_fields=['profile_picture'])
+
+                messages.success(request, 'Profile updated successfully.')
                 return redirect('accounts:profile_settings')
 
-        elif 'save_password' in request.POST:
-            info_form = PatientProfileEditForm(instance=profile, patient=patient) if user.role == User.Role.PATIENT else UserProfileForm(instance=user)
+        # ── Change Password ────────────────────────────────────────────
+        elif is_password_post:
+            if user.role == User.Role.PATIENT:
+                info_form = PatientProfileEditForm(instance=profile, patient=patient)
+            else:
+                info_form = UserProfileForm(instance=user)
+
             password_form = StaffPasswordChangeForm(user, request.POST)
 
             if password_form.is_valid():
-                user = password_form.save()
-                user.force_password_change = False
-                user.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, 'Password changed.')
+                updated_user = password_form.save()
+                updated_user.force_password_change = False
+                updated_user.save(update_fields=['force_password_change'])
+                update_session_auth_hash(request, updated_user)
+                messages.success(request, 'Password changed successfully.')
                 return redirect('accounts:profile_settings')
-    else:
-        if user.role == User.Role.PATIENT:
-            info_form = PatientProfileEditForm(instance=profile, patient=patient)
-        else:
-            info_form = UserProfileForm(instance=user)
-        password_form = StaffPasswordChangeForm(user)
 
     if user.role == User.Role.PATIENT:
         template = 'accounts/profile_settings_patient.html'
         context = {
             'info_form': info_form,
             'password_form': password_form,
+            'patient': patient,
+            'profile': profile,
         }
     else:
         template = 'accounts/profile_settings_staff.html'
@@ -643,14 +675,12 @@ def complete_profile(request):
         messages.error(request, 'Patient record not found.')
         return redirect('accounts:dashboard')
 
-    # If already completed, redirect to dashboard
     if patient.is_profile_complete:
         messages.info(request, 'Your profile is already complete.')
         return redirect('accounts:dashboard')
 
     profile, _ = PatientProfile.objects.get_or_create(patient=patient)
 
-    # Pre-fill from existing Patient + PatientProfile data
     initial = {
         'first_name': patient.first_name,
         'middle_name': patient.middle_name,
@@ -668,7 +698,6 @@ def complete_profile(request):
         'year_level': profile.year_level or '',
         'emergency_contact_name': patient.emergency_contact_name or '',
         'emergency_contact_phone': patient.emergency_contact_phone or '',
-        # Medical history checkboxes
         'hypertension': profile.hypertension,
         'diabetes': profile.diabetes,
         'asthma': profile.asthma,
@@ -676,7 +705,6 @@ def complete_profile(request):
         'arthritis': profile.arthritis,
         'other_conditions': profile.other_conditions or '',
         'known_allergies': profile.known_allergies or '',
-        # Immunizations
         'bcg': profile.bcg,
         'dpt': profile.dpt,
         'opv': profile.opv,
@@ -684,13 +712,11 @@ def complete_profile(request):
         'measles': profile.measles,
         'tt': profile.tt,
         'immunization_others': profile.immunization_others or '',
-        # Background
         'current_medications': profile.current_medications or '',
         'vices': profile.vices or '',
         'previous_illnesses': profile.previous_illnesses or '',
         'previous_hospitalizations': profile.previous_hospitalizations or '',
     }
-    # Pre-fill college from patient record
     if patient.college:
         initial['college'] = patient.college
 
@@ -700,7 +726,6 @@ def complete_profile(request):
         cd = form.cleaned_data
 
         with transaction.atomic():
-            # Update Patient model fields
             patient.phone = cd.get('phone', '')
             patient.email = cd.get('email', '')
             patient.emergency_contact_name = cd.get('emergency_contact_name', '')
@@ -708,10 +733,12 @@ def complete_profile(request):
             patient.college = cd.get('college', None)
             patient.department = cd.get('department', '')
             patient.position = cd.get('position', '')
-            # Handle profile picture
-            if 'profile_picture' in request.FILES:
-                patient.profile_picture = request.FILES['profile_picture']
-            # Calculate expected graduation year from year_level
+
+            # FIX: use cleaned_data for image
+            picture = cd.get('profile_picture')
+            if picture:
+                patient.profile_picture = picture
+
             from accounts.utils import calculate_graduation_year
             year_level = cd.get('year_level', '')
             if cd.get('role') == 'student' and year_level:
@@ -719,13 +746,16 @@ def complete_profile(request):
             else:
                 patient.expected_graduation_year = None
 
-            patient.save(update_fields=[
+            update_fields = [
                 'phone', 'email', 'emergency_contact_name',
                 'emergency_contact_phone', 'college', 'department', 'position',
-                'profile_picture', 'expected_graduation_year',
-            ])
+                'expected_graduation_year',
+            ]
+            if picture:
+                update_fields.append('profile_picture')
 
-            # Update PatientProfile
+            patient.save(update_fields=update_fields)
+
             profile.birthday = cd.get('birthday') or profile.birthday
             profile.address = cd.get('address', '')
             profile.blood_type = cd.get('blood_type', '')
@@ -735,7 +765,6 @@ def complete_profile(request):
             profile.height_cm = cd.get('height_cm')
             profile.weight_kg = cd.get('weight_kg')
 
-            # Medical history
             profile.hypertension = cd.get('hypertension', False)
             profile.diabetes = cd.get('diabetes', False)
             profile.asthma = cd.get('asthma', False)
@@ -744,7 +773,6 @@ def complete_profile(request):
             profile.other_conditions = cd.get('other_conditions', '')
             profile.known_allergies = cd.get('known_allergies', '')
 
-            # Immunizations
             profile.bcg = cd.get('bcg', False)
             profile.dpt = cd.get('dpt', False)
             profile.opv = cd.get('opv', False)
@@ -753,17 +781,14 @@ def complete_profile(request):
             profile.tt = cd.get('tt', False)
             profile.immunization_others = cd.get('immunization_others', '')
 
-            # Medical background
             profile.current_medications = cd.get('current_medications', '')
             profile.vices = cd.get('vices', '')
             profile.previous_illnesses = cd.get('previous_illnesses', '')
             profile.previous_hospitalizations = cd.get('previous_hospitalizations', '')
 
-            # Mark as completed
             profile.profile_completed = True
             profile.save()
 
-            # Mark patient as having logged in
             patient.has_logged_in = True
             patient.save(update_fields=['has_logged_in'])
 

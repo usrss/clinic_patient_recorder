@@ -214,6 +214,11 @@
           <div style="flex:1;">
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Upload Picture</label>
             <input type="file" id="id_profile_picture" name="profile_picture" class="reg-input" accept="image/jpeg,image/png,image/webp">
+            {% if form.profile_picture.errors %}
+              {% for error in form.profile_picture.errors %}
+                <div style="font-size:11px;color:#ef4444;margin-top:6px;display:flex;align-items:center;gap:4px;"><ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon> {{ error }}</div>
+              {% endfor %}
+            {% endif %}
           </div>
         </div>
 
