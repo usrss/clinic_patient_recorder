@@ -328,6 +328,33 @@
   </div>
 
   {# ── Assign Queue / Schedule ── #}
+  {% if is_follow_up %}
+  {# ── Simplified: Auto-queue for follow-ups ── #}
+  <div class="sec-heading">Process Follow-up Request</div>
+  <div class="panel">
+    <div class="panel-body">
+
+      <div class="info-banner" style="background:#fffbeb;border-color:#fde68a;color:#92400e;">
+        <svg width="15" height="15" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        This patient has an <strong>active follow-up case</strong> for Consultation #{{ consultation.pk }}.
+        Processing will automatically assign the next queue number and route to triage.
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-actions">
+          <button type="submit" name="process_follow_up" value="1" class="submit-btn" style="background:#d97706;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Process & Assign Queue Number
+          </button>
+          <a href="{% url 'consultations:queue' %}" class="cancel-link">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+  {% else %}
+  {# ── Standard: New consultation queue/schedule form ── #}
   <div class="sec-heading">Assign Queue / Schedule</div>
   <div class="panel">
     <div class="panel-body">
@@ -366,6 +393,7 @@
 
     </div>
   </div>
+  {% endif %}
 
   {# ── Cancel Consultation ── #}
   <div class="danger-panel">

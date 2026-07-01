@@ -13,6 +13,7 @@ import datetime
 from io import BytesIO
 
 from accounts.decorators import admin_required
+from audit_logs.services import log_view, log_export
 from consultations.models import Consultation, Prescription, PrescriptionItem
 from inventory.models import Medicine, StockMovement
 from patients.models import Patient
@@ -34,6 +35,12 @@ from reportlab.platypus import (
 @login_required
 @admin_required
 def dashboard(request):
+    log_view(
+        user=request.user,
+        module='Reports',
+        description='Viewed report dashboard',
+        request=request,
+    )
     today = timezone.now().date()
 
     total_consultations     = Consultation.objects.count()
@@ -128,8 +135,20 @@ def disease_report(request):
     )
 
     if request.GET.get('export') == 'csv':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported disease report as CSV{" — " + keyword if keyword else ""}',
+            request=request,
+        )
         return _disease_csv(consultations)
     if request.GET.get('export') == 'pdf':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported disease report as PDF{" — " + keyword if keyword else ""}',
+            request=request,
+        )
         return _disease_pdf(consultations, keyword, date_from, date_to,
                             patient_type, college_id, user_name)
 
@@ -493,8 +512,20 @@ def feedback_report(request):
 
     export_fmt = request.GET.get('export', '')
     if export_fmt == 'pdf':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported feedback report as PDF{" — " + search if search else ""}',
+            request=request,
+        )
         return _feedback_pdf(feedbacks, search, rating, user_name)
     if export_fmt == 'csv':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported feedback report as CSV{" — " + search if search else ""}',
+            request=request,
+        )
         return _feedback_csv(feedbacks)
 
     # ── Summary stats ──

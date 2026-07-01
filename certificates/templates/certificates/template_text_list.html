@@ -8,36 +8,55 @@
   .editor-page h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0 0 6px; }
   .editor-page p.lead { font-size: 13px; color: #6b7280; margin: 0 0 28px; }
   .type-section { margin-bottom: 32px; }
-  .type-header { font-size: 14px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; }
-  .slot-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: box-shadow .15s; }
-  .slot-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .slot-info { flex: 1; min-width: 0; }
-  .slot-key { font-size: 14px; font-weight: 600; color: #1a1a2e; }
-  .slot-text-preview { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
-  .slot-placeholders { font-size: 11px; color: #94a3b8; margin-top: 2px; font-family: monospace; }
-  .btn-edit { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #fff; background: #0078d4; text-decoration: none; white-space: nowrap; transition: background .15s; }
+  .type-header { font-size: 14px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
+  .type-badge { font-size: 10px; font-weight: 600; background: #eff6ff; color: #0078d4; padding: 2px 10px; border-radius: 12px; text-transform: none; letter-spacing: normal; }
+  .template-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; transition: box-shadow .15s; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .template-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .template-info { flex: 1; min-width: 0; }
+  .template-body-preview { font-size: 13px; color: #374151; line-height: 1.6; margin-top: 6px; white-space: pre-line; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+  .template-body-preview.empty { color: #9ca3af; font-style: italic; }
+  .template-meta { font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: monospace; display: flex; gap: 16px; }
+  .btn-edit { display: inline-flex; align-items: center; gap: 5px; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; background: #0078d4; text-decoration: none; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
   .btn-edit:hover { background: #006bbf; color: #fff; }
   .empty-state { text-align: center; padding: 40px; color: #9ca3af; font-size: 13px; }
+  .info-banner { background: #f0f4ff; border: 1px solid #dbe4f0; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; font-size: 13px; color: #374151; line-height: 1.5; }
+  .info-banner strong { color: #1a1a2e; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="editor-page">
   <h1>Certificate Text Templates</h1>
-  <p class="lead">Edit the prose text used in certificate print templates. Changes affect new certificates only — already-issued certificates keep their frozen text.</p>
+  <p class="lead">Edit the full body text used in each certificate type. Changes affect new certificates only — already-issued certificates keep their frozen text.</p>
+
+  <div class="info-banner">
+    <strong>How it works:</strong> Each certificate type has one editable body of text.
+    Use <code>{placeholder}</code> tokens for dynamic values that will be replaced
+    with actual data when the certificate is issued. See the edit page for a full
+    list of available placeholders.
+  </div>
 
   {% for cert_type, slots in grouped.items %}
   <div class="type-section">
-    <div class="type-header">{{ cert_type|title }}</div>
+    <div class="type-header">
+      {{ cert_type|title }}
+      <span class="type-badge">{{ slots|length }} template{% if slots|length != 1 %}s{% endif %}</span>
+    </div>
     {% for slot in slots %}
-    <div class="slot-card">
-      <div class="slot-info">
-        <div class="slot-key">{{ slot.slot_key }}</div>
-        <div class="slot-text-preview">{{ slot.text|truncatechars:100 }}</div>
+    <div class="template-card">
+      <div class="template-info">
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Full Template Body</div>
+        <div class="template-body-preview{% if not slot.text %} empty{% endif %}">
+          {% if slot.text %}{{ slot.text|truncatechars:200 }}{% else %}No template text set yet. Click Edit to add the certificate body.{% endif %}
+        </div>
+        <div class="template-meta">
+          <span>Updated: {{ slot.updated_at|date:"M d, Y H:i" }}</span>
+          {% if slot.updated_by %}<span>by {{ slot.updated_by.get_full_name|default:slot.updated_by.username }}</span>{% endif %}
+        </div>
       </div>
       <a href="{% url 'certificates:template_text_edit' slot.pk %}" class="btn-edit">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
+        Edit Template
       </a>
     </div>
     {% empty %}

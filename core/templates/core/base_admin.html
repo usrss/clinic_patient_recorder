@@ -328,6 +328,21 @@
     </div>
     </div>
 
+    <!-- Monitoring -->
+    <div class="adm-nav-section adm-collapsible">
+      <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">
+        <div class="adm-nav-section-label">Monitoring</div>
+        <ion-icon name="chevron-down-outline" class="adm-collapsible-arrow"></ion-icon>
+      </div>
+      <div class="adm-collapsible-items">
+      <a href="{% url 'audit_logs:list' %}"
+         class="adm-nav-link {% if request.resolver_match.app_name == 'audit_logs' %}active{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Audit Logs
+      </a>
+    </div>
+    </div>
+
     <!-- Account -->
     <div class="adm-nav-section adm-collapsible">
       <div class="adm-collapsible-header" onclick="toggleAdmSection(this)">

@@ -17,7 +17,7 @@ urlpatterns = [
     path('create/', views.consultation_create, name='consultation_create'),
     path('queue/<int:pk>/', views.queue_detail, name='queue_detail'),
     path('queue/<int:pk>/cancel/', views.frontdesk_cancel, name='frontdesk_cancel'),
-    path('follow-up/<int:follow_up_pk>/process/', views.process_follow_up, name='process_follow_up'),
+
 
     # ── Admin ─────────────────────────────────────────────────────────
     path('<int:pk>/reopen/', views.admin_reopen, name='admin_reopen'),

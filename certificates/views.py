@@ -9,6 +9,7 @@ from consultations.models import Consultation
 from .models import MedicalCertificate, CertificateAuditLog, CertificateTemplateText, CertificateTemplateChangeLog
 from .forms import CertificateTypeForm, CertificateDetailsForm, CertificateVoidForm, CertificateTemplateTextForm
 from accounts.decorators import doctor_required, clinical_staff_required, admin_required
+from audit_logs.services import log_create, log_change, log_view, log_delete, log_audit_entry
 
 
 # ─── HELPER ────────────────────────────────────────────────────────────────
@@ -41,36 +42,47 @@ def _get_issued_certificate(consultation):
     ).first()
 
 
-def _get_certificate_text(certificate):
-    """Return a dict of rendered slot text for a certificate.
+# ── Slot order for legacy dict-format snapshots ──────────────────────────
+_LEGACY_SLOT_ORDER = {
+    'standard': ['diagnosis_statement', 'diagnosis_line', 'rest_period_single', 'rest_period_range', 'closing_statement'],
+    'fit_to_work': ['statement', 'findings_line', 'closing_statement'],
+    'fit_to_play': ['statement', 'findings_line', 'closing_statement'],
+    'dental': ['diagnosis_statement', 'diagnosis_line', 'closing_statement'],
+}
 
-    For issued certs, returns the frozen rendered_text_snapshot.
+
+def _get_certificate_text(certificate):
+    """Return the rendered body text for a certificate.
+
+    For issued certs, returns the frozen rendered_text_snapshot (string).
     For drafts, resolves text live from CertificateTemplateText.
+    Handles legacy dict-format snapshots by concatenating fragments.
     """
     if certificate.rendered_text_snapshot:
-        return certificate.rendered_text_snapshot
+        snapshot = certificate.rendered_text_snapshot
+        # Legacy dict-format snapshot: concatenate in defined order
+        if isinstance(snapshot, dict):
+            order = _LEGACY_SLOT_ORDER.get(
+                certificate.certificate_type,
+                list(snapshot.keys()),
+            )
+            parts = [snapshot[k] for k in order if k in snapshot and snapshot[k]]
+            return '\n\n'.join(parts)
+        # New string-format snapshot
+        return snapshot
 
     # Dental inherits standard's template text
     ct = certificate.certificate_type
     source_type = 'standard' if ct == MedicalCertificate.CertificateType.DENTAL else ct
 
-    templates = CertificateTemplateText.objects.filter(
+    body = CertificateTemplateText.objects.filter(
         certificate_type=source_type,
-    )
-    mapping = certificate._build_placeholder_map()
-    result = {}
-    for t in templates:
-        text = t.text
-        for key, val in mapping.items():
-            text = text.replace(f'{{{key}}}', val)
-        result[t.slot_key] = text
+        slot_key='body',
+    ).first()
+    if not body:
+        return ''
 
-    # Dental: strip rest-period slots
-    if ct == MedicalCertificate.CertificateType.DENTAL:
-        result.pop('rest_period_single', None)
-        result.pop('rest_period_range', None)
-
-    return result
+    return certificate._resolve_text(body.text)
 
 
 # ─── STEP 1: CERTIFICATE TYPE SELECTION ────────────────────────────────────
@@ -103,18 +115,26 @@ def wizard_type(request, consultation_pk):
         if not selected_diagnosis:
             selected_diagnosis = diagnoses  # fallback to pre-fill
 
-        # Create DRAFT certificate
-        with transaction.atomic():
-            certificate = MedicalCertificate.objects.create(
-                consultation=consultation,
-                patient=consultation.patient,
-                doctor=request.user,
-                certificate_type=cert_type,
-                status=MedicalCertificate.Status.DRAFT,
-                diagnosis=selected_diagnosis,
-            )
-            _log_audit(certificate, request.user, 'created',
-                       f'Draft created (type: {cert_type})')
+        # Create DRAFT certificate    with transaction.atomic():
+        certificate = MedicalCertificate.objects.create(
+            consultation=consultation,
+            patient=consultation.patient,
+            doctor=request.user,
+            certificate_type=cert_type,
+            status=MedicalCertificate.Status.DRAFT,
+            diagnosis=selected_diagnosis,
+        )
+        _log_audit(certificate, request.user, 'created',
+                   f'Draft created (type: {cert_type})')
+        log_create(
+            user=request.user,
+            module='Medical Certificates',
+            description=f'Created draft {cert_type} certificate — {consultation.patient.get_full_name()}',
+            object_model='certificates.MedicalCertificate',
+            object_id=certificate.pk,
+            object_repr=str(certificate),
+            request=request,
+        )
 
         return redirect('certificates:wizard_details', pk=certificate.pk)
 
@@ -278,6 +298,16 @@ def discard_draft(request, pk):
         certificate.status = MedicalCertificate.Status.VOIDED
         certificate.save(update_fields=['status'])
         _log_audit(certificate, request.user, 'voided', 'Discarded by user to start over')
+        log_audit_entry(
+            user=request.user,
+            action='DELETE',
+            module='Medical Certificates',
+            description=f'Discarded draft certificate — {certificate.patient_name}',
+            object_model='certificates.MedicalCertificate',
+            object_id=certificate.pk,
+            object_repr=str(certificate),
+            request=request,
+        )
         messages.info(request, 'Draft discarded. You can now issue a new certificate.')
         return redirect('certificates:wizard_type', consultation_pk=certificate.consultation_id)
 
@@ -300,6 +330,16 @@ def void_certificate(request, pk):
         form = CertificateVoidForm(request.POST)
         if form.is_valid():
             certificate.void(user=request.user, reason=form.cleaned_data['reason'])
+            log_audit_entry(
+                user=request.user,
+                action='DELETE',
+                module='Medical Certificates',
+                description=f'Voided certificate #{certificate.certificate_number} — {certificate.patient_name}',
+                object_model='certificates.MedicalCertificate',
+                object_id=certificate.pk,
+                object_repr=str(certificate),
+                request=request,
+            )
             messages.success(request, f'Certificate #{certificate.certificate_number} has been voided.')
             return redirect('consultations:completion_summary', pk=certificate.consultation_id)
     else:

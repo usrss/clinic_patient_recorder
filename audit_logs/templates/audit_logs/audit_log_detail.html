@@ -1,0 +1,321 @@
+{% extends base_template %}
+{% load static %}
+{% block title %}Audit Log Detail — Patient Record System{% endblock %}
+{% block page_title %}Audit Log Entry{% endblock %}
+{% block page_subtitle %}Log #{{ log.pk }} · {{ log.timestamp|date:"M d, Y h:i A" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ald-page { max-width: 800px; margin: 0 auto; }
+  .ald-card {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+  }
+
+  .ald-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e8ecf1;
+  }
+
+  .ald-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .ald-badge-create { background: #d1fae5; color: #065f46; }
+  .ald-badge-update { background: #dbeafe; color: #1e40af; }
+  .ald-badge-delete { background: #fce7f3; color: #9d174d; }
+  .ald-badge-view  { background: #f3f4f6; color: #374151; }
+  .ald-badge-login,
+  .ald-badge-logout { background: #ede9fe; color: #5b21b6; }
+  .ald-badge-print,
+  .ald-badge-download,
+  .ald-badge-export { background: #fef3c7; color: #92400e; }
+
+  .ald-badge-success { background: #d1fae5; color: #065f46; }
+  .ald-badge-failed { background: #fce7f3; color: #9d174d; }
+
+  .ald-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 32px;
+  }
+  .ald-field { }
+  .ald-field-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 4px;
+  }
+  .ald-field-value {
+    font-size: 14px;
+    color: #1a1a2e;
+    font-weight: 500;
+  }
+
+  .ald-description {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e8ecf1;
+  }
+  .ald-description .ald-field-value {
+    font-weight: 400;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #374151;
+  }
+
+  /* Change history */
+  .ald-changes {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e8ecf1;
+  }
+  .ald-changes h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin: 0 0 12px;
+  }
+  .ald-changes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ald-change-col {
+    background: #f9fafb;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .ald-change-col h4 {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin: 0 0 8px;
+  }
+  .ald-change-col.before h4 { color: #ef4444; }
+  .ald-change-col.after h4 { color: #059669; }
+
+  .ald-change-item {
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px solid #f3f4f6;
+    line-height: 1.5;
+  }
+  .ald-change-item:last-child { border-bottom: none; }
+  .ald-change-field {
+    font-weight: 600;
+    color: #374151;
+  }
+  .ald-change-value {
+    color: #6b7280;
+    word-break: break-word;
+  }
+  .ald-change-empty {
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+  }
+
+  /* Object reference */
+  .ald-object-link {
+    color: #0078d4;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .ald-object-link:hover { text-decoration: underline; }
+
+  /* Tech info */
+  .ald-tech {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e8ecf1;
+  }
+  .ald-tech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 32px;
+  }
+
+  .ald-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    background: #f3f4f6;
+    text-decoration: none;
+    transition: all .15s;
+    margin-bottom: 20px;
+  }
+  .ald-back:hover { background: #e5e7eb; }
+
+  @media (max-width: 600px) {
+    .ald-grid,
+    .ald-changes-grid,
+    .ald-tech-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ald-page">
+
+  <a href="{% url 'audit_logs:list' %}{% if request.GET.next %}?{{ request.GET.next }}{% endif %}" class="ald-back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Audit Logs
+  </a>
+
+  <div class="ald-card">
+
+    {# ── Header: action badge + status ── #}
+    <div class="ald-header">
+      <div>
+        <span class="ald-badge ald-badge-{{ log.action|lower }}">{{ log.action }}</span>
+        <span style="margin-left:8px;" class="ald-badge ald-badge-{{ log.status|lower }}">{{ log.get_status_display }}</span>
+      </div>
+      <span style="font-size:12px;color:#94a3b8;">#{{ log.pk }}</span>
+    </div>
+
+    {# ── Core fields ── #}
+    <div class="ald-grid">
+      <div class="ald-field">
+        <div class="ald-field-label">User</div>
+        <div class="ald-field-value">{{ log.user_name|default:log.user|default:'—' }}</div>
+      </div>
+      <div class="ald-field">
+        <div class="ald-field-label">Role</div>
+        <div class="ald-field-value">{{ log.user_role|title }}</div>
+      </div>
+      <div class="ald-field">
+        <div class="ald-field-label">Action</div>
+        <div class="ald-field-value">{{ log.action }}</div>
+      </div>
+      <div class="ald-field">
+        <div class="ald-field-label">Module</div>
+        <div class="ald-field-value">{{ log.get_module_display }}</div>
+      </div>
+      <div class="ald-field">
+        <div class="ald-field-label">Date &amp; Time</div>
+        <div class="ald-field-value">{{ log.timestamp|date:"F d, Y" }}<br>{{ log.timestamp|date:"h:i A" }}</div>
+      </div>
+      <div class="ald-field">
+        <div class="ald-field-label">Affected Record</div>
+        <div class="ald-field-value">
+          {% if log.object_model and log.object_id %}
+          <span class="ald-object-link">{{ log.object_model }} #{{ log.object_id }}</span>
+          {% if log.object_repr %}
+          <br><span style="font-size:11px;color:#94a3b8;">{{ log.object_repr }}</span>
+          {% endif %}
+          {% else %}
+          <span style="color:#94a3b8;">—</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Description ── #}
+    <div class="ald-description">
+      <div class="ald-field-label" style="margin-bottom:6px;">Description</div>
+      <div class="ald-field-value">
+        {% if log.description %}
+          {{ log.description|linebreaksbr }}
+        {% else %}
+          <span style="color:#94a3b8;">No description provided.</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ── Change History ── #}
+    {% if log.changes_before or log.changes_after %}
+    <div class="ald-changes">
+      <h3>Changes</h3>
+      <div class="ald-changes-grid">
+        <div class="ald-change-col before">
+          <h4>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:3px;"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Before
+          </h4>
+          {% if log.changes_before %}
+            {% for field, value in log.changes_before.items %}
+            <div class="ald-change-item">
+              <div class="ald-change-field">{{ field|title }}</div>
+              <div class="ald-change-value">{{ value|default:'—' }}</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="ald-change-empty">No data captured</div>
+          {% endif %}
+        </div>
+        <div class="ald-change-col after">
+          <h4>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:3px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            After
+          </h4>
+          {% if log.changes_after %}
+            {% for field, value in log.changes_after.items %}
+            <div class="ald-change-item">
+              <div class="ald-change-field">{{ field|title }}</div>
+              <div class="ald-change-value">{{ value|default:'—' }}</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="ald-change-empty">No data captured</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Technical Information ── #}
+    <div class="ald-tech">
+      <h3 style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px;">
+        Technical Information
+      </h3>
+      <div class="ald-tech-grid">
+        <div>
+          <div class="ald-field-label" style="margin-bottom:2px;">IP Address</div>
+          <div class="ald-field-value" style="font-size:13px;font-family:monospace;">{{ log.ip_address|default:'—' }}</div>
+        </div>
+        <div>
+          <div class="ald-field-label" style="margin-bottom:2px;">Object Model</div>
+          <div class="ald-field-value" style="font-size:13px;font-family:monospace;">{{ log.object_model|default:'—' }}</div>
+        </div>
+        <div>
+          <div class="ald-field-label" style="margin-bottom:2px;">Object ID</div>
+          <div class="ald-field-value" style="font-size:13px;font-family:monospace;">{{ log.object_id|default:'—' }}</div>
+        </div>
+        <div>
+          <div class="ald-field-label" style="margin-bottom:2px;">Log ID</div>
+          <div class="ald-field-value" style="font-size:13px;font-family:monospace;">{{ log.pk }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

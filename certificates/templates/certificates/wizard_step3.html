@@ -88,36 +88,14 @@
       <p style="font-weight:700;">To Whom It May Concern:</p>
 
       {% if slot_text %}
-        {# ── Live preview from CertificateTemplateText ── #}
-        {% if slot_text.diagnosis_statement %}<p>{{ slot_text.diagnosis_statement }}</p>{% endif %}
-        {% if slot_text.diagnosis_line %}<p><strong>{{ slot_text.diagnosis_line }}</strong></p>{% endif %}
-
-        {% if certificate.certificate_type == 'fit_to_work' %}
-          {% if slot_text.statement %}<p>{{ slot_text.statement }}</p>{% endif %}
-          {% if slot_text.findings_line %}<p><strong>{{ slot_text.findings_line }}</strong></p>{% endif %}
-          {% if certificate.return_date %}<p><strong>Recommended Return Date:</strong> {{ certificate.return_date|date:"F d, Y" }}</p>{% endif %}
-          {% if certificate.restrictions %}<p><strong>Restrictions:</strong> {{ certificate.restrictions }}</p>{% endif %}
-
-        {% elif certificate.certificate_type == 'fit_to_play' %}
-          {% if slot_text.statement %}<p>{{ slot_text.statement }}</p>{% endif %}
-          {% if slot_text.findings_line %}<p><strong>{{ slot_text.findings_line }}</strong></p>{% endif %}
-
-        {% elif certificate.certificate_type == 'dental' %}
-          {# Dental: diagnosis_statement + diagnosis_line only, no rest period #}
-
-        {% elif certificate.certificate_type == 'standard' %}
-          {% if slot_text.rest_period_single %}<p>{{ slot_text.rest_period_single }}</p>{% endif %}
-          {% if slot_text.rest_period_range %}<p>{{ slot_text.rest_period_range }}</p>{% endif %}
+        {# ── Live preview from consolidated template body ── #}
+        {% if slot_text|length > 0 %}
+          {{ slot_text|linebreaks }}
         {% endif %}
 
         {% if certificate.remarks %}
-        <p><strong>Remarks:</strong> {{ certificate.remarks }}</p>
-        {% endif %}
-
         <hr style="border:none;border-top:1px solid #ccc;margin:20px 0;">
-
-        {% if slot_text.closing_statement %}
-        <p>{{ slot_text.closing_statement }}</p>
+        <p><strong>Remarks:</strong> {{ certificate.remarks }}</p>
         {% endif %}
       {% else %}
         {# ── Fallback: direct model rendering ── #}

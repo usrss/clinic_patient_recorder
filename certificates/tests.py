@@ -14,7 +14,7 @@ _NO_MANIFEST_STORAGE = override_settings(STORAGES={
     'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 })
 
-from certificates.models import MedicalCertificate, CertificateTemplateText, CertificateTemplateChangeLog
+from certificates.models import MedicalCertificate, CertificateTemplateText, CertificateTemplateChangeLog, CertificateAuditLog
 from consultations.models import Consultation
 from patients.models import Patient
 from colleges.models import College
@@ -279,7 +279,6 @@ class CertificateTemplateTextTest(TestCase):
         )
 
         # Ensure template text is seeded
-        from certificates.models import CertificateTemplateText
         cls._seed_templates()
 
     @classmethod
@@ -287,60 +286,30 @@ class CertificateTemplateTextTest(TestCase):
         # Clear any rows from data migration so we control the exact set
         CertificateTemplateText.objects.all().delete()
         CertificateTemplateText.objects.bulk_create([
+            # ── Standard ─────────────────────────────────────────────────
             CertificateTemplateText(
                 certificate_type='standard',
-                slot_key='diagnosis_statement',
-                text='This is to certify that {patient_name}, {age} years of age, was examined on {exam_date}.',
+                slot_key='body',
+                text='This is to certify that {patient_name}, {age} years of age, was examined on {exam_date}.\n\n'
+                     'Diagnosis: {diagnosis}\n\n'
+                     'The patient is advised to rest from {rest_from} to {rest_to}.\n\n'
+                     'This certificate is issued for legal purposes.',
             ),
-            CertificateTemplateText(
-                certificate_type='standard',
-                slot_key='diagnosis_line',
-                text='Diagnosis: {diagnosis}',
-            ),
-            CertificateTemplateText(
-                certificate_type='standard',
-                slot_key='rest_period_single',
-                text='The patient is advised to rest on {rest_date}.',
-            ),
-            CertificateTemplateText(
-                certificate_type='standard',
-                slot_key='rest_period_range',
-                text='The patient is advised to rest from {rest_from} to {rest_to}.',
-            ),
-            CertificateTemplateText(
-                certificate_type='standard',
-                slot_key='closing_statement',
-                text='This certificate is issued for legal purposes.',
-            ),
+            # ── Fit-to-Work ──────────────────────────────────────────────
             CertificateTemplateText(
                 certificate_type='fit_to_work',
-                slot_key='statement',
-                text='This is to certify that {patient_name} is FIT to work. Assessment: {work_assessment}.',
+                slot_key='body',
+                text='This is to certify that {patient_name} is FIT to work. Assessment: {work_assessment}.\n\n'
+                     'Findings: {diagnosis}\n\n'
+                     'This certificate is issued upon the request of the patient for legal purposes.',
             ),
-            CertificateTemplateText(
-                certificate_type='fit_to_work',
-                slot_key='findings_line',
-                text='Findings: {diagnosis}',
-            ),
-            CertificateTemplateText(
-                certificate_type='fit_to_work',
-                slot_key='closing_statement',
-                text='This certificate is issued upon the request of the patient for legal purposes.',
-            ),
+            # ── Fit-to-Play ──────────────────────────────────────────────
             CertificateTemplateText(
                 certificate_type='fit_to_play',
-                slot_key='statement',
-                text='This is to certify that {patient_name} is FIT to play. Status: {fitness_status}.',
-            ),
-            CertificateTemplateText(
-                certificate_type='fit_to_play',
-                slot_key='findings_line',
-                text='Findings: {diagnosis}',
-            ),
-            CertificateTemplateText(
-                certificate_type='fit_to_play',
-                slot_key='closing_statement',
-                text='This certificate is issued upon the request of the patient for legal purposes.',
+                slot_key='body',
+                text='This is to certify that {patient_name} is FIT to play. Status: {fitness_status}.\n\n'
+                     'Findings: {diagnosis}\n\n'
+                     'This certificate is issued upon the request of the patient for legal purposes.',
             ),
         ])
 
@@ -366,7 +335,7 @@ class CertificateTemplateTextTest(TestCase):
     # ── Test 1: Editing a slot after issuance doesn't change snapshot ──
 
     def test_edit_after_issue_does_not_change_snapshot(self):
-        """Editing a template slot after a cert is issued should NOT change that cert's rendered_text_snapshot."""
+        """Editing a template after a cert is issued should NOT change that cert's rendered_text_snapshot."""
         cert = self._create_cert(
             MedicalCertificate.CertificateType.STANDARD,
             rest_from=timezone.localtime(timezone.now()).date(),
@@ -374,11 +343,11 @@ class CertificateTemplateTextTest(TestCase):
         )
         cert.issue(user=self.doctor)
 
-        original_snapshot = dict(cert.rendered_text_snapshot)
+        original_snapshot = str(cert.rendered_text_snapshot)
 
         # Now edit the template text
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='diagnosis_statement',
+            certificate_type='standard', slot_key='body',
         )
         slot.text = 'EDITED: {patient_name} was examined on {exam_date}.'
         slot.save()
@@ -397,7 +366,7 @@ class CertificateTemplateTextTest(TestCase):
         """A new certificate issued after a template edit should use the new wording."""
         # Edit the template text first
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='diagnosis_statement',
+            certificate_type='standard', slot_key='body',
         )
         slot.text = 'NEW WORDING: {patient_name} was examined on {exam_date}.'
         slot.save()
@@ -411,17 +380,17 @@ class CertificateTemplateTextTest(TestCase):
 
         self.assertIn(
             'NEW WORDING:',
-            cert.rendered_text_snapshot['diagnosis_statement'],
+            cert.rendered_text_snapshot,
         )
         self.assertNotIn(
             'This is to certify',
-            cert.rendered_text_snapshot['diagnosis_statement'],
+            cert.rendered_text_snapshot,
         )
 
-    # ── Test 3: Dental renders only diagnosis_statement, no rest period ──
+    # ── Test 3: Dental renders body text from standard template ──
 
-    def test_dental_no_rest_period_content(self):
-        """Dental certificate should render only diagnosis_statement and diagnosis_line, no rest-period content."""
+    def test_dental_uses_standard_template(self):
+        """Dental certificate should render body text from the standard template."""
         cert = self._create_cert(
             MedicalCertificate.CertificateType.DENTAL,
             rest_from=timezone.localtime(timezone.now()).date(),
@@ -430,39 +399,34 @@ class CertificateTemplateTextTest(TestCase):
         cert.issue(user=self.doctor)
 
         snapshot = cert.rendered_text_snapshot
-        self.assertIn('diagnosis_statement', snapshot)
-        self.assertIn('diagnosis_line', snapshot)
-        self.assertNotIn('rest_period_single', snapshot)
-        self.assertNotIn('rest_period_range', snapshot)
+        # Dental inherits standard's body template
+        self.assertIn('This is to certify', snapshot)
+        self.assertIn('Diagnosis:', snapshot)
 
-    # ── Test 4: Standard branches single vs range ──
+    # ── Test 4: Body text contains diagnosis and rest period ──
 
-    def test_standard_branches_single_vs_range(self):
-        """Standard certificate with rest_from == rest_to should use rest_period_single."""
+    def test_body_contains_diagnosis_and_rest(self):
+        """Standard certificate body should include diagnosis and rest period."""
         same_day = timezone.localtime(timezone.now()).date()
 
-        # Single day
-        cert_single = self._create_cert(
+        cert = self._create_cert(
             MedicalCertificate.CertificateType.STANDARD,
             rest_from=same_day,
             rest_to=same_day,
         )
-        cert_single.issue(user=self.doctor)
-        self.assertIn('rest_period_single', cert_single.rendered_text_snapshot)
-        self.assertIn('rest_period_range', cert_single.rendered_text_snapshot)
+        cert.issue(user=self.doctor)
 
-        # Note: currently the system stores BOTH templates and the branching
-        # happens at template render time. Both slots are present in the snapshot
-        # because we want the template to have access to both wordings.
-        # The actual branching (single vs range) still occurs via template
-        # conditionals on rest_from == rest_to.
+        snapshot = cert.rendered_text_snapshot
+        self.assertIsInstance(snapshot, str)
+        self.assertIn('Diagnosis:', snapshot)
+        self.assertIn('rest from', snapshot.lower())
 
     # ── Test 5: HTML injection stripped by bleach ──
 
     def test_html_tags_are_stripped(self):
         """HTML tags should be stripped from template text by bleach."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='closing_statement',
+            certificate_type='standard', slot_key='body',
         )
         slot.text = '<script>alert("xss")</script>'
         slot.save()
@@ -476,11 +440,11 @@ class CertificateTemplateTextTest(TestCase):
     # ── Test 6: Unicode-escaped injection stripped ──
 
     def test_unicode_escaped_injection_stripped(self):
-        """Unicode-escaped HTML injection (\u003Cscript\u003E) should be stripped."""
+        """Unicode-escaped HTML injection should be stripped."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='closing_statement',
+            certificate_type='standard', slot_key='body',
         )
-        slot.text = '\u003Cscript\u003Ealert(1)\u003C/script\u003E'
+        slot.text = '<script>alert(1)</script>'
         slot.save()
         slot.refresh_from_db()
         self.assertNotIn('<script>', slot.text)
@@ -490,9 +454,9 @@ class CertificateTemplateTextTest(TestCase):
     # ── Test 7: HTML-entity-encoded injection stripped ──
 
     def test_html_entity_encoded_injection_stripped(self):
-        """HTML-entity-encoded injection (&lt;script&gt;) should be stripped."""
+        """HTML-entity-encoded injection should be stripped."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='closing_statement',
+            certificate_type='standard', slot_key='body',
         )
         slot.text = '&lt;script&gt;alert(1)&lt;/script&gt;'
         slot.save()
@@ -501,15 +465,15 @@ class CertificateTemplateTextTest(TestCase):
         # bleach decodes entities then strips tags, keeping text content
         self.assertIn('alert(1)', slot.text)
 
-    # ── Test 8: Closing statement editable and snapshots correctly ──
+    # ── Test 8: Body text editable and snapshots correctly ──
 
-    def test_closing_statement_editable_and_snapshots_for_fit_to_work(self):
-        """Fit-to-Work closing statement should be editable and snapshot correctly on issue."""
-        # Edit the closing statement
+    def test_body_editable_and_snapshots_for_fit_to_work(self):
+        """Fit-to-Work body text should be editable and snapshot correctly on issue."""
+        # Edit the body
         slot = CertificateTemplateText.objects.get(
-            certificate_type='fit_to_work', slot_key='closing_statement',
+            certificate_type='fit_to_work', slot_key='body',
         )
-        slot.text = 'Custom closing: {patient_name} — issued for work purposes.'
+        slot.text = 'Custom work cert: {patient_name} — assessment: {work_assessment}.'
         slot.save()
 
         cert = self._create_cert(
@@ -520,17 +484,16 @@ class CertificateTemplateTextTest(TestCase):
         cert.issue(user=self.doctor)
 
         snapshot = cert.rendered_text_snapshot
-        self.assertIn('closing_statement', snapshot)
-        self.assertIn('Custom closing:', snapshot['closing_statement'])
-        self.assertIn('Test Patient', snapshot['closing_statement'])  # patient full name
+        self.assertIn('Custom work cert:', snapshot)
+        self.assertIn('Test Patient', snapshot)  # patient full name
 
-    def test_closing_statement_editable_and_snapshots_for_fit_to_play(self):
-        """Fit-to-Play closing statement should be editable and snapshot correctly on issue."""
-        # Edit the closing statement
+    def test_body_editable_and_snapshots_for_fit_to_play(self):
+        """Fit-to-Play body text should be editable and snapshot correctly on issue."""
+        # Edit the body
         slot = CertificateTemplateText.objects.get(
-            certificate_type='fit_to_play', slot_key='closing_statement',
+            certificate_type='fit_to_play', slot_key='body',
         )
-        slot.text = 'Custom play closing: {patient_name} cleared for {activity_name}.'
+        slot.text = 'Custom play cert: {patient_name} cleared for {activity_name}.'
         slot.save()
 
         cert = self._create_cert(
@@ -541,6 +504,5 @@ class CertificateTemplateTextTest(TestCase):
         cert.issue(user=self.doctor)
 
         snapshot = cert.rendered_text_snapshot
-        self.assertIn('closing_statement', snapshot)
-        self.assertIn('Custom play closing:', snapshot['closing_statement'])
-        self.assertIn('Basketball tournament', snapshot['closing_statement'])
+        self.assertIn('Custom play cert:', snapshot)
+        self.assertIn('Basketball tournament', snapshot)
