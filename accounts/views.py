@@ -1,4 +1,5 @@
 import datetime
+import time as _time
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
@@ -67,6 +68,8 @@ def login_view(request):
             return redirect('accounts:dashboard')
 
         else:
+            # Track failed attempts without revealing whether the user exists
+            # (prevents user enumeration)
             username = request.POST.get('username', '')
             if username:
                 try:
@@ -78,13 +81,12 @@ def login_view(request):
                         user.failed_login_attempts += 1
                         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                             user.locked_until = timezone.now() + LOCKOUT_DURATION
-                        user.save(update_fields=['failed_login_attempts', 'locked_until'])
-                        remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
-                        if remaining > 0:
-                            messages.error(request, f'Invalid password. {remaining} attempts remaining.')
-                        else:
                             messages.error(request, f'Account locked for {LOCKOUT_DURATION.seconds // 60} minutes. Use Forgot Password to unlock sooner.')
+                        else:
+                            messages.error(request, 'Invalid username or password.')
+                        user.save(update_fields=['failed_login_attempts', 'locked_until'])
                 except User.DoesNotExist:
+                    # Generic message — don't reveal whether the user exists
                     messages.error(request, 'Invalid username or password.')
             else:
                 messages.error(request, 'Invalid username or password.')
@@ -162,6 +164,7 @@ def register(request):
             )
 
         login(request, user)
+        _clear_registration_session(request)
         messages.success(request, f'Welcome, {user.first_name}! Your account has been created.')
         return redirect('accounts:dashboard')
 
@@ -170,6 +173,9 @@ def register(request):
         'form': form,
         'current_step': current_step,
     })
+
+
+REGISTRATION_OTP_COOLDOWN_SECONDS = 60  # Minimum seconds between OTP sends
 
 
 def send_registration_otp(request):
@@ -188,11 +194,23 @@ def send_registration_otp(request):
     if User.objects.filter(username=patient_id).exists():
         return JsonResponse({'success': False, 'error': 'ID already registered.'})
 
+    # Rate limit: prevent OTP spam
+    last_sent_str = request.session.get('registration_otp_sent_at')
+    if last_sent_str:
+        try:
+            elapsed = (timezone.now() - timezone.datetime.fromisoformat(last_sent_str)).total_seconds()
+            if elapsed < REGISTRATION_OTP_COOLDOWN_SECONDS:
+                wait = int(REGISTRATION_OTP_COOLDOWN_SECONDS - elapsed)
+                return JsonResponse({'success': False, 'error': f'Please wait {wait} second(s) before requesting another OTP.'})
+        except (ValueError, TypeError):
+            pass
+
     otp = str(random.randint(100000, 999999))
-    request.session['registration_otp'] = otp
+    request.session['registration_otp'] = make_password(otp)
     request.session['registration_otp_expiry'] = (timezone.now() + timedelta(minutes=3)).isoformat()
     request.session['registration_email'] = email
     request.session['registration_otp_pending'] = True
+    request.session['registration_otp_sent_at'] = timezone.now().isoformat()
 
     send_mail(
         'Registration OTP — Patient Record System',
@@ -212,16 +230,16 @@ def verify_registration_otp(request):
         return JsonResponse({'success': False, 'error': 'Invalid request.'})
 
     otp = request.POST.get('otp', '').strip()
-    stored_otp = request.session.get('registration_otp')
+    stored_otp_hash = request.session.get('registration_otp')
     expiry_str = request.session.get('registration_otp_expiry')
 
-    if not stored_otp or not expiry_str:
+    if not stored_otp_hash or not expiry_str:
         return JsonResponse({'success': False, 'error': 'OTP expired.'})
 
     if timezone.now() > timezone.datetime.fromisoformat(expiry_str):
         return JsonResponse({'success': False, 'error': 'OTP expired.'})
 
-    if otp != stored_otp:
+    if not check_password(otp, stored_otp_hash):
         return JsonResponse({'success': False, 'error': 'Invalid OTP.'})
 
     request.session['registration_otp_verified'] = True
@@ -229,22 +247,58 @@ def verify_registration_otp(request):
 
 
 def _clear_registration_session(request):
-    keys = ['registration_data', 'registration_password', 'registration_email',
-            'registration_otp', 'registration_otp_expiry']
+    keys = [
+        'registration_data', 'registration_password', 'registration_email',
+        'registration_otp', 'registration_otp_expiry', 'registration_otp_pending',
+        'registration_otp_verified', 'registration_otp_sent_at',
+    ]
     for key in keys:
         request.session.pop(key, None)
 
 
 # ── FORGOT / RESET PASSWORD ───────────────────────────────────────────
 
+FORGOT_PASSWORD_OTP_COOLDOWN_SECONDS = 60  # Minimum seconds between OTP sends
+
+
 def forgot_password(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
 
+    GENERIC_MESSAGE = (
+        'If an account with that username exists, you\'ll receive further instructions.'
+    )
+
     form = PasswordResetRequestForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         patient_id = form.cleaned_data['patient_id']
-        user = User.objects.get(username=patient_id, is_active=True)
+
+        try:
+            user = User.objects.get(username=patient_id, is_active=True)
+        except User.DoesNotExist:
+            # Don't reveal whether the user exists — use a generic message
+            # Sleep briefly to avoid timing-based enumeration
+            _time.sleep(0.5)
+            messages.success(request, GENERIC_MESSAGE)
+            return render(request, 'accounts/forgot_password.html', {'form': form})
+
+        if not user.email:
+            # User has no email — still show generic message to avoid enumeration
+            _time.sleep(0.5)
+            messages.success(request, GENERIC_MESSAGE)
+            return render(request, 'accounts/forgot_password.html', {'form': form})
+
+        # Rate limit: prevent OTP spam (only applies to valid users with email)
+        last_sent_str = request.session.get('forgot_password_otp_sent_at')
+        if last_sent_str:
+            try:
+                elapsed = (timezone.now() - timezone.datetime.fromisoformat(last_sent_str)).total_seconds()
+                if elapsed < FORGOT_PASSWORD_OTP_COOLDOWN_SECONDS:
+                    wait = int(FORGOT_PASSWORD_OTP_COOLDOWN_SECONDS - elapsed)
+                    messages.error(request, f'Please wait {wait} second(s) before requesting another OTP.')
+                    return render(request, 'accounts/forgot_password.html', {'form': form})
+            except (ValueError, TypeError):
+                pass
 
         otp = str(random.randint(100000, 999999))
         user.reset_otp = make_password(otp)
@@ -263,9 +317,12 @@ def forgot_password(request):
             fail_silently=False,
         )
 
+        request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
+
         messages.success(
             request,
-            f'A 6-digit OTP has been sent to {masked_email}.'
+            f'A 6-digit OTP has been sent to {masked_email}. '
+            f'If you did not receive it, check your spam folder or contact the clinic.'
         )
         return redirect('accounts:verify_otp', user_id=user.pk)
 

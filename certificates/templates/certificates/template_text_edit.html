@@ -1,0 +1,74 @@
+{% extends 'core/base_admin.html' %}
+{% load static %}
+{% block title %}Edit Template Text — {{ slot.slot_key }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .edit-page { padding: 32px 24px; max-width: 720px; margin: 0 auto; }
+  .edit-page h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
+  .edit-page .subtitle { font-size: 13px; color: #6b7280; margin: 0 0 24px; }
+  .form-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
+  .form-help { font-size: 12px; color: #6b7280; margin-top: 6px; background: #f0f4ff; border-radius: 8px; padding: 10px 14px; border-left: 3px solid #0078d4; }
+  .form-help code { font-family: monospace; font-size: 11px; background: #e8ecf1; padding: 1px 5px; border-radius: 3px; }
+  .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
+  .slot-meta { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .meta-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #0078d4; }
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-page">
+  <h1>Edit Template Text</h1>
+  <p class="subtitle">Modify the prose text used for <strong>{{ slot.slot_key }}</strong>.</p>
+
+  <div class="slot-meta">
+    <span class="meta-chip">{{ slot.get_cert_type_label }}</span>
+    <span class="meta-chip">{{ slot.slot_key }}</span>
+    <span class="meta-chip">Last updated: {{ slot.updated_at|date:"M d, Y H:i" }}</span>
+  </div>
+
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">Text Content</label>
+        {{ form.text }}
+        {% if form.text.errors %}<div class="form-error">{{ form.text.errors.0 }}</div>{% endif %}
+        <div class="form-help">
+          <strong>Available placeholders:</strong><br>
+          <code>{patient_name}</code> — Patient's full name<br>
+          <code>{age}</code> — Patient's age<br>
+          <code>{sex}</code> — Patient's sex<br>
+          <code>{college_info}</code> — e.g. "from CCIS — 3rd Year, "<br>
+          <code>{position_info}</code> — e.g. "Faculty — IT Department, "<br>
+          <code>{exam_date}</code> — Examination date<br>
+          <code>{diagnosis}</code> — Diagnosis text<br>
+          <code>{rest_date}</code> — Rest date (single)<br>
+          <code>{rest_from}</code> / <code>{rest_to}</code> — Rest period<br>
+          <code>{return_date}</code> — Return to work date<br>
+          <code>{work_assessment}</code> — Assessment result<br>
+          <code>{fitness_status}</code> — Fitness clearance<br>
+          <code>{activity_name}</code> — Activity name<br>
+          <code>{restrictions}</code> — Work restrictions<br>
+          <br>
+          <strong>Note:</strong> HTML tags (&lt; &gt;) are not allowed.
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <a href="{% url 'certificates:template_text_list' %}" class="btn btn-secondary">&larr; Back</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

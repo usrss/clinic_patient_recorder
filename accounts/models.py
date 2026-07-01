@@ -23,6 +23,11 @@ class User(AbstractUser):
 
     phone = models.CharField(max_length=20, blank=True)
 
+    # ── Override AbstractUser.email to enforce uniqueness ──────────────────
+    # null=True allows blank emails to be stored as NULL, which SQLite handles
+    # gracefully with unique constraints (multiple NULLs are permitted).
+    email = models.EmailField(unique=True, blank=True, null=True)
+
     # ── Profile Picture ────────────────────────────────────────────────────
     profile_picture = models.ImageField(
         upload_to='staff/',

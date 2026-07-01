@@ -368,23 +368,67 @@
 {% endwith %}
 {% endif %}
 
-{# ── Medical Certificate ── #}
-{% if consultation.status == 'completed' and user.role == 'doctor' %}
-<div style="margin-bottom:20px;">
-  {% if consultation.certificate %}
-    <a href="{% url 'certificates:print_certificate' consultation.certificate.pk %}"
-       style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:#0078d4;text-decoration:none;"
-       target="_blank">
-      <ion-icon name="document-text-outline" style="font-size:15px;"></ion-icon> View Certificate
-    </a>
-  {% else %}
-    <a href="{% url 'certificates:create_certificate' consultation.pk %}"
-       style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:#0078d4;text-decoration:none;">
-      <ion-icon name="document-text-outline" style="font-size:15px;"></ion-icon> Issue Medical Certificate
-    </a>
-  {% endif %}
+{# ── Clinical Documents ── #}
+{% with issued_cert=consultation.certificates.all|first %}
+{% if consultation.status == 'completed' or consultation.status == 'active_follow_up' %}
+{% if user.role == 'doctor' or user.role == 'admin' or user.role == 'clinical_staff' %}
+<div class="sec-label">Clinical Documents</div>
+<div class="detail-panel">
+  <div class="detail-panel-body">
+    {# Document: Consultation Record #}
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f4f8;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128196;</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Consultation Record</div>
+        <div style="font-size:11px;color:#94a3b8;">Generated {{ consultation.created_at|date:"M d, Y" }}</div>
+      </div>
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank" style="padding:5px 12px;font-size:11px;margin:0;">
+        <ion-icon name="print-outline" style="font-size:12px;"></ion-icon> Print
+      </a>
+    </div>
+
+    {# Document: Prescription #}
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f4f8;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128137;</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Prescription</div>
+        <div style="font-size:11px;color:#94a3b8;">
+          {% if consultation.prescriptions.exists %}Issued{% else %}Not issued{% endif %}
+        </div>
+      </div>
+      {% if consultation.prescriptions.exists %}
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank" style="padding:5px 12px;font-size:11px;margin:0;">
+        <ion-icon name="print-outline" style="font-size:12px;"></ion-icon> Print
+      </a>
+      {% endif %}
+    </div>
+
+    {# Document: Medical Certificate #}
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128221;</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Medical Certificate</div>
+        <div style="font-size:11px;color:#94a3b8;">
+          {% if issued_cert %}
+            {{ issued_cert.get_certificate_type_display }} &middot; #{{ issued_cert.certificate_number }} &middot; {{ issued_cert.issued_at|date:"M d, Y" }}
+          {% else %}
+            Not issued
+          {% endif %}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        {% if issued_cert %}
+          <a href="{% url 'certificates:print_certificate' issued_cert.pk %}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;color:#374151;background:#fff;border:1px solid #e8ecf1;text-decoration:none;">View</a>
+        {% elif user.role == 'doctor' %}
+          <a href="{% url 'certificates:wizard_type' consultation.pk %}" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;color:#fff;background:#0078d4;border:none;text-decoration:none;">Issue</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
+{% endif %}
+{% endwith %}
 
 {# ── Admin Reopen ── #}
 {% if user.role == 'admin' and consultation.status == 'cancelled' %}

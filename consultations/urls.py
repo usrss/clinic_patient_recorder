@@ -29,6 +29,9 @@ urlpatterns = [
     path('doctor/', views.doctor_list, name='doctor_list'),
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
 
+    # ── Completion Summary ────────────────────────────────────────────
+    path('complete/<int:pk>/summary/', views.completion_summary, name='completion_summary'),
+
     # ── Follow-up / Consultation Continuation ─────────────────────────
     path('follow-up/<int:consultation_pk>/', views.follow_up_create, name='follow_up_create'),
     path('timeline/<int:pk>/', views.consultation_timeline, name='consultation_timeline'),

@@ -67,7 +67,11 @@ def feedback_list(request):
 
     # ── Pagination ──
     paginator = Paginator(feedbacks, 10)
-    page_number = request.GET.get('page', 1)
+    try:
+        page_number = int(request.GET.get('page', 1))
+    except (ValueError, TypeError):
+        page_number = 1
+    page_number = max(page_number, 1)
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'feedback/feedback_list.html', {

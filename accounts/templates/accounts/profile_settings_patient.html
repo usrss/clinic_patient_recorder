@@ -71,6 +71,13 @@
               {% endfor %}
             {% endif %}
             <div id="fileName" style="font-size:12px;color:#6b7280;margin-top:6px;display:none;"></div>
+            {% if patient.profile_picture %}
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#dc2626;cursor:pointer;margin-top:8px;">
+              {{ info_form.remove_picture }}
+              <ion-icon name="trash-outline"></ion-icon>
+              Remove current picture
+            </label>
+            {% endif %}
           </div>
         </div>
 

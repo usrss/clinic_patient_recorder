@@ -1,0 +1,113 @@
+{% extends 'core/base_staff.html' %}
+{% block title %}Void Certificate{% endblock %}
+
+{% block extra_css %}
+<style>
+  .void-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 36px 24px;
+  }
+  .void-wrap { width: 100%; max-width: 540px; margin: 0 auto; }
+
+  .void-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #fee2e2;
+    padding: 28px 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .void-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .void-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .void-title { font-size: 18px; font-weight: 700; color: #991b1b; margin: 0; }
+  .void-sub { font-size: 13px; color: #6b7280; margin: 2px 0 0; }
+
+  .cert-info {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+  }
+  .cert-info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .cert-info-label { color: #6b7280; }
+  .cert-info-value { font-weight: 600; color: #1a1a2e; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block; }
+  .form-control { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .form-control:focus { outline: none; border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+  .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
+
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="void-page">
+<div class="void-wrap">
+
+  <div class="void-card">
+    <div class="void-header">
+      <div class="void-icon">&#9888;</div>
+      <div>
+        <h1 class="void-title">Void Certificate</h1>
+        <p class="void-sub">This action cannot be undone.</p>
+      </div>
+    </div>
+
+    <div class="cert-info">
+      <div class="cert-info-row">
+        <span class="cert-info-label">Certificate #</span>
+        <span class="cert-info-value">{{ certificate.certificate_number }}</span>
+      </div>
+      <div class="cert-info-row">
+        <span class="cert-info-label">Type</span>
+        <span class="cert-info-value">{{ certificate.get_certificate_type_display }}</span>
+      </div>
+      <div class="cert-info-row">
+        <span class="cert-info-label">Patient</span>
+        <span class="cert-info-value">{{ certificate.patient_name }}</span>
+      </div>
+      <div class="cert-info-row">
+        <span class="cert-info-label">Issued</span>
+        <span class="cert-info-value">{{ certificate.issued_at|date:"M d, Y" }}</span>
+      </div>
+    </div>
+
+    <form method="post" novalidate onsubmit="return confirm('Are you sure you want to void this certificate? This cannot be undone.');">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Reason for voiding *</label>
+        {{ form.reason }}
+        {% if form.reason.errors %}<div class="form-error">{{ form.reason.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="btn-row">
+        <a href="{% url 'consultations:completion_summary' certificate.consultation_id %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">&#10003; Confirm Void</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+</div>
+{% endblock %}

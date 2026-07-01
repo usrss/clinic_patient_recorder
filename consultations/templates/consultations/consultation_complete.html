@@ -253,6 +253,19 @@
                min="{{ today|date:'Y-m-d' }}">
       </div>
 
+      <!-- ── Optional Document Actions ── -->
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb;">
+        <div class="form-section-label">Optional Document Actions</div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
+          <input type="checkbox" name="issue_certificate" value="1" id="id_issue_certificate"
+                 style="width:16px;height:16px;accent-color:#0078d4;">
+          <span style="font-size:13px;color:#374151;">Issue Medical Certificate after completion</span>
+        </label>
+        <div style="font-size:11px;color:#94a3b8;margin-left:24px;">
+          You can also issue a certificate later from the completion summary page.
+        </div>
+      </div>
+
       <div class="btn-row">
         <button type="submit" class="btn btn-primary">Complete Consultation</button>
         <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-secondary">Skip</a>

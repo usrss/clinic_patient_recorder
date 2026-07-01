@@ -180,7 +180,7 @@
                 <ion-icon name="document-text-outline"></ion-icon>
                 Export CSV
               </a>
-              <a href="#" onclick="showToast('PDF export coming soon'); return false;">
+              <a href="{% url 'reports:feedback_report' %}?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}&export=pdf" onclick="showToast('Generating PDF…');">
                 <ion-icon name="document-outline"></ion-icon>
                 Export PDF
               </a>
@@ -242,14 +242,14 @@
     {# ── Footer: entry count + pagination ── #}
     <div class="fb-footer">
       <span class="fb-entry-count">
-        Showing {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} of {{ paginator.count }} entries
+        Showing {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
       </span>
       {% if page_obj.paginator.num_pages > 1 %}
       <div class="fb-pagination">
         <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
         </a>
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}" class="fb-page-btn {% if not page_obj.has_previous %}disabled{% endif %}">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         {% for p in page_obj.paginator.page_range %}
@@ -264,7 +264,7 @@
             {% endif %}
           {% endif %}
         {% endfor %}
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.next_page_number }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}" class="fb-page-btn {% if not page_obj.has_next %}disabled{% endif %}">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
         <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}">

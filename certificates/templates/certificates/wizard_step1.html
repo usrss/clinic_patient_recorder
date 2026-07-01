@@ -1,0 +1,194 @@
+{% extends 'core/base_staff.html' %}
+{% block title %}Issue Certificate — Step 1 — Consultation #{{ consultation.pk }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wizard-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);
+    padding: 36px 24px;
+  }
+  .wizard-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
+
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .step-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .step-dot.active { background: #0078d4; color: #fff; }
+  .step-dot.inactive { background: #e5e7eb; color: #9ca3af; }
+  .step-line { width: 40px; height: 2px; background: #e5e7eb; }
+  .step-line.active { background: #0078d4; }
+
+  .wizard-header { margin-bottom: 24px; }
+  .wizard-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
+  .wizard-header p { font-size: 13px; color: #6b7280; margin: 4px 0 0; }
+
+  .patient-chip {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    border: 1px solid #e8ecf1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .patient-avatar {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg,#e8f0fe,#c7d7fb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .patient-name { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+  .patient-meta { font-size: 12px; color: #94a3b8; }
+
+  .type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .type-card {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .type-card:hover { border-color: #bfdbfe; background: #f8faff; }
+  .type-card.selected { border-color: #0078d4; background: #eff6ff; }
+  .type-card input[type="radio"] { display: none; }
+  .type-icon { font-size: 32px; margin-bottom: 8px; }
+  .type-name { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+  .type-desc { font-size: 11px; color: #6b7280; }
+
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 22px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wizard-page">
+<div class="wizard-wrap">
+
+  {# Step indicator #}
+  <div class="step-indicator">
+    <div class="step-dot active">1</div>
+    <div class="step-line active"></div>
+    <div class="step-dot inactive">2</div>
+    <div class="step-line"></div>
+    <div class="step-dot inactive">3</div>
+  </div>
+
+  {# Header #}
+  <div class="wizard-header">
+    <h1>Issue Medical Certificate</h1>
+    <p>Step 1 of 3 — Select Certificate Type</p>
+  </div>
+
+  {# Patient info #}
+  <div class="patient-chip">
+    <div class="patient-avatar">&#128100;</div>
+    <div>
+      <div class="patient-name">{{ consultation.patient.get_full_name }}</div>
+      <div class="patient-meta">#{{ consultation.pk }} &middot; {{ consultation.patient.age|default:"—" }} yrs &middot; {{ consultation.patient.get_sex_display }}</div>
+    </div>
+  </div>
+
+  {# Type selection #}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.certificate_type }}
+
+    <div class="type-grid" id="type-grid">
+      <label class="type-card" data-value="standard">
+        <input type="radio" name="certificate_type" value="standard" checked>
+        <div class="type-icon">&#128203;</div>
+        <div class="type-name">Medical Certificate</div>
+        <div class="type-desc">Standard illness/rest recommendation</div>
+      </label>
+      <label class="type-card" data-value="fit_to_work">
+        <input type="radio" name="certificate_type" value="fit_to_work">
+        <div class="type-icon">&#128188;</div>
+        <div class="type-name">Fit-to-Work</div>
+        <div class="type-desc">Patient cleared to return to work</div>
+      </label>
+      <label class="type-card" data-value="fit_to_play">
+        <input type="radio" name="certificate_type" value="fit_to_play">
+        <div class="type-icon">&#127936;</div>
+        <div class="type-name">Fit-to-Play</div>
+        <div class="type-desc">Sports/activity clearance</div>
+      </label>
+      <label class="type-card" data-value="dental">
+        <input type="radio" name="certificate_type" value="dental">
+        <div class="type-icon">&#129504;</div>
+        <div class="type-name">Dental Certificate</div>
+        <div class="type-desc">Dental-related certification</div>
+      </label>
+    </div>
+
+    {# Multi-diagnosis selector: shown when the consultation has multiple prescriptions #}
+    {% if diagnosis_list|length > 1 %}
+    <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e8ecf1;margin-bottom:20px;">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Select Diagnosis</label>
+      <select name="selected_diagnosis" class="form-control" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+        {% for d in diagnosis_list %}
+        <option value="{{ d }}">{{ d }}</option>
+        {% endfor %}
+      </select>
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Multiple diagnoses found — choose which to include on this certificate.</div>
+    </div>
+    {% endif %}
+
+    <div class="btn-row">
+      <a href="{% url 'consultations:completion_summary' consultation.pk %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">Next &rarr;</button>
+    </div>
+  </form>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+
+<script>
+  document.querySelectorAll('.type-card').forEach(card => {
+    card.addEventListener('click', function() {
+      document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+      this.querySelector('input[type="radio"]').checked = true;
+    });
+  });
+  // Select default
+  document.querySelector('.type-card').classList.add('selected');
+</script>
+{% endblock %}
