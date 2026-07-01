@@ -58,15 +58,6 @@ class ConsultationManager(models.Manager):
             ]
         ).order_by('-created_at')
 
-    def today_queue_numbers(self):
-        """Get queue numbers assigned today (for assign_next_queue_number)."""
-        from django.utils import timezone
-        today = timezone.localdate()
-        return self.filter(
-            queue_number__isnull=False,
-            created_at__date=today
-        ).values_list('queue_number', flat=True)
-
 
 class Consultation(models.Model):
     objects = ConsultationManager()

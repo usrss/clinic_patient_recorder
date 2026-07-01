@@ -26,6 +26,7 @@ PatientConsultationForm, FollowUpProgressForm, CloseConsultationForm, Consultati
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
 from certificates.models import MedicalCertificate, CertificateAuditLog
+from audit_logs.services import log_create, log_change
 
 
 # ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
@@ -51,12 +52,12 @@ def patient_home(request):
         patient=patient
     ).order_by('-created_at')
 
-    # Get pending follow-up requests: consultation_id -> FollowUpRequest pk
+    # Get active follow-up requests: consultation_id -> FollowUpRequest pk
     pending_follow_ups = {
         r.consultation_id: r.pk
         for r in FollowUpRequest.objects.filter(
             patient=patient,
-            request_status='pending',
+            request_status__in=['pending', 'queued'],
         ).only('pk', 'consultation_id')
     }
 
@@ -110,6 +111,15 @@ def patient_submit(request):
                         'New Consultation Request',
                         f'{patient.get_full_name()} submitted a new consultation request.',
                         f'/consultations/queue/{consultation.pk}/')
+            log_create(
+                user=request.user,
+                module='Consultations',
+                description=f'Submitted new consultation request — {patient.get_full_name()}',
+                object_model='consultations.Consultation',
+                object_id=consultation.pk,
+                object_repr=str(consultation),
+                request=request,
+            )
             messages.success(request, 'Your new consultation request has been submitted.')
             return redirect('consultations:patient_home')
 
@@ -124,7 +134,9 @@ def patient_submit(request):
 def request_follow_up(request, consultation_pk):
     """
     Patient requests a follow-up visit for an active consultation.
-    Creates a FollowUpRequest queue entry for front desk processing.
+    Validates that the recommended follow-up date has arrived, then
+    sets the consultation to PENDING status so it appears in the
+    front desk queue for processing.
     """
     if request.method != 'POST':
         return redirect('consultations:patient_home')
@@ -142,39 +154,59 @@ def request_follow_up(request, consultation_pk):
         status=Consultation.Status.ACTIVE_FOLLOW_UP,
     )
 
+    from django.utils import timezone
+
+    # Validate: patient can only follow up on or after the recommended date
+    if consultation.recommended_follow_up_date:
+        if timezone.localdate() < consultation.recommended_follow_up_date:
+            messages.error(
+                request,
+                f'Your recommended follow-up date is '
+                f'{consultation.recommended_follow_up_date.strftime("%B %d, %Y")}. '
+                f'You may only request a follow-up on or after this date. '
+                f'Please wait until the recommended date to submit your request.'
+            )
+            return redirect('consultations:patient_home')
+
     # Prevent duplicate pending requests
     existing_request = FollowUpRequest.objects.filter(
         consultation=consultation,
         patient=patient,
-        request_status='pending',
+        request_status__in=['pending', 'queued'],
     ).first()
     if existing_request:
         messages.info(
             request,
-            f'You already have a pending follow-up request for Consultation #{consultation_pk}. '
-            f'Please wait for the clinic to process it.'
+            f'You already have a follow-up request pending for Consultation #{consultation_pk}. '
+            f'Please wait for the front desk to process your request.'
         )
         return redirect('consultations:patient_home')
 
-    # Create follow-up request queue entry
-    FollowUpRequest.objects.create(
-        consultation=consultation,
-        patient=patient,
-        request_status='pending',
-    )
+    with transaction.atomic():
+        # Set consultation to PENDING so it appears in the front desk queue
+        consultation.status = Consultation.Status.PENDING
+        consultation.save(update_fields=['status'])
 
-    # Notify front desk
+        # Create FollowUpRequest record for audit trail
+        FollowUpRequest.objects.create(
+            consultation=consultation,
+            patient=patient,
+            request_status='pending',
+        )
+
+    # Notify front desk to process the follow-up request
     notify_role(
         'frontdesk',
-        'Follow-up Visit Requested',
-        f'{patient.get_full_name()} is requesting a follow-up for Consultation #{consultation_pk}.',
-        f'/consultations/queue/'
+        'Follow-up Request Ready for Processing',
+        f'{patient.get_full_name()} has requested a follow-up for Consultation #{consultation_pk}. '
+        f'Please process in the queue.',
+        f'/consultations/queue/{consultation.pk}/'
     )
 
     messages.success(
         request,
         f'Your follow-up visit request for Consultation #{consultation_pk} has been submitted. '
-        f'Please proceed to the clinic.'
+        f'Please proceed to the front desk for processing.'
     )
     return redirect('consultations:patient_home')
 
@@ -212,6 +244,17 @@ def consultation_complete(request, pk):
                 consultation.status = Consultation.Status.COMPLETED
 
             consultation.save(update_fields=['status', 'recommended_follow_up_date'])
+
+            log_change(
+                user=request.user,
+                module='Consultations',
+                description=f'Completed consultation #{pk} — {"follow-up recommended" if requires_follow_up else "no follow-up needed"}',
+                object_model='consultations.Consultation',
+                object_id=consultation.pk,
+                object_repr=str(consultation),
+                changes_after={'status': consultation.status},
+                request=request,
+            )
 
             patient_user = User.objects.filter(username=consultation.patient.patient_id).first()
             if patient_user:
@@ -261,7 +304,11 @@ def patient_detail(request, pk):
 @login_required
 @patient_required
 def cancel_follow_up_request(request, follow_up_pk):
-    """Patient cancels a pending follow-up request."""
+    """Patient cancels a follow-up request that is pending or queued.
+
+    Also resets the consultation back to ACTIVE_FOLLOW_UP status
+    and removes its queue number.
+    """
     if request.method != 'POST':
         return redirect('consultations:patient_home')
 
@@ -274,16 +321,25 @@ def cancel_follow_up_request(request, follow_up_pk):
         FollowUpRequest,
         pk=follow_up_pk,
         patient=patient,
-        request_status='pending',
+        request_status__in=['pending', 'queued'],
     )
-    follow_up_req.request_status = 'cancelled'
-    follow_up_req.save(update_fields=['request_status'])
+
+    with transaction.atomic():
+        follow_up_req.request_status = 'cancelled'
+        follow_up_req.save(update_fields=['request_status'])
+
+        # Reset the consultation back to active follow-up and remove queue number
+        consultation = follow_up_req.consultation
+        consultation.status = Consultation.Status.ACTIVE_FOLLOW_UP
+        consultation.queue_number = None
+        consultation.save(update_fields=['status', 'queue_number'])
+
     messages.success(
         request,
         f'Follow-up request for Consultation #{follow_up_req.consultation_id} has been cancelled.'
     )
 
-    # Notify front desk that a follow-up request was cancelled
+    # Notify front desk
     notify_role('frontdesk',
                 'Follow-up Request Cancelled',
                 f'Patient {patient.get_full_name()} cancelled their follow-up request for Consultation #{follow_up_req.consultation_id}.',
@@ -324,16 +380,24 @@ def queue(request):
         status=Consultation.Status.PENDING
     ).select_related('patient', 'patient__college').order_by('created_at')
 
-    follow_up_requests = FollowUpRequest.objects.filter(
-        request_status='pending'
-    ).select_related(
-        'patient', 'consultation', 'patient__college'
-    ).order_by('-created_at')
+    # Identify which consultations are follow-up requests
+    follow_up_consultation_ids = set(
+        FollowUpRequest.objects.filter(
+            consultation__in=consultations,
+            request_status='pending',
+        ).values_list('consultation_id', flat=True)
+    )
+
+    # Calculate queue positions for queued consultations (ordered by created_at)
+    queue_positions = {}
+    for idx, c in enumerate(consultations, start=1):
+        queue_positions[c.pk] = idx
 
     return render(request, 'consultations/queue.html', {
         'consultations': consultations,
-        'follow_up_requests': follow_up_requests,
         'base_template': _base_template(request.user),
+        'follow_up_consultation_ids': follow_up_consultation_ids,
+        'queue_positions': queue_positions,
     })
 
 
@@ -428,6 +492,16 @@ def consultation_create(request):
                 consultation.save()
 
             # Notify front desk
+            log_create(
+                user=request.user,
+                module='Consultations',
+                description=f'Created consultation for {"new patient" if is_new_patient else "existing"} — {patient.get_full_name()}',
+                object_model='consultations.Consultation',
+                object_id=consultation.pk,
+                object_repr=str(consultation),
+                request=request,
+            )
+
             notify_role(
                 'frontdesk',
                 'New Consultation Request',
@@ -487,74 +561,80 @@ def queue_detail(request, pk):
         )
         return redirect('consultations:queue')
 
+    # Check if this is a follow-up request
+    follow_up_request = FollowUpRequest.objects.filter(
+        consultation=consultation,
+        request_status='pending',
+    ).first()
+
     form = QueueAssignForm(request.POST or None, instance=consultation)
-    if request.method == 'POST' and form.is_valid():
-        instance = form.save(commit=False)
-        if instance.status == Consultation.Status.QUEUED:
+
+    if request.method == 'POST':
+        if follow_up_request and 'process_follow_up' in request.POST:
+            # Auto-queue the follow-up — no form selection needed
             with transaction.atomic():
-                instance.queue_number = assign_next_queue_number()
+                queue_number = assign_next_queue_number()
+                consultation.status = Consultation.Status.QUEUED
+                consultation.queue_number = queue_number
+                consultation.save(update_fields=['status', 'queue_number'])
+
+                follow_up_request.request_status = 'queued'
+                follow_up_request.queue_number = queue_number
+                follow_up_request.save(update_fields=['request_status', 'queue_number'])
+
+                notify_role(
+                    'doctor',
+                    'Follow-up Queued for Triage',
+                    f'{consultation.patient.get_full_name()} (follow-up) is ready for triage.',
+                    f'/consultations/triage/{consultation.pk}/'
+                )
+
+            messages.success(
+                request,
+                f'Follow-up request #{consultation.pk} processed. '
+                f'Queue number: #{queue_number}. Patient routed to triage.'
+            )
+            return redirect('consultations:queue')
+
+        if form.is_valid():
+            instance = form.save(commit=False)
+            if instance.status == Consultation.Status.QUEUED:
+                with transaction.atomic():
+                    instance.queue_number = assign_next_queue_number()
+                    instance.save()
+                    notify_role('doctor',
+                                'Patient Queued for Triage',
+                                f'{consultation.patient.get_full_name()} is ready for triage.',
+                                f'/consultations/triage/{consultation.pk}/')
+            else:
                 instance.save()
-                notify_role('doctor',
-                            'Patient Queued for Triage',
-                            f'{consultation.patient.get_full_name()} is ready for triage.',
-                            f'/consultations/triage/{consultation.pk}/')
-        else:
-            instance.save()
-        messages.success(
-            request,
-            f'Consultation #{consultation.pk} updated. '
-            + (f'Queue number: #{instance.queue_number}' if instance.queue_number else '')
-        )
-        return redirect('consultations:queue')
+            log_change(
+                user=request.user,
+                module='Consultations',
+                description=f'Processed consultation #{consultation.pk} — queued for triage',
+                object_model='consultations.Consultation',
+                object_id=consultation.pk,
+                object_repr=str(consultation),
+                changes_after={'status': consultation.status, 'queue_number': getattr(instance, 'queue_number', None)},
+                request=request,
+            )
+
+            messages.success(
+                request,
+                f'Consultation #{consultation.pk} updated. '
+                + (f'Queue number: #{instance.queue_number}' if instance.queue_number else '')
+            )
+            return redirect('consultations:queue')
 
     return render(request, 'consultations/queue_detail.html', {
         'consultation': consultation,
         'form': form,
         'base_template': _base_template(request.user),
+        'is_follow_up': follow_up_request is not None,
     })
 
 
-@login_required
-@frontdesk_required
-def process_follow_up(request, follow_up_pk):
-    """
-    Front desk processes a follow-up request, making it visible in the doctor's triage queue.
-    """
-    if request.method != 'POST':
-        return redirect('consultations:queue')
 
-    follow_up_req = get_object_or_404(
-        FollowUpRequest,
-        pk=follow_up_pk,
-        request_status='pending',
-    )
-
-    consultation = follow_up_req.consultation
-
-    with transaction.atomic():
-        follow_up_req.request_status = 'queued'
-        follow_up_req.queue_number = assign_next_queue_number()
-        follow_up_req.save(update_fields=['request_status', 'queue_number'])
-
-        # Change consultation status to queued so it appears in triage list
-        consultation.status = Consultation.Status.QUEUED
-        consultation.queue_number = follow_up_req.queue_number
-        consultation.save(update_fields=['status', 'queue_number'])
-
-    notify_role(
-        'doctor',
-        'Follow-up Ready for Triage',
-        f'{follow_up_req.patient.get_full_name()} is ready for triage '
-        f'(follow-up for Consultation #{consultation.pk}).',
-        f'/consultations/triage/{consultation.pk}/'
-    )
-
-    messages.success(
-        request,
-        f'Follow-up request #{follow_up_pk} processed. '
-        f'Consultation #{consultation.pk} is now in the triage queue.'
-    )
-    return redirect('consultations:queue')
 
 
 @login_required
@@ -577,8 +657,26 @@ def frontdesk_cancel(request, pk):
         )
         return redirect('consultations:queue')
 
-    consultation.status = Consultation.Status.CANCELLED
-    consultation.save(update_fields=['status'])
+    with transaction.atomic():
+        # Also cancel any associated follow-up request
+        FollowUpRequest.objects.filter(
+            consultation=consultation,
+            request_status__in=['pending', 'queued'],
+        ).update(request_status='cancelled')
+        consultation.status = Consultation.Status.CANCELLED
+        consultation.save(update_fields=['status'])
+
+    log_change(
+        user=request.user,
+        module='Consultations',
+        description=f'Cancelled consultation #{pk} — {consultation.patient.get_full_name()}',
+        object_model='consultations.Consultation',
+        object_id=consultation.pk,
+        object_repr=str(consultation),
+        changes_after={'status': 'cancelled'},
+        request=request,
+    )
+
     messages.success(request, f'Consultation #{pk} has been cancelled.')
     return redirect('consultations:queue')
 
@@ -600,6 +698,16 @@ def admin_reopen(request, pk):
     consultation.queue_number = None
     consultation.scheduled_at = None
     consultation.save(update_fields=['status', 'queue_number', 'scheduled_at'])
+    log_change(
+        user=request.user,
+        module='Consultations',
+        description=f'Reopened consultation #{pk} — {consultation.patient.get_full_name()}',
+        object_model='consultations.Consultation',
+        object_id=consultation.pk,
+        object_repr=str(consultation),
+        changes_after={'status': 'pending'},
+        request=request,
+    )
     messages.success(request, f'Consultation #{pk} has been reopened and returned to Pending.')
     return redirect('consultations:queue')
 
@@ -614,9 +722,25 @@ def triage_list(request):
     ).select_related('patient', 'patient__college').order_by(
         'queue_number', 'scheduled_at', 'created_at'
     )
+
+    # Identify follow-up consultations for badge display
+    follow_up_consultation_ids = set(
+        FollowUpRequest.objects.filter(
+            consultation__in=consultations,
+            request_status='queued',
+        ).values_list('consultation_id', flat=True)
+    )
+
+    # Calculate queue positions (consultations are already ordered by queue_number)
+    queue_positions = {}
+    for idx, c in enumerate(consultations, start=1):
+        queue_positions[c.pk] = idx
+
     return render(request, 'consultations/triage_list.html', {
         'consultations': consultations,
         'base_template': _base_template(request.user),
+        'follow_up_consultation_ids': follow_up_consultation_ids,
+        'queue_positions': queue_positions,
     })
 
 
@@ -634,8 +758,9 @@ def triage_form(request, pk):
         if consultation.prescriptions.exists():
             messages.info(request, f'This is a follow-up visit. Recording follow-up progress.')
             return redirect('consultations:follow_up_create', consultation_pk=consultation.pk)
-        messages.info(request, f'Consultation #{consultation.pk} has already been triaged.')
-        return redirect('consultations:triage_list')
+        # Already triaged but no prescription yet — let the doctor edit the triage
+        messages.info(request, f'Consultation #{consultation.pk} has already been triaged. You can edit triage records below.')
+        return redirect('consultations:triage_edit', pk=consultation.pk)
 
     # Get or create patient profile
     patient = consultation.patient
@@ -682,6 +807,17 @@ def triage_form(request, pk):
 
         consultation.status = Consultation.Status.TRIAGED
         consultation.save(update_fields=['status'])
+
+        log_change(
+            user=request.user,
+            module='Consultations',
+            description=f'Triaged patient — {consultation.patient.get_full_name()} — {triage.get_urgency_display()} urgency',
+            object_model='consultations.Consultation',
+            object_id=consultation.pk,
+            object_repr=str(consultation),
+            changes_after={'status': 'triaged', 'urgency': triage.urgency},
+            request=request,
+        )
 
         notify_role('doctor',
                     'Patient Ready for Consultation',
@@ -822,6 +958,17 @@ def prescribe(request, pk):
                                     ),
                                     user=request.user,
                                 )
+
+                    log_change(
+                        user=request.user,
+                        module='Consultations',
+                        description=f'Completed prescription for consultation #{consultation.pk} — {prescription.diagnosis}',
+                        object_model='consultations.Consultation',
+                        object_id=consultation.pk,
+                        object_repr=str(consultation),
+                        changes_after={'diagnosis': prescription.diagnosis},
+                        request=request,
+                    )
 
                     messages.success(
                         request,
@@ -1219,6 +1366,16 @@ def close_consultation(request, pk):
         consultation.closed_at = timezone.now()
         consultation.save(
             update_fields=['status', 'closure_notes', 'closed_at']
+        )
+        log_change(
+            user=request.user,
+            module='Consultations',
+            description=f'Closed consultation case #{pk} — {consultation.patient.get_full_name()}',
+            object_model='consultations.Consultation',
+            object_id=consultation.pk,
+            object_repr=str(consultation),
+            changes_after={'status': 'closed'},
+            request=request,
         )
         messages.success(request, f'Consultation case #{pk} has been closed.')
         return redirect('consultations:consultation_timeline', pk=pk)

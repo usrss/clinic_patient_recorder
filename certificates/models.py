@@ -110,12 +110,12 @@ class MedicalCertificate(models.Model):
     # ── Rendered-text snapshot ────────────────────────────────────────────
     rendered_text_snapshot = models.JSONField(
         null=True, blank=True,
-        help_text='Resolved prose text at time of issuance (keyed by slot_key)',
+        help_text='Resolved body text at time of issuance (single string)',
     )
 
     # ── Audit ─────────────────────────────────────────────────────────────
     issued_at = models.DateTimeField(null=True, blank=True, help_text='When the certificate was issued')
-    template_version = models.CharField(max_length=10, default='2.0', help_text='Print template version used')
+    template_version = models.CharField(max_length=10, default='3.0', help_text='Print template version used')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -208,7 +208,7 @@ class MedicalCertificate(models.Model):
             return text
 
     def _compute_rendered_snapshot(self):
-        """Compute and return a dict of resolved slot text for this certificate."""
+        """Compute and return a single body string of resolved template text."""
         ct = self.certificate_type
 
         # Dental inherits standard's template text
@@ -217,16 +217,12 @@ class MedicalCertificate(models.Model):
         templates = CertificateTemplateText.objects.filter(
             certificate_type=source_type,
         )
-        result = {}
-        for t in templates:
-            result[t.slot_key] = self._resolve_text(t.text)
+        # Get the body entry (there should be one per certificate type)
+        body_template = templates.filter(slot_key='body').first()
+        if body_template:
+            return self._resolve_text(body_template.text)
 
-        # Dental: strip rest-period and closing slots (only diagnosis)
-        if ct == self.CertificateType.DENTAL:
-            result.pop('rest_period_single', None)
-            result.pop('rest_period_range', None)
-
-        return result
+        return ''
 
     def issue(self, user=None):
         """Finalize the certificate from DRAFT to ISSUED.
@@ -254,7 +250,7 @@ class MedicalCertificate(models.Model):
             self.diagnosis_snapshot = self.diagnosis
             self.rendered_text_snapshot = self._compute_rendered_snapshot()
             self.issued_at = timezone.now()
-            self.template_version = '2.0'
+            self.template_version = '3.0'
             self.save(update_fields=[
                 'status', 'certificate_number', 'diagnosis_snapshot',
                 'rendered_text_snapshot', 'issued_at', 'template_version',

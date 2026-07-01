@@ -1,38 +1,53 @@
 {% extends 'core/base_admin.html' %}
 {% load static %}
-{% block title %}Edit Template Text — {{ slot.slot_key }}{% endblock %}
+{% block title %}Edit Template — {{ slot.get_cert_type_label }}{% endblock %}
 
 {% block extra_css %}
 <style>
-  .edit-page { padding: 32px 24px; max-width: 720px; margin: 0 auto; }
+  .edit-page { padding: 36px 28px; max-width: 900px; margin: 0 auto; }
   .edit-page h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
   .edit-page .subtitle { font-size: 13px; color: #6b7280; margin: 0 0 24px; }
-  .form-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .form-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
   .form-group { margin-bottom: 20px; }
   .form-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
-  .form-help { font-size: 12px; color: #6b7280; margin-top: 6px; background: #f0f4ff; border-radius: 8px; padding: 10px 14px; border-left: 3px solid #0078d4; }
-  .form-help code { font-family: monospace; font-size: 11px; background: #e8ecf1; padding: 1px 5px; border-radius: 3px; }
   .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
-  .slot-meta { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-  .meta-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #0078d4; }
+  .cert-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #0078d4; }
   .btn-row { display: flex; gap: 10px; margin-top: 24px; }
   .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
   .btn-primary { background: #0078d4; color: #fff; }
   .btn-primary:hover { background: #006bbf; }
   .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
   .btn-secondary:hover { background: #f9fafb; }
+  .form-card textarea { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.7; padding: 16px; border: 1px solid #d1d5db; border-radius: 10px; width: 100%; min-height: 480px; resize: vertical; transition: border-color .15s; }
+  .form-card textarea:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,.12); }
+
+  /* Placeholder reference panel */
+  .ref-panel { background: #f8fafc; border: 1px solid #e8ecf1; border-radius: 12px; padding: 20px 24px; margin-top: 20px; }
+  .ref-panel h3 { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 12px; }
+  .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 12px; }
+  .ref-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .ref-item code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; background: #e8ecf1; padding: 2px 6px; border-radius: 4px; color: #1a1a2e; white-space: nowrap; }
+  .ref-item span { color: #6b7280; }
+
+  /* Example section */
+  .example-section { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px 24px; margin-top: 20px; }
+  .example-section h3 { font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 8px; }
+  .example-section .example-body { font-size: 13px; color: #78350f; line-height: 1.7; white-space: pre-wrap; font-family: 'Inter', system-ui, sans-serif; background: #fff; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 18px; margin-top: 8px; }
+  .example-section .example-note { font-size: 11px; color: #92400e; margin-top: 8px; }
+
+  /* Character count */
+  .char-count { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 4px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="edit-page">
-  <h1>Edit Template Text</h1>
-  <p class="subtitle">Modify the prose text used for <strong>{{ slot.slot_key }}</strong>.</p>
+  <h1>Edit Certificate Template</h1>
+  <p class="subtitle">Edit the full body text for <strong>{{ slot.get_cert_type_label }}</strong> certificates.</p>
 
-  <div class="slot-meta">
-    <span class="meta-chip">{{ slot.get_cert_type_label }}</span>
-    <span class="meta-chip">{{ slot.slot_key }}</span>
-    <span class="meta-chip">Last updated: {{ slot.updated_at|date:"M d, Y H:i" }}</span>
+  <div style="margin-bottom: 20px;">
+    <span class="cert-badge">{{ slot.get_cert_type_label }}</span>
+    <span class="cert-badge" style="background:#f0fdf4;color:#166534;">Last updated: {{ slot.updated_at|date:"M d, Y H:i" }}</span>
   </div>
 
   <div class="form-card">
@@ -40,35 +55,93 @@
       {% csrf_token %}
 
       <div class="form-group">
-        <label class="form-label">Text Content</label>
+        <label class="form-label">Template Body Text</label>
         {{ form.text }}
         {% if form.text.errors %}<div class="form-error">{{ form.text.errors.0 }}</div>{% endif %}
-        <div class="form-help">
-          <strong>Available placeholders:</strong><br>
-          <code>{patient_name}</code> — Patient's full name<br>
-          <code>{age}</code> — Patient's age<br>
-          <code>{sex}</code> — Patient's sex<br>
-          <code>{college_info}</code> — e.g. "from CCIS — 3rd Year, "<br>
-          <code>{position_info}</code> — e.g. "Faculty — IT Department, "<br>
-          <code>{exam_date}</code> — Examination date<br>
-          <code>{diagnosis}</code> — Diagnosis text<br>
-          <code>{rest_date}</code> — Rest date (single)<br>
-          <code>{rest_from}</code> / <code>{rest_to}</code> — Rest period<br>
-          <code>{return_date}</code> — Return to work date<br>
-          <code>{work_assessment}</code> — Assessment result<br>
-          <code>{fitness_status}</code> — Fitness clearance<br>
-          <code>{activity_name}</code> — Activity name<br>
-          <code>{restrictions}</code> — Work restrictions<br>
-          <br>
-          <strong>Note:</strong> HTML tags (&lt; &gt;) are not allowed.
-        </div>
+        <div class="char-count" id="charCount">0 characters</div>
       </div>
 
       <div class="btn-row">
-        <a href="{% url 'certificates:template_text_list' %}" class="btn btn-secondary">&larr; Back</a>
+        <a href="{% url 'certificates:template_text_list' %}" class="btn btn-secondary">&larr; Back to Templates</a>
         <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
+
+  <!-- Example section -->
+  <div class="example-section">
+    <h3>Example — {{ slot.get_cert_type_label }} Template</h3>
+    {% if slot.certificate_type == 'standard' or slot.certificate_type == 'dental' %}
+    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}was examined and treated at this clinic on {exam_date}.
+
+Diagnosis: {diagnosis}
+
+The patient is advised to rest from {rest_from} to {rest_to}.
+
+This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+    {% elif slot.certificate_type == 'fit_to_work' %}
+    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {position_info}has been examined and found to be PHYSICALLY FIT to return to work.
+
+Assessment: {work_assessment}
+
+Findings: {diagnosis}
+
+This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+    {% elif slot.certificate_type == 'fit_to_play' %}
+    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}has been examined and found to be PHYSICALLY FIT to participate in:
+
+{activity_name}
+
+Fitness Status: {fitness_status}
+
+Findings: {diagnosis}
+
+This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+    {% endif %}
+    <div class="example-note">Use blank lines between paragraphs to create separate paragraphs in the printed certificate. The Remarks field from the certificate form is appended automatically after the body text.</div>
+  </div>
+
+  <!-- Placeholder reference -->
+  <div class="ref-panel">
+    <h3>Available Placeholders</h3>
+    <div class="ref-grid">
+      <div class="ref-item"><code>{patient_name}</code> <span>Patient's full name</span></div>
+      <div class="ref-item"><code>{age}</code> <span>Patient's age</span></div>
+      <div class="ref-item"><code>{sex}</code> <span>Patient's sex</span></div>
+      <div class="ref-item"><code>{college_info}</code> <span>e.g. "from CCIS - 3rd Year, "</span></div>
+      <div class="ref-item"><code>{position_info}</code> <span>e.g. "Faculty - IT Department, "</span></div>
+      <div class="ref-item"><code>{exam_date}</code> <span>Examination date</span></div>
+      <div class="ref-item"><code>{diagnosis}</code> <span>Diagnosis text</span></div>
+      <div class="ref-item"><code>{rest_date}</code> <span>Single rest date</span></div>
+      <div class="ref-item"><code>{rest_from}</code> <span>Rest period start</span></div>
+      <div class="ref-item"><code>{rest_to}</code> <span>Rest period end</span></div>
+      <div class="ref-item"><code>{return_date}</code> <span>Return to work date</span></div>
+      <div class="ref-item"><code>{work_assessment}</code> <span>Work assessment result</span></div>
+      <div class="ref-item"><code>{fitness_status}</code> <span>Fitness clearance</span></div>
+      <div class="ref-item"><code>{activity_name}</code> <span>Activity name</span></div>
+      <div class="ref-item"><code>{restrictions}</code> <span>Work restrictions</span></div>
+      <div class="ref-item"><code>{college}</code> <span>College abbreviation</span></div>
+      <div class="ref-item"><code>{year_level}</code> <span>Year level</span></div>
+      <div class="ref-item"><code>{position}</code> <span>Staff position</span></div>
+      <div class="ref-item"><code>{department}</code> <span>Staff department</span></div>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin:12px 0 0;padding-top:10px;border-top:1px solid #e8ecf1;">
+      <strong>Note:</strong> HTML tags are not allowed. Use blank lines between paragraphs for spacing.
+      Placeholders not used in the text will be left as-is.
+    </p>
+  </div>
+
 </div>
+
+<script>
+  // Character counter
+  const textarea = document.querySelector('textarea');
+  const counter = document.getElementById('charCount');
+  if (textarea && counter) {
+    textarea.addEventListener('input', function() {
+      counter.textContent = this.value.length + ' characters';
+    });
+    counter.textContent = textarea.value.length + ' characters';
+  }
+</script>
 {% endblock %}

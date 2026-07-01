@@ -492,9 +492,24 @@
       </a>
     </div>
     </div>
-    {% endif %}
+    {% endif %}      <!-- ── Monitoring section (Doctor + Front Desk) ── -->
+      {% if user.role == 'doctor' or user.role == 'frontdesk' %}
+      <div class="stf-nav-section stf-collapsible">
+        <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
+          <div class="stf-nav-section-label">Monitoring</div>
+          <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
+        </div>
+        <div class="stf-collapsible-items">
+        <a href="{% url 'audit_logs:list' %}"
+           class="stf-nav-link {% if request.resolver_match.app_name == 'audit_logs' %}active{% endif %}">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Audit Logs
+        </a>
+      </div>
+      </div>
+      {% endif %}
 
-    <!-- ── Account section (all roles) ── -->
+      <!-- ── Account section (all roles) ── -->
     <div class="stf-nav-section stf-collapsible">
       <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
         <div class="stf-nav-section-label">Account</div>

@@ -3,6 +3,7 @@ import time as _time
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
+from audit_logs.services import log_auth_event
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
@@ -56,6 +57,14 @@ def login_view(request):
             user.locked_until = None
             user.save(update_fields=['failed_login_attempts', 'locked_until'])
 
+            log_auth_event(
+                user=user,
+                action='LOGIN',
+                description=f'Successful login — {user.get_full_name() or user.username}',
+                status='SUCCESS',
+                request=request,
+            )
+
             login(request, user)
 
             if user.role == User.Role.PATIENT:
@@ -85,12 +94,16 @@ def login_view(request):
                         else:
                             messages.error(request, 'Invalid username or password.')
                         user.save(update_fields=['failed_login_attempts', 'locked_until'])
+                        log_auth_event(
+                            user=user,
+                            action='LOGIN',
+                            description=f'Failed login attempt — {username}',
+                            status='FAILED',
+                            request=request,
+                        )
                 except User.DoesNotExist:
                     # Generic message — don't reveal whether the user exists
                     messages.error(request, 'Invalid username or password.')
-            else:
-                messages.error(request, 'Invalid username or password.')
-
     return render(request, 'accounts/login.html', {'form': form})
 
 
@@ -387,6 +400,14 @@ def reset_password(request):
 def logout_view(request):
     if request.method != 'POST':
         return redirect('accounts:dashboard')
+    user = request.user
+    log_auth_event(
+        user=user,
+        action='LOGOUT',
+        description=f'Logout — {user.get_full_name() or user.username}',
+        status='SUCCESS',
+        request=request,
+    )
     logout(request)
     return redirect('accounts:login')
 
@@ -528,6 +549,13 @@ def change_password(request):
         user.force_password_change = False
         user.save()
         update_session_auth_hash(request, user)
+        log_auth_event(
+            user=user,
+            action='UPDATE',
+            description=f'Password changed — {user.get_full_name() or user.username}',
+            status='SUCCESS',
+            request=request,
+        )
         messages.success(request, 'Password changed successfully.')
 
         if user.role == User.Role.PATIENT:
@@ -555,7 +583,17 @@ def user_list(request):
 def user_create(request):
     form = UserCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        new_user = form.save()
+        from audit_logs.services import log_create
+        log_create(
+            user=request.user,
+            module='User Management',
+            description=f'Created staff account — {new_user.get_full_name() or new_user.username} ({new_user.role})',
+            object_model='accounts.User',
+            object_id=new_user.pk,
+            object_repr=str(new_user),
+            request=request,
+        )
         messages.success(request, 'Staff user created successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Create'})
@@ -567,7 +605,27 @@ def user_edit(request, pk):
     target = get_object_or_404(User, pk=pk)
     form = UserEditForm(request.POST or None, request.FILES or None, instance=target)
     if request.method == 'POST' and form.is_valid():
+        # Capture before values
+        old_role = target.role
+        old_active = target.is_active
         form.save()
+        from audit_logs.services import log_change
+        changes = {}
+        if old_role != target.role:
+            changes['role'] = f'{old_role} → {target.role}'
+        if old_active != target.is_active:
+            changes['is_active'] = f'{old_active} → {target.is_active}'
+        log_change(
+            user=request.user,
+            module='User Management',
+            description=f'Updated staff account — {target.get_full_name() or target.username}',
+            object_model='accounts.User',
+            object_id=target.pk,
+            object_repr=str(target),
+            changes_before={'role': old_role, 'is_active': old_active},
+            changes_after={'role': target.role, 'is_active': target.is_active},
+            request=request,
+        )
         messages.success(request, 'User updated successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Edit', 'target': target})
@@ -578,14 +636,27 @@ def user_edit(request, pk):
 def user_toggle_active(request, pk):
     if request.method != 'POST':
         return redirect('accounts:user_list')
-    user = get_object_or_404(User, pk=pk)
-    if user == request.user:
+    target_user = get_object_or_404(User, pk=pk)
+    if target_user == request.user:
         messages.error(request, 'You cannot deactivate your own account.')
     else:
-        user.is_active = not user.is_active
-        user.save(update_fields=['is_active'])
-        status = 'activated' if user.is_active else 'deactivated'
-        messages.success(request, f'User {user.username} {status}.')
+        was_active = target_user.is_active
+        target_user.is_active = not target_user.is_active
+        target_user.save(update_fields=['is_active'])
+        status = 'activated' if target_user.is_active else 'deactivated'
+        from audit_logs.services import log_change
+        log_change(
+            user=request.user,
+            module='User Management',
+            description=f'{status.capitalize()} account — {target_user.get_full_name() or target_user.username}',
+            object_model='accounts.User',
+            object_id=target_user.pk,
+            object_repr=str(target_user),
+            changes_before={'is_active': was_active},
+            changes_after={'is_active': target_user.is_active},
+            request=request,
+        )
+        messages.success(request, f'User {target_user.username} {status}.')
     return redirect('accounts:user_list')
 
 

@@ -40,18 +40,14 @@
       <p class="salutation">To Whom It May Concern:</p>
 
       {% if slot_text %}
-        {# ── Issued cert: use rendered snapshot ── #}
-        {% if slot_text.statement %}<p>{{ slot_text.statement }}</p>{% endif %}
-        <p><strong>Examination Date:</strong>&nbsp;&nbsp;{{ certificate.consultation.created_at|date:"F d, Y" }}</p>
-        {% if slot_text.findings_line %}<p><strong>{{ slot_text.findings_line }}</strong></p>{% endif %}
-
-        {% if certificate.remarks %}
-        <p><strong>Remarks:</strong>&nbsp;&nbsp;{{ certificate.remarks }}</p>
+        {# ── Issued cert: use rendered snapshot (single body string) ── #}
+        {% if slot_text|length > 0 %}
+          {{ slot_text|linebreaks }}
         {% endif %}
 
-        {% if slot_text.closing_statement %}
+        {% if certificate.remarks %}
         <hr class="divider">
-        <p>{{ slot_text.closing_statement }}</p>
+        <p><strong>Remarks:</strong>&nbsp;&nbsp;{{ certificate.remarks }}</p>
         {% endif %}
       {% else %}
         {# ── Fallback for drafts ── #}
@@ -83,10 +79,9 @@
         </p>
         {% endif %}
 
-        {% if slot_text.closing_statement %}
         <hr class="divider">
-        <p>{{ slot_text.closing_statement }}</p>
-        {% endif %}
+
+        <p>This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</p>
       {% endif %}
 
     </div>

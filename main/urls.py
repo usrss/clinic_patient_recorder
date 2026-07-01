@@ -15,6 +15,7 @@ urlpatterns = [
     path('notifications/', include('notifications.urls', namespace='notifications')),
     path('certificates/', include('certificates.urls', namespace='certificates')),
     path('feedback/', include('feedback.urls', namespace='feedback')),
+    path('audit-logs/', include('audit_logs.urls', namespace='audit_logs')),
 ]
 
 # Media files — served by Django only in development (DEBUG=True).

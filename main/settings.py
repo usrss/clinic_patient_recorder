@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'core',
     'notifications',
     'feedback',
+    'audit_logs',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.ProfileCompletionMiddleware',
+    'audit_logs.middleware.AuditIPMiddleware',
 ]
 
 
