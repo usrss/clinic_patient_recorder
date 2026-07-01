@@ -1,0 +1,163 @@
+{% extends 'core/base_staff.html' %}
+{% block title %}Certificate Details — Step 2{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wizard-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);
+    padding: 36px 24px;
+  }
+  .wizard-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
+  .step-indicator { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px; }
+  .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .step-dot.active { background: #0078d4; color: #fff; }
+  .step-dot.completed { background: #059669; color: #fff; }
+  .step-dot.inactive { background: #e5e7eb; color: #9ca3af; }
+  .step-line { width: 40px; height: 2px; background: #e5e7eb; }
+  .step-line.active { background: #059669; }
+  .wizard-header { margin-bottom: 24px; }
+  .wizard-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
+  .wizard-header p { font-size: 13px; color: #6b7280; margin: 4px 0 0; }
+  .patient-chip { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #e8ecf1; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .patient-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg,#e8f0fe,#c7d7fb); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .patient-name { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+  .patient-meta { font-size: 12px; color: #94a3b8; }
+  .form-card { background: #fff; border-radius: 16px; padding: 24px 28px; border: 1px solid #e8ecf1; box-shadow: 0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06); }
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
+  .form-label .req { color: #ef4444; }
+  .form-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cert-type-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #0078d4; }
+  .btn-row { display: flex; gap: 10px; justify-content: space-between; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: #0078d4; color: #fff; }
+  .btn-primary:hover { background: #006bbf; }
+  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-secondary:hover { background: #f9fafb; }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+  select.form-control, textarea.form-control, input.form-control { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; font-family: inherit; }
+  select.form-control:focus, textarea.form-control:focus, input.form-control:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wizard-page">
+<div class="wizard-wrap">
+
+  {# Step indicator #}
+  <div class="step-indicator">
+    <div class="step-dot completed">&#10003;</div>
+    <div class="step-line active"></div>
+    <div class="step-dot active">2</div>
+    <div class="step-line"></div>
+    <div class="step-dot inactive">3</div>
+  </div>
+
+  <div class="wizard-header">
+    <h1>Certificate Details</h1>
+    <p>Step 2 of 3 — Fill in the certificate information</p>
+  </div>
+
+  <div class="patient-chip">
+    <div class="patient-avatar">&#128100;</div>
+    <div>
+      <div class="patient-name">{{ consultation.patient.get_full_name }}</div>
+      <div class="patient-meta">
+        <span class="cert-type-badge">{{ certificate.get_certificate_type_display }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {# Diagnosis — always shown #}
+      <div class="form-group">
+        <label class="form-label">
+          Diagnosis / Findings <span class="req">*</span>
+        </label>
+        {{ form.diagnosis }}
+        {% if form.diagnosis.errors %}<div class="form-error">{{ form.diagnosis.errors.0 }}</div>{% endif %}
+      </div>
+
+      {# Standard: Rest Period #}
+      {% if certificate.certificate_type == 'standard' %}
+      <div class="form-group">
+        <label class="form-label">Rest Period</label>
+        <div class="field-row">
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">From <span class="req">*</span></div>
+            {{ form.rest_from }}
+            {% if form.rest_from.errors %}<div class="form-error">{{ form.rest_from.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">To <span class="req">*</span></div>
+            {{ form.rest_to }}
+            {% if form.rest_to.errors %}<div class="form-error">{{ form.rest_to.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Fit-to-Work #}
+      {% if certificate.certificate_type == 'fit_to_work' %}
+      <div class="form-group">
+        <label class="form-label">Assessment <span class="req">*</span></label>
+        {{ form.work_assessment }}
+        {% if form.work_assessment.errors %}<div class="form-error">{{ form.work_assessment.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Recommended Return Date <span class="req">*</span></label>
+        {{ form.return_date }}
+        {% if form.return_date.errors %}<div class="form-error">{{ form.return_date.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Restrictions / Limitations</label>
+        {{ form.restrictions }}
+        <div class="form-hint">Work restrictions if applicable</div>
+      </div>
+      {% endif %}
+
+      {# Fit-to-Play #}
+      {% if certificate.certificate_type == 'fit_to_play' %}
+      <div class="form-group">
+        <label class="form-label">Activity / Event Name <span class="req">*</span></label>
+        {{ form.activity_name }}
+        {% if form.activity_name.errors %}<div class="form-error">{{ form.activity_name.errors.0 }}</div>{% endif %}
+        <div class="form-hint">e.g. Basketball tournament, Intramurals</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fitness Status <span class="req">*</span></label>
+        {{ form.fitness_status }}
+        {% if form.fitness_status.errors %}<div class="form-error">{{ form.fitness_status.errors.0 }}</div>{% endif %}
+      </div>
+      {% endif %}
+
+      {# Dental — just diagnosis #}
+      {% if certificate.certificate_type == 'dental' %}
+      <div class="form-hint" style="margin-bottom:16px;">Dental diagnosis and findings</div>
+      {% endif %}
+
+      {# Remarks — always shown #}
+      <div class="form-group">
+        <label class="form-label">Remarks</label>
+        {{ form.remarks }}
+        <div class="form-hint">Optional additional notes</div>
+      </div>
+
+      <div class="btn-row">
+        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn btn-secondary">&larr; Back</a>
+        <button type="submit" class="btn btn-primary">Preview &rarr;</button>
+      </div>
+    </form>
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+{% endblock %}

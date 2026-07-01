@@ -1,0 +1,266 @@
+{% extends base_template %}
+{% block title %}Consultation Complete — #{{ consultation.pk }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cs-page {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 28px 24px 48px;
+  }
+  .cs-wrap { width: 100%; max-width: 720px; margin: 0 auto; }
+
+  .cs-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .cs-header .check-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  .cs-header h1 { font-size: 22px; font-weight: 700; color: #065f46; margin: 0 0 4px; }
+  .cs-header p { font-size: 13px; color: #6b7280; margin: 0; }
+
+  .cs-section-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 12px;
+  }
+
+  .info-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .info-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
+  .info-value { font-size: 13px; font-weight: 500; color: #1a1a2e; }
+
+  .doc-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .doc-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+  .doc-icon {
+    width: 44px; height: 44px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+  }
+  .doc-body { flex: 1; min-width: 0; }
+  .doc-title { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+  .doc-meta { font-size: 12px; color: #6b7280; margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .doc-status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .doc-status.generated { background: #d1fae5; color: #065f46; }
+  .doc-status.issued { background: #d1fae5; color: #065f46; }
+  .doc-status.not-issued { background: #fef3c7; color: #92400e; }
+  .doc-status.draft { background: #e0e7ff; color: #3730a3; }
+
+  .doc-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+  .btn-outline:hover { background: #f9fafb; border-color: #9ca3af; }
+  .btn-primary-sm { background: #0078d4; color: #fff; }
+  .btn-primary-sm:hover { background: #006bbf; }
+  .btn-success-sm { background: #059669; color: #fff; }
+  .btn-success-sm:hover { background: #047857; }
+  .btn-warning-sm { background: #d97706; color: #fff; }
+  .btn-warning-sm:hover { background: #b45309; }
+
+  .cs-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cs-page">
+<div class="cs-wrap">
+
+  {# ── Header ── #}
+  <div class="cs-header">
+    <div class="check-icon">&#10003;</div>
+    <h1>Consultation Completed Successfully</h1>
+    <p>Consultation #{{ consultation.pk }} &middot; {{ consultation.created_at|date:"F d, Y" }}</p>
+  </div>
+
+  {# ── Patient Information ── #}
+  <div class="cs-section-label">Patient Information</div>
+  <div class="info-panel">
+    <div class="info-grid">
+      <div>
+        <div class="info-label">Patient Name</div>
+        <div class="info-value">{{ consultation.patient.get_full_name }}</div>
+      </div>
+      <div>
+        <div class="info-label">Patient ID</div>
+        <div class="info-value">{{ consultation.patient.patient_id }}</div>
+      </div>
+      <div>
+        <div class="info-label">Age / Sex</div>
+        <div class="info-value">{{ consultation.patient.age|default:"—" }} / {{ consultation.patient.get_sex_display }}</div>
+      </div>
+      <div>
+        <div class="info-label">Attending Doctor</div>
+        <div class="info-value">
+          {% if prescription and prescription.doctor %}
+            Dr. {{ prescription.doctor.get_full_name|default:prescription.doctor.username }}
+          {% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Diagnosis Summary ── #}
+  {% if prescription %}
+  <div class="cs-section-label">Diagnosis Summary</div>
+  <div class="info-panel">
+    <div class="info-label">Diagnosis</div>
+    <div class="info-value" style="margin-top:4px;">{{ prescription.diagnosis }}</div>
+    {% if prescription.treatment_plan %}
+    <div class="info-label" style="margin-top:12px;">Treatment Plan</div>
+    <div class="info-value" style="margin-top:4px;">{{ prescription.treatment_plan }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# ── Documents Section ── #}
+  <div class="cs-section-label">Clinical Documents</div>
+
+  {# Card 1: Consultation Record #}
+  <div class="doc-card">
+    <div class="doc-icon" style="background:#eff6ff;">&#128196;</div>
+    <div class="doc-body">
+      <div class="doc-title">Consultation Record</div>
+      <div class="doc-meta">
+        <span class="doc-status generated">Generated</span>
+        <span>{{ consultation.created_at|date:"M d, Y" }}</span>
+      </div>
+    </div>
+    <div class="doc-actions">
+      <a href="{% url 'consultations:clinical_detail' consultation.pk %}" class="btn-sm btn-outline">View</a>
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn-sm btn-outline" target="_blank">Print</a>
+    </div>
+  </div>
+
+  {# Card 2: Prescription #}
+  <div class="doc-card">
+    <div class="doc-icon" style="background:#f0fdf4;">&#128137;</div>
+    <div class="doc-body">
+      <div class="doc-title">Prescription</div>
+      <div class="doc-meta">
+        {% if prescription %}
+          <span class="doc-status issued">Issued</span>
+          <span>{{ prescription.prescribed_at|date:"M d, Y" }}</span>
+        {% else %}
+          <span class="doc-status not-issued">Not Issued</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="doc-actions">
+      {% if prescription %}
+        <a href="{% url 'consultations:clinical_detail' consultation.pk %}#prescription" class="btn-sm btn-outline">View</a>
+        <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn-sm btn-outline" target="_blank">Print</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Card 3: Medical Certificate #}
+  <div class="doc-card">
+    <div class="doc-icon" style="background:#fef3c7;">&#128221;</div>
+    <div class="doc-body">
+      <div class="doc-title">Medical Certificate</div>
+      <div class="doc-meta">
+        {% if issued_certificate %}
+          <span class="doc-status issued">Issued</span>
+          <span>{{ issued_certificate.get_certificate_type_display }}</span>
+          <span>#{{ issued_certificate.certificate_number }}</span>
+          <span>{{ issued_certificate.issued_at|date:"M d, Y" }}</span>
+        {% elif draft_certificate %}
+          <span class="doc-status draft">Draft</span>
+          <span>{{ draft_certificate.get_certificate_type_display }}</span>
+        {% else %}
+          <span class="doc-status not-issued">Not Issued</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="doc-actions">
+      {% if issued_certificate %}
+        <a href="{% url 'certificates:print_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" target="_blank">View</a>
+        <a href="{% url 'certificates:print_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" target="_blank">Print Again</a>
+      {% elif draft_certificate %}
+        <a href="{% url 'certificates:wizard_details' draft_certificate.pk %}" class="btn-sm btn-warning-sm">Continue Draft</a>
+        <form method="post" action="{% url 'certificates:discard_draft' draft_certificate.pk %}" style="display:inline;" onsubmit="return confirm('Discard this draft and start over? The current draft will be voided.')">
+          {% csrf_token %}
+          <button type="submit" class="btn-sm btn-outline" style="color:#dc2626;border-color:#fca5a5;">Discard Draft &amp; Start Over</button>
+        </form>
+      {% else %}
+        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn-sm btn-primary-sm">Issue Medical Certificate</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Bottom actions ── #}
+  <div class="cs-actions">
+    <a href="{% url 'consultations:clinical_detail' consultation.pk %}" class="btn-sm btn-outline" style="padding:8px 20px;font-size:13px;">
+      View Full Details
+    </a>
+    {% if consultation.status == 'active_follow_up' %}
+      {# Follow-up case — no further actions here #}
+    {% else %}
+      <a href="{% url 'consultations:triage_list' %}" class="btn-sm btn-primary-sm" style="padding:8px 20px;font-size:13px;">
+        Back to Queue
+      </a>
+    {% endif %}
+  </div>
+
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+{% endblock %}

@@ -4,163 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Fit-to-Work Certificate — {{ certificate.consultation.patient.get_full_name }}</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 2.5cm 3cm;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Times New Roman', Times, serif;
-      font-size: 12pt;
-      line-height: 1.7;
-      color: #000;
-      background: #d0d0d0;
-    }
-
-    /* ── PAGE WRAPPER ──────────────────────────────── */
-    .page-wrapper {
-      max-width: 740px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 48px 56px 56px;
-      min-height: 100vh;
-    }
-
-    @media print {
-      body { background: white; }
-      .page-wrapper {
-        max-width: 100%;
-        padding: 0;
-        min-height: unset;
-      }
-      .no-print { display: none !important; }
-    }
-
-    /* ── HEADER ─────────────────────────────────────── */
-    .header {
-      text-align: center;
-      padding-bottom: 20px;
-      margin-bottom: 36px;
-      border-bottom: 2px solid #000;
-    }
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 6px;
-    }
-    .header-logo {
-      width: 62px;
-      height: 62px;
-    }
-    .header-text .univ-name {
-      font-size: 14pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .header-text .clinic-name {
-      font-size: 11.5pt;
-      font-weight: 600;
-    }
-    .header-text .address {
-      font-size: 8.5pt;
-      color: #444;
-    }
-    .form-title {
-      font-size: 14pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-top: 16px;
-    }
-
-    /* ── BODY CONTENT ──────────────────────────────── */
-    .content {
-      margin: 0 0 40px;
-    }
-
-    .salutation {
-      font-size: 12pt;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-
-    .content p {
-      font-size: 12pt;
-      margin-bottom: 14px;
-      text-align: justify;
-    }
-
-    /* ── DIVIDER ───────────────────────────────────── */
-    .divider {
-      border: none;
-      border-top: 1px solid #ccc;
-      margin: 28px 0;
-    }
-
-    /* ── SIGNATURE BLOCK ───────────────────────────── */
-    .signature-section {
-      margin-top: 60px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .signature-line {
-      width: 260px;
-      text-align: center;
-    }
-    .signature-line .sig-name {
-      border-top: 1.5px solid #000;
-      padding-top: 6px;
-      font-weight: 700;
-      font-size: 12pt;
-    }
-    .signature-line .sig-title {
-      font-size: 10pt;
-      color: #333;
-      margin-top: 2px;
-    }
-    .issued-date {
-      font-size: 9pt;
-      color: #888;
-      margin-top: 20px;
-      text-align: right;
-    }
-
-    /* ── PRINT / BACK BUTTONS ──────────────────────── */
-    .print-btn {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      z-index: 100;
-    }
-    .back-link {
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      font-size: 12px;
-      color: #2563eb;
-      text-decoration: none;
-      z-index: 100;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'certificates/css/certificate_print.css' %}">
 </head>
 <body>
 
@@ -182,45 +26,68 @@
       <div class="form-title">Fit-to-Work Certificate</div>
     </div>
 
+    {% if certificate.certificate_number %}
+    <div class="cert-meta">
+      Certificate #{{ certificate.certificate_number }}
+      &nbsp;|&nbsp;
+      <span class="status-badge {{ certificate.status }}">{{ certificate.get_status_display }}</span>
+    </div>
+    {% endif %}
+
     <!-- ══════════════ CONTENT ══════════════ -->
     <div class="content">
 
       <p class="salutation">To Whom It May Concern:</p>
 
-      <p>
-        This is to certify that
-        <strong>{{ certificate.consultation.patient.get_full_name }}</strong>,
-        {{ certificate.consultation.patient.age|default:"—" }} years of age,
-        {{ certificate.consultation.patient.get_sex_display|lower }},
-        {% if certificate.consultation.patient.position %}
-          {{ certificate.consultation.patient.position }}
+      {% if slot_text %}
+        {# ── Issued cert: use rendered snapshot ── #}
+        {% if slot_text.statement %}<p>{{ slot_text.statement }}</p>{% endif %}
+        <p><strong>Examination Date:</strong>&nbsp;&nbsp;{{ certificate.consultation.created_at|date:"F d, Y" }}</p>
+        {% if slot_text.findings_line %}<p><strong>{{ slot_text.findings_line }}</strong></p>{% endif %}
+
+        {% if certificate.remarks %}
+        <p><strong>Remarks:</strong>&nbsp;&nbsp;{{ certificate.remarks }}</p>
         {% endif %}
-        {% if certificate.consultation.patient.department %}
-          — {{ certificate.consultation.patient.department }}
-        {% endif %},
-        has been examined and found to be <strong>PHYSICALLY FIT</strong> to return to work.
-      </p>
 
-      <p>
-        <strong>Examination Date:</strong>&nbsp;&nbsp;{{ certificate.consultation.created_at|date:"F d, Y" }}
-      </p>
+        {% if slot_text.closing_statement %}
+        <hr class="divider">
+        <p>{{ slot_text.closing_statement }}</p>
+        {% endif %}
+      {% else %}
+        {# ── Fallback for drafts ── #}
+        <p>
+          This is to certify that
+          <strong>{{ certificate.consultation.patient.get_full_name }}</strong>,
+          {{ certificate.consultation.patient.age|default:"—" }} years of age,
+          {{ certificate.consultation.patient.get_sex_display|lower }},
+          {% if certificate.consultation.patient.position %}
+            {{ certificate.consultation.patient.position }}
+          {% endif %}
+          {% if certificate.consultation.patient.department %}
+            — {{ certificate.consultation.patient.department }}
+          {% endif %},
+          has been examined and found to be <strong>PHYSICALLY FIT</strong> to return to work.
+        </p>
 
-      <p>
-        <strong>Findings:</strong>&nbsp;&nbsp;{{ certificate.diagnosis }}
-      </p>
+        <p>
+          <strong>Examination Date:</strong>&nbsp;&nbsp;{{ certificate.consultation.created_at|date:"F d, Y" }}
+        </p>
 
-      {% if certificate.remarks %}
-      <p>
-        <strong>Remarks:</strong>&nbsp;&nbsp;{{ certificate.remarks }}
-      </p>
+        <p>
+          <strong>Findings:</strong>&nbsp;&nbsp;{{ certificate.diagnosis }}
+        </p>
+
+        {% if certificate.remarks %}
+        <p>
+          <strong>Remarks:</strong>&nbsp;&nbsp;{{ certificate.remarks }}
+        </p>
+        {% endif %}
+
+        {% if slot_text.closing_statement %}
+        <hr class="divider">
+        <p>{{ slot_text.closing_statement }}</p>
+        {% endif %}
       {% endif %}
-
-      <hr class="divider">
-
-      <p>
-        This certificate is issued upon the request of the patient for whatever
-        legal purpose it may serve.
-      </p>
 
     </div>
 

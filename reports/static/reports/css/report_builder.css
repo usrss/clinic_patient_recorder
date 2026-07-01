@@ -253,12 +253,6 @@
 .badge-staff      { background: #ede9fe; color: #5b21b6; }
 .badge-instructor { background: #fef9c3; color: #713f12; }
 
-/* ── Bar chart ── */
-.trend-bar-wrap { display: flex; align-items: flex-end; gap: 3px; height: 100px; padding-bottom: 4px; }
-.trend-bar-col  { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; gap: 3px; }
-.trend-bar      { width: 100%; background: #0078d4; border-radius: 3px 3px 0 0; min-height: 3px; opacity: 0.8; }
-.trend-label    { font-size: 9px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
-
 /* ── Error / Empty ── */
 .error-note { font-size: 12px; color: #ef4444; margin-top: 6px; }
 .empty-state {

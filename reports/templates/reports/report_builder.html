@@ -69,19 +69,6 @@
       </div>
     </div>
 
-    {# Trend granularity #}
-    <div style="margin-bottom:24px;">
-      <div class="sec-heading">Trend Granularity</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        {% for val, label in period_choices %}
-        <label class="radio-tab">
-          <input type="radio" name="period" value="{{ val }}" {% if period == val %}checked{% endif %}>
-          {{ label }}
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
     {# Metrics #}
     <div style="margin-bottom:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -314,39 +301,6 @@
   {% endif %}
 
 </div>{# /result-grid #}
-
-{# Trend (full-width) #}
-{% if 'trend' in results %}
-<div class="panel">
-  <div class="panel-header">Trend Over Time</div>
-  {% if results.trend %}
-  <div style="padding:20px 20px 0;">
-    <div class="trend-bar-wrap" id="builder-trend">
-      {% for point in results.trend %}
-      <div class="trend-bar-col" title="{{ point.label }}: {{ point.count }}">
-        <div style="font-size:9px;color:#94a3b8;min-height:14px;text-align:center;">{% if point.count %}{{ point.count }}{% endif %}</div>
-        <div class="trend-bar" style="height:4px;flex:none;"></div>
-        <div class="trend-label">{{ point.label }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  <table>
-    <thead><tr><th>Period</th><th>Consultations</th></tr></thead>
-    <tbody>
-      {% for point in results.trend %}
-      <tr>
-        <td>{{ point.label }}</td>
-        <td style="font-weight:{% if point.count %}600{% else %}400{% endif %};color:{% if point.count %}#0078d4{% else %}#d1d5db{% endif %};">{{ point.count|default:"0" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No trend data for this period.</p>
-  {% endif %}
-</div>
-{% endif %}
 
 {# Grouped summary #}
 {% if results.grouped %}

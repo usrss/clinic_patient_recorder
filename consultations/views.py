@@ -25,6 +25,7 @@ PatientConsultationForm, FollowUpProgressForm, CloseConsultationForm, Consultati
 )
 from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
+from certificates.models import MedicalCertificate, CertificateAuditLog
 
 
 # ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
@@ -222,12 +223,18 @@ def consultation_complete(request, pk):
                     f'/consultations/my/{pk}/'
                 )
 
+            # Check if doctor requested to issue a certificate
+            issue_certificate = request.POST.get('issue_certificate') == '1'
+
             messages.success(
                 request,
                 f'Consultation #{pk} completed.'
                 + (' Follow-up recommended.' if requires_follow_up else '')
             )
-            return redirect('consultations:print_consultation', pk=pk)
+
+            if issue_certificate:
+                return redirect('certificates:wizard_type', consultation_pk=consultation.pk)
+            return redirect('consultations:completion_summary', pk=consultation.pk)
 
     return render(request, 'consultations/consultation_complete.html', {
         'consultation': consultation,
@@ -1246,6 +1253,41 @@ def patient_active_cases(request, patient_pk):
     return render(request, 'consultations/patient_active_cases.html', {
         'patient': patient,
         'active_cases': active_cases,
+        'base_template': _base_template(request.user),
+    })
+
+
+# ─── COMPLETION SUMMARY ──────────────────────────────────────────────────────
+
+@login_required
+@doctor_required
+def completion_summary(request, pk):
+    """
+    Post-completion hub showing all clinical documents generated from this consultation.
+    """
+    consultation = get_object_or_404(
+        Consultation.objects.select_related(
+            'patient', 'patient__college', 'patient__profile',
+        ).prefetch_related(
+            'prescriptions__items',
+            'certificates',
+        ),
+        pk=pk,
+    )
+
+    prescription = consultation.prescriptions.first()
+    issued_certificate = consultation.certificates.filter(
+        status=MedicalCertificate.Status.ISSUED
+    ).first()
+    draft_certificate = consultation.certificates.filter(
+        status=MedicalCertificate.Status.DRAFT
+    ).first()
+
+    return render(request, 'consultations/completion_summary.html', {
+        'consultation': consultation,
+        'prescription': prescription,
+        'issued_certificate': issued_certificate,
+        'draft_certificate': draft_certificate,
         'base_template': _base_template(request.user),
     })
 

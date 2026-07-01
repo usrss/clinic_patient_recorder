@@ -373,17 +373,41 @@
     if (step === 1) {
       let valid = true;
 
-      // Validate required Step 1 fields
-      const required = ['role'];
-      required.forEach(f => {
-        const el = document.getElementById('id_' + f);
-        if (el && !el.value) {
-          el.classList.add('error');
+      // Validate role is selected
+      const roleEl = document.getElementById('id_role');
+      if (roleEl && !roleEl.value) {
+        roleEl.classList.add('error');
+        valid = false;
+      } else if (roleEl) {
+        roleEl.classList.remove('error');
+      }
+
+      // Role-dependent validation
+      const role = roleEl ? roleEl.value : '';
+      if (role === 'student') {
+        const collegeEl = document.getElementById('id_college');
+        if (collegeEl && !collegeEl.value) {
+          collegeEl.classList.add('error');
           valid = false;
-        } else if (el) {
-          el.classList.remove('error');
+        } else if (collegeEl) {
+          collegeEl.classList.remove('error');
         }
-      });
+        const yearEl = document.getElementById('id_year_level');
+        if (yearEl && !yearEl.value) {
+          yearEl.classList.add('error');
+          valid = false;
+        } else if (yearEl) {
+          yearEl.classList.remove('error');
+        }
+      } else if (role === 'faculty' || role === 'staff') {
+        const deptEl = document.getElementById('id_department');
+        if (deptEl && !deptEl.value.trim()) {
+          deptEl.classList.add('error');
+          valid = false;
+        } else if (deptEl) {
+          deptEl.classList.remove('error');
+        }
+      }
 
       if (valid) showStep(2);
     }

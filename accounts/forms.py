@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from .models import User
 from .utils import calculate_graduation_year
 from patients.models import Patient, PatientProfile
@@ -223,6 +225,12 @@ class PatientProfileEditForm(forms.ModelForm):
                      'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt'):
             self.fields[name].widget.attrs['class'] = 'form-check-input'
 
+        # Add range validators to height/weight
+        self.fields['height_cm'].validators.append(MinValueValidator(50))
+        self.fields['height_cm'].validators.append(MaxValueValidator(250))
+        self.fields['weight_kg'].validators.append(MinValueValidator(10))
+        self.fields['weight_kg'].validators.append(MaxValueValidator(300))
+
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
         if file:
@@ -276,8 +284,10 @@ class ProfileCompletionForm(forms.Form):
         ],
         required=False,
     )
-    height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
-    weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
+    height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
+        validators=[MinValueValidator(50), MaxValueValidator(250)])
+    weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
+        validators=[MinValueValidator(10), MaxValueValidator(300)])
 
     # ── Profile Picture ──
     profile_picture = forms.ImageField(
@@ -396,23 +406,15 @@ class PasswordResetRequestForm(forms.Form):
         }),
     )
 
-    def clean_patient_id(self):
-        patient_id = self.cleaned_data.get('patient_id', '').strip()
-        if not User.objects.filter(username=patient_id, is_active=True).exists():
-            raise forms.ValidationError('No active account found with this ID.')
-        user = User.objects.get(username=patient_id, is_active=True)
-        if not user.email:
-            raise forms.ValidationError(
-                'No email address is linked to this account. '
-                'Please contact the clinic.'
-            )
-        return patient_id
+    # No clean_patient_id validation — user existence is checked in the view
+    # with a generic response to prevent user enumeration.
 
 
 class PasswordResetForm(forms.Form):
     new_password1 = forms.CharField(
         label='New Password',
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        validators=[password_validation.validate_password],
     )
     new_password2 = forms.CharField(
         label='Confirm New Password',
@@ -469,8 +471,10 @@ class RegistrationForm(forms.Form):
         ],
         required=False,
     )
-    height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
-    weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False)
+    height_cm = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
+        validators=[MinValueValidator(50), MaxValueValidator(250)])
+    weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
+        validators=[MinValueValidator(10), MaxValueValidator(300)])
 
     # College — required for student and faculty, optional for staff
     college = forms.ModelChoiceField(
@@ -546,6 +550,12 @@ class RegistrationForm(forms.Form):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError('An account with this email already exists.')
         return email
+
+    def clean_password1(self):
+        password = self.cleaned_data.get('password1')
+        if password:
+            password_validation.validate_password(password)
+        return password
 
     def clean(self):
         cleaned = super().clean()

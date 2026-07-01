@@ -1,9 +1,89 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from patients.models import Patient, PatientProfile
 
 from .models import User
+
+
+# Test classes that render templates need a non-manifest static storage
+# since the manifest (staticfiles.json) is only built during deploy.
+_NO_MANIFEST_STORAGE = override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+
+
+@_NO_MANIFEST_STORAGE
+class UserEnumerationPreventionTest(TestCase):
+    """
+    Tests that login and forgot-password views do not reveal whether a username exists.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create a user that exists
+        cls.existing_user = User.objects.create_user(
+            username='EXISTING-001',
+            password='correctpassword123',
+            role=User.Role.PATIENT,
+            email='existing@test.clinic',
+            first_name='Existing',
+            last_name='User',
+        )
+
+    def test_login_same_message_for_existing_and_nonexistent_user(self):
+        """Login should show the same error message regardless of whether the user exists."""
+        # Try with existing user but wrong password
+        response_existing = self.client.post(reverse('accounts:login'), {
+            'username': 'EXISTING-001',
+            'password': 'wrongpassword',
+        })
+        # Try with non-existent user
+        response_nonexistent = self.client.post(reverse('accounts:login'), {
+            'username': 'NONEXISTENT-999',
+            'password': 'anypassword',
+        })
+
+        # Both should have the same error message
+        self.assertContains(response_existing, 'Invalid username or password.')
+        self.assertContains(response_nonexistent, 'Invalid username or password.')
+
+    def test_forgot_password_same_message_for_existing_and_nonexistent_user(self):
+        """Forgot password should show the same generic message regardless of whether the user exists."""
+        generic_message = 'If an account with that username exists'
+
+        # Try with existing user — should redirect to verify_otp (success path)
+        response_existing = self.client.post(reverse('accounts:forgot_password'), {
+            'patient_id': 'EXISTING-001',
+        })
+        # Redirect indicates the OTP was sent (without revealing it was sent)
+        self.assertEqual(response_existing.status_code, 302)
+
+        # Try with non-existent user — should stay on same page with generic message
+        response_nonexistent = self.client.post(reverse('accounts:forgot_password'), {
+            'patient_id': 'NONEXISTENT-999',
+        })
+        self.assertEqual(response_nonexistent.status_code, 200)
+        self.assertContains(response_nonexistent, generic_message)
+
+    def test_forgot_password_no_distinct_error_for_user_without_email(self):
+        """Forgot password should show generic message even if user has no email."""
+        user_no_email = User.objects.create_user(
+            username='NOEMAIL-001',
+            password='testpass123',
+            role=User.Role.PATIENT,
+            # No email set
+            first_name='No',
+            last_name='Email',
+        )
+        generic_message = 'If an account with that username exists'
+
+        response = self.client.post(reverse('accounts:forgot_password'), {
+            'patient_id': 'NOEMAIL-001',
+        }, follow=True)
+
+        self.assertContains(response, generic_message)
 
 
 class ProfileSettingsTests(TestCase):
