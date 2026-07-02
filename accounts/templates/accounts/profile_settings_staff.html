@@ -231,7 +231,7 @@
   <!-- ═══════ PROFILE INFORMATION CARD ═══════ -->
   <div class="card-panel">
     <div class="section-label">Profile Information</div>
-    <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
+    <form method="post" enctype="multipart/form-data" novalidate id="profileForm" data-track-changes="true">
       {% csrf_token %}
 
       {# ── Form-level error summary ── #}
@@ -242,195 +242,67 @@
       </div>
       {% endif %}
 
-      {% if user.role == 'patient' %}
-        {# ── Patient Profile Picture ── #}
-        <div class="avatar-section">
-          <div class="avatar-preview" id="avatarPreview">
-            {% if patient.profile_picture %}
-              <img id="avatarImg" src="{{ patient.profile_picture.url }}" alt="">
-            {% else %}
-              <span class="initials" id="avatarInitials">{{ patient.get_full_name|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div class="file-upload-wrap">
-            <label class="file-upload-btn" for="id_profile_picture">
-              <ion-icon name="cloud-upload-outline"></ion-icon>
-              Choose Picture
-            </label>
-            {{ info_form.profile_picture }}
-            {% if info_form.profile_picture.errors %}
-              {% for error in info_form.profile_picture.errors %}
-                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
-              {% endfor %}
-            {% endif %}
-            <div class="file-name" id="fileName"></div>
-          </div>
+      {# ═══ PROFILE PICTURE ═══ #}
+      <div class="avatar-section">
+        <div class="avatar-preview" id="avatarPreview">
+          {% if user.profile_picture %}
+            <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="">
+          {% else %}
+            <span class="initials" id="avatarInitials">{{ user.get_full_name|default:user.username|first|upper }}</span>
+          {% endif %}
         </div>
+        <div class="file-upload-wrap">
+          <label class="file-upload-btn" for="id_profile_picture">
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+            Choose Picture
+          </label>
+          {{ info_form.profile_picture }}
+          {% if info_form.profile_picture.errors %}
+            {% for error in info_form.profile_picture.errors %}
+              <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          <div class="file-name" id="fileName"></div>
+          {% if user.profile_picture %}
+          <label class="remove-pic-label">
+            {{ info_form.remove_picture }}
+            <ion-icon name="trash-outline"></ion-icon>
+            Remove current picture
+          </label>
+          {% endif %}
+        </div>
+      </div>
 
-        {# ── Patient Contact ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">Contact</div>
-        <div class="form-grid-2">
-          <div class="field-group">
-            <label class="field-label">Phone</label>
-            <div class="field-wrap">{{ info_form.phone }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Email</label>
-            <div class="field-wrap">{{ info_form.email }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Emergency Contact Name</label>
-            <div class="field-wrap">{{ info_form.emergency_contact_name }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Emergency Contact Phone</label>
-            <div class="field-wrap">{{ info_form.emergency_contact_phone }}</div>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Address</label>
-          <div class="field-wrap">{{ info_form.address }}</div>
-        </div>
-
-        {# ── Patient Demographics ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Demographics</div>
-        <div class="form-grid-2">
-          <div class="field-group">
-            <label class="field-label">Religion</label>
-            <div class="field-wrap">{{ info_form.religion }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Civil Status</label>
-            <div class="field-wrap">{{ info_form.civil_status }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Year Level</label>
-            <div class="field-wrap">{{ info_form.year_level }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Height (cm)</label>
-            <div class="field-wrap">{{ info_form.height_cm }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Weight (kg)</label>
-            <div class="field-wrap">{{ info_form.weight_kg }}</div>
-          </div>
-        </div>
-
-        {# ── Patient Medical History ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical History</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'hypertension,diabetes,asthma,cardiac_problems,arthritis' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label }}</label></div>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <div class="field-group">
-          <label class="field-label">Other Conditions</label>
-          <div class="field-wrap">{{ info_form.other_conditions }}</div>
-        </div>
-
-        {# ── Patient Immunization ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Immunization</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'bcg,dpt,opv,hepatitis_b,measles,tt' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label|title }}</label></div>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <div class="field-group">
-          <label class="field-label">Other Immunizations</label>
-          <div class="field-wrap">{{ info_form.immunization_others }}</div>
-        </div>
-
-        {# ── Patient Medical Background ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical Background</div>
-        <div style="display:grid;gap:14px;margin-bottom:16px;">
-          <div class="field-group">
-            <label class="field-label">Current Medications</label>
-            <div class="field-wrap">{{ info_form.current_medications }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Vices</label>
-            <div class="field-wrap">{{ info_form.vices }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Previous Illnesses</label>
-            <div class="field-wrap">{{ info_form.previous_illnesses }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Previous Hospitalizations</label>
-            <div class="field-wrap">{{ info_form.previous_hospitalizations }}</div>
-          </div>
-        </div>
-
-      {% else %}
-        {# ═══ STAFF PROFILE ═══ #}
-
-        {# ── Profile Picture ── #}
-        <div class="avatar-section">
-          <div class="avatar-preview" id="avatarPreview">
-            {% if user.profile_picture %}
-              <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="">
-            {% else %}
-              <span class="initials" id="avatarInitials">{{ user.get_full_name|default:user.username|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div class="file-upload-wrap">
-            <label class="file-upload-btn" for="id_profile_picture">
-              <ion-icon name="cloud-upload-outline"></ion-icon>
-              Choose Picture
-            </label>
-            {{ info_form.profile_picture }}
-            {% if info_form.profile_picture.errors %}
-              {% for error in info_form.profile_picture.errors %}
-                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
-              {% endfor %}
-            {% endif %}
-            <div class="file-name" id="fileName"></div>
-            {% if user.profile_picture %}
-            <label class="remove-pic-label">
-              {{ info_form.remove_picture }}
-              <ion-icon name="trash-outline"></ion-icon>
-              Remove current picture
-            </label>
-            {% endif %}
-          </div>
-        </div>
-
-        {# ── Staff Fields ── #}
-        <div class="form-grid-2">
-          {% for field in info_form %}
-            {% if field.name == 'first_name' or field.name == 'last_name' %}
-            <div class="field-group">
-              <label class="field-label">{{ field.label }}</label>
-              <div class="field-wrap">{{ field }}</div>
-              {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
-            </div>
-            {% endif %}
-          {% endfor %}
-        </div>
-
+      {# ═══ STAFF FIELDS ═══ #}
+      <div class="form-grid-2">
         {% for field in info_form %}
-          {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
+          {% if field.name == 'first_name' or field.name == 'last_name' %}
           <div class="field-group">
             <label class="field-label">{{ field.label }}</label>
-            <div class="field-wrap">
-              {% if field.name == 'email' %}
-                {{ field }}
-              {% elif field.name == 'phone' %}
-                <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
-              {% else %}
-                {{ field }}
-              {% endif %}
-            </div>
+            <div class="field-wrap">{{ field }}</div>
             {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
           </div>
           {% endif %}
         {% endfor %}
-      {% endif %}
+      </div>
+
+      {% for field in info_form %}
+        {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
+        <div class="field-group">
+          <label class="field-label">{{ field.label }}</label>
+          <div class="field-wrap">
+            {% if field.name == 'email' %}
+              {{ field }}
+            {% elif field.name == 'phone' %}
+              <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
+            {% else %}
+              {{ field }}
+            {% endif %}
+          </div>
+          {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
 
       <button type="submit" name="save_info" class="btn-save">
         <ion-icon name="checkmark-outline"></ion-icon>
@@ -442,7 +314,7 @@
   <!-- ═══════ CHANGE PASSWORD CARD ═══════ -->
   <div class="card-panel">
     <div class="section-label">Change Password</div>
-    <form method="post" novalidate id="passwordForm">
+    <form method="post" novalidate id="passwordForm" data-track-changes="true">
       {% csrf_token %}
       <div style="display:grid;gap:14px;">
         {% for field in password_form %}
@@ -484,6 +356,20 @@
       fileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) {
+          // ── Client-side file size validation ──
+          var maxSize = 5 * 1024 * 1024; // 5 MB
+          if (file.size > maxSize) {
+            alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+            fileInput.value = '';
+            return;
+          }
+          // ── Client-side file type validation ──
+          var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+          if (allowed.indexOf(file.type) === -1) {
+            alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+            fileInput.value = '';
+            return;
+          }
           var reader = new FileReader();
           reader.onload = function(ev) {
             var preview = document.getElementById('avatarPreview');
@@ -521,6 +407,17 @@
         indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:16px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
       } else if (v2.length > 0) {
         indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:16px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+        // ── Password strength indicator ──
+        if (v1.length > 0 && v1 !== v2) {
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v1.length >= 12 && /[A-Z]/.test(v1) && /[0-9]/.test(v1) && /[^A-Za-z0-9]/.test(v1)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v1.length >= 8 && /[A-Z]/.test(v1) && /[0-9]/.test(v1)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML += '<span style="margin-left:12px;font-size:11px;color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
       } else {
         indicator.style.display = 'none';
       }
@@ -530,18 +427,36 @@
       pw1.addEventListener('input', checkPwMatch);
       pw2.addEventListener('input', checkPwMatch);
     }
+
+    // ── Password strength on new_password1 alone (when pw2 is empty) ──
+    if (pw1) {
+      pw1.addEventListener('input', function() {
+        var v = pw1.value;
+        if (!pw2 || pw2.value.length === 0 && v.length > 0) {
+          indicator.style.display = 'flex';
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v.length >= 12 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML = '<ion-icon name="information-circle" style="color:' + color + ';font-size:16px;"></ion-icon><span style="color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
+      });
+    }    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 
   function togglePw(btn) {
     var wrap = btn.parentElement;
     var input = wrap.querySelector('input');
     var eye = btn.querySelector('.icon-eye');
-    var eyeOff = btn.querySelector('.icon-eye-off');
+    var eyeOff= btn.querySelector('.icon-eye-off');
     if (!input) return;
     var show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    eye.style.display = show ? 'none' : '';
-    eyeOff.style.display = show ? '' : 'none';
+    input.type          = show ? 'text'  : 'password';
+    eye.style.display   = show ? 'none'  : '';
+    eyeOff.style.display= show ? ''      : 'none';
   }
 </script>
 {% endblock %}

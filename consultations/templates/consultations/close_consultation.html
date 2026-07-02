@@ -196,7 +196,7 @@
   <div class="form-card">
     <div class="form-section-label">Closure Details</div>
 
-    <form method="post" novalidate data-confirm="Are you sure you want to close this case? This cannot be undone.">
+    <form method="post" novalidate data-confirm="Are you sure you want to close this case? This cannot be undone." data-track-changes="true">
       {% csrf_token %}
 
       <div class="form-group">

@@ -166,9 +166,10 @@ class MedicalCertificate(models.Model):
         patient = self.consultation.patient
         profile = getattr(patient, 'profile', None)
 
+        college_name = patient.college.name if patient.college else ''
         college_abbr = patient.college.abbreviation if patient.college else ''
         year_level = profile.year_level if profile and profile.year_level else ''
-        college_info = f'from {college_abbr} — {year_level}, ' if college_abbr else ''
+        college_info = f'from {college_name} — {year_level}, ' if college_name else ''
 
         position = getattr(patient, 'position', '') or ''
         department = getattr(patient, 'department', '') or ''
@@ -179,7 +180,8 @@ class MedicalCertificate(models.Model):
             'age': self._resolve_placeholder('age', patient.age, '—'),
             'sex': self._resolve_placeholder('sex', patient.get_sex_display().lower(), ''),
             'college_info': college_info,
-            'college': college_abbr,
+            'college': college_name,
+            'college_abbr': college_abbr,
             'year_level': year_level,
             'position_info': position_info,
             'position': position,

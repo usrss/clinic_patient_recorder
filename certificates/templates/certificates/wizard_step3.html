@@ -105,7 +105,7 @@
           {{ certificate.consultation.patient.age|default:"—" }} years of age,
           {{ certificate.consultation.patient.get_sex_display|lower }},
           {% if certificate.consultation.patient.college %}
-            from {{ certificate.consultation.patient.college.abbreviation }},
+            from {{ certificate.consultation.patient.college.name }},
           {% endif %}
           was examined at this clinic.
         </p>

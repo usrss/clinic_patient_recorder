@@ -1163,7 +1163,7 @@ def patient_medical_history_pdf(request, patient_pk):
         ['Sex', patient.get_sex_display(), 'Age', str(patient.age or '—')],
         ['Phone', patient.phone or '—', 'Email', patient.email or '—'],
         ['College/Dept',
-         patient.college.abbreviation if patient.college else (patient.department or '—'),
+         patient.college.name if patient.college else (patient.department or '—'),
          'Total Visits', str(total)],
         ['First Visit', first_v.strftime('%B %d, %Y') if first_v else '—',
          'Last Visit', last_v.strftime('%B %d, %Y') if last_v else '—'],

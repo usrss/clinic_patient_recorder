@@ -250,7 +250,7 @@
   <div class="card-form">
     <div class="section-label">Step 1 — Patient Information</div>
 
-    <form method="post" id="consultation-form">
+    <form method="post" id="consultation-form" data-track-changes="true">
       {% csrf_token %}
 
       {# ── Patient ID with Lookup button ── #}
@@ -369,8 +369,7 @@
 
 {% block extra_js %}
 <script>
-  // Toggle visibility of new patient fields based on whether a patient
-  // was found from the lookup.
+  // ── Toggle visibility of new patient fields ──
   document.addEventListener('DOMContentLoaded', function () {
     const newPatientFields = document.querySelector('.new-patient-fields');
     const patientFound = {{ looked_up_patient|yesno:"true,false" }};
@@ -382,6 +381,8 @@
         newPatientFields.classList.add('visible');
       }
     }
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 </script>
 {% endblock %}

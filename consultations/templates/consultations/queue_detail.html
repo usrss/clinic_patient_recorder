@@ -293,7 +293,7 @@
         <div>
           <div class="info-item-label">College / Dept</div>
           <div class="info-item-value">
-            {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}
+            {% if consultation.patient.college %}{{ consultation.patient.college.name }}
             {% elif consultation.patient.department %}{{ consultation.patient.department }}
             {% else %}—{% endif %}
           </div>

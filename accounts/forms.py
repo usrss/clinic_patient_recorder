@@ -191,6 +191,30 @@ class PatientProfileEditForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
 
+    # ── Student-only fields (live on Patient, handled manually in the view) ──
+    birthday = forms.DateField(
+        required=False,
+        label='Birthday',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    college = forms.ModelChoiceField(
+        queryset=College.objects.all().order_by('name'),
+        required=False,
+        label='College',
+        empty_label='Select College',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    department = forms.CharField(
+        max_length=150, required=False,
+        label='Department',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    position = forms.CharField(
+        max_length=150, required=False,
+        label='Position / Designation',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+
     class Meta:
         model = PatientProfile
         fields = [
@@ -199,6 +223,7 @@ class PatientProfileEditForm(forms.ModelForm):
             'hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',
             'other_conditions',
             'known_allergies',          # FIX: was missing — caused silent data loss
+            'blood_type',
             'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt',
             'immunization_others',
             'current_medications', 'vices', 'previous_illnesses',
@@ -211,6 +236,7 @@ class PatientProfileEditForm(forms.ModelForm):
             'year_level': forms.TextInput(attrs={'class': 'form-control'}),
             'height_cm': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'weight_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'blood_type': forms.Select(attrs={'class': 'form-control'}),
             'other_conditions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'known_allergies': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'immunization_others': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -230,6 +256,10 @@ class PatientProfileEditForm(forms.ModelForm):
             self.fields['email'].initial = patient.email
             self.fields['emergency_contact_name'].initial = patient.emergency_contact_name
             self.fields['emergency_contact_phone'].initial = patient.emergency_contact_phone
+            self.fields['birthday'].initial = patient.profile.birthday if hasattr(patient, 'profile') and patient.profile.birthday else None
+            self.fields['college'].initial = patient.college
+            self.fields['department'].initial = patient.department
+            self.fields['position'].initial = patient.position
 
         # Apply checkbox styling
         for name in ('hypertension', 'diabetes', 'asthma', 'cardiac_problems', 'arthritis',

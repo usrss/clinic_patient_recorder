@@ -845,10 +845,19 @@ def profile_settings(request):
                     patient.email = info_form.cleaned_data.get('email', '')
                     patient.emergency_contact_name = info_form.cleaned_data.get('emergency_contact_name', '')
                     patient.emergency_contact_phone = info_form.cleaned_data.get('emergency_contact_phone', '')
+                    patient.college = info_form.cleaned_data.get('college')
+                    patient.department = info_form.cleaned_data.get('department', '')
+                    patient.position = info_form.cleaned_data.get('position', '')
+
+                    # Sync birthday onto PatientProfile (already saved via form.save())
+                    # but birthday is on PatientProfile, which was saved by info_form.save()
+                    profile.birthday = info_form.cleaned_data.get('birthday')
+                    profile.save(update_fields=['birthday'])
 
                     update_fields = [
                         'phone', 'email',
                         'emergency_contact_name', 'emergency_contact_phone',
+                        'college', 'department', 'position',
                     ]
 
                     # FIX: use cleaned_data for image (not raw request.FILES) so

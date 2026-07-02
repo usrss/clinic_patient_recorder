@@ -52,7 +52,7 @@
 
   <!-- Form card -->
   <div class="reg-card">
-    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form">
+    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form" data-track-changes="true">
       {% csrf_token %}
       <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
 
@@ -353,6 +353,28 @@
   // ── State ──────────────────────────────────────────────────────────
   let currentStep = parseInt(document.getElementById('current_step').value) || 1;
 
+  // ── Client-side file validation for profile picture ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var picInput = document.getElementById('id_profile_picture');
+    if (picInput) {
+      picInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+          alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+          picInput.value = '';
+          return;
+        }
+        var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (allowed.indexOf(file.type) === -1) {
+          alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+          picInput.value = '';
+        }
+      });
+    }
+  });
+
   // ── Step navigation ────────────────────────────────────────────────
   function showStep(n) {
     document.getElementById('current_step').value = n;
@@ -432,6 +454,8 @@
     const stepVal = parseInt(document.getElementById('current_step').value);
     if (stepVal > 1) showStep(stepVal);
     updateRoleFields();
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 </script>
 {% endblock %}

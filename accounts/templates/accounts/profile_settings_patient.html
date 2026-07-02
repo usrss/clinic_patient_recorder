@@ -37,7 +37,7 @@
         Profile Information
       </div>
 
-      <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
+      <form method="post" enctype="multipart/form-data" novalidate id="profileForm" data-track-changes="true">
         {% csrf_token %}
 
         {# ── Form-level error summary ── #}
@@ -94,11 +94,21 @@
         {# Demographics #}
         <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Demographics</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Birthday</label>{{ info_form.birthday }}{% if info_form.birthday.errors %}{% for error in info_form.birthday.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Blood Type</label>{{ info_form.blood_type }}{% if info_form.blood_type.errors %}{% for error in info_form.blood_type.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>{{ info_form.religion }}{% if info_form.religion.errors %}{% for error in info_form.religion.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>{{ info_form.civil_status }}{% if info_form.civil_status.errors %}{% for error in info_form.civil_status.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>{{ info_form.year_level }}{% if info_form.year_level.errors %}{% for error in info_form.year_level.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>{{ info_form.height_cm }}{% if info_form.height_cm.errors %}{% for error in info_form.height_cm.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>{{ info_form.weight_kg }}{% if info_form.weight_kg.errors %}{% for error in info_form.weight_kg.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+        </div>
+
+        {# Academic Info #}
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Academic Information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">College</label>{{ info_form.college }}{% if info_form.college.errors %}{% for error in info_form.college.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Department</label>{{ info_form.department }}{% if info_form.department.errors %}{% for error in info_form.department.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Position</label>{{ info_form.position }}{% if info_form.position.errors %}{% for error in info_form.position.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
         </div>
 
         {# Medical History #}
@@ -110,6 +120,7 @@
             {% endif %}
           {% endfor %}
         </div>
+        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Known Allergies</label>{{ info_form.known_allergies }}{% if info_form.known_allergies.errors %}{% for error in info_form.known_allergies.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
         <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>{{ info_form.other_conditions }}{% if info_form.other_conditions.errors %}{% for error in info_form.other_conditions.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
         {# Immunization #}
@@ -134,7 +145,7 @@
 
         {% endif %}
 
-        <button type="submit" name="save_info" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
+        <button type="submit" name="save_info" id="saveProfileBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
           <ion-icon name="checkmark-outline"></ion-icon>
           Save Profile
         </button>
@@ -148,7 +159,7 @@
         Change Password
       </div>
 
-      <form method="post" novalidate id="passwordForm">
+      <form method="post" novalidate id="passwordForm" data-track-changes="true">
         {% csrf_token %}
         <div style="display:grid;gap:16px;">
           {% for field in password_form %}
@@ -170,7 +181,7 @@
 
         <div id="pwMatchIndicator" style="display:none;margin-top:8px;font-size:12px;font-weight:500;align-items:center;gap:6px;"></div>
 
-        <button type="submit" name="save_password" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
+        <button type="submit" name="save_password" id="changePwBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
           <ion-icon name="lock-closed-outline"></ion-icon>
           Change Password
         </button>
@@ -223,6 +234,20 @@
       fileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) {
+          // ── Client-side file size validation ──
+          var maxSize = 5 * 1024 * 1024; // 5 MB
+          if (file.size > maxSize) {
+            alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+            fileInput.value = '';
+            return;
+          }
+          // ── Client-side file type validation ──
+          var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+          if (allowed.indexOf(file.type) === -1) {
+            alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+            fileInput.value = '';
+            return;
+          }
           var reader = new FileReader();
           reader.onload = function(ev) {
             var preview = document.getElementById('avatarPreview');
@@ -254,9 +279,40 @@
         indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:16px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
       } else if (v2.length > 0) {
         indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:16px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+        // ── Password strength indicator ──
+        if (v1.length > 0 && v1 !== v2) {
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v1.length >= 12 && /[A-Z]/.test(v1) && /[0-9]/.test(v1) && /[^A-Za-z0-9]/.test(v1)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v1.length >= 8 && /[A-Z]/.test(v1) && /[0-9]/.test(v1)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML += '<span style="margin-left:12px;font-size:11px;color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
       } else { indicator.style.display = 'none'; }
     }
     if (pw1 && pw2) { pw1.addEventListener('input', checkPwMatch); pw2.addEventListener('input', checkPwMatch); }
+
+    // ── Password strength on new_password1 alone (when pw2 is empty) ──
+    if (pw1) {
+      pw1.addEventListener('input', function() {
+        var v = pw1.value;
+        if (!pw2 || pw2.value.length === 0 && v.length > 0) {
+          indicator.style.display = 'flex';
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v.length >= 12 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML = '<ion-icon name="information-circle" style="color:' + color + ';font-size:16px;"></ion-icon><span style="color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
+      });
+    }
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 
   function togglePw(btn) {

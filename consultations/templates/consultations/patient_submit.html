@@ -4,6 +4,29 @@
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ── Character counter on textareas ──
+    document.querySelectorAll('textarea').forEach(function(ta) {
+      var counter = document.createElement('div');
+      counter.style.cssText = 'font-size:11px;color:#94a3b8;text-align:right;margin-top:3px;';
+      ta.parentNode.appendChild(counter);
+      var maxLen = ta.getAttribute('maxlength');
+      function updateCounter() {
+        var len = ta.value.length;
+        if (maxLen) {
+          counter.textContent = len + ' / ' + maxLen;
+        } else {
+          counter.textContent = len + ' characters';
+        }
+      }
+      ta.addEventListener('input', updateCounter);
+      updateCounter();
+    });
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
+  });
+</script>
 {% endblock %}
 
 {% block extra_css %}
@@ -247,7 +270,7 @@
   </p>
 
   <div class="form-card">
-    <form method="post" novalidate>
+    <form method="post" novalidate data-track-changes="true">
       {% csrf_token %}
 
       <div class="form-group">

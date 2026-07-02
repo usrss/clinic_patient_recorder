@@ -173,7 +173,7 @@
     <div class="info-grid">
       <div><div class="info-label">Name</div><div class="info-value" style="font-weight:700;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div></div>
       <div><div class="info-label">Patient ID</div><div class="info-value">{{ consultation.patient.patient_id }}</div></div>
-      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div></div>
+      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.name }}{% else %}—{% endif %}</div></div>
       <div><div class="info-label">Age / Sex</div><div class="info-value">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %} / {{ consultation.patient.get_sex_display }}</div></div>
     </div>
   </div>

@@ -157,9 +157,9 @@
         <div class="fb-toolbar-left">
           <div class="fb-search-wrap">
             <ion-icon name="search-outline"></ion-icon>
-            <input type="text" name="search" class="fb-search" placeholder="Search patient name or ID..." value="{{ search }}" oninput="debouncedSubmit()">
+            <input type="text" name="search" class="fb-search" id="fbSearchInput" placeholder="Search patient name or ID..." value="{{ search }}">
           </div>
-          <select name="rating" class="fb-filter-select" onchange="this.form.submit()">
+          <select name="rating" class="fb-filter-select" id="fbRatingFilter">
             <option value="">All Ratings</option>
             <option value="5" {% if rating_filter == '5' %}selected{% endif %}>★★★★★ (5)</option>
             <option value="4" {% if rating_filter == '4' %}selected{% endif %}>★★★★☆ (4)</option>
@@ -170,17 +170,17 @@
         </div>
         <div class="fb-toolbar-right">
           <div class="fb-btn-export-dropdown">
-            <button type="button" class="fb-btn-export" onclick="toggleExportMenu()">
+            <button type="button" class="fb-btn-export" id="exportMenuBtn">
               <ion-icon name="download-outline"></ion-icon>
               Export
               <ion-icon name="chevron-down-outline" style="font-size:12px;"></ion-icon>
             </button>
             <div class="fb-export-menu" id="exportMenu">
-              <a href="#" onclick="exportCSV(); return false;">
+              <a href="#" id="exportCSVLink">
                 <ion-icon name="document-text-outline"></ion-icon>
                 Export CSV
               </a>
-              <a href="{% url 'reports:feedback_report' %}?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}&export=pdf" onclick="showToast('Generating PDF…');">
+              <a href="{% url 'reports:feedback_report' %}?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}&export=pdf" id="exportPDFLink">
                 <ion-icon name="document-outline"></ion-icon>
                 Export PDF
               </a>
@@ -222,14 +222,14 @@
             </td>
             <td class="comment-cell">
               {{ f.comment|default:"—"|truncatechars:80 }}
-              {% if f.comment|length > 80 %}
-                <a href="#" onclick="openReviewModal(
-                  '{{ f.consultation.patient.get_full_name|escapejs }}',
-                  '{{ f.consultation.patient.patient_id|escapejs }}',
-                  {{ f.rating }},
-                  '{{ f.comment|escapejs }}',
-                  '{{ f.created_at|date:"M d, Y" }}'
-                ); return false;" style="color:#0078d4;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;">View full</a>
+              <a href="#"
+                 class="view-full-review"
+                 data-name="{{ f.consultation.patient.get_full_name|escapejs }}"
+                 data-pid="{{ f.consultation.patient.patient_id|escapejs }}"
+                 data-rating="{{ f.rating }}"
+                 data-comment="{{ f.comment|escapejs }}"
+                 data-date="{{ f.created_at|date:"M d, Y" }}"
+                 style="color:#0078d4;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;">View full</a>
               {% endif %}
             </td>
             <td style="color:#94a3b8;font-size:12px;white-space:nowrap;">{{ f.created_at|date:"M d, Y" }}</td>
@@ -292,69 +292,110 @@
     <h4 id="reviewModalName"></h4>
     <div class="meta" id="reviewModalMeta"></div>
     <div class="content" id="reviewModalContent"></div>
-    <button class="close-btn" onclick="document.getElementById('reviewModal').classList.remove('open')">Close</button>
+    <button class="close-btn" id="modalCloseBtn">Close</button>
   </div>
 </div>
 
 <script>
-  // ── Search debounce ──
-  var debounceTimer;
-  window.debouncedSubmit = function() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(function() {
-      document.getElementById('feedbackForm').submit();
-    }, 400);
-  };
-
-  // ── Export menu ──
-  window.toggleExportMenu = function() {
-    var menu = document.getElementById('exportMenu');
-    menu.classList.toggle('show');
-  };
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.fb-btn-export-dropdown')) {
-      document.getElementById('exportMenu').classList.remove('show');
-    }
-  });
-
-  // ── CSV Export ──
-  window.exportCSV = function() {
-    var rows = [['Patient Name','Patient ID','Consultation #','Rating','Review','Date']];
-    {% for f in page_obj.object_list %}
-    rows.push([
-      '{{ f.consultation.patient.get_full_name|addslashes }}',
-      '{{ f.consultation.patient.patient_id }}',
-      '#{{ f.consultation.pk }}',
-      '{{ f.rating }}',
-      '{{ f.comment|default:""|addslashes }}',
-      '{{ f.created_at|date:"Y-m-d" }}'
-    ]);
-    {% endfor %}
-    var csv = rows.map(function(r) { return r.join(','); }).join('\n');
-    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'feedback_export_' + new Date().toISOString().split('T')[0] + '.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    document.getElementById('exportMenu').classList.remove('show');
-    showToast('CSV exported successfully');
-  };
-
-  // ── Review Modal ──
-  window.openReviewModal = function(name, pid, rating, comment, date) {
-    document.getElementById('reviewModalName').textContent = name;
-    document.getElementById('reviewModalMeta').textContent = pid + ' \u00b7 ' + rating + '/5 stars \u00b7 ' + date;
-    document.getElementById('reviewModalContent').textContent = comment;
-    document.getElementById('reviewModal').classList.add('open');
-  };
-
-  // ── Show skeleton on load (brief flash) ──
   document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('feedbackForm');
+    var searchInput = document.getElementById('fbSearchInput');
+    var ratingFilter = document.getElementById('fbRatingFilter');
+    var exportBtn = document.getElementById('exportMenuBtn');
+    var exportMenu = document.getElementById('exportMenu');
+    var csvLink = document.getElementById('exportCSVLink');
+    var pdfLink = document.getElementById('exportPDFLink');
+    var modalCloseBtn = document.getElementById('modalCloseBtn');
+    var reviewModal = document.getElementById('reviewModal');
+
+    // ── Show skeleton on load (brief flash) ──
     var skeleton = document.getElementById('skeletonLoader');
     if (skeleton) {
       skeleton.style.display = 'block';
       setTimeout(function() { skeleton.style.display = 'none'; }, 400);
+    }
+
+    // ── Search debounce ──
+    var debounceTimer;
+    if (searchInput && form) {
+      searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() { form.submit(); }, 400);
+      });
+    }
+
+    // ── Rating filter auto-submit ──
+    if (ratingFilter && form) {
+      ratingFilter.addEventListener('change', function() { form.submit(); });
+    }
+
+    // ── Export dropdown ──
+    if (exportBtn && exportMenu) {
+      exportBtn.addEventListener('click', function() {
+        exportMenu.classList.toggle('show');
+      });
+    }
+    document.addEventListener('click', function(e) {
+      if (exportMenu && !e.target.closest('.fb-btn-export-dropdown')) {
+        exportMenu.classList.remove('show');
+      }
+    });
+
+    // ── CSV Export ──
+    if (csvLink) {
+      csvLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        var rows = [['Patient Name','Patient ID','Consultation #','Rating','Review','Date']];
+        {% for f in page_obj.object_list %}
+        rows.push([
+          '{{ f.consultation.patient.get_full_name|addslashes }}',
+          '{{ f.consultation.patient.patient_id }}',
+          '#{{ f.consultation.pk }}',
+          '{{ f.rating }}',
+          '{{ f.comment|default:""|addslashes }}',
+          '{{ f.created_at|date:"Y-m-d" }}'
+        ]);
+        {% endfor %}
+        var csv = rows.map(function(r) { return r.join(','); }).join('\n');
+        var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'feedback_export_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (exportMenu) exportMenu.classList.remove('show');
+        showToast('CSV exported successfully');
+      });
+    }
+
+    // ── PDF Export toast ──
+    if (pdfLink) {
+      pdfLink.addEventListener('click', function() {
+        showToast('Generating PDF…');
+      });
+    }
+
+    // ── View full review links (data-attribute driven) ──
+    document.querySelectorAll('.view-full-review').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('reviewModalName').textContent = this.dataset.name;
+        document.getElementById('reviewModalMeta').textContent = this.dataset.pid + ' \u00b7 ' + this.dataset.rating + '/5 stars \u00b7 ' + this.dataset.date;
+        document.getElementById('reviewModalContent').textContent = this.dataset.comment;
+        if (reviewModal) reviewModal.classList.add('open');
+      });
+    });
+
+    // ── Modal close ──
+    if (modalCloseBtn && reviewModal) {
+      modalCloseBtn.addEventListener('click', function() { reviewModal.classList.remove('open'); });
+    }
+
+    // ── Click outside modal to close ──
+    if (reviewModal) {
+      reviewModal.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+      });
     }
   });
 </script>
