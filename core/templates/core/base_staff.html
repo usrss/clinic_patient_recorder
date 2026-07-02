@@ -146,7 +146,6 @@
     /* Role accent colors for active state */
     .role-doctor    .stf-nav-link.active { color: #7c3aed; background: #ede9fe; }
     .role-frontdesk .stf-nav-link.active { color: #0078d4; background: #eff6ff; }
-    .role-nurse     .stf-nav-link.active { color: #059669; background: #d1fae5; }
 
     .stf-sidebar-footer {
       margin-top: auto;
@@ -179,7 +178,6 @@
     /* Avatar gradient by role */
     .role-doctor   .stf-user-avatar { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
     .role-frontdesk .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #60a5fa); }
-    .role-nurse    .stf-user-avatar { background: linear-gradient(135deg, #059669, #6ee7b7); }
     .role-admin    .stf-user-avatar { background: linear-gradient(135deg, #0078d4, #3b82f6); }
 
     .stf-user-info strong {
@@ -365,7 +363,6 @@
     }
     .role-pill.doctor   { background: #ede9fe; color: #6d28d9; }
     .role-pill.frontdesk { background: #eff6ff; color: #0078d4; }
-    .role-pill.nurse    { background: #d1fae5; color: #059669; }
     .role-pill.admin    { background: #fef3c7; color: #92400e; }
 
 
@@ -460,39 +457,7 @@
       </a>
     </div>
     {% endif %}
-
-    <!-- ── Nurse nav ── -->
-    {% if user.role == 'nurse' %}
-    <div class="stf-nav-section stf-collapsible">
-      <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
-        <div class="stf-nav-section-label">Workspace</div>
-        <ion-icon name="chevron-down-outline" class="stf-collapsible-arrow"></ion-icon>
-      </div>
-      <div class="stf-collapsible-items">
-      <a href="{% url 'accounts:dashboard' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
-      </a>
-      <a href="{% url 'consultations:triage_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'triage_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        Triage Queue
-        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
-      </a>
-      <a href="{% url 'patients:patient_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'patient_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Patients
-      </a>
-      <a href="{% url 'inventory:medicine_list' %}"
-         class="stf-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
-        Inventory
-      </a>
-    </div>
-    </div>
-    {% endif %}      <!-- ── Monitoring section (Doctor + Front Desk) ── -->
+      <!-- ── Monitoring section (Doctor + Front Desk) ── -->
       {% if user.role == 'doctor' or user.role == 'frontdesk' %}
       <div class="stf-nav-section stf-collapsible">
         <div class="stf-collapsible-header" onclick="toggleStfSection(this)">
@@ -569,9 +534,6 @@
         {% elif user.role == 'frontdesk' %}
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
           Front Desk
-        {% elif user.role == 'nurse' %}
-          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Nurse
         {% endif %}
       </span>
     </div>

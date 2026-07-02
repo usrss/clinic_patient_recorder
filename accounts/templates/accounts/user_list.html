@@ -12,15 +12,44 @@
 {% block content %}
 
   {# ── Header row ── #}
-  <div class="d-flex align-items-center justify-content-between flex-wrap" style="margin-bottom:22px;gap:12px;">
+  <div class="d-flex align-items-center justify-content-between flex-wrap" style="margin-bottom:16px;gap:12px;">
     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
-      {{ users|length }} staff member{{ users|length|pluralize }}
+      {{ paginator.count }} staff member{{ paginator.count|pluralize }}
     </div>
     <a href="{% url 'accounts:user_create' %}" class="btn btn-primary" style="gap:6px;">
       <ion-icon name="person-add-outline" style="font-size:15px;"></ion-icon>
       Add Staff
     </a>
   </div>
+
+  {# ── Filters ── #}
+  <form method="get" class="d-flex flex-wrap align-items-end gap-2" style="background:#fff;border:1px solid #e8ecf1;border-radius:14px;padding:16px 20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+    <div style="flex:1;min-width:160px;">
+      <label style="display:block;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Search</label>
+      <input type="text" name="search" value="{{ filter_search }}" placeholder="Name, username, or email..." style="width:100%;padding:7px 11px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;">
+    </div>
+    <div style="min-width:130px;">
+      <label style="display:block;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Role</label>
+      <select name="role" style="width:100%;padding:7px 11px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;outline:none;font-family:'Inter',sans-serif;">
+        <option value="">All Roles</option>
+        <option value="doctor" {% if filter_role == 'doctor' %}selected{% endif %}>Doctor</option>
+        <option value="frontdesk" {% if filter_role == 'frontdesk' %}selected{% endif %}>Front Desk</option>
+        <option value="admin" {% if filter_role == 'admin' %}selected{% endif %}>Admin</option>
+      </select>
+    </div>
+    <div style="min-width:120px;">
+      <label style="display:block;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Status</label>
+      <select name="status" style="width:100%;padding:7px 11px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;outline:none;font-family:'Inter',sans-serif;">
+        <option value="">All</option>
+        <option value="active" {% if filter_status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="d-flex gap-1" style="padding-bottom:1px;">
+      <button type="submit" class="btn btn-primary btn-sm" style="border-radius:8px;padding:7px 14px;font-size:12px;">Filter</button>
+      <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary btn-sm" style="border-radius:8px;padding:7px 14px;font-size:12px;">Clear</a>
+    </div>
+  </form>
 
   {# ── Table Card ── #}
   <div class="card-panel">
@@ -33,6 +62,7 @@
             <th>Role</th>
             <th>Email</th>
             <th>Status</th>
+            <th>Last Login</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -42,13 +72,18 @@
             <td class="cr-td-name">
               <div class="d-flex align-items-center" style="gap:8px;">
                 <div class="cr-avatar-icon">
-                  <ion-icon name="person-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
+                  {% if u.profile_picture %}
+                    <img src="{{ u.profile_picture.url }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+                  {% else %}
+                    <ion-icon name="person-outline" style="font-size:14px;color:#0078d4;"></ion-icon>
+                  {% endif %}
                 </div>
                 <div>
-                  <div class="cr-name">{{ u.get_full_name|default:"—" }}</div>
-                  {% if u.force_password_change %}
-                    <span class="tag-chip tag-warning" style="font-size:10px;padding:1px 6px;margin-top:2px;">TEMP PW</span>
-                  {% endif %}
+                  <div class="cr-name">{{ u.get_full_name|default:"—" }}
+                    {% if u.force_password_change %}
+                      <span class="s-badge" style="background:#fffbeb;color:#92400e;margin-left:8px;font-size:9px;">TEMP PW</span>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </td>
@@ -68,32 +103,44 @@
                 </span>
               {% endif %}
             </td>
+            <td class="cr-td-meta" style="font-size:11px;color:#6b7280;white-space:nowrap;">
+              {{ u.last_login|date:"M d, Y h:i A"|default:"—" }}
+            </td>
             <td class="cr-td">
-              <div class="d-flex align-items-center" style="gap:8px;">
+              <div class="d-flex align-items-center" style="gap:6px;">
                 <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-secondary" style="gap:4px;">
                   <ion-icon name="create-outline" style="font-size:13px;"></ion-icon>Edit
                 </a>
                 {% if u != request.user %}
-                <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" style="display:inline;">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %}" style="gap:4px;">
-                    <ion-icon name="{% if u.is_active %}close-circle-outline{% else %}checkmark-circle-outline{% endif %}" style="font-size:13px;"></ion-icon>
-                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
-                  </button>
-                </form>
+                  {% if u.is_active %}
+                    <button type="button" class="btn btn-sm btn-danger" style="gap:4px;padding:4px 10px;font-size:11px;"
+                            onclick="openDeactivateModal({{ u.pk }}, '{{ u.get_full_name|default:u.username|escapejs }}')">
+                      Deactivate
+                    </button>
+                  {% else %}
+                    <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-primary" style="gap:4px;padding:4px 10px;font-size:11px;">Activate</button>
+                    </form>
+                  {% endif %}
                 {% endif %}
               </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <div class="empty-state-icon">
                 <ion-icon name="people-outline" style="font-size:22px;color:#9ca3af;"></ion-icon>
               </div>
               <div class="empty-state-title">No staff users yet</div>
               <p class="empty-state-sub" style="margin-top:8px;">
-                <a href="{% url 'accounts:user_create' %}" style="color:#0078d4;font-weight:600;text-decoration:none;">Add your first staff member →</a>
+                {% if filter_search or filter_role or filter_status %}
+                  Try adjusting your filters, or
+                  <a href="{% url 'accounts:user_list' %}" style="color:#0078d4;font-weight:600;text-decoration:none;">clear them →</a>
+                {% else %}
+                  <a href="{% url 'accounts:user_create' %}" style="color:#0078d4;font-weight:600;text-decoration:none;">Add your first staff member →</a>
+                {% endif %}
               </p>
             </td>
           </tr>
@@ -101,6 +148,57 @@
         </tbody>
       </table>
     </div>
+
+    {# ── Pagination ── #}
+    {% if is_paginated %}
+    <div class="d-flex align-items-center justify-content-center gap-1" style="padding:14px 16px;border-top:1px solid #e8ecf1;">
+      {% if page_obj.has_previous %}
+      <a href="?page=1{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&laquo;</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&lsaquo;</a>
+      {% endif %}
+      {% for i in paginator.page_range %}
+        {% if i == page_obj.number %}
+        <span class="btn btn-sm btn-primary" style="border-radius:7px;min-width:30px;">{{ i }}</span>
+        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+        <a href="?page={{ i }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">{{ i }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&rsaquo;</a>
+      <a href="?page={{ paginator.num_pages }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&raquo;</a>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
+
+  {# ── Deactivation confirmation modal ── #}
+  <div class="modal fade" id="deactivateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow" style="border-radius:16px;">
+        <div class="modal-body text-center p-4">
+          <div style="width:40px;height:40px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+            <svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h5 style="font-weight:700;margin-bottom:4px;">Deactivate staff?</h5>
+          <p id="deactivateModalName" style="font-size:13px;color:#6b7280;margin-bottom:20px;">This will prevent them from logging in.</p>
+          <form method="post" action="" id="deactivateForm" style="display:inline;">
+            {% csrf_token %}
+            <div style="display:flex;gap:8px;justify-content:center;">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;min-width:80px;">Cancel</button>
+              <button type="submit" class="btn btn-danger btn-sm" style="border-radius:8px;min-width:80px;">Deactivate</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openDeactivateModal(pk, name) {
+      document.getElementById('deactivateModalName').textContent = 'Deactivate "' + name + '"? They will not be able to log in.';
+      document.getElementById('deactivateForm').action = "{% url 'accounts:user_toggle_active' 0 %}".replace('/0/', '/' + pk + '/');
+      new bootstrap.Modal(document.getElementById('deactivateModal')).show();
+    }
+  </script>
 
 {% endblock %}

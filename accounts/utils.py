@@ -42,9 +42,11 @@ def create_patient_user(patient):
         * username = patient.patient_id
         * random temporary password
         * role = PATIENT
-        * force_password_change = True
 
     Returns a tuple of (user, temp_password).
+
+    The user account is marked with ``force_password_change = True`` so
+    the patient must change their password on first login.
     """
     temp_password = generate_temp_password()
     user = User.objects.create_user(
@@ -53,6 +55,7 @@ def create_patient_user(patient):
         first_name=patient.first_name,
         last_name=patient.last_name,
         role=User.Role.PATIENT,
-        force_password_change=True,
     )
+    user.force_password_change = True
+    user.save(update_fields=['force_password_change'])
     return user, temp_password

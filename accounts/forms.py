@@ -52,10 +52,21 @@ class LoginForm(AuthenticationForm):
 
 class UserCreateForm(UserCreationForm):
     """Admin creates a staff user account."""
+
+    profile_picture = forms.ImageField(
+        required=False,
+        label='Profile Picture',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/webp',
+        }),
+        validators=[validate_profile_picture],
+    )
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
-                  'role', 'phone', 'password1', 'password2']
+                  'role', 'phone', 'profile_picture', 'password1', 'password2']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

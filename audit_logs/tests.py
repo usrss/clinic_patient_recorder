@@ -270,7 +270,8 @@ class AuditLogFilterFormTest(TestCase):
 
     def test_form_with_invalid_date(self):
         form = AuditLogFilterForm({'date_from': 'not-a-date'})
-        self.assertTrue(form.is_valid())  # dates are not required
+        self.assertFalse(form.is_valid())  # invalid date strings are rejected
+        self.assertIn('date_from', form.errors)
 
     def test_form_with_valid_data(self):
         form = AuditLogFilterForm({
