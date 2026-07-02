@@ -2,9 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from django.http import Http404
 
-from accounts.decorators import admin_required, doctor_required, clinical_staff_required
+from accounts.decorators import clinical_staff_required
 from .models import AuditLog
 from .forms import AuditLogFilterForm
 
@@ -43,27 +42,38 @@ def audit_log_list(request):
 
     # ── Apply filters ────────────────────────────────────────────────
     form = AuditLogFilterForm(request.GET or None)
+    # Validate the form to populate cleaned_data.
+    # Note: DateField with required=False still rejects invalid date strings,
+    # so is_valid() may return False. Fall back to raw GET values in that case.
+    is_valid = form.is_valid()
 
-    date_from = request.GET.get('date_from', '').strip()
-    date_to = request.GET.get('date_to', '').strip()
-    user_filter = request.GET.get('user', '').strip()
-    role_filter = request.GET.get('role', '').strip()
-    action_filter = request.GET.get('action', '').strip()
-    module_filter = request.GET.get('module', '').strip()
-    status_filter = request.GET.get('status', '').strip()
-    search = request.GET.get('search', '').strip()
+    if is_valid:
+        date_from = form.cleaned_data.get('date_from', '') or ''
+        date_to = form.cleaned_data.get('date_to', '') or ''
+        user_filter = form.cleaned_data.get('user', '') or ''
+        role_filter = form.cleaned_data.get('role', '') or ''
+        action_filter = form.cleaned_data.get('action', '') or ''
+        module_filter = form.cleaned_data.get('module', '') or ''
+        status_filter = form.cleaned_data.get('status', '') or ''
+        search = form.cleaned_data.get('search', '') or ''
+    else:
+        # Fall back to raw GET values when validation fails.
+        # Date fields are set to empty strings to avoid ORM errors with
+        # invalid date strings; other string-based filters are safe to pass through.
+        date_from = ''
+        date_to = ''
+        user_filter = request.GET.get('user', '')
+        role_filter = request.GET.get('role', '')
+        action_filter = request.GET.get('action', '')
+        module_filter = request.GET.get('module', '')
+        status_filter = request.GET.get('status', '')
+        search = request.GET.get('search', '')
 
     if date_from:
-        try:
-            qs = qs.filter(timestamp__date__gte=date_from)
-        except (ValueError, TypeError):
-            pass
+        qs = qs.filter(timestamp__date__gte=date_from)
 
     if date_to:
-        try:
-            qs = qs.filter(timestamp__date__lte=date_to)
-        except (ValueError, TypeError):
-            pass
+        qs = qs.filter(timestamp__date__lte=date_to)
 
     if user_filter:
         qs = qs.filter(
@@ -111,8 +121,8 @@ def audit_log_list(request):
         'module_choices': AuditLog.Module.choices,
 
         # Preserve filter values in template
-        'filter_date_from': date_from,
-        'filter_date_to': date_to,
+        'filter_date_from': date_from if date_from else '',
+        'filter_date_to': date_to if date_to else '',
         'filter_user': user_filter,
         'filter_role': role_filter,
         'filter_action': action_filter,

@@ -12,7 +12,7 @@ class UserAdmin(admin.ModelAdmin):
         ('Account Info', {'fields': ('username', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'phone')}),
         ('Role & Permissions', {
-            'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'force_password_change')
+            'fields': ('role', 'is_active', 'force_password_change', 'is_staff', 'is_superuser')
         }),
         ('Dates', {'fields': ('last_login', 'date_joined'), 'classes': ('collapse',)}),
     )

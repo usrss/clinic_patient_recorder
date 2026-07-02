@@ -5,18 +5,68 @@ Centralizes audit log creation so views and signals can log actions
 with a single function call rather than duplicating logic.
 """
 
+import logging
+
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+# Lazy import for choices validation
+# Imported inside functions to avoid circular import during app init
+# These cached references are populated on first use.
+_VALID_ACTIONS = None
+_VALID_MODULES = None
+
+
+def _get_valid_actions():
+    """Return the set of valid action values, lazy-loaded from AuditLog.Action.choices."""
+    global _VALID_ACTIONS
+    if _VALID_ACTIONS is None:
+        from .models import AuditLog
+        _VALID_ACTIONS = {v for v, _ in AuditLog.Action.choices}
+    return _VALID_ACTIONS
+
+
+def _get_valid_modules():
+    """Return the set of valid module values, lazy-loaded from AuditLog.Module.choices."""
+    global _VALID_MODULES
+    if _VALID_MODULES is None:
+        from .models import AuditLog
+        _VALID_MODULES = {v for v, _ in AuditLog.Module.choices}
+    return _VALID_MODULES
 
 
 def _get_client_ip(request):
     """Extract client IP address from the request."""
     if request is None:
         return None
-    # Check common proxy headers
+    # Use middleware-cached IP if available (avoids duplicate extraction)
+    audit_ip = getattr(request, 'audit_ip', None)
+    if audit_ip:
+        return audit_ip
+    # Fallback: check common proxy headers
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         return x_forwarded_for.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR')
+
+
+def _validate_action(action):
+    """Raise ``ValueError`` if *action* is not a valid AuditLog.Action value."""
+    valid = _get_valid_actions()
+    if action not in valid:
+        raise ValueError(
+            f"Invalid action '{action}'. Must be one of: {', '.join(sorted(valid))}"
+        )
+
+
+def _validate_module(module):
+    """Raise ``ValueError`` if *module* is not a valid AuditLog.Module value."""
+    valid = _get_valid_modules()
+    if module not in valid:
+        raise ValueError(
+            f"Invalid module '{module}'. Must be one of: {', '.join(sorted(valid))}"
+        )
 
 
 def log_audit_entry(
@@ -32,6 +82,7 @@ def log_audit_entry(
     changes_after=None,
     status='SUCCESS',
     request=None,
+    ip_address=None,
 ):
     """
     Create a single audit log entry.
@@ -41,7 +92,8 @@ def log_audit_entry(
     user : User or None
         The user who performed the action.
     action : str
-        One of AuditLog.Action enum values.
+        One of AuditLog.Action enum values (CREATE, UPDATE, DELETE,
+        VIEW, LOGIN, LOGOUT, DOWNLOAD, PRINT, EXPORT).
     module : str
         One of AuditLog.Module enum values.
     description : str
@@ -60,8 +112,21 @@ def log_audit_entry(
         ``"SUCCESS"`` or ``"FAILED"``.
     request : HttpRequest or None
         Optional Django request object for IP extraction.
+    ip_address : str or None
+        Direct IP address (used when request is unavailable, e.g. signals).
+
+    Raises
+    ------
+    ValueError
+        If *action* or *module* is not a valid choice value.
     """
+    _validate_action(action)
+    _validate_module(module)
+
     from .models import AuditLog
+
+    # Resolve IP: explicit ip_address takes precedence, then request-derived
+    resolved_ip = ip_address or _get_client_ip(request)
 
     AuditLog.objects.create(
         user=user if user and user.is_authenticated else None,
@@ -77,7 +142,7 @@ def log_audit_entry(
         object_repr=str(object_repr)[:300] if object_repr else '',
         changes_before=changes_before,
         changes_after=changes_after,
-        ip_address=_get_client_ip(request),
+        ip_address=resolved_ip,
         status=status,
     )
 
@@ -93,10 +158,9 @@ def log_change(
     changes_before=None,
     changes_after=None,
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log an UPDATE action with before/after change tracking.
-    """
+    """Shortcut to log an UPDATE action with before/after change tracking."""
     log_audit_entry(
         user=user,
         action='UPDATE',
@@ -108,6 +172,7 @@ def log_change(
         changes_before=changes_before,
         changes_after=changes_after,
         request=request,
+        ip_address=ip_address,
     )
 
 
@@ -120,10 +185,9 @@ def log_create(
     object_id='',
     object_repr='',
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log a CREATE action.
-    """
+    """Shortcut to log a CREATE action."""
     log_audit_entry(
         user=user,
         action='CREATE',
@@ -133,6 +197,7 @@ def log_create(
         object_id=object_id,
         object_repr=object_repr,
         request=request,
+        ip_address=ip_address,
     )
 
 
@@ -146,10 +211,9 @@ def log_delete(
     object_repr='',
     changes_before=None,
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log a DELETE action.
-    """
+    """Shortcut to log a DELETE action."""
     log_audit_entry(
         user=user,
         action='DELETE',
@@ -160,6 +224,7 @@ def log_delete(
         object_repr=object_repr,
         changes_before=changes_before,
         request=request,
+        ip_address=ip_address,
     )
 
 
@@ -172,10 +237,9 @@ def log_view(
     object_id='',
     object_repr='',
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log a VIEW action (e.g. viewing sensitive patient records).
-    """
+    """Shortcut to log a VIEW action (e.g. viewing sensitive patient records)."""
     log_audit_entry(
         user=user,
         action='VIEW',
@@ -185,6 +249,7 @@ def log_view(
         object_id=object_id,
         object_repr=object_repr,
         request=request,
+        ip_address=ip_address,
     )
 
 
@@ -195,10 +260,9 @@ def log_auth_event(
     description='',
     status='SUCCESS',
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log an authentication event (LOGIN, LOGOUT, etc.).
-    """
+    """Shortcut to log an authentication event (LOGIN, LOGOUT, etc.)."""
     log_audit_entry(
         user=user,
         action=action,
@@ -206,6 +270,7 @@ def log_auth_event(
         description=description,
         status=status,
         request=request,
+        ip_address=ip_address,
     )
 
 
@@ -218,10 +283,9 @@ def log_export(
     object_id='',
     object_repr='',
     request=None,
+    ip_address=None,
 ):
-    """
-    Shortcut to log an EXPORT / DOWNLOAD / PRINT action.
-    """
+    """Shortcut to log an EXPORT / DOWNLOAD / PRINT action."""
     log_audit_entry(
         user=user,
         action='EXPORT',
@@ -231,13 +295,25 @@ def log_export(
         object_id=object_id,
         object_repr=object_repr,
         request=request,
+        ip_address=ip_address,
     )
 
 
 def get_changes_from_model(instance, changed_fields):
     """
-    Build ``changes_before`` and ``changes_after`` dicts by reading
-    the model instance's current field values.
+    Build ``changes_after`` dict by reading the model instance's current
+    field values for the specified changed fields.
+
+    .. note::
+
+       This function can only capture the **current** (after) values.
+       The ``changes_before`` dict will always be empty because old values
+       are no longer available on the instance after the change has been
+       applied.
+
+       To capture both before and after values, callers should stash the
+       old field values in a pre-save signal (``pre_save``), then pass
+       them to a logging shortcut like :func:`log_change`.
 
     Parameters
     ----------
@@ -248,32 +324,29 @@ def get_changes_from_model(instance, changed_fields):
 
     Returns
     -------
-    (changes_before, changes_after) tuple of dicts or None.
+    tuple
+        ``(changes_before, changes_after)`` where ``changes_before`` is
+        always ``None`` (old values are not available after the fact),
+        and ``changes_after`` is a dict of field → current value, or
+        ``None`` if no fields were provided.
     """
     if not changed_fields:
         return None, None
 
-    before = {}
     after = {}
     for field in changed_fields:
-        # The "old" value is no longer available unless we've stored it
-        # beforehand via a signal.  We return the current value as "after"
-        # and leave "before" empty — callers should populate before if
-        # they captured it.
         value = _serialize_value(getattr(instance, field, None))
         after[field] = value
 
-    return (before if before else None, after if after else None)
+    return (None, after if after else None)
 
 
 def _serialize_value(value):
     """Convert a model field value to a JSON-serializable form."""
     if value is None:
         return None
-    if hasattr(value, 'strftime'):
+    if hasattr(value, 'isoformat'):
         return value.isoformat()
     if hasattr(value, 'pk'):
         return str(value)
-    if hasattr(value, '__str__'):
-        return str(value)
-    return value
+    return str(value)

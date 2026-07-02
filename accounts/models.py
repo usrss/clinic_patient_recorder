@@ -37,6 +37,7 @@ class User(AbstractUser):
     )
 
     force_password_change = models.BooleanField(default=False)
+
     failed_login_attempts = models.PositiveIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
     # FIX: Increased max_length from 6 to 255 to support hashed OTPs (make_password produces ~128+ chars)

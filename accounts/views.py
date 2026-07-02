@@ -26,6 +26,8 @@ from .decorators import admin_required
 from colleges.models import College
 from patients.models import Patient, PatientProfile
 from inventory.models import Medicine
+from audit_logs.services import log_create, log_change
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(minutes=2)
@@ -127,7 +129,7 @@ def register(request):
                 email=data['email'],
                 role=User.Role.PATIENT,
                 phone=data['phone'],
-                force_password_change=False,
+
             )
 
             patient = Patient.objects.create(
@@ -547,7 +549,7 @@ def change_password(request):
     if request.method == 'POST' and form.is_valid():
         user = form.save()
         user.force_password_change = False
-        user.save()
+        user.save(update_fields=['force_password_change'])
         update_session_auth_hash(request, user)
         log_auth_event(
             user=user,
@@ -574,17 +576,60 @@ def change_password(request):
 @login_required
 @admin_required
 def user_list(request):
-    users = User.objects.exclude(role=User.Role.PATIENT).order_by('role', 'username')
-    return render(request, 'accounts/user_list.html', {'users': users})
+    # Base queryset
+    qs = User.objects.exclude(role=User.Role.PATIENT).order_by('role', 'username')
+
+    # ── Filters ──
+    search = request.GET.get('search', '').strip()
+    role_filter = request.GET.get('role', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    if search:
+        qs = qs.filter(
+            Q(username__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
+        )
+    if role_filter:
+        qs = qs.filter(role=role_filter)
+    if status_filter == 'active':
+        qs = qs.filter(is_active=True)
+    elif status_filter == 'inactive':
+        qs = qs.filter(is_active=False)
+
+    # ── Pagination ──
+    paginator = Paginator(qs, 20)
+    page = request.GET.get('page', 1)
+    try:
+        users_page = paginator.page(page)
+    except (PageNotAnInteger, EmptyPage):
+        users_page = paginator.page(1)
+
+    return render(request, 'accounts/user_list.html', {
+        'users': users_page,
+        'paginator': paginator,
+        'page_obj': users_page,
+        'is_paginated': users_page.has_other_pages(),
+        'filter_search': search,
+        'filter_role': role_filter,
+        'filter_status': status_filter,
+    })
 
 
 @login_required
 @admin_required
 def user_create(request):
-    form = UserCreateForm(request.POST or None)
+    form = UserCreateForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save()
-        from audit_logs.services import log_create
+
+        # Handle profile picture (not in UserCreationForm by default)
+        picture = form.cleaned_data.get('profile_picture')
+        if picture:
+            new_user.profile_picture = picture
+            new_user.save(update_fields=['profile_picture'])
+
         log_create(
             user=request.user,
             module='User Management',
@@ -594,6 +639,24 @@ def user_create(request):
             object_repr=str(new_user),
             request=request,
         )
+
+        # Send welcome email if user has an email address
+        if new_user.email:
+            try:
+                send_mail(
+                    'Welcome to the Patient Record System',
+                    f'Hi {new_user.first_name or new_user.username},\n\n'
+                    f'A staff account has been created for you.\n'
+                    f'Username: {new_user.username}\n'
+                    f'You will need to set your password on first login.\n\n'
+                    f'Please visit the system to log in.',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [new_user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass  # Email delivery is best-effort
+
         messages.success(request, 'Staff user created successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Create'})
@@ -605,16 +668,30 @@ def user_edit(request, pk):
     target = get_object_or_404(User, pk=pk)
     form = UserEditForm(request.POST or None, request.FILES or None, instance=target)
     if request.method == 'POST' and form.is_valid():
-        # Capture before values
-        old_role = target.role
-        old_active = target.is_active
+        # Capture before values for ALL tracked fields
+        before = {
+            'first_name': target.first_name,
+            'last_name': target.last_name,
+            'email': target.email,
+            'phone': target.phone,
+            'role': target.role,
+            'is_active': target.is_active,
+        }
         form.save()
-        from audit_logs.services import log_change
-        changes = {}
-        if old_role != target.role:
-            changes['role'] = f'{old_role} → {target.role}'
-        if old_active != target.is_active:
-            changes['is_active'] = f'{old_active} → {target.is_active}'
+        target.refresh_from_db()
+
+        # Build changes_before and changes_after for all modified fields
+        tracked_fields = ['first_name', 'last_name', 'email', 'phone',
+                          'role', 'is_active']
+        changes_before = {}
+        changes_after = {}
+        for field in tracked_fields:
+            old_val = before[field]
+            new_val = getattr(target, field, None)
+            if old_val != new_val:
+                changes_before[field] = old_val
+                changes_after[field] = new_val
+
         log_change(
             user=request.user,
             module='User Management',
@@ -622,13 +699,75 @@ def user_edit(request, pk):
             object_model='accounts.User',
             object_id=target.pk,
             object_repr=str(target),
-            changes_before={'role': old_role, 'is_active': old_active},
-            changes_after={'role': target.role, 'is_active': target.is_active},
+            changes_before=changes_before if changes_before else None,
+            changes_after=changes_after if changes_after else None,
             request=request,
         )
         messages.success(request, 'User updated successfully.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Edit', 'target': target})
+
+
+@login_required
+@admin_required
+def user_reset_password(request, pk):
+    """
+    Admin-forced password reset: generates a random password and marks
+    the account so the user must change it on next login.
+    """
+    if request.method != 'POST':
+        return redirect('accounts:user_list')
+    target_user = get_object_or_404(User, pk=pk)
+
+    import secrets
+    import string
+    new_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+    target_user.set_password(new_password)
+    target_user.force_password_change = True
+    target_user.failed_login_attempts = 0
+    target_user.locked_until = None
+    target_user.save(update_fields=['password', 'force_password_change',
+                                     'failed_login_attempts', 'locked_until'])
+
+    log_change(
+        user=request.user,
+        module='User Management',
+        description=f'Password reset by admin — {target_user.get_full_name() or target_user.username}',
+        object_model='accounts.User',
+        object_id=target_user.pk,
+        object_repr=str(target_user),
+        request=request,
+    )
+
+    # Email the new password if we can
+    if target_user.email:
+        try:
+            send_mail(
+                'Your password has been reset',
+                f'Hi {target_user.first_name or target_user.username},\n\n'
+                f'An administrator has reset your password.\n'
+                f'Your temporary password is: {new_password}\n\n'
+                f'You will be required to change it on your next login.\n\n'
+                f'Username: {target_user.username}',
+                settings.DEFAULT_FROM_EMAIL,
+                [target_user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        messages.success(
+            request,
+            f'Password reset for {target_user.username}. '
+            f'A temporary password has been sent to their email.'
+        )
+    else:
+        messages.success(
+            request,
+            f'Password reset for {target_user.username}. '
+            f'Temporary password: {new_password} '
+            f'(user has no email on file — please share this manually).'
+        )
+    return redirect('accounts:user_list')
 
 
 @login_required
@@ -644,7 +783,6 @@ def user_toggle_active(request, pk):
         target_user.is_active = not target_user.is_active
         target_user.save(update_fields=['is_active'])
         status = 'activated' if target_user.is_active else 'deactivated'
-        from audit_logs.services import log_change
         log_change(
             user=request.user,
             module='User Management',
@@ -756,8 +894,7 @@ def profile_settings(request):
 
             if password_form.is_valid():
                 updated_user = password_form.save()
-                updated_user.force_password_change = False
-                updated_user.save(update_fields=['force_password_change'])
+                updated_user.save()
                 update_session_auth_hash(request, updated_user)
                 messages.success(request, 'Password changed successfully.')
                 return redirect('accounts:profile_settings')

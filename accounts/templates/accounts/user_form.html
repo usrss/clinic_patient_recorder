@@ -150,13 +150,14 @@
 
         {# Active toggle #}
         {% if form.is_active %}
-        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:16px;">
           {{ form.is_active }}
           <label for="{{ form.is_active.id_for_label }}" style="font-size:14px;color:#374151;margin:0;cursor:pointer;font-weight:500;">
             Active account
           </label>
         </div>
         {% endif %}
+
 
         {% if form.role %}
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
@@ -168,12 +169,21 @@
         {% endif %}
 
         {# Actions #}
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;display:inline-flex;align-items:center;gap:6px;">
             <ion-icon name="checkmark-outline" style="font-size:16px;"></ion-icon>
             {{ action }} Staff
           </button>
           <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary" style="border-radius:10px;padding:10px 24px;">Cancel</a>
+          {% if target and target != request.user %}
+          <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" style="display:inline;margin-left:auto;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-secondary" style="gap:4px;border-radius:10px;padding:10px 18px;font-size:13px;">
+              <ion-icon name="key-outline" style="font-size:15px;"></ion-icon>
+              Reset Password
+            </button>
+          </form>
+          {% endif %}
         </div>
 
       </form>

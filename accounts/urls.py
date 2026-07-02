@@ -13,6 +13,7 @@ urlpatterns = [
     path('users/create/', views.user_create, name='user_create'),
     path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
     path('users/<int:pk>/toggle/', views.user_toggle_active, name='user_toggle_active'),
+    path('users/<int:pk>/reset-password/', views.user_reset_password, name='user_reset_password'),
     path('settings/', views.profile_settings, name='profile_settings'),
     path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('verify-otp/<int:user_id>/', views.verify_otp, name='verify_otp'),
