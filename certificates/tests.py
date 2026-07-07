@@ -396,19 +396,18 @@ class CertificateTemplateTextTest(TestCase):
             cert.rendered_text_snapshot,
         )
 
-    # ── Test 3: Dental renders body text from standard template ──
+    # ── Test 3: Standard certificate renders body from standard template ──
 
-    def test_dental_uses_standard_template(self):
-        """Dental certificate should render body text from the standard template."""
+    def test_standard_certificate_renders_body(self):
+        """Standard certificate should render body text from the template."""
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.DENTAL,
+            MedicalCertificate.CertificateType.STANDARD,
             rest_from=timezone.localtime(timezone.now()).date(),
             rest_to=timezone.localtime(timezone.now()).date(),
         )
         cert.issue(user=self.doctor)
 
         snapshot = cert.rendered_text_snapshot
-        # Dental inherits standard's body template
         self.assertIn('This is to certify', snapshot)
         self.assertIn('Diagnosis:', snapshot)
 

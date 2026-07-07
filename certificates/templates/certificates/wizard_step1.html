@@ -1,4 +1,4 @@
-{% extends 'core/base_staff.html' %}
+{% extends base_template %}
 {% block title %}Issue Certificate — Step 1 — Consultation #{{ consultation.pk }}{% endblock %}
 
 {% block extra_css %}
@@ -133,7 +133,7 @@
       <label class="type-card" data-value="standard">
         <input type="radio" name="certificate_type" value="standard" checked>
         <div class="type-icon">&#128203;</div>
-        <div class="type-name">Medical Certificate-Absences of classes-work</div>
+        <div class="type-name">Medical Certificate-Absences  of classes-work</div>
         <div class="type-desc">For class absences or work-related medical certification</div>
       </label>
       <label class="type-card" data-value="fit_to_work">
@@ -147,12 +147,6 @@
         <div class="type-icon">&#127936;</div>
         <div class="type-name">Medical Certificate_Activitiest-training-seminars</div>
         <div class="type-desc">For sports, training, or seminar participation clearance</div>
-      </label>
-      <label class="type-card" data-value="dental">
-        <input type="radio" name="certificate_type" value="dental">
-        <div class="type-icon">&#129504;</div>
-        <div class="type-name">Dental Certificate</div>
-        <div class="type-desc">Dental-related certification</div>
       </label>
     </div>
 

@@ -177,7 +177,7 @@
 
   <!-- Info Banner -->
   <div class="info-banner">
-    <span style="font-size:18px;">ℹ️</span>
+    <ion-icon name="information-circle-outline" style="font-size:18px;"></ion-icon>
     <div>
       <strong>Original case:</strong> {{ consultation.symptoms|truncatechars:80 }}<br>
       <span style="font-size:11px;">Created {{ consultation.created_at|date:"F d, Y" }} · {{ consultation.follow_up_count }} prior follow-up{{ consultation.follow_up_count|pluralize }}</span>

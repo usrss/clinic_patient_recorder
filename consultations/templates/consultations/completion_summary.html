@@ -124,7 +124,7 @@
 
   {# ── Header ── #}
   <div class="cs-header">
-    <div class="check-icon">&#10003;</div>
+    <div class="check-icon"><ion-icon name="checkmark-circle" style="font-size:32px;"></ion-icon></div>
     <h1>Consultation Completed Successfully</h1>
     <p>Consultation #{{ consultation.pk }} &middot; {{ consultation.created_at|date:"F d, Y" }}</p>
   </div>
@@ -174,7 +174,7 @@
 
   {# Card 1: Consultation Record #}
   <div class="doc-card">
-    <div class="doc-icon" style="background:#eff6ff;">&#128196;</div>
+    <div class="doc-icon" style="background:#eff6ff;"><ion-icon name="document-text-outline" style="font-size:22px;color:#3b82f6;"></ion-icon></div>
     <div class="doc-body">
       <div class="doc-title">Consultation Record</div>
       <div class="doc-meta">
@@ -190,7 +190,7 @@
 
   {# Card 2: Prescription #}
   <div class="doc-card">
-    <div class="doc-icon" style="background:#f0fdf4;">&#128137;</div>
+    <div class="doc-icon" style="background:#f0fdf4;"><ion-icon name="medkit-outline" style="font-size:22px;color:#16a34a;"></ion-icon></div>
     <div class="doc-body">
       <div class="doc-title">Prescription</div>
       <div class="doc-meta">
@@ -212,7 +212,7 @@
 
   {# Card 3: Medical Certificate #}
   <div class="doc-card">
-    <div class="doc-icon" style="background:#fef3c7;">&#128221;</div>
+    <div class="doc-icon" style="background:#fef3c7;"><ion-icon name="document-outline" style="font-size:22px;color:#d97706;"></ion-icon></div>
     <div class="doc-body">
       <div class="doc-title">Certificate</div>
       <div class="doc-meta">
@@ -232,7 +232,8 @@
     <div class="doc-actions">
       {% if issued_certificate %}
         <a href="{% url 'certificates:print_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" target="_blank">View</a>
-        <a href="{% url 'certificates:print_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" target="_blank">Print Again</a>
+        <a href="{% url 'certificates:print_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" target="_blank">Print</a>
+        <a href="{% url 'certificates:void_certificate' issued_certificate.pk %}" class="btn-sm btn-outline" style="color:#dc2626;border-color:#fca5a5;" onclick="return confirm('Are you sure you want to void this certificate? This action cannot be undone.')">Void</a>
       {% elif draft_certificate %}
         <a href="{% url 'certificates:wizard_details' draft_certificate.pk %}" class="btn-sm btn-warning-sm">Continue Draft</a>
         <form method="post" action="{% url 'certificates:discard_draft' draft_certificate.pk %}" style="display:inline;" onsubmit="return confirm('Discard this draft and start over? The current draft will be voided.')">

@@ -71,7 +71,7 @@
   <!-- Example section -->
   <div class="example-section">
     <h3>Example — {{ slot.get_cert_type_label }} Template</h3>
-    {% if slot.certificate_type == 'standard' or slot.certificate_type == 'dental' %}
+    {% if slot.certificate_type == 'standard' %}
     <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}was examined and treated at this clinic on {exam_date}.
 
 Diagnosis: {diagnosis}

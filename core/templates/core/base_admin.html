@@ -297,7 +297,7 @@
          class="adm-nav-link {% if request.resolver_match.url_name == 'queue' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
         Queue
-        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
+        <span class="sidebar-badge" data-sidebar-count="queue" style="display:none;margin-left:auto;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'inventory:medicine_list' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'medicine_list' %}active{% endif %}">
@@ -318,7 +318,7 @@
          class="adm-nav-link {% if request.resolver_match.url_name == 'archive_settings' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="4" rx="1"/><path d="M4 7v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7"/><path d="M12 7v10"/><path d="M8 7v10"/><path d="M16 7v10"/></svg>
         Archive Settings
-        <span class="nav-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
+        <span class="sidebar-badge" data-sidebar-count="archives" style="display:none;margin-left:auto;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
       <a href="{% url 'patients:archive_browser' %}"
          class="adm-nav-link {% if request.resolver_match.url_name == 'archive_browser' %}active{% endif %}">
@@ -359,7 +359,7 @@
          class="adm-nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         Notifications
-        <span id="sidebar-notif-badge" data-notif-badge style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
+        <span id="sidebar-notif-badge" class="sidebar-badge" style="display:none;margin-left:auto;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:20px;text-align:center;padding:0 4px;"></span>
       </a>
 
       <a href="{% url 'feedback:feedback_list' %}"
@@ -468,7 +468,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
-  <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}"></script>
+  <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}" data-sidebar-counts-url="{% url 'consultations:sidebar_counts' %}"></script>
 
   <script>
     function openSidebar() {

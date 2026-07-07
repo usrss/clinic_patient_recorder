@@ -11,7 +11,6 @@ TEMPLATE_DIR = Path(settings.BASE_DIR) / "certificates" / "medical_certs_templat
 
 TEMPLATE_MAP = {
     "standard": "Medical Certificate-Absences  of classes-work.docx",
-    "dental": "Medical Certificate-Absences  of classes-work.docx",
     "fit_to_work": "Medical Certificate-OJT.docx",
     "fit_to_play": "Medical Certificate_Activitiest-training-seminars.docx",
 }

@@ -223,7 +223,7 @@
       <div class="page-sub">{{ consultation.patient.get_full_name }}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-outline">🖨 Print</a>
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-outline"><ion-icon name="print-outline" style="font-size:13px;"></ion-icon> Print</a>
       {% if consultation.status != 'closed' %}
       <a href="{% url 'consultations:follow_up_create' consultation.pk %}" class="btn btn-warning">+ Follow-up Visit</a>
       <a href="{% url 'consultations:close_consultation' consultation.pk %}" class="btn btn-danger">Close Case</a>
@@ -236,13 +236,13 @@
     <div class="case-header">
       <span class="case-id">Case #{{ consultation.pk }}</span>
       {% if consultation.status == 'active_follow_up' %}
-        <span class="status-badge s-active-follow-up">🔄 Active Follow-up</span>
+        <span class="status-badge s-active-follow-up"><ion-icon name="sync-outline" style="font-size:12px;"></ion-icon> Active Follow-up</span>
       {% elif consultation.status == 'completed' %}
-        <span class="status-badge s-completed">✅ Completed</span>
+        <span class="status-badge s-completed"><ion-icon name="checkmark-circle-outline" style="font-size:12px;"></ion-icon> Completed</span>
       {% elif consultation.status == 'closed' %}
-        <span class="status-badge s-closed">🔒 Closed</span>
+        <span class="status-badge s-closed"><ion-icon name="lock-closed-outline" style="font-size:12px;"></ion-icon> Closed</span>
       {% elif consultation.status == 'triaged' %}
-        <span class="status-badge s-triaged">🩺 Triaged</span>
+        <span class="status-badge s-triaged"><ion-icon name="medkit-outline" style="font-size:12px;"></ion-icon> Triaged</span>
       {% endif %}
     </div>
     <div class="case-grid">
@@ -292,7 +292,7 @@
         <div class="tl-dot original"></div>
         <div class="tl-card">
           <div class="tl-card-header">
-            <span class="tl-title">📋 Original Consultation</span>
+            <span class="tl-title"><ion-icon name="document-text-outline" style="font-size:14px;vertical-align:middle;"></ion-icon> Original Consultation</span>
             <span class="tl-date">{{ consultation.created_at|date:"F d, Y — h:i A" }}</span>
           </div>
           <div class="tl-content">
@@ -328,7 +328,7 @@
         <div class="tl-dot follow-up"></div>
         <div class="tl-card">
           <div class="tl-card-header">
-            <span class="tl-title">🔄 Follow-up Visit #{{ entry.visit_number }}</span>
+            <span class="tl-title"><ion-icon name="sync-outline" style="font-size:14px;vertical-align:middle;"></ion-icon> Follow-up Visit #{{ entry.visit_number }}</span>
             <span class="tl-date">{{ entry.created_at|date:"F d, Y — h:i A" }}</span>
           </div>
           {% if entry.doctor %}
@@ -376,7 +376,7 @@
         <div class="tl-dot closed"></div>
         <div class="tl-card" style="background:#f9fafb;">
           <div class="tl-card-header">
-            <span class="tl-title">🔒 Case Closed</span>
+            <span class="tl-title"><ion-icon name="lock-closed-outline" style="font-size:14px;vertical-align:middle;"></ion-icon> Case Closed</span>
             <span class="tl-date">{{ consultation.closed_at|date:"F d, Y — h:i A" }}</span>
           </div>
           <div class="tl-content">

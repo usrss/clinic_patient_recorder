@@ -5,11 +5,6 @@
 {% block page_title %}Consultation Queue{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} pending request{{ consultations.count|pluralize }}{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block extra_css %}
 <style>
   .sec-heading {
@@ -166,12 +161,12 @@
           <td>
             {% if c.pk in follow_up_consultation_ids %}
             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
-              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <ion-icon name="sync-outline" style="font-size:11px;"></ion-icon>
               Follow-up
             </span>
             {% else %}
             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;">
-              New
+              <ion-icon name="add-circle-outline" style="font-size:11px;"></ion-icon> New
             </span>
             {% endif %}
           </td>

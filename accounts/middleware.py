@@ -2,6 +2,9 @@ from django.shortcuts import redirect
 from django.urls import resolve, Resolver404
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.auth import logout
+from django.contrib import messages
+from django.http import JsonResponse
 
 
 class ProfileCompletionMiddleware:
@@ -15,6 +18,7 @@ class ProfileCompletionMiddleware:
         'accounts:logout',
         'accounts:complete_profile',
         'accounts:change_password',
+        'accounts:courses_by_college',
     }
 
     def __init__(self, get_response):
@@ -30,6 +34,10 @@ class ProfileCompletionMiddleware:
 
             is_patient = getattr(request.user, 'role', None) == 'patient'
             if is_patient and url_name not in self.SAFE_URL_NAMES:
+                # Force password change first (walk-in patients have temp passwords)
+                if request.user.force_password_change:
+                    return redirect('accounts:change_password')
+                # Then force profile completion (including email setup)
                 patient = request.user.get_patient_record()
                 if patient and not patient.is_profile_complete:
                     return redirect('accounts:complete_profile')
@@ -73,16 +81,13 @@ class IdleSessionTimeoutMiddleware:
                     try:
                         elapsed = (timezone.now() - timezone.datetime.fromisoformat(last_activity)).total_seconds()
                         if elapsed > self.IDLE_TIMEOUT * 60:
-                            from django.contrib.auth import logout
                             logout(request)
                             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                                from django.http import JsonResponse
                                 return JsonResponse({
                                     'logout': True,
                                     'reason': 'session_expired',
                                     'message': 'Your session has expired due to inactivity. Please log in again.'
                                 }, status=403)
-                            from django.contrib import messages
                             messages.warning(request, 'Your session has expired due to inactivity. Please log in again.')
                             return redirect('accounts:login')
                     except (ValueError, TypeError):

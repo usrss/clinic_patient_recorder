@@ -34,7 +34,7 @@ def calculate_graduation_year(year_level):
     return datetime.date.today().year + offset if offset else None
 
 
-def create_patient_user(patient):
+def create_patient_user(patient, email=''):
     """
     Create a User account for a Patient record that was created by the
     front desk (walk-in).  The User is set up with:
@@ -42,18 +42,21 @@ def create_patient_user(patient):
         * username = patient.patient_id
         * random temporary password
         * role = PATIENT
+        * email (if provided — required so the patient can use
+          "Forgot Password" to reset their own password)
 
     Returns a tuple of (user, temp_password).
 
     The user account is marked with ``force_password_change = True`` so
     the patient must change their password on first login.
     """
-    temp_password = generate_temp_password()
+    temp_password = generate_temp_password(length=4)
     user = User.objects.create_user(
         username=patient.patient_id,
         password=temp_password,
         first_name=patient.first_name,
         last_name=patient.last_name,
+        email=email or None,
         role=User.Role.PATIENT,
     )
     user.force_password_change = True

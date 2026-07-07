@@ -1,80 +1,145 @@
 {% extends 'core/base.html' %}
 {% block title %}Edit Contact — {{ patient.get_full_name }} — Patient Record System{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% block extra_js %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contact-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px;
+  }
+  .contact-wrap { width: 100%; max-width: 620px; margin: 0 auto; }
+
+  .contact-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .contact-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  .patient-label-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 24px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .patient-icon { font-size: 32px; color: #3b82f6; flex-shrink: 0; }
+  .patient-name { font-weight: 700; color: #1a1a2e; font-size: 15px; }
+  .patient-id { font-size: 12px; color: #94a3b8; }
+
+  .sec-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
+  }
+  .form-card {
+    background: #fff; border-radius: 16px; padding: 28px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+  .help-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .form-error { font-size: 12px; color: #dc2626; margin-top: 4px; }
+
+  .details-summary {
+    cursor: pointer; font-size: 12px; font-weight: 700;
+    color: #94a3b8; text-transform: uppercase; letter-spacing: .06em;
+    padding: 10px 0; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+    border-top: 1px solid #e8ecf1; margin-top: 4px;
+  }
+  .details-summary::-webkit-details-marker { display: none; }
+  .details-arrow { margin-left: auto; transition: transform 0.15s; }
+  details[open] .details-arrow { transform: rotate(180deg); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:620px;margin:0 auto;">
+<div class="contact-page">
+<div class="contact-wrap">
 
   {# ── Header ── #}
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;">
+  <div class="contact-header">
     <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
       <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back
     </a>
-    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">Contact Information</h1>
+    <h1>Contact Information</h1>
   </div>
 
   {# ── Patient Label ── #}
-  <div style="background:#fff;border-radius:16px;padding:16px 24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;">
-    <ion-icon name="person-circle-outline" style="font-size:32px;color:#3b82f6;"></ion-icon>
+  <div class="patient-label-card">
+    <ion-icon name="person-circle-outline" class="patient-icon"></ion-icon>
     <div>
-      <div style="font-weight:700;color:#1a1a2e;font-size:15px;">{{ patient.get_full_name }}</div>
-      <div style="font-size:12px;color:#94a3b8;">{{ patient.patient_id }}</div>
+      <div class="patient-name">{{ patient.get_full_name }}</div>
+      <div class="patient-id">{{ patient.patient_id }}</div>
     </div>
   </div>
 
   {# ── Form ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Primary Contact</div>
-  <div style="background:#fff;border-radius:16px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
-    <form method="post" novalidate>
+  <div class="sec-label">Primary Contact</div>
+  <div class="form-card">
+    <form method="post" novalidate data-track-changes="true">
       {% csrf_token %}
 
       <div class="form-group">
         <label>{{ form.phone.label }}</label>
         {{ form.phone }}
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">{{ form.phone.help_text }}</div>
-        {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+        {% if form.phone.help_text %}<div class="help-text">{{ form.phone.help_text }}</div>{% endif %}
+        {% if form.phone.errors %}<div class="form-error" aria-live="polite">{{ form.phone.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
         <label>{{ form.email.label }}</label>
         {{ form.email }}
-        {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
+        {% if form.email.errors %}<div class="form-error" aria-live="polite">{{ form.email.errors.0 }}</div>{% endif %}
       </div>
 
       {# ── Emergency Contact ── #}
       <details style="margin-top:16px;" {% if patient.emergency_contact_name or patient.emergency_contact_phone %}open{% endif %}>
-        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;padding:10px 0;list-style:none;display:flex;align-items:center;gap:6px;border-top:1px solid #e8ecf1;margin-top:4px;">
+        <summary class="details-summary">
           <ion-icon name="people-outline" style="font-size:15px;color:#3b82f6;"></ion-icon>
-          <span id="emergency-label">Emergency Contact</span>
+          <span>Emergency Contact</span>
           <span style="font-weight:400;color:#94a3b8;">(optional)</span>
-          <span id="arrow-icon" style="margin-left:auto;">▶</span>
+          <ion-icon name="chevron-down-outline" class="details-arrow" style="font-size:14px;"></ion-icon>
         </summary>
         <div style="padding-top:14px;">
           <div class="form-group">
             <label>{{ form.emergency_contact_name.label }}</label>
             {{ form.emergency_contact_name }}
-            {% if form.emergency_contact_name.errors %}<div class="form-error">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
+            {% if form.emergency_contact_name.errors %}<div class="form-error" aria-live="polite">{{ form.emergency_contact_name.errors.0 }}</div>{% endif %}
           </div>
           <div class="form-group">
             <label>{{ form.emergency_contact_phone.label }}</label>
             {{ form.emergency_contact_phone }}
-            {% if form.emergency_contact_phone.errors %}<div class="form-error">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
+            {% if form.emergency_contact_phone.errors %}<div class="form-error" aria-live="polite">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
           </div>
         </div>
       </details>
 
       {% if form.non_field_errors %}
-        <div class="form-error" style="margin-top:12px;">
+        <div class="form-error" style="margin-top:12px;" aria-live="polite">
           {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
         </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:24px;">
+      <div class="btn-row">
         <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
           <ion-icon name="checkmark-circle-outline" style="font-size:15px;"></ion-icon> Save Contact Info
         </button>
@@ -83,21 +148,9 @@
     </form>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
+  <p class="footer-note">
     Negros Oriental State University — Medical Dental Clinic
   </p>
 </div>
 </div>
-
-{% block extra_js_inline %}
-<script>
-document.querySelectorAll('details').forEach(d => {
-  const arrow = d.querySelector('#arrow-icon');
-  if (arrow) arrow.textContent = d.open ? '▼' : '▶';
-  d.addEventListener('toggle', function() {
-    if (arrow) arrow.textContent = this.open ? '▼' : '▶';
-  });
-});
-</script>
-{% endblock %}
 {% endblock %}

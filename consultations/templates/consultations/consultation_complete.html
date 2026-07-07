@@ -204,7 +204,7 @@
 
   <!-- Success Banner -->
   <div class="success-banner">
-    <span style="font-size:20px;">✅</span>
+    <ion-icon name="checkmark-circle-outline" style="font-size:22px;flex-shrink:0;"></ion-icon>
     <div>
       <strong>Prescription saved successfully.</strong><br>
       <span style="font-size:11px;">Now decide if the patient needs a follow-up visit.</span>
@@ -237,13 +237,13 @@
       <div class="choice-row">
         <label class="choice-card" id="choice-no">
           <input type="radio" name="requires_follow_up" value="0" checked>
-          <div class="choice-icon">✅</div>
+          <div class="choice-icon"><ion-icon name="checkmark-circle-outline" style="font-size:28px;color:#065f46;"></ion-icon></div>
           <div class="choice-label">No Follow-up Needed</div>
           <div class="choice-desc">Consultation is complete. No further visits required.</div>
         </label>
         <label class="choice-card" id="choice-yes">
           <input type="radio" name="requires_follow_up" value="1">
-          <div class="choice-icon">🔄</div>
+          <div class="choice-icon"><ion-icon name="sync-outline" style="font-size:28px;color:#d97706;"></ion-icon></div>
           <div class="choice-label">Follow-up Required</div>
           <div class="choice-desc">Patient should return for monitoring or further treatment.</div>
         </label>

@@ -3,11 +3,6 @@
 {% block page_title %}Consultation #{{ consultation.pk }}{% endblock %}
 {% block page_subtitle %}{{ consultation.get_status_display }}{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block extra_css %}
 <style>
   .sec-label {
@@ -125,6 +120,26 @@
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 20px;
+  }
+
+  .amend-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .amend-btn:hover {
+    background: #f5f8ff;
+    border-color: #bfdbfe;
+    color: #0078d4;
   }
 </style>
 {% endblock %}
@@ -294,9 +309,9 @@
 
     <div class="vital-card" style="text-align:center;margin-bottom:14px;">
       <div class="vital-val">
-        {% if t.urgency == 'high' %}<span style="color:#ef4444;">🔴 High</span>
-        {% elif t.urgency == 'medium' %}<span style="color:#f97316;">🟡 Medium</span>
-        {% else %}<span style="color:#10b981;">🟢 Low</span>{% endif %}
+        {% if t.urgency == 'high' %}<span style="color:#ef4444;"><ion-icon name="ellipse" style="font-size:10px;color:#ef4444;"></ion-icon> High</span>
+        {% elif t.urgency == 'medium' %}<span style="color:#f97316;"><ion-icon name="ellipse" style="font-size:10px;color:#f97316;"></ion-icon> Medium</span>
+        {% else %}<span style="color:#10b981;"><ion-icon name="ellipse" style="font-size:10px;color:#10b981;"></ion-icon> Low</span>{% endif %}
       </div>
       <div class="vital-lbl">Urgency</div>
     </div>
@@ -312,9 +327,7 @@
       {% if consultation.status != 'completed' %}
       <div style="margin-top:14px;">
         <a href="{% url 'consultations:triage_edit' consultation.pk %}"
-           style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;color:#374151;background:#fff;border:1px solid #e8ecf1;text-decoration:none;transition:all 0.15s;"
-           onmouseover="this.style.background='#f5f8ff';this.style.borderColor='#bfdbfe';this.style.color='#0078d4'"
-           onmouseout="this.style.background='#fff';this.style.borderColor='#e8ecf1';this.style.color='#374151'">
+           class="amend-btn">
           <ion-icon name="create-outline" style="font-size:14px;"></ion-icon> Amend Triage
         </a>
       </div>
@@ -377,7 +390,7 @@
   <div class="detail-panel-body">
     {# Document: Consultation Record #}
     <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f4f8;">
-      <div style="width:36px;height:36px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128196;</div>
+      <div style="width:36px;height:36px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="document-text-outline" style="font-size:18px;color:#3b82f6;"></ion-icon></div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Consultation Record</div>
         <div style="font-size:11px;color:#94a3b8;">Generated {{ consultation.created_at|date:"M d, Y" }}</div>
@@ -389,7 +402,7 @@
 
     {# Document: Prescription #}
     <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f4f8;">
-      <div style="width:36px;height:36px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128137;</div>
+      <div style="width:36px;height:36px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="medkit-outline" style="font-size:18px;color:#16a34a;"></ion-icon></div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Prescription</div>
         <div style="font-size:11px;color:#94a3b8;">
@@ -405,7 +418,7 @@
 
     {# Document: Medical Certificate #}
     <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
-      <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128221;</div>
+      <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="document-outline" style="font-size:18px;color:#d97706;"></ion-icon></div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Certificate</div>
         <div style="font-size:11px;color:#94a3b8;">
