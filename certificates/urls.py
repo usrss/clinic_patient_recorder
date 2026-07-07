@@ -9,8 +9,10 @@ urlpatterns = [
     path('wizard/<int:pk>/details/', views.wizard_details, name='wizard_details'),
     path('wizard/<int:pk>/preview/', views.wizard_preview, name='wizard_preview'),
 
-    # ── Print / Reprint ──────────────────────────────────────────────
+    # ── Print / Reprint (PDF-preview wrapper page) ───────────────────
     path('<int:pk>/print/', views.print_certificate, name='print_certificate'),
+    path('<int:pk>/preview.pdf/', views.certificate_pdf_preview, name='certificate_pdf_preview'),
+    path('<int:pk>/download-docx/', views.download_certificate_docx, name='certificate_download_docx'),
 
     # ── Void / Discard ────────────────────────────────────────────────
     path('<int:pk>/void/', views.void_certificate, name='void_certificate'),

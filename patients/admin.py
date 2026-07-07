@@ -55,7 +55,8 @@ class PatientAdmin(admin.ModelAdmin):
     list_display = ('patient_id', 'get_full_name', 'sex', 'college', 'department',
                     'position', 'is_active', 'is_archived', 'expected_graduation_year', 'created_at')
     list_filter = ('sex', 'is_active', 'is_archived', 'college', 'created_at')
-    search_fields = ('patient_id', 'first_name', 'last_name', 'middle_name')
+    search_fields = ('patient_id', 'first_name', 'last_name', 'middle_name',
+                     'college__name', 'college__abbreviation', 'department')
     readonly_fields = ('created_at', 'updated_at', 'archived_at')
     inlines = [PatientProfileInline]
     ordering = ('last_name', 'first_name')

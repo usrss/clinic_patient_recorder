@@ -100,6 +100,7 @@ class MedicineDeductForm(forms.Form):
         })
     )
     reason = forms.CharField(
+        required=False,
         max_length=200,
         label='Reason',
         widget=forms.TextInput(attrs={

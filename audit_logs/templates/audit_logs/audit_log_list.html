@@ -250,6 +250,19 @@
 <div class="al-page">
 
   {# ── Filter form ── #}
+  {% if form.errors %}
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:13px;color:#991b1b;">
+    <strong style="display:block;margin-bottom:4px;">Invalid filter values</strong>
+    <ul style="margin:0;padding-left:18px;">
+      {% for field, errors in form.errors.items %}
+        {% for error in errors %}
+        <li style="margin:2px 0;">{{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <form method="get" class="al-filters">
     <div class="filter-row">
       <div class="filter-group">
@@ -315,7 +328,7 @@
       <div class="filter-actions">
         <button type="submit" class="al-btn al-btn-primary">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Filter
+          Search
         </button>
         <a href="{% url 'audit_logs:list' %}" class="al-btn al-btn-ghost">Clear</a>
       </div>

@@ -26,7 +26,7 @@
 
     {# Login Card #}
     <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
-      <form method="post" novalidate autocomplete="off">
+      <form method="post" novalidate>
         {% csrf_token %}
 
         <div style="margin-bottom:20px;">
@@ -35,9 +35,17 @@
           </label>
           {{ form.username }}
           {% if form.username.errors %}
-            <div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.username.errors.0 }}</div>
+            <div id="login-username-error" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.username.errors.0 }}</div>
           {% endif %}
         </div>
+
+        {# ── Failed attempts warning ── #}
+        {% if failed_attempts_remaining is not None %}
+        <div style="margin-bottom:12px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;background:#fff8e1;color:#92400e;border:1px solid #fed7aa;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>{{ failed_attempts_remaining }} attempt{{ failed_attempts_remaining|pluralize:"s" }} remaining before account lockout.</span>
+        </div>
+        {% endif %}
 
         <div style="margin-bottom:8px;">
           <label for="{{ form.password.id_for_label }}" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
@@ -48,7 +56,8 @@
             <button type="button" id="pwToggle"
               aria-label="Show password"
               style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color 0.15s;"
-              onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'">
+              onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'"
+              onfocus="this.style.color='#0078d4'" onblur="this.style.color='#94a3b8'">
               <!-- Eye open -->
               <svg id="iconEye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -63,15 +72,19 @@
             </button>
           </div>
           {% if form.password.errors %}
-            <div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.password.errors.0 }}</div>
+            <div id="login-password-error" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.password.errors.0 }}</div>
           {% endif %}
         </div>
 
-   <div style="text-align:right;margin-bottom:20px;">
-  <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
-    Forgot password?
-  </a>
-</div>
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280;cursor:pointer;">
+      <input type="checkbox" name="remember_me" id="id_remember_me" checked style="width:14px;height:14px;accent-color:#0078d4;cursor:pointer;">
+      Remember me
+    </label>
+    <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+      Forgot password?
+    </a>
+  </div>
 
         {% if form.non_field_errors %}
           <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
@@ -81,7 +94,7 @@
           </div>
         {% endif %}
 
-        <button type="submit" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);" onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+        <button type="submit" id="loginBtn" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
           Sign In
         </button>
 
@@ -128,6 +141,7 @@
   #{{ form.password.id_for_label }}::placeholder {
     color: #c4c9d0;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
 <script>
@@ -144,6 +158,23 @@
         eye.style.display    = show ? 'none'     : '';
         eyeOff.style.display = show ? ''         : 'none';
         toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      });
+    }
+
+    // ── Loading state on submit ──
+    var loginForm = document.querySelector('form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', function() {
+        // Client-side validation
+        var username = document.getElementById('{{ form.username.id_for_label }}');
+        var password = document.getElementById('{{ form.password.id_for_label }}');
+        if (!username.value.trim() || !password.value) {
+          // Let the server handle it
+          return;
+        }
+        var btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Signing in...';
       });
     }
   })();

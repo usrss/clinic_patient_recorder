@@ -274,8 +274,7 @@
       {% endif %}
     </div>
     <div>
-      <h1>Patient Portal</h1>
-      <p>Welcome back, {{ patient.get_full_name }}</p>
+      <h4>Welcome, {{ patient.get_full_name }}</h4>
     </div>
   </div>
 
@@ -321,6 +320,12 @@
             {% else %}—{% endif %}
           </div>
         </div>
+        {% if patient.course %}
+        <div>
+          <div class="info-item-label">Course</div>
+          <div class="info-item-value" style="font-size:13px;">{{ patient.course.name }}</div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

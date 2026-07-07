@@ -3,13 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.utils import timezone
+from django.views.decorators.clickjacking import xframe_options_exempt
 from consultations.models import Consultation
 from .models import MedicalCertificate, CertificateAuditLog, CertificateTemplateText, CertificateTemplateChangeLog
 from .forms import CertificateTypeForm, CertificateDetailsForm, CertificateVoidForm, CertificateTemplateTextForm
 from accounts.decorators import doctor_required, clinical_staff_required, admin_required
-from audit_logs.services import log_create, log_change, log_view, log_delete, log_audit_entry
+from audit_logs.services import log_create, log_audit_entry
+from certificates.services.docx_export import generate_certificate_docx_bytes, CertificateDocxError
+from certificates.services.pdf_export import convert_docx_bytes_to_pdf, CertificatePdfError
 
 
 # ─── HELPER ────────────────────────────────────────────────────────────────
@@ -115,26 +118,28 @@ def wizard_type(request, consultation_pk):
         if not selected_diagnosis:
             selected_diagnosis = diagnoses  # fallback to pre-fill
 
-        # Create DRAFT certificate    with transaction.atomic():
-        certificate = MedicalCertificate.objects.create(
-            consultation=consultation,
-            patient=consultation.patient,
-            doctor=request.user,
-            certificate_type=cert_type,
-            status=MedicalCertificate.Status.DRAFT,
-            diagnosis=selected_diagnosis,
-        )
-        _log_audit(certificate, request.user, 'created',
-                   f'Draft created (type: {cert_type})')
-        log_create(
-            user=request.user,
-            module='Medical Certificates',
-            description=f'Created draft {cert_type} certificate — {consultation.patient.get_full_name()}',
-            object_model='certificates.MedicalCertificate',
-            object_id=certificate.pk,
-            object_repr=str(certificate),
-            request=request,
-        )
+        # Create DRAFT certificate within a transaction so that the audit
+        # log is rolled back if certificate creation fails (and vice versa).
+        with transaction.atomic():
+            certificate = MedicalCertificate.objects.create(
+                consultation=consultation,
+                patient=consultation.patient,
+                doctor=request.user,
+                certificate_type=cert_type,
+                status=MedicalCertificate.Status.DRAFT,
+                diagnosis=selected_diagnosis,
+            )
+            _log_audit(certificate, request.user, 'created',
+                       f'Draft created (type: {cert_type})')
+            log_create(
+                user=request.user,
+                module='Medical Certificates',
+                description=f'Created draft {cert_type} certificate — {consultation.patient.get_full_name()}',
+                object_model='certificates.MedicalCertificate',
+                object_id=certificate.pk,
+                object_repr=str(certificate),
+                request=request,
+            )
 
         return redirect('certificates:wizard_details', pk=certificate.pk)
 
@@ -222,11 +227,14 @@ def wizard_preview(request, pk):
 @login_required
 @clinical_staff_required
 def print_certificate(request, pk):
-    """Printable medical certificate (reprint allowed).
+    """Printable medical certificate — PDF-preview wrapper page.
 
     Only ISSUED certificates are printable. Drafts and voided certs
     return HTTP 403. Access is further scoped by user role (see
     clinic/institution check).
+
+    Serves a thin HTML page with an embedded PDF preview and
+    a "Download Word" button, replacing the old HTML-only print templates.
     """
     certificate = get_object_or_404(
         MedicalCertificate.objects.select_related(
@@ -242,16 +250,12 @@ def print_certificate(request, pk):
         return HttpResponseForbidden('Only issued certificates can be printed.')
 
     # ── Clinic/institution access scoping ────────────────────────────
-    # Doctors may only print certificates they issued.
-    # Frontdesk and admin may print any certificate.
     if request.user.role == 'doctor' and certificate.doctor != request.user:
         return HttpResponseForbidden(
             'You can only print certificates you issued.'
         )
 
     # ── Audit logging: view vs print ─────────────────────────────────
-    # Deduplicate: log 'viewed' only the first time per (cert, user) pair.
-    # Subsequent accesses by the same user are logged as 'printed'.
     viewed_exists = certificate.audit_logs.filter(
         action='viewed', user=request.user
     ).exists()
@@ -263,22 +267,74 @@ def print_certificate(request, pk):
         _log_audit(certificate, request.user, 'viewed',
                    f'Viewed by {request.user.get_full_name() or request.user.username}')
 
-    # ── Resolve slot text ──────────────────────────────────────────
-    slot_text = _get_certificate_text(certificate)
-
-    # ── Select template based on certificate type ────────────────────
-    template_map = {
-        MedicalCertificate.CertificateType.STANDARD: 'certificates/certificate_standard.html',
-        MedicalCertificate.CertificateType.FIT_TO_PLAY: 'certificates/certificate_fit_to_play.html',
-        MedicalCertificate.CertificateType.FIT_TO_WORK: 'certificates/certificate_fit_to_work.html',
-        MedicalCertificate.CertificateType.DENTAL: 'certificates/certificate_standard.html',
-    }
-    template_name = template_map.get(certificate.certificate_type, 'certificates/certificate_standard.html')
-
-    return render(request, template_name, {
+    # ── Render the PDF-preview wrapper page ──────────────────────────
+    return render(request, 'certificates/certificate_preview.html', {
         'certificate': certificate,
-        'slot_text': slot_text,
     })
+
+
+# ─── CERTIFICATE PDF PREVIEW (raw PDF for iframe) ─────────────────────────
+
+@login_required
+@clinical_staff_required
+@xframe_options_exempt
+def certificate_pdf_preview(request, pk):
+    """Return the raw PDF bytes for a certificate, embedded in an iframe.
+
+    Generates a .docx from the template, converts it to PDF via
+    LibreOffice, and serves the PDF inline.
+    The @xframe_options_exempt decorator allows this to load in
+    an iframe on the certificate preview page.
+    """
+    certificate = get_object_or_404(MedicalCertificate, pk=pk)
+
+    if certificate.status != MedicalCertificate.Status.ISSUED:
+        return HttpResponse('Only issued certificates can be previewed.', status=403)
+
+    if request.user.role == 'doctor' and certificate.doctor != request.user:
+        return HttpResponse('You can only preview certificates you issued.', status=403)
+
+    try:
+        docx_bytes = generate_certificate_docx_bytes(certificate)
+        pdf_bytes = convert_docx_bytes_to_pdf(docx_bytes)
+    except (CertificateDocxError, CertificatePdfError):
+        return HttpResponse('Certificate preview could not be generated.', status=500)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="certificate_{certificate.pk}_preview.pdf"'
+    return response
+
+
+# ─── DOWNLOAD .DOCX ────────────────────────────────────────────────────────
+
+@login_required
+@clinical_staff_required
+def download_certificate_docx(request, pk):
+    """Download the certificate as an editable .docx file."""
+    certificate = get_object_or_404(MedicalCertificate, pk=pk)
+
+    if certificate.status != MedicalCertificate.Status.ISSUED:
+        return HttpResponse('Only issued certificates can be downloaded.', status=403)
+
+    if request.user.role == 'doctor' and certificate.doctor != request.user:
+        return HttpResponse('You can only download certificates you issued.', status=403)
+
+    try:
+        docx_bytes = generate_certificate_docx_bytes(certificate)
+    except CertificateDocxError:
+        return HttpResponse('Certificate could not be generated as a Word document.', status=500)
+
+    # Log the download action
+    _log_audit(certificate, request.user, 'downloaded_docx',
+               f'Downloaded .docx by {request.user.get_full_name() or request.user.username}')
+
+    filename = f'{certificate.certificate_number or certificate.pk}.docx'
+    response = HttpResponse(
+        docx_bytes,
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 # ─── DISCARD DRAFT ──────────────────────────────────────────────────────────
@@ -357,7 +413,7 @@ def void_certificate(request, pk):
 @admin_required
 def template_text_list(request):
     """List all editable template text slots, grouped by certificate type."""
-    order = ['standard', 'fit_to_work', 'fit_to_play']
+    order = ['standard', 'fit_to_work', 'fit_to_play', 'dental']
     grouped = {}
     for ct in order:
         rows = CertificateTemplateText.objects.filter(certificate_type=ct)

@@ -6,7 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from .models import User
 from .utils import calculate_graduation_year
 from patients.models import Patient, PatientProfile
-from colleges.models import College
+from colleges.models import College, Course
 
 
 # ── Shared file validation helpers ──────────────────────────────────────
@@ -40,12 +40,16 @@ class LoginForm(AuthenticationForm):
             'class': 'form-control',
             'placeholder': 'Username',
             'autofocus': True,
+            'autocomplete': 'username',
+            'aria-describedby': 'login-username-error',
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
             'placeholder': 'Password',
+            'autocomplete': 'current-password',
+            'aria-describedby': 'login-password-error',
         })
     )
 
@@ -62,6 +66,12 @@ class UserCreateForm(UserCreationForm):
         }),
         validators=[validate_profile_picture],
     )
+    force_password_change = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Force password change on next login',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
 
     class Meta:
         model = User
@@ -76,6 +86,12 @@ class UserCreateForm(UserCreationForm):
 
 class UserEditForm(forms.ModelForm):
     """Admin edits an existing staff user."""
+    force_password_change = forms.BooleanField(
+        required=False,
+        label='Force password change on next login',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
@@ -93,6 +109,9 @@ class UserEditForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'form-control')
         self.fields['profile_picture'].required = False
         self.fields['profile_picture'].label = 'Profile Picture'
+        # Pre-fill force_password_change from instance
+        if self.instance and self.instance.pk:
+            self.fields['force_password_change'].initial = self.instance.force_password_change
 
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
@@ -109,6 +128,7 @@ class StaffPasswordChangeForm(PasswordChangeForm):
         self.fields['old_password'].label = 'Current Password'
         self.fields['new_password1'].label = 'New Password'
         self.fields['new_password2'].label = 'Confirm New Password'
+
 
 
 class UserProfileForm(forms.ModelForm):
@@ -204,6 +224,13 @@ class PatientProfileEditForm(forms.ModelForm):
         empty_label='Select College',
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.none(),
+        required=False,
+        label='Course',
+        empty_label='Select Course',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
     department = forms.CharField(
         max_length=150, required=False,
         label='Department',
@@ -258,6 +285,7 @@ class PatientProfileEditForm(forms.ModelForm):
             self.fields['emergency_contact_phone'].initial = patient.emergency_contact_phone
             self.fields['birthday'].initial = patient.profile.birthday if hasattr(patient, 'profile') and patient.profile.birthday else None
             self.fields['college'].initial = patient.college
+            self.fields['course'].initial = patient.course
             self.fields['department'].initial = patient.department
             self.fields['position'].initial = patient.position
 
@@ -348,6 +376,12 @@ class ProfileCompletionForm(forms.Form):
         label='College',
         empty_label='Select College',
     )
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.none(),
+        required=False,
+        label='Course',
+        empty_label='Select Course',
+    )
     year_level = forms.ChoiceField(
         choices=[
             ('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
@@ -410,6 +444,10 @@ class ProfileCompletionForm(forms.Form):
         if role in ('student', 'faculty') and not college:
             self.add_error('college', 'Please select your college.')
 
+        # Course required for students
+        if role == 'student' and not cleaned.get('course'):
+            self.add_error('course', 'Please select your course.')
+
         # Year level required for students
         year = cleaned.get('year_level')
         if role == 'student' and not year:
@@ -429,6 +467,7 @@ class ProfileCompletionForm(forms.Form):
         # Clear irrelevant fields to avoid stale data
         if role == 'staff':
             cleaned['college'] = None
+            cleaned['course'] = None
             cleaned['year_level'] = ''
         if role == 'student':
             cleaned['department'] = ''
@@ -444,6 +483,7 @@ class PasswordResetRequestForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Enter your Student / Employee ID',
+            'aria-describedby': 'fp-id-error',
         }),
     )
 
@@ -454,12 +494,20 @@ class PasswordResetRequestForm(forms.Form):
 class PasswordResetForm(forms.Form):
     new_password1 = forms.CharField(
         label='New Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'autocomplete': 'new-password',
+            'aria-describedby': 'reset-pw1-error reset-strength-text',
+        }),
         validators=[password_validation.validate_password],
     )
     new_password2 = forms.CharField(
         label='Confirm New Password',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'autocomplete': 'new-password',
+            'aria-describedby': 'reset-pw2-error reset-pw-match-indicator',
+        }),
     )
 
     def clean(self):
@@ -489,9 +537,23 @@ class RegistrationForm(forms.Form):
     middle_name = forms.CharField(max_length=100, required=False)
     last_name = forms.CharField(max_length=150)
     sex = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')])
-    email = forms.EmailField()
-    password1 = forms.CharField(widget=forms.PasswordInput(), label='Password')
-    password2 = forms.CharField(widget=forms.PasswordInput(), label='Confirm Password')
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={'autocomplete': 'email', 'class': 'form-control'})
+    )
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'autocomplete': 'new-password',
+            'class': 'form-control',
+        }),
+        label='Password'
+    )
+    password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'autocomplete': 'new-password',
+            'class': 'form-control',
+        }),
+        label='Confirm Password'
+    )
 
     # ── Personal Info ──
     birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
@@ -523,6 +585,12 @@ class RegistrationForm(forms.Form):
         required=True,   # enforced conditionally in clean()
         label='College',
         empty_label='Select College',
+    )
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.none(),
+        required=False,
+        label='Course',
+        empty_label='Select Course',
     )
     year_level = forms.ChoiceField(
         choices=[
@@ -582,7 +650,9 @@ class RegistrationForm(forms.Form):
 
     def clean_patient_id(self):
         patient_id = self.cleaned_data['patient_id']
-        if User.objects.filter(username=patient_id).exists():
+        # Check if a Patient record exists (archived or active).
+        # Deleted patients have no Patient record, allowing re-registration.
+        if Patient.objects.filter(patient_id=patient_id).exists():
             raise forms.ValidationError('An account with this ID already exists.')
         return patient_id
 
@@ -613,6 +683,10 @@ class RegistrationForm(forms.Form):
         if role in ('student', 'faculty') and not college:
             self.add_error('college', 'Please select your college.')
 
+        # Course required for students
+        if role == 'student' and not cleaned.get('course'):
+            self.add_error('course', 'Please select your course.')
+
         # Year level required for students
         year = cleaned.get('year_level')
         if role == 'student' and not year:
@@ -632,6 +706,7 @@ class RegistrationForm(forms.Form):
         # Clear irrelevant fields to avoid stale data
         if role == 'staff':
             cleaned['college'] = None
+            cleaned['course'] = None
             cleaned['year_level'] = ''
         if role == 'student':
             cleaned['department'] = ''

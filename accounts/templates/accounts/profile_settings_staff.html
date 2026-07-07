@@ -213,6 +213,7 @@
   .alert-success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
 
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 4px; padding-bottom: 24px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 
@@ -304,7 +305,7 @@
         {% endif %}
       {% endfor %}
 
-      <button type="submit" name="save_info" class="btn-save">
+      <button type="submit" name="save_info" id="saveProfileBtn" class="btn-save">
         <ion-icon name="checkmark-outline"></ion-icon>
         Save Profile
       </button>
@@ -329,7 +330,7 @@
             </button>
             {% endif %}
           </div>
-          {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+          {% if field.errors %}<div class="field-error" id="{{ field.auto_id }}-error">{{ field.errors.0 }}</div>{% endif %}
         </div>
         {% endfor %}
       </div>
@@ -337,9 +338,20 @@
       <!-- Password match indicator -->
       <div id="pwMatchIndicator" style="display:none;margin-top:8px;font-size:12px;font-weight:500;align-items:center;gap:6px;"></div>
 
-      <button type="submit" name="save_password" class="btn-save" id="changePwBtn">
+      <button type="submit" name="save_password" id="staffChangePwBtn" class="btn-save">
         <ion-icon name="lock-closed-outline"></ion-icon>
         Change Password
+      </button>
+    </form>
+
+    {# ── Logout all devices ── #}
+    <form method="post" action="{% url 'accounts:logout_all_devices' %}" style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+      {% csrf_token %}
+      <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;"
+              onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
+              onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
+        <ion-icon name="phone-portrait-outline"></ion-icon>
+        Log out all other devices
       </button>
     </form>
   </div>
@@ -349,6 +361,75 @@
 </div>
 
 <script>
+  // ── Password strength calculator ──
+  function getStaffPwStrength(val) {
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    return score;
+  }
+
+  // ── Strength meter HTML — appended before the match indicator ──
+  var staffIndicator = document.getElementById('pwMatchIndicator');
+  if (staffIndicator) {
+    var meterDiv = document.createElement('div');
+    meterDiv.id = 'staff-strength-wrap';
+    meterDiv.style.cssText = 'display:none;margin-bottom:6px;';
+    meterDiv.innerHTML = '<div style="display:flex;gap:4px;margin-bottom:4px;">'
+      + '<div class="staff-sbar" id="ssb1" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb2" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb3" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb4" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '</div>'
+      + '<span id="staff-strength-text" style="font-size:11px;font-weight:600;color:#94a3b8;transition:color 0.3s;">Too short</span>';
+    staffIndicator.parentElement.insertBefore(meterDiv, staffIndicator);
+  }
+
+  // ── Update strength meter & match indicator ──
+  function updateStaffPwUI() {
+    var pw1 = document.querySelector('#id_new_password1');
+    var pw2 = document.querySelector('#id_new_password2');
+    var indicator = document.getElementById('pwMatchIndicator');
+    if (!pw1) return;
+
+    // Strength meter
+    var val = pw1.value;
+    var wrap = document.getElementById('staff-strength-wrap');
+    if (!val) { if (wrap) wrap.style.display = 'none'; } else {
+      if (wrap) {
+        wrap.style.display = 'block';
+        var score = getStaffPwStrength(val);
+        var level = score <= 1 ? 1 : score <= 2 ? 2 : score <= 3 ? 3 : 4;
+        var colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
+        var labels = ['', 'Too weak', 'Weak', 'Good', 'Strong'];
+        for (var i = 1; i <= 4; i++) {
+          document.getElementById('ssb' + i).style.background = i <= level ? colors[level] : '#e8ecf1';
+        }
+        document.getElementById('staff-strength-text').textContent = labels[level];
+        document.getElementById('staff-strength-text').style.color = colors[level];
+      }
+    }
+
+    // Match indicator
+    if (!pw2 || !indicator) return;
+    var v1 = pw1.value, v2 = pw2.value;
+    if (v2.length === 0 && v1.length === 0) { indicator.style.display = 'none'; return; }
+    indicator.style.display = 'flex';
+    if (v1 && v2 && v1 === v2) {
+      indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:14px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
+    } else if (v2.length > 0) {
+      indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:14px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+    } else { indicator.style.display = 'none'; }
+  }
+
+  var staffPw1 = document.querySelector('#id_new_password1');
+  var staffPw2 = document.querySelector('#id_new_password2');
+  if (staffPw1) staffPw1.addEventListener('input', updateStaffPwUI);
+  if (staffPw2) staffPw2.addEventListener('input', updateStaffPwUI);
+
   // ── Live Avatar Preview ──
   document.addEventListener('DOMContentLoaded', function() {
     var fileInput = document.querySelector('input[type="file"]');
@@ -356,14 +437,12 @@
       fileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) {
-          // ── Client-side file size validation ──
-          var maxSize = 5 * 1024 * 1024; // 5 MB
+          var maxSize = 5 * 1024 * 1024;
           if (file.size > maxSize) {
             alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
             fileInput.value = '';
             return;
           }
-          // ── Client-side file type validation ──
           var allowed = ['image/jpeg', 'image/png', 'image/webp'];
           if (allowed.indexOf(file.type) === -1) {
             alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
@@ -379,7 +458,6 @@
             img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
             preview.innerHTML = '';
             preview.appendChild(img);
-            // Show filename
             var fn = document.getElementById('fileName');
             fn.textContent = file.name;
             fn.classList.add('visible');
@@ -389,62 +467,31 @@
       });
     }
 
-    // ── Password match validation ──
-    var pw1 = document.querySelector('#id_new_password1');
-    var pw2 = document.querySelector('#id_new_password2');
-    var indicator = document.getElementById('pwMatchIndicator');
-
-    function checkPwMatch() {
-      if (!pw1 || !pw2 || !indicator) return;
-      var v1 = pw1.value;
-      var v2 = pw2.value;
-      if (v2.length === 0 && v1.length === 0) {
-        indicator.style.display = 'none';
-        return;
-      }
-      indicator.style.display = 'flex';
-      if (v1 && v2 && v1 === v2) {
-        indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:16px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
-      } else if (v2.length > 0) {
-        indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:16px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
-        // ── Password strength indicator ──
-        if (v1.length > 0 && v1 !== v2) {
-          var strength = 'Weak';
-          var color = '#ef4444';
-          if (v1.length >= 12 && /[A-Z]/.test(v1) && /[0-9]/.test(v1) && /[^A-Za-z0-9]/.test(v1)) {
-            strength = 'Strong'; color = '#10b981';
-          } else if (v1.length >= 8 && /[A-Z]/.test(v1) && /[0-9]/.test(v1)) {
-            strength = 'Medium'; color = '#f59e0b';
-          }
-          indicator.innerHTML += '<span style="margin-left:12px;font-size:11px;color:' + color + ';">Password strength: ' + strength + '</span>';
-        }
-      } else {
-        indicator.style.display = 'none';
-      }
-    }
-
-    if (pw1 && pw2) {
-      pw1.addEventListener('input', checkPwMatch);
-      pw2.addEventListener('input', checkPwMatch);
-    }
-
-    // ── Password strength on new_password1 alone (when pw2 is empty) ──
-    if (pw1) {
-      pw1.addEventListener('input', function() {
-        var v = pw1.value;
-        if (!pw2 || pw2.value.length === 0 && v.length > 0) {
-          indicator.style.display = 'flex';
-          var strength = 'Weak';
-          var color = '#ef4444';
-          if (v.length >= 12 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) {
-            strength = 'Strong'; color = '#10b981';
-          } else if (v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v)) {
-            strength = 'Medium'; color = '#f59e0b';
-          }
-          indicator.innerHTML = '<ion-icon name="information-circle" style="color:' + color + ';font-size:16px;"></ion-icon><span style="color:' + color + ';">Password strength: ' + strength + '</span>';
+    // ── Loading state: Save Profile ──
+    var profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+      profileForm.addEventListener('submit', function() {
+        var btn = document.getElementById('saveProfileBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
         }
       });
-    }    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
+    }
+
+    // ── Loading state: Change Password ──
+    var passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', function() {
+        var btn = document.getElementById('staffChangePwBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Changing...';
+        }
+      });
+    }
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 
   function togglePw(btn) {

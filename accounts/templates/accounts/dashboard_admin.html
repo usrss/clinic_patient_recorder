@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="role-dot" style="background:#0078d4;"></div>
           <span>Administrators</span>
         </div>
-        <span class="role-count">1</span>
+        <span class="role-count">{{ admin_count|default:1 }}</span>
       </div>
       <div class="role-row">
         <div class="role-row-left">

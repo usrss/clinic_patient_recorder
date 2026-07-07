@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 
 from accounts.decorators import doctor_required, admin_required, clinical_staff_required
@@ -41,10 +42,26 @@ def medicine_list(request):
         quantity__lte=models.F('low_stock_threshold')
     ).count()
 
+    # Capture total count BEFORE pagination for overview stat card
+    total_count = medicines.count()
+
+    # ── Pagination: 25 medicines per page ────────────────────────────────
+    medicines = medicines.order_by('name')
+    paginator = Paginator(medicines, 25)
+    page = request.GET.get('page', 1)
+    try:
+        medicines_page = paginator.page(page)
+    except (PageNotAnInteger, EmptyPage):
+        medicines_page = paginator.page(1)
+
     return render(request, 'inventory/medicine_list.html', {
-        'medicines': medicines,
+        'medicines': medicines_page,
         'form': form,
         'low_stock_count': low_stock_count,
+        'total_count': total_count,
+        'is_paginated': medicines_page.has_other_pages(),
+        'page_obj': medicines_page,
+        'paginator': paginator,
         'base_template': _base_template(request.user),
     })
 
@@ -91,7 +108,7 @@ def medicine_edit(request, pk):
 
 
 @login_required
-@doctor_required
+@admin_required
 def medicine_restock(request, pk):
     """Add stock to a medicine."""
     medicine = get_object_or_404(Medicine, pk=pk)

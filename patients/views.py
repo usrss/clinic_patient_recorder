@@ -7,12 +7,11 @@ from django.db import transaction
 from django.db.models import Q
 
 from accounts.decorators import clinical_staff_required, admin_required
-from audit_logs.services import log_create, log_change, log_view, log_delete
+from audit_logs.services import log_create, log_change, log_view
 from accounts.models import User
 from consultations.models import Consultation
 from .models import Patient, PatientProfile, AcademicYearSettings
 from .forms import (
-    PatientProfileSetupForm,
     PatientSearchForm, PatientContactForm,
     AcademicYearSettingsForm,
 )
@@ -273,7 +272,7 @@ def archive_settings(request):
 @admin_required
 def archive_browser(request):
     """
-    Admin views/search archived patients by ID or name.
+    Admin views/search archived patients by ID, name, college, or department.
     """
     query = request.GET.get('q', '').strip()
 
@@ -286,15 +285,31 @@ def archive_browser(request):
             Q(patient_id__icontains=query) |
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
-            Q(middle_name__icontains=query)
+            Q(middle_name__icontains=query) |
+            Q(college__name__icontains=query) |
+            Q(college__abbreviation__icontains=query) |
+            Q(department__icontains=query)
         )
 
     archived_patients = archived_patients.order_by('-archived_at', 'last_name', 'first_name')
 
+    # ── Pagination: 25 patients per page ─────────────────────────────────
+    paginator = Paginator(archived_patients, 25)
+    page = request.GET.get('page', 1)
+    try:
+        patients_page = paginator.page(page)
+    except PageNotAnInteger:
+        patients_page = paginator.page(1)
+    except EmptyPage:
+        patients_page = paginator.page(paginator.num_pages)
+
     return render(request, 'patients/archive_browser.html', {
-        'archived_patients': archived_patients,
+        'archived_patients': patients_page,
         'query': query,
         'total_archived': total_archived,
+        'is_paginated': patients_page.has_other_pages(),
+        'page_obj': patients_page,
+        'paginator': paginator,
         'base_template': _base_template(request.user),
     })
 

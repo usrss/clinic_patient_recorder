@@ -14,9 +14,9 @@ class MedicalCertificate(models.Model):
     """
 
     class CertificateType(models.TextChoices):
-        STANDARD = 'standard', 'Medical Certificate'
-        FIT_TO_PLAY = 'fit_to_play', 'Fit-to-Play Certificate'
-        FIT_TO_WORK = 'fit_to_work', 'Fit-to-Work Certificate'
+        STANDARD = 'standard', 'Medical Certificate-Absences of classes-work'
+        FIT_TO_PLAY = 'fit_to_play', 'Medical Certificate_Activitiest-training-seminars'
+        FIT_TO_WORK = 'fit_to_work', 'Medical Certificate-OJT'
         DENTAL = 'dental', 'Dental Certificate'
 
     class Status(models.TextChoices):
@@ -162,18 +162,48 @@ class MedicalCertificate(models.Model):
         return str(field_value)
 
     def _build_placeholder_map(self):
-        """Build the dict of {placeholder: value} for this certificate."""
+        """Build the dict of {placeholder: value} for this certificate.
+
+        Used by both CertificateTemplateText prose rendering and
+        .docx template generation (docxtpl). Keys use {{ jinja }} style.
+        """
         patient = self.consultation.patient
         profile = getattr(patient, 'profile', None)
 
         college_name = patient.college.name if patient.college else ''
         college_abbr = patient.college.abbreviation if patient.college else ''
         year_level = profile.year_level if profile and profile.year_level else ''
-        college_info = f'from {college_name} — {year_level}, ' if college_name else ''
+        course_name = patient.course.name if patient.course else ''
+
+        # Build college_info: include course if available, otherwise year_level
+        if college_name:
+            academic_detail = course_name or year_level
+            college_info = f'from {college_name}' + (f' — {academic_detail}, ' if academic_detail else ', ')
+        else:
+            college_info = ''
 
         position = getattr(patient, 'position', '') or ''
         department = getattr(patient, 'department', '') or ''
         position_info = f'{position} — {department}, ' if position or department else ''
+
+        # ── Doctor info ────────────────────────────────────────────────
+        if self.doctor:
+            doctor_name = f"Dr. {self.doctor.get_full_name() or self.doctor.username}"
+        else:
+            doctor_name = 'Attending Physician'
+
+        # ── Issue date parts ───────────────────────────────────────────
+        issued = self.issued_at or self.created_at
+        day_num = issued.day
+        month_name = issued.strftime('%B')
+        year_num = issued.year
+
+        # ── Latest triage vital signs ──────────────────────────────────
+        latest_triage = self.consultation.triages.order_by('-triaged_at').first()
+        temperature = str(latest_triage.temperature) if latest_triage and latest_triage.temperature else ''
+        blood_pressure = latest_triage.blood_pressure if latest_triage and latest_triage.blood_pressure else ''
+        pulse_rate = str(latest_triage.pulse_rate) if latest_triage and latest_triage.pulse_rate else ''
+        respiratory_rate = str(latest_triage.respiratory_rate) if latest_triage and latest_triage.respiratory_rate else ''
 
         return {
             'patient_name': patient.get_full_name(),
@@ -183,6 +213,7 @@ class MedicalCertificate(models.Model):
             'college': college_name,
             'college_abbr': college_abbr,
             'year_level': year_level,
+            'course': course_name,
             'position_info': position_info,
             'position': position,
             'department': department,
@@ -196,6 +227,16 @@ class MedicalCertificate(models.Model):
             'fitness_status': self.get_fitness_status_display() or '',
             'work_assessment': self.get_work_assessment_display() or '',
             'restrictions': self.restrictions or '',
+            # ── New keys for .docx templates ───────────────────────────
+            'remarks': self.remarks or '',
+            'doctor_name': doctor_name,
+            'day': str(day_num),
+            'month': month_name,
+            'year': str(year_num),
+            'temperature': temperature,
+            'blood_pressure': blood_pressure,
+            'pulse_rate': pulse_rate,
+            'respiratory_rate': respiratory_rate,
         }
 
     def _resolve_text(self, text):

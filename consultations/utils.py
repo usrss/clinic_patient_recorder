@@ -10,15 +10,17 @@ def assign_next_queue_number():
     today = timezone.localdate()
 
     # Queue numbers assigned today from consultations
+    # Use updated_at rather than created_at so re-queued consultations
+    # (e.g. reopened from cancelled) get counted correctly.
     consultation_nums = Consultation.objects.filter(
         queue_number__isnull=False,
-        created_at__date=today,
+        updated_at__date=today,
     ).values_list('queue_number', flat=True)
 
     # Queue numbers assigned today from follow-up requests
     followup_nums = FollowUpRequest.objects.filter(
         queue_number__isnull=False,
-        created_at__date=today,
+        updated_at__date=today,
     ).values_list('queue_number', flat=True)
 
     numbers = list(consultation_nums) + list(followup_nums)

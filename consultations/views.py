@@ -41,6 +41,7 @@ def _base_template(user):
 
 
 
+@login_required
 def patient_home(request):
     """Patient's own consultation history."""
     patient = request.user.get_patient_record()
