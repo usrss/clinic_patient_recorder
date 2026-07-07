@@ -133,7 +133,7 @@
 
 {# ── Top action row ── #}
 <div class="action-row">
-  <a href="javascript:history.back()" class="back-btn">
+  <a href="{% url 'consultations:doctor_list' %}" class="back-btn">
     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
     Back
   </a>
@@ -169,7 +169,7 @@
       </div>
       <div>
         <div class="info-label">College</div>
-        <div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div>
+        <div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.name }}{% else %}—{% endif %}</div>
       </div>
       <div>
         <div class="info-label">Age / Sex</div>
@@ -407,7 +407,7 @@
     <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
       <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">&#128221;</div>
       <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Medical Certificate</div>
+        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Certificate</div>
         <div style="font-size:11px;color:#94a3b8;">
           {% if issued_cert %}
             {{ issued_cert.get_certificate_type_display }} &middot; #{{ issued_cert.certificate_number }} &middot; {{ issued_cert.issued_at|date:"M d, Y" }}

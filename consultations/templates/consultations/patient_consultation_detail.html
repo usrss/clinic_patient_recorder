@@ -163,6 +163,26 @@
     margin-top: 24px;
     padding-bottom: 16px;
   }
+
+  .print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #0078d4;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+    transition: all 0.2s;
+  }
+  .print-btn:hover {
+    background: #006bbf;
+    color: #fff;
+  }
 </style>
 {% endblock %}
 
@@ -213,7 +233,7 @@
     <div class="info-grid">
       <div><div class="info-label">Full Name</div><div class="info-value" style="font-weight:600;color:#1a1a2e;">{{ consultation.patient.get_full_name }}</div></div>
       <div><div class="info-label">Patient ID</div><div class="info-value">{{ consultation.patient.patient_id }}</div></div>
-      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% else %}—{% endif %}</div></div>
+      <div><div class="info-label">College</div><div class="info-value">{% if consultation.patient.college %}{{ consultation.patient.college.name }}{% else %}—{% endif %}</div></div>
       <div><div class="info-label">Age / Sex</div><div class="info-value">{{ consultation.patient.age|default:"—" }}{% if consultation.patient.age %} yrs{% endif %} / {{ consultation.patient.get_sex_display }}</div></div>
     </div>
   </div>
@@ -339,6 +359,14 @@
   </div>
   {% endif %}
   {% endwith %}
+
+  <!-- Print Button -->
+  <div style="text-align:center;margin-top:24px;">
+    <a href="{% url 'consultations:print_consultation' consultation.pk %}" target="_blank" class="print-btn">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print / Download PDF
+    </a>
+  </div>
 
   <p class="footer-note">Negros Oriental State University — Medical Clinic</p>
 

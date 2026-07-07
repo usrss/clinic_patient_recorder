@@ -29,12 +29,11 @@ It streamlines patient registration, consultation queues, medical records, inven
 - Collects any required fees
 - Patient enters the **queue**
 
-### 2. Triage / Nurse
-- Records vital signs and initial screening
-- Notes reason for visit (sports clearance, medical exam, etc.)
-- Endorses patient to the doctor
+
 
 ### 3. Doctor Consultation
+- Records vital signs and initial screening
+- Notes reason for visit (sports clearance, medical exam, etc.)
 - Doctor conducts physical examination and reviews medical history
 - Determines fitness and documents findings
 - Marks consultation as **Completed**

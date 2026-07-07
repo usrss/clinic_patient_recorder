@@ -173,6 +173,8 @@
     cursor: pointer;
     transition: all 0.15s;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .btn-primary { background: #0078d4; color: #fff; }
   .btn-primary:hover { background: #006bbf; }
   .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
@@ -229,7 +231,7 @@
   <div class="form-card">
     <div class="form-section-label">Follow-up Decision</div>
 
-    <form method="post" novalidate>
+    <form method="post" novalidate data-track-changes="true">
       {% csrf_token %}
 
       <div class="choice-row">
@@ -259,7 +261,7 @@
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
           <input type="checkbox" name="issue_certificate" value="1" id="id_issue_certificate"
                  style="width:16px;height:16px;accent-color:#0078d4;">
-          <span style="font-size:13px;color:#374151;">Issue Medical Certificate after completion</span>
+          <span style="font-size:13px;color:#374151;">Issue Certificate after completion</span>
         </label>
         <div style="font-size:11px;color:#94a3b8;margin-left:24px;">
           You can also issue a certificate later from the completion summary page.
@@ -279,32 +281,45 @@
 </div>
 
 <script>
-  const choiceYes = document.getElementById('choice-yes');
-  const choiceNo = document.getElementById('choice-no');
-  const dateRow = document.getElementById('date-row');
-  const radioYes = choiceYes.querySelector('input');
-  const radioNo = choiceNo.querySelector('input');
+  document.addEventListener('DOMContentLoaded', function() {
+    const choiceYes = document.getElementById('choice-yes');
+    const choiceNo = document.getElementById('choice-no');
+    const dateRow = document.getElementById('date-row');
+    const radioYes = choiceYes.querySelector('input');
+    const radioNo = choiceNo.querySelector('input');
 
-  function updateSelection() {
-    if (radioYes.checked) {
-      choiceYes.classList.add('selected');
-      choiceNo.classList.remove('selected');
-      dateRow.classList.add('visible');
-    } else {
-      choiceNo.classList.add('selected');
-      choiceYes.classList.remove('selected');
-      dateRow.classList.remove('visible');
+    function updateSelection() {
+      if (radioYes.checked) {
+        choiceYes.classList.add('selected');
+        choiceNo.classList.remove('selected');
+        dateRow.classList.add('visible');
+      } else {
+        choiceNo.classList.add('selected');
+        choiceYes.classList.remove('selected');
+        dateRow.classList.remove('visible');
+      }
     }
-  }
 
-  radioYes.addEventListener('change', updateSelection);
-  radioNo.addEventListener('change', updateSelection);
+    radioYes.addEventListener('change', updateSelection);
+    radioNo.addEventListener('change', updateSelection);
 
-  // Click on entire card
-  choiceYes.addEventListener('click', function() { radioYes.checked = true; updateSelection(); });
-  choiceNo.addEventListener('click', function() { radioNo.checked = true; updateSelection(); });
+    // Click on entire card
+    choiceYes.addEventListener('click', function() { radioYes.checked = true; updateSelection(); });
+    choiceNo.addEventListener('click', function() { radioNo.checked = true; updateSelection(); });
 
-  // Initial state
-  updateSelection();
+    // Initial state
+    updateSelection();
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
+
+    // ── Loading state on submit ──
+    var form = document.querySelector('.form-card form');
+    if (form) {
+      form.addEventListener('submit', function() {
+        var btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Completing…'; }
+      });
+    }
+  });
 </script>
 {% endblock %}

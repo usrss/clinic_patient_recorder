@@ -6,7 +6,7 @@ from collections import defaultdict
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, F, Count, Q, Avg, FloatField, ExpressionWrapper
+from django.db.models import Sum, F, Count, Q, Avg, OuterRef, Subquery, FloatField, ExpressionWrapper
 from django.utils import timezone
 import datetime
 
@@ -270,6 +270,15 @@ def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, colle
             'No consultations match the current filters.', s['td']
         ))
     else:
+        # Annotate with the first prescription's diagnosis via subquery,
+        # avoiding N+1 queries even though prefetch_related is present.
+        first_rx = Prescription.objects.filter(
+            consultation=OuterRef('pk'),
+        ).order_by('prescribed_at').values('diagnosis')[:1]
+        consultations = consultations.annotate(
+            _first_diagnosis=Subquery(first_rx.values('diagnosis')),
+        )
+
         rows = []
         for c in consultations[:100]:
             p = c.patient
@@ -283,8 +292,7 @@ def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, colle
                 p_type = 'Faculty'
                 org = p.position or '&mdash;'
 
-            rx = c.prescriptions.first()
-            diagnosis = rx.diagnosis[:60] if rx else '&mdash;'
+            diagnosis = c._first_diagnosis[:60] if c._first_diagnosis else '&mdash;'
             date_str = c.created_at.strftime('%b %d, %Y') if c.created_at else '&mdash;'
 
             rows.append([
@@ -329,13 +337,25 @@ def _disease_csv(consultations):
     response['Content-Disposition'] = (
         f'attachment; filename="disease_report_{date.today()}.csv"'
     )
+
+    # Annotate each consultation row with the first prescription's diagnosis
+    # and treatment_plan via subquery, avoiding N+1 queries that would occur
+    # if we relied on prefetch_related (which .iterator() silently drops).
+    first_rx = Prescription.objects.filter(
+        consultation=OuterRef('pk'),
+    ).order_by('prescribed_at').values('diagnosis', 'treatment_plan')[:1]
+
+    consultations = consultations.annotate(
+        _first_diagnosis=Subquery(first_rx.values('diagnosis')),
+        _first_treatment=Subquery(first_rx.values('treatment_plan')),
+    )
+
     writer = csv.writer(response)
     writer.writerow([
         'Consultation #', 'Date', 'Patient Name', 'Patient ID',
         'Type', 'College / Department', 'Diagnosis', 'Treatment Plan',
     ])
-    for c in consultations:
-        rx = c.prescriptions.first()
+    for c in consultations.iterator():
         p  = c.patient
         if p.college:
             p_type, p_org = 'Student', p.college.abbreviation
@@ -350,8 +370,8 @@ def _disease_csv(consultations):
             p.patient_id,
             p_type,
             p_org,
-            rx.diagnosis if rx else '—',
-            rx.treatment_plan if rx else '—',
+            c._first_diagnosis or '—',
+            c._first_treatment or '—',
         ])
     return response
 
@@ -557,7 +577,7 @@ def _feedback_csv(feedbacks):
     writer = csv.writer(response)
     writer.writerow(['#', 'Patient Name', 'Patient ID', 'Consultation',
                      'Rating', 'Review', 'Date'])
-    for idx, f in enumerate(feedbacks, 1):
+    for idx, f in enumerate(feedbacks.iterator(), 1):
         writer.writerow([
             idx,
             f.consultation.patient.get_full_name() or '—',
@@ -720,13 +740,20 @@ def _pdf_build_doc():
 
 
 def _feedback_pdf(feedbacks, search, rating, user_name=None):
-    """Generate a professional PDF for the feedback report."""
+    """Generate a professional PDF for the feedback report.
+
+    Uses aggregation queries (.count(), .aggregate()) instead of
+    loading all feedback objects into memory, keeping memory usage
+    constant regardless of dataset size.
+    """
     s = _pdf_styles()
     buf, doc = _pdf_build_doc()
     footer = _make_pdf_footer(user_name)
 
-    total = len(feedbacks)
-    avg_rating = round(sum(f.rating for f in feedbacks) / total, 1) if total else 0
+    # ── Compute summary stats via DB aggregations (no in-memory loading) ──
+    total = feedbacks.count()
+    avg_result = feedbacks.aggregate(avg=Avg('rating'))
+    avg_rating = round(avg_result['avg'], 1) if avg_result['avg'] else 0
 
     # ── Structured metadata ──
     meta = [f'<b>Generated Date:</b>  {timezone.now():%B %d, %Y at %I:%M %p}']
@@ -749,21 +776,24 @@ def _feedback_pdf(feedbacks, search, rating, user_name=None):
             'No feedback records match the current filters.', s['td']
         ))
     else:
-        # ── Rating distribution summary ──
+        # ── Rating distribution summary (using filtered counts, no iteration) ──
         story.append(Paragraph('Rating Distribution', s['section_title']))
         dist_rows = []
         for r in range(5, 0, -1):
-            rating_feedbacks = [f for f in feedbacks if f.rating == r]
-            cnt = len(rating_feedbacks)
-            students = sum(1 for f in rating_feedbacks
-                           if f.consultation.patient.college is not None)
-            faculty = sum(1 for f in rating_feedbacks
-                          if f.consultation.patient.college is None
-                          and f.consultation.patient.position)
-            staff = sum(1 for f in rating_feedbacks
-                        if f.consultation.patient.college is None
-                        and not f.consultation.patient.position
-                        and f.consultation.patient.department)
+            rating_qs = feedbacks.filter(rating=r)
+            cnt = rating_qs.count()
+            students = rating_qs.filter(
+                consultation__patient__college__isnull=False
+            ).count()
+            faculty = rating_qs.filter(
+                consultation__patient__college__isnull=True,
+                consultation__patient__position__gt='',
+            ).count()
+            staff = rating_qs.filter(
+                consultation__patient__college__isnull=True,
+                consultation__patient__position='',
+                consultation__patient__department__gt='',
+            ).count()
             pct = round(cnt / total * 100, 1) if total else 0
             dist_rows.append([
                 f'{r} Star' + ('s' if r > 1 else ''),

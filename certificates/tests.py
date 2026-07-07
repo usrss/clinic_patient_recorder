@@ -111,9 +111,18 @@ class CertificateRaceConditionTest(TestCase):
             self.assertEqual(cert.status, MedicalCertificate.Status.ISSUED,
                 'If void failed, cert should remain issued.')
 
-        # Verify no orphaned audit logs
-        self.assertGreaterEqual(cert.audit_logs.count(), 2)  # created + issued + possibly voided
-        self.assertLessEqual(cert.audit_logs.count(), 3)  # max 3: created + issued + voided
+        # Verify audit log integrity based on outcome
+        log_count = cert.audit_logs.count()
+        if results['void_error'] is None:
+            # Void succeeded — expect issued + voided audit logs
+            self.assertGreaterEqual(log_count, 2,
+                'Void succeeded: should have at least issued + voided audit logs.')
+            self.assertLessEqual(log_count, 3,
+                'Void succeeded: should have at most 3 audit logs.')
+        else:
+            # Void failed (concurrency guard) — only the pre-thread issue audit log
+            self.assertEqual(log_count, 1,
+                'Void failed: should have exactly 1 (issued) audit log.')
 
 
 @_NO_MANIFEST_STORAGE

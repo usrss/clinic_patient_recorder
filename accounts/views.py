@@ -23,11 +23,13 @@ from .forms import (
 from django.db.models import Count, Q, F
 from consultations.models import Consultation, Triage
 from .decorators import admin_required
-from colleges.models import College
+from colleges.models import College, Course
 from patients.models import Patient, PatientProfile
 from inventory.models import Medicine
 from audit_logs.services import log_create, log_change
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.sessions.models import Session as DjangoSession
+
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(minutes=2)
@@ -46,6 +48,8 @@ def login_view(request):
 
     form = LoginForm(request, data=request.POST or None)
 
+    failed_attempts_remaining = None
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.get_user()
@@ -53,7 +57,7 @@ def login_view(request):
             if user.locked_until and timezone.now() < user.locked_until:
                 remaining = (user.locked_until - timezone.now()).seconds // 60
                 messages.error(request, f'Account locked. Try again in {remaining} minutes or reset your password.')
-                return render(request, 'accounts/login.html', {'form': form})
+                return render(request, 'accounts/login.html', {'form': form, 'failed_attempts_remaining': failed_attempts_remaining})
 
             user.failed_login_attempts = 0
             user.locked_until = None
@@ -68,6 +72,10 @@ def login_view(request):
             )
 
             login(request, user)
+
+            # ── Remember me: unchecked = session-only (close browser to expire) ──
+            if request.POST.get('remember_me') != 'on':
+                request.session.set_expiry(0)
 
             if user.role == User.Role.PATIENT:
                 patient = user.get_patient_record()
@@ -90,11 +98,13 @@ def login_view(request):
                         messages.error(request, f'Account locked. Try again in {remaining} minutes or reset your password.')
                     else:
                         user.failed_login_attempts += 1
+                        remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
                         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                             user.locked_until = timezone.now() + LOCKOUT_DURATION
                             messages.error(request, f'Account locked for {LOCKOUT_DURATION.seconds // 60} minutes. Use Forgot Password to unlock sooner.')
                         else:
                             messages.error(request, 'Invalid username or password.')
+                            failed_attempts_remaining = remaining
                         user.save(update_fields=['failed_login_attempts', 'locked_until'])
                         log_auth_event(
                             user=user,
@@ -116,11 +126,26 @@ def register(request):
         return redirect('accounts:dashboard')
 
     form = RegistrationForm(request.POST or None)
+
+    # ── Populate course dropdown queryset from submitted college ──
+    # The template loads courses dynamically via JS, but the server needs
+    # the same queryset for ModelChoiceField validation to succeed.
+    if request.method == 'POST':
+        college_id = request.POST.get('college')
+        if college_id:
+            form.fields['course'].queryset = Course.objects.filter(college_id=college_id).order_by('name')
+
     if request.method == 'POST' and form.is_valid():
         password = form.cleaned_data['password1']
         data = form.cleaned_data
 
         with transaction.atomic():
+            # ── Safety net: clean up orphaned User from a previously deleted Patient ──
+            # The post_delete signal on Patient should handle this, but we handle it
+            # here too in case of direct DB manipulation or other edge cases.
+            if not Patient.objects.filter(patient_id=data['patient_id']).exists():
+                User.objects.filter(username=data['patient_id']).delete()
+
             user = User.objects.create_user(
                 username=data['patient_id'],
                 password=password,
@@ -129,7 +154,6 @@ def register(request):
                 email=data['email'],
                 role=User.Role.PATIENT,
                 phone=data['phone'],
-
             )
 
             patient = Patient.objects.create(
@@ -139,6 +163,7 @@ def register(request):
                 last_name=data['last_name'],
                 sex=data['sex'],
                 college=data.get('college'),
+                course=data.get('course'),
                 phone=data['phone'],
                 email=data['email'],
                 emergency_contact_name=data['emergency_contact_name'],
@@ -183,7 +208,28 @@ def register(request):
         messages.success(request, f'Welcome, {user.first_name}! Your account has been created.')
         return redirect('accounts:dashboard')
 
-    current_step = request.POST.get('current_step', '1') if request.method == 'POST' else '1'
+    # ── Determine which step to show ──
+    # When form validation fails, navigate to the step whose fields have errors
+    # so the user can see and fix the problem.
+    if request.method == 'POST':
+        step_1_fields = {'role', 'patient_id', 'email', 'password1', 'password2'}
+        step_3_fields = {
+            'first_name', 'middle_name', 'last_name', 'sex', 'birthday',
+            'blood_type', 'civil_status', 'height_cm', 'weight_kg',
+            'religion', 'address', 'college', 'course', 'year_level',
+            'department', 'position', 'phone', 'emergency_contact_name',
+            'emergency_contact_phone',
+        }
+        error_fields = set(form.errors.keys())
+        if error_fields & step_1_fields:
+            current_step = '1'
+        elif error_fields & step_3_fields:
+            current_step = '3'
+        else:
+            current_step = request.POST.get('current_step', '4')
+    else:
+        current_step = '1'
+
     return render(request, 'accounts/register.html', {
         'form': form,
         'current_step': current_step,
@@ -203,10 +249,14 @@ def send_registration_otp(request):
     if not email or not patient_id:
         return JsonResponse({'success': False, 'error': 'Email and ID are required.'})
 
-    if User.objects.filter(email=email).exists():
+    # Check Patient record existence instead of User — deleted patients
+    # should be allowed to re-register. Archived patients still have a
+    # Patient record so they remain blocked.
+    if Patient.objects.filter(email=email).exists():
         return JsonResponse({'success': False, 'error': 'Email already registered.'})
 
-    if User.objects.filter(username=patient_id).exists():
+    # Check Patient record existence instead of User — deleted patients
+    if Patient.objects.filter(patient_id=patient_id).exists():
         return JsonResponse({'success': False, 'error': 'ID already registered.'})
 
     # Rate limit: prevent OTP spam
@@ -269,6 +319,15 @@ def _clear_registration_session(request):
     ]
     for key in keys:
         request.session.pop(key, None)
+
+
+def courses_by_college(request):
+    """Return JSON list of courses for a given college ID."""
+    college_id = request.GET.get('college_id')
+    if not college_id:
+        return JsonResponse({'courses': []})
+    courses = Course.objects.filter(college_id=college_id).order_by('name').values('id', 'name')
+    return JsonResponse({'courses': list(courses)})
 
 
 # ── FORGOT / RESET PASSWORD ───────────────────────────────────────────
@@ -351,6 +410,40 @@ def verify_otp(request, user_id):
     user = get_object_or_404(User, pk=user_id, is_active=True)
 
     if request.method == 'POST':
+        # ── Handle AJAX resend request ─────────────────────────────────
+        if request.POST.get('resend_otp') == '1':
+            # Rate limit check
+            last_sent_str = request.session.get('forgot_password_otp_sent_at')
+            if last_sent_str:
+                try:
+                    elapsed = (timezone.now() - timezone.datetime.fromisoformat(last_sent_str)).total_seconds()
+                    if elapsed < FORGOT_PASSWORD_OTP_COOLDOWN_SECONDS:
+                        wait = int(FORGOT_PASSWORD_OTP_COOLDOWN_SECONDS - elapsed)
+                        return JsonResponse({'success': False, 'error': f'Please wait {wait} second(s).'})
+                except (ValueError, TypeError):
+                    pass
+
+            # Generate new OTP
+            otp = str(random.randint(100000, 999999))
+            user.reset_otp = make_password(otp)
+            user.reset_otp_expiry = timezone.now() + timedelta(minutes=3)
+            user.save(update_fields=['reset_otp', 'reset_otp_expiry'])
+
+            # Send email
+            email = user.email
+            send_mail(
+                'Password Reset OTP — Patient Record System',
+                f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 3 minutes.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+
+            request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
+
+            return JsonResponse({'success': True})
+
+        # ── Normal OTP verification ─────────────────────────────────────
         user.refresh_from_db(fields=['reset_otp', 'reset_otp_expiry'])
         otp = request.POST.get('otp', '').strip()
 
@@ -459,6 +552,12 @@ def dashboard(request):
             triages__triaged_by=user
         ).select_related('patient').order_by('-updated_at')[:5]
 
+        urgent_triage_count = Triage.objects.filter(
+            triaged_by=user,
+            urgency='high',
+            triaged_at__gte=thirty_days_ago
+        ).count()
+
         context = {
             'user': user,
             'urgency_data_json': {
@@ -468,6 +567,7 @@ def dashboard(request):
             },
             'daily_activity_json': daily_activity,
             'recent_consults': recent_consults,
+            'urgent_triage_count': urgent_triage_count,
         }
         return render(request, 'accounts/dashboard_doctor.html', context)
 
@@ -512,12 +612,15 @@ def dashboard(request):
 
         staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
         doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()
+        frontdesk_count = User.objects.filter(role=User.Role.FRONTDESK).count()
+        admin_count = User.objects.filter(role=User.Role.ADMIN).count()
         context = {
             'user': user,
             'total_staff': staff_count,
             'total_patients': Patient.objects.filter(is_active=True, is_archived=False).count(),
             'doctors': doctor_count,
-            'front_desk_count': max(staff_count - 1 - doctor_count, 0),
+            'front_desk_count': frontdesk_count,
+            'admin_count': admin_count,
             'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
             'consultation_status_labels': status_labels,
             'consultation_status_data': consultation_status_data,
@@ -597,6 +700,8 @@ def user_list(request):
         qs = qs.filter(is_active=True)
     elif status_filter == 'inactive':
         qs = qs.filter(is_active=False)
+    elif status_filter == 'locked':
+        qs = qs.filter(locked_until__gt=timezone.now())
 
     # ── Pagination ──
     paginator = Paginator(qs, 20)
@@ -622,7 +727,10 @@ def user_list(request):
 def user_create(request):
     form = UserCreateForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
-        new_user = form.save()
+        new_user = form.save(commit=False)
+        new_user.force_password_change = form.cleaned_data.get('force_password_change', False)
+        new_user.save()
+        form.save_m2m()  # in case there are any M2M fields
 
         # Handle profile picture (not in UserCreationForm by default)
         picture = form.cleaned_data.get('profile_picture')
@@ -677,6 +785,8 @@ def user_edit(request, pk):
             'role': target.role,
             'is_active': target.is_active,
         }
+        # Handle force_password_change (not in Meta.fields but added to form)
+        target.force_password_change = form.cleaned_data.get('force_password_change', target.force_password_change)
         form.save()
         target.refresh_from_db()
 
@@ -739,7 +849,7 @@ def user_reset_password(request, pk):
         request=request,
     )
 
-    # Email the new password if we can
+    # Email the new password (best-effort) and always show it to the admin
     if target_user.email:
         try:
             send_mail(
@@ -755,18 +865,13 @@ def user_reset_password(request, pk):
             )
         except Exception:
             pass
-        messages.success(
-            request,
-            f'Password reset for {target_user.username}. '
-            f'A temporary password has been sent to their email.'
-        )
-    else:
-        messages.success(
-            request,
-            f'Password reset for {target_user.username}. '
-            f'Temporary password: {new_password} '
-            f'(user has no email on file — please share this manually).'
-        )
+
+    messages.success(
+        request,
+        f'Password reset for {target_user.username}. '
+        f'Temporary password: {new_password}'
+        f' {"(also emailed to them)." if target_user.email else "(user has no email — share this manually)."}'
+    )
     return redirect('accounts:user_list')
 
 
@@ -812,6 +917,8 @@ def profile_settings(request):
     # ── Initialize forms for GET (overridden on POST below) ──
     if user.role == User.Role.PATIENT:
         info_form = PatientProfileEditForm(instance=profile, patient=patient)
+        if patient.college:
+            info_form.fields['course'].queryset = Course.objects.filter(college=patient.college).order_by('name')
     else:
         info_form = UserProfileForm(instance=user)
     password_form = StaffPasswordChangeForm(user)
@@ -830,6 +937,8 @@ def profile_settings(request):
                 info_form = PatientProfileEditForm(
                     request.POST, request.FILES, instance=profile, patient=patient
                 )
+                if patient.college:
+                    info_form.fields['course'].queryset = Course.objects.filter(college=patient.college).order_by('name')
             else:
                 info_form = UserProfileForm(request.POST, request.FILES, instance=user)
 
@@ -845,10 +954,20 @@ def profile_settings(request):
                     patient.email = info_form.cleaned_data.get('email', '')
                     patient.emergency_contact_name = info_form.cleaned_data.get('emergency_contact_name', '')
                     patient.emergency_contact_phone = info_form.cleaned_data.get('emergency_contact_phone', '')
+                    patient.college = info_form.cleaned_data.get('college')
+                    patient.course = info_form.cleaned_data.get('course')
+                    patient.department = info_form.cleaned_data.get('department', '')
+                    patient.position = info_form.cleaned_data.get('position', '')
+
+                    # Sync birthday onto PatientProfile (already saved via form.save())
+                    # but birthday is on PatientProfile, which was saved by info_form.save()
+                    profile.birthday = info_form.cleaned_data.get('birthday')
+                    profile.save(update_fields=['birthday'])
 
                     update_fields = [
                         'phone', 'email',
                         'emergency_contact_name', 'emergency_contact_phone',
+                        'college', 'course', 'department', 'position',
                     ]
 
                     # FIX: use cleaned_data for image (not raw request.FILES) so
@@ -918,6 +1037,37 @@ def profile_settings(request):
     return render(request, template, context)
 
 
+@login_required
+def logout_all_devices(request):
+    """
+    Logs out the current user from all other sessions (except the current one).
+    Works by finding and deleting all Django sessions that have this user's ID.
+    """
+    if request.method != 'POST':
+        return redirect('accounts:profile_settings')
+
+    user = request.user
+    current_session_key = request.session.session_key
+
+    deleted_count = 0
+    for session in DjangoSession.objects.all().iterator():
+        try:
+            data = session.get_decoded()
+        except Exception:
+            continue
+        if str(data.get('_auth_user_id', '')) == str(user.pk) and session.session_key != current_session_key:
+            session.delete()
+            deleted_count += 1
+
+    messages.success(
+        request,
+        f'Logged out {deleted_count} other device{"s" if deleted_count != 1 else ""}.'
+        if deleted_count > 0
+        else 'No other active sessions found.'
+    )
+    return redirect('accounts:profile_settings')
+
+
 # ── PROFILE COMPLETION (Walk-in patient first login) ────────────────────
 
 @login_required
@@ -984,8 +1134,17 @@ def complete_profile(request):
     }
     if patient.college:
         initial['college'] = patient.college
+    if patient.course:
+        initial['course'] = patient.course
 
     form = ProfileCompletionForm(request.POST or None, request.FILES or None, initial=initial)
+
+    # Ensure course dropdown is populated with the correct college's courses.
+    # On GET, use the patient's existing college. On POST re-render (after
+    # validation error), use the submitted college value.
+    college_id = request.POST.get('college') if request.method == 'POST' else (patient.college_id if patient.college else None)
+    if college_id:
+        form.fields['course'].queryset = Course.objects.filter(college_id=college_id).order_by('name')
 
     if request.method == 'POST' and form.is_valid():
         cd = form.cleaned_data
@@ -996,6 +1155,7 @@ def complete_profile(request):
             patient.emergency_contact_name = cd.get('emergency_contact_name', '')
             patient.emergency_contact_phone = cd.get('emergency_contact_phone', '')
             patient.college = cd.get('college', None)
+            patient.course = cd.get('course', None)
             patient.department = cd.get('department', '')
             patient.position = cd.get('position', '')
 
@@ -1013,7 +1173,7 @@ def complete_profile(request):
 
             update_fields = [
                 'phone', 'email', 'emergency_contact_name',
-                'emergency_contact_phone', 'college', 'department', 'position',
+                'emergency_contact_phone', 'college', 'course', 'department', 'position',
                 'expected_graduation_year',
             ]
             if picture:

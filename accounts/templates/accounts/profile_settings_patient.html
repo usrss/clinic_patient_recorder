@@ -37,7 +37,7 @@
         Profile Information
       </div>
 
-      <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
+      <form method="post" enctype="multipart/form-data" novalidate id="profileForm" data-track-changes="true">
         {% csrf_token %}
 
         {# ── Form-level error summary ── #}
@@ -81,60 +81,114 @@
           </div>
         </div>
 
-        {# Contact #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">Contact</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Phone</label>{{ info_form.phone }}{% if info_form.phone.errors %}{% for error in info_form.phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email</label>{{ info_form.email }}{% if info_form.email.errors %}{% for error in info_form.email.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Name</label>{{ info_form.emergency_contact_name }}{% if info_form.emergency_contact_name.errors %}{% for error in info_form.emergency_contact_name.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Phone</label>{{ info_form.emergency_contact_phone }}{% if info_form.emergency_contact_phone.errors %}{% for error in info_form.emergency_contact_phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-        </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Address</label>{{ info_form.address }}{% if info_form.address.errors %}{% for error in info_form.address.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-
-        {# Demographics #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Demographics</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>{{ info_form.religion }}{% if info_form.religion.errors %}{% for error in info_form.religion.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>{{ info_form.civil_status }}{% if info_form.civil_status.errors %}{% for error in info_form.civil_status.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>{{ info_form.year_level }}{% if info_form.year_level.errors %}{% for error in info_form.year_level.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>{{ info_form.height_cm }}{% if info_form.height_cm.errors %}{% for error in info_form.height_cm.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>{{ info_form.weight_kg }}{% if info_form.weight_kg.errors %}{% for error in info_form.weight_kg.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+        {# ── Collapsible: Contact (expanded by default) ── #}
+        <div class="collapsible-section">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-contact">
+            <span>Contact</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body" style="max-height:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Phone</label>{{ info_form.phone }}{% if info_form.phone.errors %}{% for error in info_form.phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Email</label>{{ info_form.email }}{% if info_form.email.errors %}{% for error in info_form.email.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Name</label>{{ info_form.emergency_contact_name }}{% if info_form.emergency_contact_name.errors %}{% for error in info_form.emergency_contact_name.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Emergency Contact Phone</label>{{ info_form.emergency_contact_phone }}{% if info_form.emergency_contact_phone.errors %}{% for error in info_form.emergency_contact_phone.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+          <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Address</label>{{ info_form.address }}{% if info_form.address.errors %}{% for error in info_form.address.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
         </div>
 
-        {# Medical History #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical History</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'hypertension,diabetes,asthma,cardiac_problems,arthritis' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label }}</label></div>
-            {% endif %}
-          {% endfor %}
+        {# ── Collapsible: Demographics ── #}
+        <div class="collapsible-section collapsible-closed">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-demographics">
+            <span>Demographics</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Birthday</label>{{ info_form.birthday }}{% if info_form.birthday.errors %}{% for error in info_form.birthday.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Blood Type</label>{{ info_form.blood_type }}{% if info_form.blood_type.errors %}{% for error in info_form.blood_type.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Religion</label>{{ info_form.religion }}{% if info_form.religion.errors %}{% for error in info_form.religion.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Civil Status</label>{{ info_form.civil_status }}{% if info_form.civil_status.errors %}{% for error in info_form.civil_status.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Year Level</label>{{ info_form.year_level }}{% if info_form.year_level.errors %}{% for error in info_form.year_level.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Height (cm)</label>{{ info_form.height_cm }}{% if info_form.height_cm.errors %}{% for error in info_form.height_cm.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Weight (kg)</label>{{ info_form.weight_kg }}{% if info_form.weight_kg.errors %}{% for error in info_form.weight_kg.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+          </div>
         </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>{{ info_form.other_conditions }}{% if info_form.other_conditions.errors %}{% for error in info_form.other_conditions.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
-        {# Immunization #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Immunization</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'bcg,dpt,opv,hepatitis_b,measles,tt' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label|title }}</label></div>
-            {% endif %}
-          {% endfor %}
+        {# ── Collapsible: Academic Information ── #}
+        <div class="collapsible-section collapsible-closed">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-academic">
+            <span>Academic Information</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">College</label><select name="college" id="id_college" class="form-control" onchange="loadProfileCourses()"><option value="">Select College</option>{% for c in info_form.college.field.queryset %}<option value="{{ c.pk }}" {% if info_form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>{% endfor %}</select>{% if info_form.college.errors %}{% for error in info_form.college.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Course</label><select name="course" id="id_course" class="form-control"><option value="">Select Course</option></select>{% if info_form.course.errors %}{% for error in info_form.course.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Department</label>{{ info_form.department }}{% if info_form.department.errors %}{% for error in info_form.department.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Position</label>{{ info_form.position }}{% if info_form.position.errors %}{% for error in info_form.position.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+          </div>
         </div>
-        <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Immunizations</label>{{ info_form.immunization_others }}{% if info_form.immunization_others.errors %}{% for error in info_form.immunization_others.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
 
-        {# Medical Background #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical Background</div>
-        <div style="display:grid;gap:14px;margin-bottom:16px;">
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Current Medications</label>{{ info_form.current_medications }}{% if info_form.current_medications.errors %}{% for error in info_form.current_medications.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Vices</label>{{ info_form.vices }}{% if info_form.vices.errors %}{% for error in info_form.vices.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Illnesses</label>{{ info_form.previous_illnesses }}{% if info_form.previous_illnesses.errors %}{% for error in info_form.previous_illnesses.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-          <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Hospitalizations</label>{{ info_form.previous_hospitalizations }}{% if info_form.previous_hospitalizations.errors %}{% for error in info_form.previous_hospitalizations.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+        {# ── Collapsible: Medical History ── #}
+        <div class="collapsible-section collapsible-closed">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-medical">
+            <span>Medical History</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
+            {% for field in info_form %}
+              {% if field.name in 'hypertension,diabetes,asthma,cardiac_problems,arthritis' %}
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label }}</label></div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Known Allergies</label>{{ info_form.known_allergies }}{% if info_form.known_allergies.errors %}{% for error in info_form.known_allergies.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Conditions</label>{{ info_form.other_conditions }}{% if info_form.other_conditions.errors %}{% for error in info_form.other_conditions.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+        </div>
+
+        {# ── Collapsible: Immunization ── #}
+        <div class="collapsible-section collapsible-closed">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-immunization">
+            <span>Immunization</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
+            {% for field in info_form %}
+              {% if field.name in 'bcg,dpt,opv,hepatitis_b,measles,tt' %}
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label|title }}</label></div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div style="margin-bottom:16px;"><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Other Immunizations</label>{{ info_form.immunization_others }}{% if info_form.immunization_others.errors %}{% for error in info_form.immunization_others.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+        </div>
+
+        {# ── Collapsible: Medical Background ── #}
+        <div class="collapsible-section collapsible-closed">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-background">
+            <span>Medical Background</span>
+            <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="collapsible-body">
+          <div style="display:grid;gap:14px;margin-bottom:16px;">
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Current Medications</label>{{ info_form.current_medications }}{% if info_form.current_medications.errors %}{% for error in info_form.current_medications.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Vices</label>{{ info_form.vices }}{% if info_form.vices.errors %}{% for error in info_form.vices.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Illnesses</label>{{ info_form.previous_illnesses }}{% if info_form.previous_illnesses.errors %}{% for error in info_form.previous_illnesses.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Previous Hospitalizations</label>{{ info_form.previous_hospitalizations }}{% if info_form.previous_hospitalizations.errors %}{% for error in info_form.previous_hospitalizations.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+          </div>
+          </div>
         </div>
 
         {% endif %}
 
-        <button type="submit" name="save_info" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
+        <button type="submit" name="save_info" id="saveProfileBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;">
           <ion-icon name="checkmark-outline"></ion-icon>
           Save Profile
         </button>
@@ -148,7 +202,7 @@
         Change Password
       </div>
 
-      <form method="post" novalidate id="passwordForm">
+      <form method="post" novalidate id="passwordForm" data-track-changes="true">
         {% csrf_token %}
         <div style="display:grid;gap:16px;">
           {% for field in password_form %}
@@ -163,16 +217,27 @@
               </button>
               {% endif %}
             </div>
-            {% if field.errors %}<div style="font-size:11px;color:#dc2626;margin-top:4px;">{{ field.errors.0 }}</div>{% endif %}
+            {% if field.errors %}<div id="{{ field.auto_id }}-error" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ field.errors.0 }}</div>{% endif %}
           </div>
           {% endfor %}
         </div>
 
         <div id="pwMatchIndicator" style="display:none;margin-top:8px;font-size:12px;font-weight:500;align-items:center;gap:6px;"></div>
 
-        <button type="submit" name="save_password" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;">
+        <button type="submit" name="save_password" id="changePwBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;">
           <ion-icon name="lock-closed-outline"></ion-icon>
           Change Password
+        </button>
+      </form>
+
+      {# ── Logout all devices ── #}
+      <form method="post" action="{% url 'accounts:logout_all_devices' %}" style="margin-top:16px;padding-top:16px;border-top:1px solid #f1f5f9;">
+        {% csrf_token %}
+        <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;"
+                onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
+                onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
+          <ion-icon name="phone-portrait-outline"></ion-icon>
+          Log out all other devices
         </button>
       </form>
     </div>
@@ -213,9 +278,92 @@
   @media (max-width: 600px) {
     div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Collapsible sections ── */
+  .collapsible-section {
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: #fafbfc;
+    transition: box-shadow 0.2s;
+  }
+  .collapsible-section:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    transition: background 0.15s;
+  }
+  .collapsible-header:hover { background: #f3f6fc; }
+  .cs-chevron {
+    color: #94a3b8;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+  .collapsible-closed .cs-chevron { transform: rotate(-90deg); }
+  .collapsible-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0 16px;
+  }
+  .collapsible-closed .collapsible-body { max-height: 0; padding: 0 16px; }
+  .collapsible-section:not(.collapsible-closed) .collapsible-body {
+    max-height: 2000px;
+    padding: 0 16px 16px;
+  }
+  .collapsible-section:not(.collapsible-closed) {
+    background: #fff;
+    border-color: #d1d9e8;
+  }
 </style>
 
 <script>
+  // ── Course loading URL ──
+  var PROFILE_COURSES_URL = '{% url "accounts:courses_by_college" %}';
+
+  // ── Dynamic course dropdown when college changes ──
+  var savedCourseId = ''; // stash for restore
+  function loadProfileCourses() {
+    var collegeId = document.getElementById('id_college').value;
+    var courseSelect = document.getElementById('id_course');
+    if (!courseSelect) return;
+    // Stash current course value before clearing
+    savedCourseId = courseSelect.value;
+    courseSelect.innerHTML = '<option value="">Select Course</option>';
+    if (!collegeId) return;
+    fetch(PROFILE_COURSES_URL + '?college_id=' + collegeId)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        (data.courses || []).forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          courseSelect.appendChild(opt);
+        });
+        // Restore saved course if it's in the new list
+        if (savedCourseId) {
+          for (var i = 0; i < courseSelect.options.length; i++) {
+            if (courseSelect.options[i].value === savedCourseId) {
+              courseSelect.value = savedCourseId;
+              break;
+            }
+          }
+        }
+      })
+      .catch(function() {});
+  }
+
   // ── Live Avatar Preview ──
   document.addEventListener('DOMContentLoaded', function() {
     var fileInput = document.querySelector('input[type="file"]');
@@ -223,6 +371,20 @@
       fileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) {
+          // ── Client-side file size validation ──
+          var maxSize = 5 * 1024 * 1024; // 5 MB
+          if (file.size > maxSize) {
+            alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+            fileInput.value = '';
+            return;
+          }
+          // ── Client-side file type validation ──
+          var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+          if (allowed.indexOf(file.type) === -1) {
+            alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+            fileInput.value = '';
+            return;
+          }
           var reader = new FileReader();
           reader.onload = function(ev) {
             var preview = document.getElementById('avatarPreview');
@@ -254,10 +416,93 @@
         indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:16px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
       } else if (v2.length > 0) {
         indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:16px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+        // ── Password strength indicator ──
+        if (v1.length > 0 && v1 !== v2) {
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v1.length >= 12 && /[A-Z]/.test(v1) && /[0-9]/.test(v1) && /[^A-Za-z0-9]/.test(v1)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v1.length >= 8 && /[A-Z]/.test(v1) && /[0-9]/.test(v1)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML += '<span style="margin-left:12px;font-size:11px;color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
       } else { indicator.style.display = 'none'; }
     }
     if (pw1 && pw2) { pw1.addEventListener('input', checkPwMatch); pw2.addEventListener('input', checkPwMatch); }
+
+    // ── Password strength on new_password1 alone (when pw2 is empty) ──
+    if (pw1) {
+      pw1.addEventListener('input', function() {
+        var v = pw1.value;
+        if (!pw2 || pw2.value.length === 0 && v.length > 0) {
+          indicator.style.display = 'flex';
+          var strength = 'Weak';
+          var color = '#ef4444';
+          if (v.length >= 12 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) {
+            strength = 'Strong'; color = '#10b981';
+          } else if (v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v)) {
+            strength = 'Medium'; color = '#f59e0b';
+          }
+          indicator.innerHTML = '<ion-icon name="information-circle" style="color:' + color + ';font-size:16px;"></ion-icon><span style="color:' + color + ';">Password strength: ' + strength + '</span>';
+        }
+      });
+    }
+
+    // ── Loading state for Save Profile button ──
+    var profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+      profileForm.addEventListener('submit', function(e) {
+        var btn = document.getElementById('saveProfileBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
+        }
+      });
+    }
+
+    // ── Loading state for Change Password button ──
+    var passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', function(e) {
+        var btn = document.getElementById('changePwBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Changing...';
+        }
+      });
+    }
+
+      // ── Load courses on page init (restore saved course value) ──
+    var collegeEl = document.getElementById('id_college');
+    var courseEl = document.getElementById('id_course');
+    if (collegeEl && collegeEl.value) {
+      loadProfileCourses();
+    }
+
+    // ── Initialize collapsible sections from localStorage ──
+    document.querySelectorAll('.collapsible-header').forEach(function(header) {
+      var key = header.getAttribute('data-section');
+      if (key) {
+        var state = localStorage.getItem(key);
+        if (state === 'closed') {
+          header.parentElement.classList.add('collapsible-closed');
+        }
+      }
+    });
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
+
+  // ── Toggle collapsible section ──
+  function toggleCollapsible(header) {
+    var section = header.parentElement;
+    var isClosed = section.classList.toggle('collapsible-closed');
+    var key = header.getAttribute('data-section');
+    if (key) {
+      localStorage.setItem(key, isClosed ? 'closed' : 'open');
+    }
+  }
 
   function togglePw(btn) {
     var wrap  = btn.parentElement;

@@ -50,6 +50,8 @@ def audit_log_list(request):
     if is_valid:
         date_from = form.cleaned_data.get('date_from', '') or ''
         date_to = form.cleaned_data.get('date_to', '') or ''
+        raw_date_from = ''
+        raw_date_to = ''
         user_filter = form.cleaned_data.get('user', '') or ''
         role_filter = form.cleaned_data.get('role', '') or ''
         action_filter = form.cleaned_data.get('action', '') or ''
@@ -58,10 +60,14 @@ def audit_log_list(request):
         search = form.cleaned_data.get('search', '') or ''
     else:
         # Fall back to raw GET values when validation fails.
-        # Date fields are set to empty strings to avoid ORM errors with
-        # invalid date strings; other string-based filters are safe to pass through.
+        # Date fields stay empty to avoid ORM errors with invalid date
+        # strings, but the raw GET values are passed as separate template
+        # context variables so the user's input remains visible in the
+        # form fields and they can see and correct their mistake.
         date_from = ''
         date_to = ''
+        raw_date_from = request.GET.get('date_from', '')
+        raw_date_to = request.GET.get('date_to', '')
         user_filter = request.GET.get('user', '')
         role_filter = request.GET.get('role', '')
         action_filter = request.GET.get('action', '')
@@ -120,9 +126,10 @@ def audit_log_list(request):
         'base_template': _base_template(user),
         'module_choices': AuditLog.Module.choices,
 
-        # Preserve filter values in template
-        'filter_date_from': date_from if date_from else '',
-        'filter_date_to': date_to if date_to else '',
+        # Preserve filter values in template (use raw GET values on validation
+        # failure so the user's invalid input stays visible for correction)
+        'filter_date_from': date_from if is_valid else raw_date_from,
+        'filter_date_to': date_to if is_valid else raw_date_to,
         'filter_user': user_filter,
         'filter_role': role_filter,
         'filter_action': action_filter,

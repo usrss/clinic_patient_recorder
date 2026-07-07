@@ -1,0 +1,175 @@
+{% extends 'core/base_staff.html' %}
+{% load static %}
+{% block title %}Certificate — {{ certificate.certificate_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stf-main {
+    padding: 0 28px 0 !important;
+  }
+  .cert-preview-page {
+    height: calc(100vh - var(--topbar-h));
+    background: #f0f4ff;
+    padding: 8px 24px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .cert-preview-wrap {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Header bar */
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .preview-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .preview-header-left h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+  }
+  .preview-header-left .cert-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: #0078d4;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0,120,212,0.2);
+  }
+  .btn-primary:hover {
+    background: #006cbe;
+    transform: translateY(-1px);
+  }
+  .btn-success {
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(5,150,105,0.2);
+  }
+  .btn-success:hover {
+    background: #047857;
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+  }
+  .btn-secondary:hover {
+    background: #f9fafb;
+  }
+
+  /* PDF iframe */
+
+  .pdf-container {
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  }
+  .pdf-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* Footer */
+  .preview-footer {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    padding: 6px 0;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .preview-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cert-preview-page">
+<div class="cert-preview-wrap">
+
+  <div class="preview-header">
+    <div class="preview-header-left">
+      <h1>{{ certificate.get_certificate_type_display }}</h1>
+      {% if certificate.certificate_number %}
+      <span class="cert-badge">#{{ certificate.certificate_number }}</span>
+      {% endif %}
+    </div>
+    <div class="preview-actions">
+      <a href="{% url 'certificates:certificate_download_docx' certificate.pk %}" class="btn btn-success">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download Word
+      </a>
+      <a href="{% url 'consultations:clinical_detail' certificate.consultation.pk %}" class="btn btn-secondary">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <div class="pdf-container">
+    <iframe id="pdfFrame" src="{% url 'certificates:certificate_pdf_preview' certificate.pk %}"
+            title="Certificate PDF Preview"></iframe>
+  </div>
+
+  <p class="preview-footer">Negros Oriental State University — Medical Dental Clinic</p>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

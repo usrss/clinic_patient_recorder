@@ -327,7 +327,7 @@
         <div class="info-cell">
           <span class="lbl">Course &amp; Year:</span>
           <span class="val lg">
-            {% if consultation.patient.college %}{{ consultation.patient.college.abbreviation }}{% endif %}
+            {% if consultation.patient.college %}{{ consultation.patient.college.name }}{% endif %}
             {% if consultation.patient.profile.year_level %} — {{ consultation.patient.profile.year_level }}{% endif %}
             {% if not consultation.patient.college and not consultation.patient.profile.year_level %}Not provided{% endif %}
           </span>

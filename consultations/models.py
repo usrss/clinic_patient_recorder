@@ -93,22 +93,7 @@ class Consultation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return (
-            f'Consultation #{self.pk} — {self.patient.get_full_name()} '
-            f'({self.get_status_display()})'
-        )
-
-    class Meta:
-        verbose_name = 'Consultation'
-        verbose_name_plural = 'Consultations'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['status', '-created_at']),
-            models.Index(fields=['patient', '-created_at']),
-        ]
-
-    # Add these to the Consultation model:
+    # Follow-up / closure fields
     parent_consultation = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
@@ -139,12 +124,26 @@ class Consultation(models.Model):
         blank=True,
         help_text='Reason/notes for closing the consultation case'
     )
-
     recommended_follow_up_date = models.DateField(
         null=True,
         blank=True,
         help_text='Recommended date for the next follow-up visit'
     )
+
+    def __str__(self):
+        return (
+            f'Consultation #{self.pk} — {self.patient.get_full_name()} '
+            f'({self.get_status_display()})'
+        )
+
+    class Meta:
+        verbose_name = 'Consultation'
+        verbose_name_plural = 'Consultations'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['patient', '-created_at']),
+        ]
 
 class FollowUpProgress(models.Model):
     """

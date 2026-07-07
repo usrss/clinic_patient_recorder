@@ -137,7 +137,6 @@ class ConsultationSubmitForm(forms.Form):
         patient_id = cleaned.get('patient_id', '').strip()
 
         from patients.models import Patient
-        from accounts.models import User
 
         existing_patient = Patient.objects.filter(patient_id=patient_id).first()
 
@@ -151,11 +150,13 @@ class ConsultationSubmitForm(forms.Form):
         if not sex:
             self.add_error('sex', 'Sex is required for new patients.')
 
-        # Check that a User with this patient_id doesn't already exist
-        if User.objects.filter(username=patient_id).exists():
+        # Check that a Patient with this patient_id doesn't already exist
+        # (archived patients have a Patient record, so they are blocked too;
+        #  fully deleted patients don't, allowing re-registration).
+        if Patient.objects.filter(patient_id=patient_id).exists():
             self.add_error(
                 'patient_id',
-                'This ID is already linked to a user account but no patient record was found. '
+                'This ID is already linked to a patient record. '
                 'Please contact an administrator.'
             )
 

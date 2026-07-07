@@ -213,6 +213,7 @@
   .alert-success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
 
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 4px; padding-bottom: 24px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 
@@ -231,7 +232,7 @@
   <!-- ═══════ PROFILE INFORMATION CARD ═══════ -->
   <div class="card-panel">
     <div class="section-label">Profile Information</div>
-    <form method="post" enctype="multipart/form-data" novalidate id="profileForm">
+    <form method="post" enctype="multipart/form-data" novalidate id="profileForm" data-track-changes="true">
       {% csrf_token %}
 
       {# ── Form-level error summary ── #}
@@ -242,197 +243,69 @@
       </div>
       {% endif %}
 
-      {% if user.role == 'patient' %}
-        {# ── Patient Profile Picture ── #}
-        <div class="avatar-section">
-          <div class="avatar-preview" id="avatarPreview">
-            {% if patient.profile_picture %}
-              <img id="avatarImg" src="{{ patient.profile_picture.url }}" alt="">
-            {% else %}
-              <span class="initials" id="avatarInitials">{{ patient.get_full_name|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div class="file-upload-wrap">
-            <label class="file-upload-btn" for="id_profile_picture">
-              <ion-icon name="cloud-upload-outline"></ion-icon>
-              Choose Picture
-            </label>
-            {{ info_form.profile_picture }}
-            {% if info_form.profile_picture.errors %}
-              {% for error in info_form.profile_picture.errors %}
-                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
-              {% endfor %}
-            {% endif %}
-            <div class="file-name" id="fileName"></div>
-          </div>
+      {# ═══ PROFILE PICTURE ═══ #}
+      <div class="avatar-section">
+        <div class="avatar-preview" id="avatarPreview">
+          {% if user.profile_picture %}
+            <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="">
+          {% else %}
+            <span class="initials" id="avatarInitials">{{ user.get_full_name|default:user.username|first|upper }}</span>
+          {% endif %}
         </div>
+        <div class="file-upload-wrap">
+          <label class="file-upload-btn" for="id_profile_picture">
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+            Choose Picture
+          </label>
+          {{ info_form.profile_picture }}
+          {% if info_form.profile_picture.errors %}
+            {% for error in info_form.profile_picture.errors %}
+              <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          <div class="file-name" id="fileName"></div>
+          {% if user.profile_picture %}
+          <label class="remove-pic-label">
+            {{ info_form.remove_picture }}
+            <ion-icon name="trash-outline"></ion-icon>
+            Remove current picture
+          </label>
+          {% endif %}
+        </div>
+      </div>
 
-        {# ── Patient Contact ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">Contact</div>
-        <div class="form-grid-2">
-          <div class="field-group">
-            <label class="field-label">Phone</label>
-            <div class="field-wrap">{{ info_form.phone }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Email</label>
-            <div class="field-wrap">{{ info_form.email }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Emergency Contact Name</label>
-            <div class="field-wrap">{{ info_form.emergency_contact_name }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Emergency Contact Phone</label>
-            <div class="field-wrap">{{ info_form.emergency_contact_phone }}</div>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Address</label>
-          <div class="field-wrap">{{ info_form.address }}</div>
-        </div>
-
-        {# ── Patient Demographics ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Demographics</div>
-        <div class="form-grid-2">
-          <div class="field-group">
-            <label class="field-label">Religion</label>
-            <div class="field-wrap">{{ info_form.religion }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Civil Status</label>
-            <div class="field-wrap">{{ info_form.civil_status }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Year Level</label>
-            <div class="field-wrap">{{ info_form.year_level }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Height (cm)</label>
-            <div class="field-wrap">{{ info_form.height_cm }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Weight (kg)</label>
-            <div class="field-wrap">{{ info_form.weight_kg }}</div>
-          </div>
-        </div>
-
-        {# ── Patient Medical History ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical History</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'hypertension,diabetes,asthma,cardiac_problems,arthritis' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label }}</label></div>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <div class="field-group">
-          <label class="field-label">Other Conditions</label>
-          <div class="field-wrap">{{ info_form.other_conditions }}</div>
-        </div>
-
-        {# ── Patient Immunization ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Immunization</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:16px;">
-          {% for field in info_form %}
-            {% if field.name in 'bcg,dpt,opv,hepatitis_b,measles,tt' %}
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf1;">{{ field }} <label for="{{ field.id_for_label }}" style="margin:0;font-size:13px;color:#374151;cursor:pointer;">{{ field.label|title }}</label></div>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <div class="field-group">
-          <label class="field-label">Other Immunizations</label>
-          <div class="field-wrap">{{ info_form.immunization_others }}</div>
-        </div>
-
-        {# ── Patient Medical Background ── #}
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;margin-top:24px;">Medical Background</div>
-        <div style="display:grid;gap:14px;margin-bottom:16px;">
-          <div class="field-group">
-            <label class="field-label">Current Medications</label>
-            <div class="field-wrap">{{ info_form.current_medications }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Vices</label>
-            <div class="field-wrap">{{ info_form.vices }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Previous Illnesses</label>
-            <div class="field-wrap">{{ info_form.previous_illnesses }}</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Previous Hospitalizations</label>
-            <div class="field-wrap">{{ info_form.previous_hospitalizations }}</div>
-          </div>
-        </div>
-
-      {% else %}
-        {# ═══ STAFF PROFILE ═══ #}
-
-        {# ── Profile Picture ── #}
-        <div class="avatar-section">
-          <div class="avatar-preview" id="avatarPreview">
-            {% if user.profile_picture %}
-              <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="">
-            {% else %}
-              <span class="initials" id="avatarInitials">{{ user.get_full_name|default:user.username|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div class="file-upload-wrap">
-            <label class="file-upload-btn" for="id_profile_picture">
-              <ion-icon name="cloud-upload-outline"></ion-icon>
-              Choose Picture
-            </label>
-            {{ info_form.profile_picture }}
-            {% if info_form.profile_picture.errors %}
-              {% for error in info_form.profile_picture.errors %}
-                <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
-              {% endfor %}
-            {% endif %}
-            <div class="file-name" id="fileName"></div>
-            {% if user.profile_picture %}
-            <label class="remove-pic-label">
-              {{ info_form.remove_picture }}
-              <ion-icon name="trash-outline"></ion-icon>
-              Remove current picture
-            </label>
-            {% endif %}
-          </div>
-        </div>
-
-        {# ── Staff Fields ── #}
-        <div class="form-grid-2">
-          {% for field in info_form %}
-            {% if field.name == 'first_name' or field.name == 'last_name' %}
-            <div class="field-group">
-              <label class="field-label">{{ field.label }}</label>
-              <div class="field-wrap">{{ field }}</div>
-              {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
-            </div>
-            {% endif %}
-          {% endfor %}
-        </div>
-
+      {# ═══ STAFF FIELDS ═══ #}
+      <div class="form-grid-2">
         {% for field in info_form %}
-          {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
+          {% if field.name == 'first_name' or field.name == 'last_name' %}
           <div class="field-group">
             <label class="field-label">{{ field.label }}</label>
-            <div class="field-wrap">
-              {% if field.name == 'email' %}
-                {{ field }}
-              {% elif field.name == 'phone' %}
-                <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
-              {% else %}
-                {{ field }}
-              {% endif %}
-            </div>
+            <div class="field-wrap">{{ field }}</div>
             {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
           </div>
           {% endif %}
         {% endfor %}
-      {% endif %}
+      </div>
 
-      <button type="submit" name="save_info" class="btn-save">
+      {% for field in info_form %}
+        {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
+        <div class="field-group">
+          <label class="field-label">{{ field.label }}</label>
+          <div class="field-wrap">
+            {% if field.name == 'email' %}
+              {{ field }}
+            {% elif field.name == 'phone' %}
+              <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
+            {% else %}
+              {{ field }}
+            {% endif %}
+          </div>
+          {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <button type="submit" name="save_info" id="saveProfileBtn" class="btn-save">
         <ion-icon name="checkmark-outline"></ion-icon>
         Save Profile
       </button>
@@ -442,7 +315,7 @@
   <!-- ═══════ CHANGE PASSWORD CARD ═══════ -->
   <div class="card-panel">
     <div class="section-label">Change Password</div>
-    <form method="post" novalidate id="passwordForm">
+    <form method="post" novalidate id="passwordForm" data-track-changes="true">
       {% csrf_token %}
       <div style="display:grid;gap:14px;">
         {% for field in password_form %}
@@ -457,7 +330,7 @@
             </button>
             {% endif %}
           </div>
-          {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+          {% if field.errors %}<div class="field-error" id="{{ field.auto_id }}-error">{{ field.errors.0 }}</div>{% endif %}
         </div>
         {% endfor %}
       </div>
@@ -465,9 +338,20 @@
       <!-- Password match indicator -->
       <div id="pwMatchIndicator" style="display:none;margin-top:8px;font-size:12px;font-weight:500;align-items:center;gap:6px;"></div>
 
-      <button type="submit" name="save_password" class="btn-save" id="changePwBtn">
+      <button type="submit" name="save_password" id="staffChangePwBtn" class="btn-save">
         <ion-icon name="lock-closed-outline"></ion-icon>
         Change Password
+      </button>
+    </form>
+
+    {# ── Logout all devices ── #}
+    <form method="post" action="{% url 'accounts:logout_all_devices' %}" style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
+      {% csrf_token %}
+      <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;"
+              onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
+              onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
+        <ion-icon name="phone-portrait-outline"></ion-icon>
+        Log out all other devices
       </button>
     </form>
   </div>
@@ -477,6 +361,75 @@
 </div>
 
 <script>
+  // ── Password strength calculator ──
+  function getStaffPwStrength(val) {
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    return score;
+  }
+
+  // ── Strength meter HTML — appended before the match indicator ──
+  var staffIndicator = document.getElementById('pwMatchIndicator');
+  if (staffIndicator) {
+    var meterDiv = document.createElement('div');
+    meterDiv.id = 'staff-strength-wrap';
+    meterDiv.style.cssText = 'display:none;margin-bottom:6px;';
+    meterDiv.innerHTML = '<div style="display:flex;gap:4px;margin-bottom:4px;">'
+      + '<div class="staff-sbar" id="ssb1" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb2" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb3" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '<div class="staff-sbar" id="ssb4" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
+      + '</div>'
+      + '<span id="staff-strength-text" style="font-size:11px;font-weight:600;color:#94a3b8;transition:color 0.3s;">Too short</span>';
+    staffIndicator.parentElement.insertBefore(meterDiv, staffIndicator);
+  }
+
+  // ── Update strength meter & match indicator ──
+  function updateStaffPwUI() {
+    var pw1 = document.querySelector('#id_new_password1');
+    var pw2 = document.querySelector('#id_new_password2');
+    var indicator = document.getElementById('pwMatchIndicator');
+    if (!pw1) return;
+
+    // Strength meter
+    var val = pw1.value;
+    var wrap = document.getElementById('staff-strength-wrap');
+    if (!val) { if (wrap) wrap.style.display = 'none'; } else {
+      if (wrap) {
+        wrap.style.display = 'block';
+        var score = getStaffPwStrength(val);
+        var level = score <= 1 ? 1 : score <= 2 ? 2 : score <= 3 ? 3 : 4;
+        var colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
+        var labels = ['', 'Too weak', 'Weak', 'Good', 'Strong'];
+        for (var i = 1; i <= 4; i++) {
+          document.getElementById('ssb' + i).style.background = i <= level ? colors[level] : '#e8ecf1';
+        }
+        document.getElementById('staff-strength-text').textContent = labels[level];
+        document.getElementById('staff-strength-text').style.color = colors[level];
+      }
+    }
+
+    // Match indicator
+    if (!pw2 || !indicator) return;
+    var v1 = pw1.value, v2 = pw2.value;
+    if (v2.length === 0 && v1.length === 0) { indicator.style.display = 'none'; return; }
+    indicator.style.display = 'flex';
+    if (v1 && v2 && v1 === v2) {
+      indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:14px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
+    } else if (v2.length > 0) {
+      indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:14px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+    } else { indicator.style.display = 'none'; }
+  }
+
+  var staffPw1 = document.querySelector('#id_new_password1');
+  var staffPw2 = document.querySelector('#id_new_password2');
+  if (staffPw1) staffPw1.addEventListener('input', updateStaffPwUI);
+  if (staffPw2) staffPw2.addEventListener('input', updateStaffPwUI);
+
   // ── Live Avatar Preview ──
   document.addEventListener('DOMContentLoaded', function() {
     var fileInput = document.querySelector('input[type="file"]');
@@ -484,6 +437,18 @@
       fileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) {
+          var maxSize = 5 * 1024 * 1024;
+          if (file.size > maxSize) {
+            alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+            fileInput.value = '';
+            return;
+          }
+          var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+          if (allowed.indexOf(file.type) === -1) {
+            alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+            fileInput.value = '';
+            return;
+          }
           var reader = new FileReader();
           reader.onload = function(ev) {
             var preview = document.getElementById('avatarPreview');
@@ -493,7 +458,6 @@
             img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
             preview.innerHTML = '';
             preview.appendChild(img);
-            // Show filename
             var fn = document.getElementById('fileName');
             fn.textContent = file.name;
             fn.classList.add('visible');
@@ -503,45 +467,43 @@
       });
     }
 
-    // ── Password match validation ──
-    var pw1 = document.querySelector('#id_new_password1');
-    var pw2 = document.querySelector('#id_new_password2');
-    var indicator = document.getElementById('pwMatchIndicator');
-
-    function checkPwMatch() {
-      if (!pw1 || !pw2 || !indicator) return;
-      var v1 = pw1.value;
-      var v2 = pw2.value;
-      if (v2.length === 0 && v1.length === 0) {
-        indicator.style.display = 'none';
-        return;
-      }
-      indicator.style.display = 'flex';
-      if (v1 && v2 && v1 === v2) {
-        indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:16px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
-      } else if (v2.length > 0) {
-        indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:16px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
-      } else {
-        indicator.style.display = 'none';
-      }
+    // ── Loading state: Save Profile ──
+    var profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+      profileForm.addEventListener('submit', function() {
+        var btn = document.getElementById('saveProfileBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
+        }
+      });
     }
 
-    if (pw1 && pw2) {
-      pw1.addEventListener('input', checkPwMatch);
-      pw2.addEventListener('input', checkPwMatch);
+    // ── Loading state: Change Password ──
+    var passwordForm = document.getElementById('passwordForm');
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', function() {
+        var btn = document.getElementById('staffChangePwBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Changing...';
+        }
+      });
     }
+
+    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
   });
 
   function togglePw(btn) {
     var wrap = btn.parentElement;
     var input = wrap.querySelector('input');
     var eye = btn.querySelector('.icon-eye');
-    var eyeOff = btn.querySelector('.icon-eye-off');
+    var eyeOff= btn.querySelector('.icon-eye-off');
     if (!input) return;
     var show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    eye.style.display = show ? 'none' : '';
-    eyeOff.style.display = show ? '' : 'none';
+    input.type          = show ? 'text'  : 'password';
+    eye.style.display   = show ? 'none'  : '';
+    eyeOff.style.display= show ? ''      : 'none';
   }
 </script>
 {% endblock %}

@@ -147,7 +147,7 @@
 <div class="table-panel">
   <div class="table-panel-header">
     <span class="table-panel-title">Archived Records</span>
-    <span class="table-panel-meta">{{ archived_patients|length }} patient{{ archived_patients|length|pluralize }}</span>
+    <span class="table-panel-meta">{{ archived_patients|length }} patient{{ archived_patients|length|pluralize }} of {{ total_archived }} total</span>
   </div>
   <div class="table-scroll">
     <table class="pt-table">
@@ -200,6 +200,28 @@
       </tbody>
     </table>
   </div>
+  {% if is_paginated %}
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #f0f4f8;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:12px;color:#6b7280;">
+      Page {{ page_obj.number }} of {{ paginator.num_pages }}
+      ({{ paginator.count }} patient{{ paginator.count|pluralize }})
+    </div>
+    <div style="display:flex;gap:6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page=1{% if query %}&q={{ query }}{% endif %}"
+         class="search-btn search-btn-ghost" style="font-size:11px;">« First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}"
+         class="search-btn search-btn-ghost" style="font-size:11px;">‹ Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}"
+         class="search-btn search-btn-ghost" style="font-size:11px;">Next ›</a>
+      <a href="?page={{ paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}"
+         class="search-btn search-btn-ghost" style="font-size:11px;">Last »</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% else %}
 <div class="table-panel">

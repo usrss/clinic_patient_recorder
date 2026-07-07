@@ -4,11 +4,6 @@
 {% block page_title %}{{ action }} Staff{% endblock %}
 {% block page_subtitle %}{% if target %}Editing {{ target.username }}{% else %}Fill in the details below{% endif %}{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block content %}
 
   <div style="max-width:600px;margin:0 auto;">
@@ -41,7 +36,7 @@
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">First name</label>
             {{ form.first_name }}
             {% if form.first_name.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-firstname-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.first_name.errors.0 }}
               </div>
             {% endif %}
@@ -50,7 +45,7 @@
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Last name</label>
             {{ form.last_name }}
             {% if form.last_name.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-lastname-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.last_name.errors.0 }}
               </div>
             {% endif %}
@@ -62,7 +57,7 @@
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Username</label>
           {{ form.username }}
           {% if form.username.errors %}
-            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+            <div id="uf-username-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
               <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.username.errors.0 }}
             </div>
           {% endif %}
@@ -73,7 +68,7 @@
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Email</label>
           {{ form.email }}
           {% if form.email.errors %}
-            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+            <div id="uf-email-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
               <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.email.errors.0 }}
             </div>
           {% endif %}
@@ -107,7 +102,7 @@
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Role</label>
             {{ form.role }}
             {% if form.role.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-role-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.role.errors.0 }}
               </div>
             {% endif %}
@@ -116,7 +111,7 @@
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Phone</label>
             {{ form.phone }}
             {% if form.phone.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-phone-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.phone.errors.0 }}
               </div>
             {% endif %}
@@ -129,18 +124,41 @@
           <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:16px;">Set Password</div>
           <div style="margin-bottom:20px;">
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Password</label>
-            {{ form.password1 }}
+            <div style="position:relative;display:flex;align-items:center;">
+              <input type="password" name="password1" id="id_password1" class="form-pw" placeholder="Create a strong password" required autocomplete="new-password" style="width:100%;padding:10px 13px;padding-right:44px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;color:#1a1a2e;background:#fafbfc;transition:all 0.2s;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;">
+              <button type="button" class="pw-toggle-btn" onclick="toggleUserPw('id_password1', this)" aria-label="Toggle password visibility" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;border-radius:6px;">
+                <ion-icon name="eye-outline" class="icon-eye" style="font-size:18px;"></ion-icon>
+                <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:18px;display:none;"></ion-icon>
+              </button>
+            </div>
+            {# ── Strength meter ── #}
+            <div class="uf-strength-wrap" id="uf-strength-wrap" style="display:none;margin-top:8px;">
+              <div style="display:flex;gap:4px;margin-bottom:4px;">
+                <div class="uf-sbar" id="usb1" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
+                <div class="uf-sbar" id="usb2" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
+                <div class="uf-sbar" id="usb3" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
+                <div class="uf-sbar" id="usb4" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
+              </div>
+              <span id="uf-strength-text" style="font-size:11px;font-weight:600;color:#94a3b8;transition:color 0.3s;">Too short</span>
+            </div>
             {% if form.password1.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-pw1-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password1.errors.0 }}
               </div>
             {% endif %}
           </div>
           <div>
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Confirm Password</label>
-            {{ form.password2 }}
+            <div style="position:relative;display:flex;align-items:center;">
+              <input type="password" name="password2" id="id_password2" class="form-pw" placeholder="Repeat your password" required autocomplete="new-password" style="width:100%;padding:10px 13px;padding-right:44px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;color:#1a1a2e;background:#fafbfc;transition:all 0.2s;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;">
+              <button type="button" class="pw-toggle-btn" onclick="toggleUserPw('id_password2', this)" aria-label="Toggle password visibility" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;border-radius:6px;">
+                <ion-icon name="eye-outline" class="icon-eye" style="font-size:18px;"></ion-icon>
+                <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:18px;display:none;"></ion-icon>
+              </button>
+            </div>
+            <div id="uf-pw-match-indicator" style="display:none;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:500;"></div>
             {% if form.password2.errors %}
-              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+              <div id="uf-pw2-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
                 <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password2.errors.0 }}
               </div>
             {% endif %}
@@ -158,6 +176,15 @@
         </div>
         {% endif %}
 
+        {% if form.force_password_change %}
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#fffbeb;border-radius:10px;border:1px solid #fde68a;margin-bottom:16px;">
+          {{ form.force_password_change }}
+          <label for="{{ form.force_password_change.id_for_label }}" style="font-size:14px;color:#92400e;margin:0;cursor:pointer;font-weight:500;">
+            Force password change on next login
+          </label>
+        </div>
+        {% endif %}
+
 
         {% if form.role %}
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
@@ -170,23 +197,24 @@
 
         {# Actions #}
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button type="submit" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;display:inline-flex;align-items:center;gap:6px;">
+          <button type="submit" id="userFormSubmitBtn" class="btn btn-primary" style="border-radius:10px;padding:10px 24px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
             <ion-icon name="checkmark-outline" style="font-size:16px;"></ion-icon>
             {{ action }} Staff
           </button>
           <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary" style="border-radius:10px;padding:10px 24px;">Cancel</a>
-          {% if target and target != request.user %}
-          <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" style="display:inline;margin-left:auto;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-secondary" style="gap:4px;border-radius:10px;padding:10px 18px;font-size:13px;">
-              <ion-icon name="key-outline" style="font-size:15px;"></ion-icon>
-              Reset Password
-            </button>
-          </form>
-          {% endif %}
         </div>
 
       </form>
+
+      {% if target and target != request.user %}
+      <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" style="margin-top:12px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-secondary" style="gap:4px;border-radius:10px;padding:10px 18px;font-size:13px;">
+          <ion-icon name="key-outline" style="font-size:15px;"></ion-icon>
+          Reset Password
+        </button>
+      </form>
+      {% endif %}
     </div>
 
   </div>
@@ -206,6 +234,86 @@
       box-shadow:0 0 0 3px rgba(0,120,212,0.08);
     }
     select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
+
+<script>
+  // ── Password strength calculator ──
+  function getUfStrength(val) {
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    return score;
+  }
+
+  // ── Update strength meter & match indicator ──
+  function updateUfPwUI() {
+    var pw1 = document.getElementById('id_password1');
+    var pw2 = document.getElementById('id_password2');
+    if (!pw1) return;
+
+    // Strength meter
+    var val = pw1.value;
+    var wrap = document.getElementById('uf-strength-wrap');
+    if (!val) { wrap.style.display = 'none'; } else {
+      wrap.style.display = 'block';
+      var score = getUfStrength(val);
+      var level = score <= 1 ? 1 : score <= 2 ? 2 : score <= 3 ? 3 : 4;
+      var colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
+      var labels = ['', 'Too weak', 'Weak', 'Good', 'Strong'];
+      for (var i = 1; i <= 4; i++) {
+        document.getElementById('usb' + i).style.background = i <= level ? colors[level] : '#e8ecf1';
+      }
+      document.getElementById('uf-strength-text').textContent = labels[level];
+      document.getElementById('uf-strength-text').style.color = colors[level];
+    }
+
+    // Match indicator
+    var matchEl = document.getElementById('uf-pw-match-indicator');
+    if (!pw2 || !matchEl) return;
+    var v1 = pw1.value, v2 = pw2.value;
+    if (v2.length === 0 && v1.length === 0) { matchEl.style.display = 'none'; return; }
+    matchEl.style.display = 'flex';
+    if (v1 && v2 && v1 === v2) {
+      matchEl.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:14px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
+    } else if (v2.length > 0) {
+      matchEl.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:14px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
+    } else { matchEl.style.display = 'none'; }
+  }
+
+  var ufPw1 = document.getElementById('id_password1');
+  var ufPw2 = document.getElementById('id_password2');
+  if (ufPw1) ufPw1.addEventListener('input', updateUfPwUI);
+  if (ufPw2) ufPw2.addEventListener('input', updateUfPwUI);
+
+  // ── Password visibility toggle ──
+  function toggleUserPw(inputId, btn) {
+    var input = document.getElementById(inputId);
+    var eye = btn.querySelector('.icon-eye');
+    var eyeOff = btn.querySelector('.icon-eye-off');
+    if (!input) return;
+    var show = input.type === 'password';
+    input.type          = show ? 'text'  : 'password';
+    eye.style.display   = show ? 'none'  : '';
+    eyeOff.style.display= show ? ''      : 'none';
+  }
+
+  // ── Loading state on submit ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function() {
+        var btn = document.getElementById('userFormSubmitBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
+        }
+      });
+    }
+  });
+</script>
 
 {% endblock %}

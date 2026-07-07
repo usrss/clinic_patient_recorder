@@ -197,3 +197,28 @@ window.setLoading = function(btn, loading) {
     btn.disabled = false;
   }
 };
+
+// ── Unsaved Changes Warning ──
+window.initUnsavedChangesWarning = function(formOrId) {
+  var form = typeof formOrId === 'string' ? document.getElementById(formOrId) : formOrId;
+  if (!form) return;
+  var formChanged = false;
+  form.querySelectorAll('input, select, textarea').forEach(function(el) {
+    el.addEventListener('change', function() { formChanged = true; });
+    el.addEventListener('input', function() { formChanged = true; });
+  });
+  form.addEventListener('submit', function() { formChanged = false; });
+  window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+};
+
+// Auto-init forms with data-track-changes attribute
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form[data-track-changes="true"]').forEach(function(form) {
+    window.initUnsavedChangesWarning(form);
+  });
+});

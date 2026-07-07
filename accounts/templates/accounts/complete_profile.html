@@ -16,6 +16,7 @@
     box-sizing: border-box;
     cursor: not-allowed;
   }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 
@@ -52,7 +53,7 @@
 
   <!-- Form card -->
   <div class="reg-card">
-    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form">
+    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form" data-track-changes="true">
       {% csrf_token %}
       <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
 
@@ -170,11 +171,18 @@
 
         <div class="form-group" id="field-college" {% if form.role.value != 'student' %}style="display:none;"{% endif %}>
           <label for="id_college">College <span class="req">*</span></label>
-          <select id="id_college" name="college" class="reg-input">
+          <select id="id_college" name="college" class="reg-input" onchange="loadCourses()">
             <option value=""> Select College </option>
             {% for c in form.college.field.queryset %}
             <option value="{{ c.pk }}" {% if form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>
             {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" id="field-course" style="display:none;">
+          <label for="id_course">Course <span class="req">*</span></label>
+          <select id="id_course" name="course" class="reg-input">
+            <option value=""> Select Course </option>
           </select>
         </div>
 
@@ -332,7 +340,10 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Back
           </button>
-          <button type="submit" class="btn-submit">✅ Complete Profile</button>
+          <button type="submit" id="completeProfileBtn" class="btn-submit" style="display:flex;align-items:center;justify-content:center;gap:8px;">
+            <ion-icon name="checkmark-circle-outline" style="font-size:16px;"></ion-icon>
+            Complete Profile
+          </button>
         </div>
       </div>
 
@@ -352,6 +363,28 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────
   let currentStep = parseInt(document.getElementById('current_step').value) || 1;
+
+  // ── Client-side file validation for profile picture ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var picInput = document.getElementById('id_profile_picture');
+    if (picInput) {
+      picInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+          alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
+          picInput.value = '';
+          return;
+        }
+        var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (allowed.indexOf(file.type) === -1) {
+          alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
+          picInput.value = '';
+        }
+      });
+    }
+  });
 
   // ── Step navigation ────────────────────────────────────────────────
   function showStep(n) {
@@ -392,6 +425,13 @@
         } else if (collegeEl) {
           collegeEl.classList.remove('error');
         }
+        const courseEl = document.getElementById('id_course');
+        if (courseEl && courseEl.offsetParent !== null && !courseEl.value) {
+          courseEl.classList.add('error');
+          valid = false;
+        } else if (courseEl) {
+          courseEl.classList.remove('error');
+        }
         const yearEl = document.getElementById('id_year_level');
         if (yearEl && !yearEl.value) {
           yearEl.classList.add('error');
@@ -413,8 +453,16 @@
     }
   }
 
+  // ── Course stash for restoring on goBack ──
+  let savedCourseIdCP = '';
+
   function goBack(step) {
-    if (step === 2) showStep(1);
+    if (step === 2) {
+      // Stash course value before switching steps (will be restored when going forward again)
+      const courseEl = document.getElementById('id_course');
+      if (courseEl) savedCourseIdCP = courseEl.value;
+      showStep(1);
+    }
   }
 
   // ── Role → show/hide college vs department ────────────────────────
@@ -425,13 +473,96 @@
     document.getElementById('field-year').style.display       = isStudent ? '' : 'none';
     document.getElementById('field-department').style.display = isStudent ? 'none' : '';
     document.getElementById('field-position').style.display   = isStudent ? 'none' : '';
+    const fieldCourse = document.getElementById('field-course');
+    if (fieldCourse) fieldCourse.style.display = isStudent ? '' : 'none';
+    if (isStudent) loadCourses();
   }
+
+  const COURSES_URL = '{% url "accounts:courses_by_college" %}';
+
+  function loadCourses() {
+    const collegeId = document.getElementById('id_college').value;
+    const courseSelect = document.getElementById('id_course');
+    const fieldCourse = document.getElementById('field-course');
+    if (!courseSelect) return Promise.resolve();
+    courseSelect.innerHTML = '<option value="">Select Course</option>';
+    if (!collegeId) { if (fieldCourse) fieldCourse.style.display = 'none'; return Promise.resolve(); }
+    if (fieldCourse) fieldCourse.style.display = '';
+    return fetch(COURSES_URL + '?college_id=' + collegeId)
+      .then(r => r.json())
+      .then(data => {
+        (data.courses || []).forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = c.name;
+          courseSelect.appendChild(opt);
+        });
+        // Restore stashed course value if it exists in the new list
+        if (savedCourseIdCP) {
+          for (var i = 0; i < courseSelect.options.length; i++) {
+            if (courseSelect.options[i].value === savedCourseIdCP) {
+              courseSelect.value = savedCourseIdCP;
+              savedCourseIdCP = ''; // consumed
+              break;
+            }
+          }
+        }
+      }).catch(() => {});
+  }
+
+  // ── Form-level Enter key handling ──
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profile-form');
+    if (form) {
+      form.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          const step = parseInt(document.getElementById('current_step').value) || 1;
+          if (step === 1) goNext(1);
+          // Step 2 is the submit button — user presses Enter on an input to submit
+        }
+      });
+    }
+  });
+
+  // ── Loading state on form submit (step 2) ──
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profile-form');
+    if (form) {
+      form.addEventListener('submit', function() {
+        const btn = document.getElementById('completeProfileBtn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
+        }
+      });
+    }
+  });
 
   // ── Restore step after failed POST ─────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     const stepVal = parseInt(document.getElementById('current_step').value);
     if (stepVal > 1) showStep(stepVal);
     updateRoleFields();
+
+    // Pre-load courses if college is already selected (e.g. on form re-render)
+    const collegeEl = document.getElementById('id_college');
+    const courseEl = document.getElementById('id_course');
+    if (collegeEl && collegeEl.value && courseEl) {
+      loadCourses().then(() => {
+        const savedCourse = '{{ form.course.value|default:"" }}';
+        if (savedCourse) courseEl.value = savedCourse;
+      });
+    }
+
+    // ── Stash course on college change so goBack retains it ──
+    if (collegeEl) {
+      collegeEl.addEventListener('change', function() {
+        // Clear stash so a new college load doesn't restore from a previous college
+        savedCourseIdCP = '';
+        // Current course value is stashed before loadCourses clears it
+        if (courseEl) savedCourseIdCP = courseEl.value;
+      });
+    }
   });
 </script>
 {% endblock %}

@@ -66,6 +66,13 @@ class Patient(models.Model):
         blank=True,
         related_name='patients',
     )
+    course = models.ForeignKey(
+        'colleges.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='patients',
+    )
 
     # Optional — staff / instructor use
     department = models.CharField(max_length=150, blank=True)
@@ -184,9 +191,14 @@ class AcademicYearSettings(models.Model):
         verbose_name_plural = 'Academic Year Settings'
 
     def save(self, *args, **kwargs):
-        # Enforce singleton: delete any existing row before saving
-        if self.pk is None and AcademicYearSettings.objects.exists():
-            AcademicYearSettings.objects.all().delete()
+        # Enforce singleton: if no pk is set, adopt the existing row's pk
+        # (if any) so Django performs an UPDATE instead of delete-then-INSERT.
+        # This is safe under concurrent requests (last writer wins) and
+        # avoids orphan rows on databases created with the old pattern.
+        if self.pk is None:
+            existing = AcademicYearSettings.objects.first()
+            if existing:
+                self.pk = existing.pk
         super().save(*args, **kwargs)
 
     def __str__(self):

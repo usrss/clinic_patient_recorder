@@ -4,11 +4,6 @@
 {% block page_title %}Staff Users{% endblock %}
 {% block page_subtitle %}Manage staff accounts and access{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block content %}
 
   {# ── Header row ── #}
@@ -43,6 +38,7 @@
         <option value="">All</option>
         <option value="active" {% if filter_status == 'active' %}selected{% endif %}>Active</option>
         <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+        <option value="locked" {% if filter_status == 'locked' %}selected{% endif %}>Locked</option>
       </select>
     </div>
     <div class="d-flex gap-1" style="padding-bottom:1px;">
@@ -199,6 +195,32 @@
       document.getElementById('deactivateForm').action = "{% url 'accounts:user_toggle_active' 0 %}".replace('/0/', '/' + pk + '/');
       new bootstrap.Modal(document.getElementById('deactivateModal')).show();
     }
+
+    // ── Loading state on deactivation form submit ──
+    document.addEventListener('DOMContentLoaded', function() {
+      var forms = document.querySelectorAll('form[action*="/toggle/"]');
+      for (var i = 0; i < forms.length; i++) {
+        forms[i].addEventListener('submit', function() {
+          var btn = this.querySelector('button[type="submit"]');
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Activating...</span>';
+          }
+        });
+      }
+
+      // Loading state on deactivate modal button
+      var deactivateForm = document.getElementById('deactivateForm');
+      if (deactivateForm) {
+        deactivateForm.addEventListener('submit', function() {
+          var btn = this.querySelector('button[type="submit"]');
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Deactivating...</span>';
+          }
+        });
+      }
+    });
   </script>
 
 {% endblock %}

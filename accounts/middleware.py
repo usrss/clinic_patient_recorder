@@ -1,5 +1,7 @@
 from django.shortcuts import redirect
 from django.urls import resolve, Resolver404
+from django.utils import timezone
+from django.conf import settings
 
 
 class ProfileCompletionMiddleware:
@@ -31,5 +33,62 @@ class ProfileCompletionMiddleware:
                 patient = request.user.get_patient_record()
                 if patient and not patient.is_profile_complete:
                     return redirect('accounts:complete_profile')
+
+        return self.get_response(request)
+
+
+class IdleSessionTimeoutMiddleware:
+    """
+    Checks for idle session timeout on authenticated requests.
+    Updates the last-activity timestamp in the session on each request.
+    If the idle time exceeds IDLE_SESSION_TIMEOUT_MINUTES, the session
+    is logged out and the user is redirected to the login page with a
+    session-expired message.
+
+    AJAX requests return a 403 with a specific header so the frontend
+    can detect forced logout and redirect.
+    """
+
+    IDLE_TIMEOUT = getattr(settings, 'IDLE_SESSION_TIMEOUT_MINUTES', 30)
+    SAFE_URL_NAMES = {
+        'accounts:logout',
+        'accounts:login',
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated:
+            try:
+                match = resolve(request.path_info)
+                url_name = f'{match.namespaces[0]}:{match.url_name}' if match.namespaces else match.url_name
+            except Resolver404:
+                url_name = None
+
+            # Skip timeout check for safe URLs
+            if url_name not in self.SAFE_URL_NAMES:
+                last_activity = request.session.get('last_activity')
+                if last_activity:
+                    try:
+                        elapsed = (timezone.now() - timezone.datetime.fromisoformat(last_activity)).total_seconds()
+                        if elapsed > self.IDLE_TIMEOUT * 60:
+                            from django.contrib.auth import logout
+                            logout(request)
+                            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                                from django.http import JsonResponse
+                                return JsonResponse({
+                                    'logout': True,
+                                    'reason': 'session_expired',
+                                    'message': 'Your session has expired due to inactivity. Please log in again.'
+                                }, status=403)
+                            from django.contrib import messages
+                            messages.warning(request, 'Your session has expired due to inactivity. Please log in again.')
+                            return redirect('accounts:login')
+                    except (ValueError, TypeError):
+                        pass
+
+                # Update last activity timestamp
+                request.session['last_activity'] = timezone.now().isoformat()
 
         return self.get_response(request)

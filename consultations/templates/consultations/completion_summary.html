@@ -214,7 +214,7 @@
   <div class="doc-card">
     <div class="doc-icon" style="background:#fef3c7;">&#128221;</div>
     <div class="doc-body">
-      <div class="doc-title">Medical Certificate</div>
+      <div class="doc-title">Certificate</div>
       <div class="doc-meta">
         {% if issued_certificate %}
           <span class="doc-status issued">Issued</span>
@@ -240,7 +240,7 @@
           <button type="submit" class="btn-sm btn-outline" style="color:#dc2626;border-color:#fca5a5;">Discard Draft &amp; Start Over</button>
         </form>
       {% else %}
-        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn-sm btn-primary-sm">Issue Medical Certificate</a>
+        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn-sm btn-primary-sm">Issue Certificate</a>
       {% endif %}
     </div>
   </div>

@@ -289,15 +289,6 @@
     background: #fff5f5;
   }
 
-  .otp-timer {
-    text-align: center;
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 12px;
-  }
-  .otp-timer .countdown { font-weight: 700; color: #0078d4; }
-  .otp-timer .countdown.expired { color: #ef4444; }
-
   .otp-resend {
     text-align: center;
     font-size: 13px;

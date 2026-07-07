@@ -274,8 +274,7 @@
       {% endif %}
     </div>
     <div>
-      <h1>Patient Portal</h1>
-      <p>Welcome back, {{ patient.get_full_name }}</p>
+      <h4>Welcome, {{ patient.get_full_name }}</h4>
     </div>
   </div>
 
@@ -316,11 +315,17 @@
         <div>
           <div class="info-item-label">College</div>
           <div class="info-item-value" style="font-size:13px;">
-            {% if patient.college %}{{ patient.college.abbreviation }}
+            {% if patient.college %}{{ patient.college.name }}
             {% elif patient.department %}{{ patient.department }}
             {% else %}—{% endif %}
           </div>
         </div>
+        {% if patient.course %}
+        <div>
+          <div class="info-item-label">Course</div>
+          <div class="info-item-value" style="font-size:13px;">{{ patient.course.name }}</div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -441,6 +446,7 @@
 </div>
 
 
+
 {% if unreviewed_consultation %}
 <!-- Feedback Modal -->
 <div id="feedbackModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
@@ -511,6 +517,15 @@
       return;
     }
     const comment = document.getElementById('feedbackComment').value;
+    const btn = document.querySelector('button[onclick^="submitFeedback"]');
+    
+    // ── Loading state ──
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<ion-icon name="hourglass-outline" style="font-size:15px;"></ion-icon> Submitting...';
+      btn.style.opacity = '0.7';
+      btn.style.cursor = 'not-allowed';
+    }
 
     fetch('{% url "feedback:submit_feedback" %}', {
       method: 'POST',
@@ -527,6 +542,21 @@
         location.reload();
       } else {
         alert(data.error || 'Error submitting feedback.');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Submit Review';
+          btn.style.opacity = '';
+          btn.style.cursor = '';
+        }
+      }
+    })
+    .catch(function() {
+      alert('Network error. Please try again.');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Submit Review';
+        btn.style.opacity = '';
+        btn.style.cursor = '';
       }
     });
   }

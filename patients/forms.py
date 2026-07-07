@@ -2,23 +2,6 @@ from django import forms
 from .models import PatientProfile, Patient, AcademicYearSettings
 
 
-class PatientProfileSetupForm(forms.ModelForm):
-    """Lightweight form — used by staff to update only birthday."""
-    birthday = forms.DateField(
-        required=False,
-        label='Date of Birth',
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date',
-        }),
-        help_text='Used to compute the patient\'s age in clinic records.',
-    )
-
-    class Meta:
-        model = PatientProfile
-        fields = ['birthday']
-
-
 class PatientSearchForm(forms.Form):
     query = forms.CharField(
         required=False,

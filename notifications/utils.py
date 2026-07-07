@@ -72,10 +72,9 @@ def get_notifications(user, filter_by='all', page=1, per_page=20):
     offset = (page - 1) * per_page
     notifications = list(base_qs.order_by('-created_at')[offset:offset + per_page])
 
-    unread_count = Notification.objects.filter(
-        Q(recipient=user) | Q(recipient_role=user.role),
-        is_read=False,
-    ).distinct().count()
+    # Reuse the base_qs filter (which already has recipient/role) for unread count
+    # rather than building the same Q expression from scratch a second time.
+    unread_count = base_qs.filter(is_read=False).count()
 
     return {
         'notifications': notifications,

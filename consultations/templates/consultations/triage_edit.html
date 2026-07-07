@@ -1,151 +1,189 @@
 {% extends base_template %}
 {% block title %}Amend Triage — Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 
+{% block extra_css %}
+<style>
+  .amend-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px;
+  }
+  .amend-wrap { width: 100%; max-width: 760px; margin: 0 auto; }
+  .amend-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .amend-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; letter-spacing: -0.3px; }
+  .sec-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
+  }
+  .warning-banner {
+    background: #fff8e1; border-left: 4px solid #f59e0b;
+    padding: 14px 18px; border-radius: 12px; margin-bottom: 24px;
+    font-size: 13px; color: #92400e; display: flex; align-items: center; gap: 10px;
+  }
+  .info-card {
+    background: #fff; border-radius: 16px; padding: 24px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    margin-bottom: 24px;
+  }
+  .record-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px; font-size: 14px;
+  }
+  .record-grid + .record-grid { margin-top: 16px; }
+  .record-grid .lbl {
+    font-size: 11px; color: #94a3b8; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
+  }
+  .record-grid .val { font-weight: 700; color: #1a1a2e; }
+  .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
+  .vitals-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .vitals-row + .vitals-row { margin-top: 4px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 8px; }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+  .help-text { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
 {% block content %}
-<div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
-<div style="width:100%;max-width:760px;margin:0 auto;">
+<div class="amend-page">
+<div class="amend-wrap">
 
-  {# ── Header ── #}
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+  <div class="amend-header">
     <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;">
       <ion-icon name="arrow-back-outline" style="font-size:14px;"></ion-icon> Back to Queue
     </a>
-    <h1 style="font-size:22px;font-weight:700;color:#1a1a2e;margin:0;letter-spacing:-0.3px;">
-      Amend Triage — #{{ consultation.pk }}
-    </h1>
+    <h1>Amend Triage — #{{ consultation.pk }}</h1>
   </div>
 
-  {# ── Warning Banner ── #}
-  <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:12px;margin-bottom:24px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
+  <div class="warning-banner">
     <ion-icon name="warning-outline" style="font-size:20px;flex-shrink:0;"></ion-icon>
     <div><strong>Amendment</strong> — You are editing an existing triage record. The original triage record and timestamp are preserved. Your changes and reason will be appended to the notes for audit purposes.</div>
   </div>
 
-  {# ── Current Record ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Current Triage Record</div>
-  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);margin-bottom:24px;">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
+  <div class="sec-label">Current Triage Record</div>
+  <div class="info-card">
+    <div class="record-grid">
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Blood Pressure</div>
-        <div style="font-weight:700;color:#1a1a2e;">{{ triage.blood_pressure }}</div>
+        <div class="lbl">Blood Pressure</div>
+        <div class="val">{{ triage.blood_pressure }}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Temperature</div>
-        <div style="font-weight:700;color:#1a1a2e;">{{ triage.temperature }}°C</div>
+        <div class="lbl">Temperature</div>
+        <div class="val">{{ triage.temperature }}°C</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Pulse Rate</div>
-        <div style="font-weight:700;color:#1a1a2e;">{{ triage.pulse_rate }} bpm</div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;margin-bottom:16px;">
-      <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Respiratory Rate</div>
-        <div style="font-weight:700;color:#1a1a2e;">{% if triage.respiratory_rate is not None %}{{ triage.respiratory_rate }}{% else %}—{% endif %}</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Oxygen Saturation</div>
-        <div style="font-weight:700;color:#1a1a2e;">{% if triage.oxygen_saturation is not None %}{{ triage.oxygen_saturation }}%{% else %}—{% endif %}</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Weight</div>
-        <div style="font-weight:700;color:#1a1a2e;">{% if triage.weight is not None %}{{ triage.weight }} kg{% else %}—{% endif %}</div>
+        <div class="lbl">Pulse Rate</div>
+        <div class="val">{{ triage.pulse_rate }} bpm</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:14px;">
+    <div class="record-grid">
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Urgency</div>
-        <div style="font-weight:700;color:#1a1a2e;">{{ triage.get_urgency_display }}</div>
+        <div class="lbl">Respiratory Rate</div>
+        <div class="val">{% if triage.respiratory_rate is not None %}{{ triage.respiratory_rate }}{% else %}—{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Triaged by</div>
-        <div style="font-weight:700;color:#1a1a2e;">{% if triage.triaged_by %}{{ triage.triaged_by.get_full_name|default:triage.triaged_by.username }}{% else %}Unknown{% endif %}</div>
+        <div class="lbl">Oxygen Saturation</div>
+        <div class="val">{% if triage.oxygen_saturation is not None %}{{ triage.oxygen_saturation }}%{% else %}—{% endif %}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Triaged at</div>
-        <div style="font-weight:700;color:#1a1a2e;">{{ triage.triaged_at|date:"M d, Y H:i" }}</div>
+        <div class="lbl">Weight</div>
+        <div class="val">{% if triage.weight is not None %}{{ triage.weight }} kg{% else %}—{% endif %}</div>
+      </div>
+    </div>
+    <div class="record-grid">
+      <div>
+        <div class="lbl">Urgency</div>
+        <div class="val">{{ triage.get_urgency_display }}</div>
+      </div>
+      <div>
+        <div class="lbl">Triaged by</div>
+        <div class="val">{% if triage.triaged_by %}{{ triage.triaged_by.get_full_name|default:triage.triaged_by.username }}{% else %}Unknown{% endif %}</div>
+      </div>
+      <div>
+        <div class="lbl">Triaged at</div>
+        <div class="val">{{ triage.triaged_at|date:"M d, Y H:i" }}</div>
       </div>
     </div>
   </div>
 
-  {# ── Amendment Form ── #}
-  <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;">Corrected Vitals</div>
-  <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
+  <div class="sec-label">Corrected Vitals</div>
+  <div class="info-card" style="margin-bottom:0;">
     <form method="post" novalidate>
       {% csrf_token %}
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div class="vitals-row">
         <div class="form-group">
           <label>{{ form.blood_pressure.label }}</label>
           {{ form.blood_pressure }}
-          {% if form.blood_pressure.errors %}<div class="form-error">{{ form.blood_pressure.errors.0 }}</div>{% endif %}
+          {% if form.blood_pressure.errors %}<div class="form-error" aria-live="polite">{{ form.blood_pressure.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.temperature.label }}</label>
           {{ form.temperature }}
-          {% if form.temperature.errors %}<div class="form-error">{{ form.temperature.errors.0 }}</div>{% endif %}
+          {% if form.temperature.errors %}<div class="form-error" aria-live="polite">{{ form.temperature.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.pulse_rate.label }}</label>
           {{ form.pulse_rate }}
-          {% if form.pulse_rate.errors %}<div class="form-error">{{ form.pulse_rate.errors.0 }}</div>{% endif %}
+          {% if form.pulse_rate.errors %}<div class="form-error" aria-live="polite">{{ form.pulse_rate.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:4px;">
+      <div class="vitals-row">
         <div class="form-group">
           <label>{{ form.respiratory_rate.label }}</label>
           {{ form.respiratory_rate }}
-          {% if form.respiratory_rate.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>{% endif %}
-          {% if form.respiratory_rate.errors %}<div class="form-error">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
+          {% if form.respiratory_rate.help_text %}<div class="help-text">{{ form.respiratory_rate.help_text }}</div>{% endif %}
+          {% if form.respiratory_rate.errors %}<div class="form-error" aria-live="polite">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.oxygen_saturation.label }}</label>
           {{ form.oxygen_saturation }}
-          {% if form.oxygen_saturation.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>{% endif %}
-          {% if form.oxygen_saturation.errors %}<div class="form-error">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
+          {% if form.oxygen_saturation.help_text %}<div class="help-text">{{ form.oxygen_saturation.help_text }}</div>{% endif %}
+          {% if form.oxygen_saturation.errors %}<div class="form-error" aria-live="polite">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.weight.label }}</label>
           {{ form.weight }}
-          {% if form.weight.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.weight.help_text }}</div>{% endif %}
-          {% if form.weight.errors %}<div class="form-error">{{ form.weight.errors.0 }}</div>{% endif %}
+          {% if form.weight.help_text %}<div class="help-text">{{ form.weight.help_text }}</div>{% endif %}
+          {% if form.weight.errors %}<div class="form-error" aria-live="polite">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
       <div class="form-group" style="margin-top:4px;">
         <label>Urgency Level</label>
         {{ form.urgency }}
-        {% if form.urgency.errors %}<div class="form-error">{{ form.urgency.errors.0 }}</div>{% endif %}
+        {% if form.urgency.errors %}<div class="form-error" aria-live="polite">{{ form.urgency.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
         <label>Clinical Notes</label>
         {{ form.notes }}
-        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors.0 }}</div>{% endif %}
+        {% if form.notes.errors %}<div class="form-error" aria-live="polite">{{ form.notes.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
         <label>{{ form.amendment_reason.label }}</label>
-        {{ form.amendment_reason }}
-        {% if form.amendment_reason.errors %}<div class="form-error">{{ form.amendment_reason.errors.0 }}</div>{% endif %}
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
+        {{ form.amendment_reason }}          {% if form.amendment_reason.errors %}<div class="form-error" aria-live="polite">{{ form.amendment_reason.errors.0 }}</div>{% endif %}
+        <div class="help-text">
           This will be appended to the notes as an audit trail entry.
         </div>
       </div>
 
       {% if form.non_field_errors %}
-        <div class="form-error" style="margin-bottom:12px;">
+        <div class="form-error" style="margin-bottom:12px;" aria-live="polite">
           {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
         </div>
       {% endif %}
 
-      <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="btn-row">
         <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
           <ion-icon name="checkmark-circle-outline" style="font-size:16px;"></ion-icon> Save Amendment
         </button>
@@ -154,9 +192,7 @@
     </form>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:32px;">
-    Negros Oriental State University — Medical Dental Clinic
-  </p>
+  <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
 </div>
 </div>
 {% endblock %}

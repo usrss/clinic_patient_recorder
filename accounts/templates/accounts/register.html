@@ -23,6 +23,37 @@
     {% endfor %}
   {% endif %}
 
+  {# ── Form error summary (visible on any step when validation fails) ── #}
+  {% if form.errors %}
+  <div style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <ion-icon name="alert-circle-outline" style="font-size:18px;color:#ef4444;flex-shrink:0;margin-top:1px;"></ion-icon>
+      <div style="flex:1;font-size:13px;color:#991b1b;">
+        <strong style="display:block;margin-bottom:4px;">Unable to complete registration</strong>
+        <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.6;">
+          {% for field, field_errors in form.errors.items %}
+            {% for error in field_errors %}
+            <li>{{ field|title }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Restore previous data banner ── #}
+  <div id="reg-restore-banner" style="display:none;margin-bottom:16px;padding:14px 18px;border-radius:12px;background:#fff8e1;border:1px solid #fde68a;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <ion-icon name="refresh-outline" style="font-size:18px;color:#f59e0b;flex-shrink:0;"></ion-icon>
+      <div style="flex:1;font-size:13px;color:#92400e;">
+        <strong>Unfinished registration found.</strong>
+        <span style="display:block;font-size:12px;margin-top:2px;">It looks like you left off partway through. Your previous data has been restored.</span>
+      </div>
+      <button type="button" onclick="clearSavedData();location.reload()" style="background:none;border:1px solid #fde68a;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:500;color:#92400e;cursor:pointer;font-family:'Inter',sans-serif;">Dismiss</button>
+    </div>
+  </div>
+
   <!-- Progress indicator -->
   <div class="progress-wrap">
     <div class="progress-steps">
@@ -47,7 +78,7 @@
 
   <!-- Form card -->
   <div class="reg-card">
-    <form method="post" novalidate autocomplete="off" id="reg-form">
+    <form method="post" novalidate autocomplete="off" id="reg-form" data-track-changes="true">
       {% csrf_token %}
       <!-- current_step is seeded from the server on failed POST, otherwise defaults to 1 -->
       <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
@@ -62,21 +93,21 @@
         <div class="form-group">
           <label for="id_role">Role <span class="req">*</span></label>
           <select id="id_role" name="role" class="reg-input" onchange="updateRoleFields()">
-            <option value="student">Student</option>
-            <option value="faculty">Faculty</option>
-            <option value="staff">Staff</option>
+            <option value="student" {% if form.role.value == 'student' %}selected{% endif %}>Student</option>
+            <option value="faculty" {% if form.role.value == 'faculty' %}selected{% endif %}>Faculty</option>
+            <option value="staff" {% if form.role.value == 'staff' %}selected{% endif %}>Staff</option>
           </select>
         </div>
 
         <div class="form-group">
           <label for="id_patient_id">ID Number <span class="req">*</span></label>
-          <input type="text" id="id_patient_id" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required>
+          <input type="text" id="id_patient_id" name="patient_id" class="reg-input" placeholder="e.g. 202301028" required aria-describedby="err-patient_id" value="{{ form.patient_id.value|default:'' }}">
           <div class="field-error" id="err-patient_id">{% if form.patient_id.errors %}{{ form.patient_id.errors.0 }}{% else %}Please enter your ID number.{% endif %}</div>
         </div>
 
         <div class="form-group">
           <label for="id_email">Email Address <span class="req">*</span></label>
-          <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph" required>
+          <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph" required aria-describedby="err-email" value="{{ form.email.value|default:'' }}">
           <div class="field-error" id="err-email">{% if form.email.errors %}{{ form.email.errors.0 }}{% else %}Please enter a valid email address.{% endif %}</div>
           <div class="field-hint">An OTP will be sent to this email to verify your account.</div>
         </div>
@@ -85,7 +116,7 @@
           <div class="form-group">
             <label for="id_password1">Password <span class="req">*</span></label>
             <div class="pw-wrap">
-              <input type="password" id="id_password1" name="password1" class="reg-input" placeholder="Create a strong password" required autocomplete="new-password">
+              <input type="password" id="id_password1" name="password1" class="reg-input" placeholder="Create a strong password" required autocomplete="new-password" aria-describedby="err-password1 pw-requirements">
               <button type="button" class="pw-toggle" onclick="togglePw('id_password1', this)" aria-label="Toggle password visibility">
                 <svg id="eye-pw1-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -105,13 +136,16 @@
               </div>
               <div class="strength-text" id="strength-text">Too short</div>
             </div>
+            <div id="pw-requirements" style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.5;">
+              Minimum 8 characters · Uppercase + lowercase · Number · Symbol
+            </div>
             <div class="field-error" id="err-password1">{% if form.password1.errors %}{{ form.password1.errors.0 }}{% else %}Password must be at least 8 characters.{% endif %}</div>
           </div>
 
           <div class="form-group">
             <label for="id_password2">Confirm Password <span class="req">*</span></label>
             <div class="pw-wrap">
-              <input type="password" id="id_password2" name="password2" class="reg-input" placeholder="Repeat your password" required autocomplete="new-password">
+              <input type="password" id="id_password2" name="password2" class="reg-input" placeholder="Repeat your password" required autocomplete="new-password" aria-describedby="err-password2">
               <button type="button" class="pw-toggle" onclick="togglePw('id_password2', this)" aria-label="Toggle confirm password visibility">
                 <svg id="eye-pw2-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -123,6 +157,7 @@
               </button>
             </div>
             <div class="field-error" id="err-password2">{% if form.password2.errors %}{{ form.password2.errors.0 }}{% else %}Passwords do not match.{% endif %}</div>
+            <div id="pw-match-indicator" class="pw-match-indicator" style="display:none;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:500;"></div>
           </div>
         </div>
 
@@ -154,11 +189,8 @@
         </div>
         <input type="hidden" name="otp_code" id="otp-hidden">
 
-        <div class="otp-error" id="otp-error"></div>
+        <div class="otp-error" id="otp-error" aria-live="polite"></div>
 
-        <div class="otp-timer">
-          Code expires in <span class="countdown" id="otp-countdown">03:00</span>
-        </div>
         <div class="otp-resend">
           Didn't get it? <button type="button" id="resend-btn" onclick="resendOtp()" disabled>Resend code</button>
         </div>
@@ -168,7 +200,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Back
           </button>
-          <button type="button" class="btn-next" onclick="verifyOtp()">
+          <button type="button" class="btn-next" id="verifyOtpBtnReg" onclick="verifyOtp()">
             Verify &amp; Continue
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
@@ -184,16 +216,16 @@
         <div class="grid-3">
           <div class="form-group">
             <label for="id_first_name">First Name <span class="req">*</span></label>
-            <input type="text" id="id_first_name" name="first_name" class="reg-input" required>
+            <input type="text" id="id_first_name" name="first_name" class="reg-input" required aria-describedby="err-first_name" value="{{ form.first_name.value|default:'' }}">
             <div class="field-error" id="err-first_name">{% if form.first_name.errors %}{{ form.first_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_middle_name">Middle Name</label>
-            <input type="text" id="id_middle_name" name="middle_name" class="reg-input">
+            <input type="text" id="id_middle_name" name="middle_name" class="reg-input" value="{{ form.middle_name.value|default:'' }}">
           </div>
           <div class="form-group">
             <label for="id_last_name">Last Name <span class="req">*</span></label>
-            <input type="text" id="id_last_name" name="last_name" class="reg-input" required>
+            <input type="text" id="id_last_name" name="last_name" class="reg-input" required aria-describedby="err-last_name" value="{{ form.last_name.value|default:'' }}">
             <div class="field-error" id="err-last_name">{% if form.last_name.errors %}{{ form.last_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
@@ -202,16 +234,16 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="id_sex">Sex <span class="req">*</span></label>
-            <select id="id_sex" name="sex" class="reg-input" required>
+            <select id="id_sex" name="sex" class="reg-input" required aria-describedby="err-sex">
               <option value="">— Select —</option>
-              <option value="M">Male</option>
-              <option value="F">Female</option>
+              <option value="M" {% if form.sex.value == 'M' %}selected{% endif %}>Male</option>
+              <option value="F" {% if form.sex.value == 'F' %}selected{% endif %}>Female</option>
             </select>
             <div class="field-error" id="err-sex">{% if form.sex.errors %}{{ form.sex.errors.0 }}{% else %}Please select your sex.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_birthday">Date of Birth <span class="req">*</span></label>
-            <input type="date" id="id_birthday" name="birthday" class="reg-input" required>
+            <input type="date" id="id_birthday" name="birthday" class="reg-input" required aria-describedby="err-birthday" value="{{ form.birthday.value|default:'' }}">
             <div class="field-error" id="err-birthday">{% if form.birthday.errors %}{{ form.birthday.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
@@ -221,19 +253,19 @@
             <label for="id_blood_type">Blood Type</label>
             <select id="id_blood_type" name="blood_type" class="reg-input">
               <option value="">— Unknown —</option>
-              <option>A+</option><option>A-</option>
-              <option>B+</option><option>B-</option>
-              <option>AB+</option><option>AB-</option>
-              <option>O+</option><option>O-</option>
-              <option>Unknown</option>
+              <option {% if form.blood_type.value == 'A+' %}selected{% endif %}>A+</option><option {% if form.blood_type.value == 'A-' %}selected{% endif %}>A-</option>
+              <option {% if form.blood_type.value == 'B+' %}selected{% endif %}>B+</option><option {% if form.blood_type.value == 'B-' %}selected{% endif %}>B-</option>
+              <option {% if form.blood_type.value == 'AB+' %}selected{% endif %}>AB+</option><option {% if form.blood_type.value == 'AB-' %}selected{% endif %}>AB-</option>
+              <option {% if form.blood_type.value == 'O+' %}selected{% endif %}>O+</option><option {% if form.blood_type.value == 'O-' %}selected{% endif %}>O-</option>
+              <option {% if form.blood_type.value == 'Unknown' %}selected{% endif %}>Unknown</option>
             </select>
           </div>
           <div class="form-group">
             <label for="id_civil_status">Civil Status</label>
             <select id="id_civil_status" name="civil_status" class="reg-input">
               <option value="">— Select —</option>
-              <option>Single</option><option>Married</option>
-              <option>Widowed</option><option>Separated</option>
+              <option {% if form.civil_status.value == 'Single' %}selected{% endif %}>Single</option><option {% if form.civil_status.value == 'Married' %}selected{% endif %}>Married</option>
+              <option {% if form.civil_status.value == 'Widowed' %}selected{% endif %}>Widowed</option><option {% if form.civil_status.value == 'Separated' %}selected{% endif %}>Separated</option>
             </select>
           </div>
         </div>
@@ -241,54 +273,60 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="id_height_cm">Height (cm)</label>
-            <input type="number" id="id_height_cm" name="height_cm" class="reg-input" step="0.1" min="50" max="250" placeholder="e.g. 165">
+            <input type="number" id="id_height_cm" name="height_cm" class="reg-input" step="0.1" min="50" max="250" placeholder="e.g. 165" value="{{ form.height_cm.value|default:'' }}">
           </div>
           <div class="form-group">
             <label for="id_weight_kg">Weight (kg)</label>
-            <input type="number" id="id_weight_kg" name="weight_kg" class="reg-input" step="0.1" min="10" max="300" placeholder="e.g. 60">
+            <input type="number" id="id_weight_kg" name="weight_kg" class="reg-input" step="0.1" min="10" max="300" placeholder="e.g. 60" value="{{ form.weight_kg.value|default:'' }}">
           </div>
         </div>
 
         <div class="grid-2">
           <div class="form-group">
             <label for="id_religion">Religion</label>
-            <input type="text" id="id_religion" name="religion" class="reg-input" placeholder="e.g. Roman Catholic">
+            <input type="text" id="id_religion" name="religion" class="reg-input" placeholder="e.g. Roman Catholic" value="{{ form.religion.value|default:'' }}">
           </div>
           <div class="form-group">
             <label for="id_address">Address</label>
-            <input type="text" id="id_address" name="address" class="reg-input" placeholder="City, Province">
+            <input type="text" id="id_address" name="address" class="reg-input" placeholder="City, Province" value="{{ form.address.value|default:'' }}">
           </div>
         </div>
 
         <div class="grid-2">
           <div class="form-group" id="field-college">
             <label for="id_college">College <span class="req">*</span></label>
-            <select id="id_college" name="college" class="reg-input">
+            <select id="id_college" name="college" class="reg-input" onchange="loadCourses()" aria-describedby="err-college">
               <option value=""> Select College </option>
               {% for c in form.college.field.queryset %}
-              <option value="{{ c.pk }}">{{ c.abbreviation }} — {{ c.name }}</option>
+              <option value="{{ c.pk }}" {% if form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>
               {% endfor %}
             </select>
             <div class="field-error" id="err-college">{% if form.college.errors %}{{ form.college.errors.0 }}{% else %}Please select your college.{% endif %}</div>
           </div>
+          <div class="form-group" id="field-course" style="display:none;">
+            <label for="id_course">Course <span class="req">*</span></label>
+            <select id="id_course" name="course" class="reg-input" aria-describedby="err-course" data-selected="{{ form.course.value|default:'' }}">
+              <option value=""> Select Course </option>
+            </select>
+            <div class="field-error" id="err-course">{% if form.course.errors %}{{ form.course.errors.0 }}{% else %}Please select your course.{% endif %}</div>
+          </div>
           <div class="form-group" id="field-year">
-            <label for="id_year_level">College <span class="req">*</span></label>
-            <label for="id_year_level">Year Level</label>
-            <select id="id_year_level" name="year_level" class="reg-input">
+            <label for="id_year_level">Year Level <span class="req">*</span></label>
+            <select id="id_year_level" name="year_level" class="reg-input" aria-describedby="err-year_level">
               <option value="">—</option>
-              <option>1st Year</option><option>2nd Year</option>
-              <option>3rd Year</option><option>4th Year</option>
+              <option {% if form.year_level.value == '1st Year' %}selected{% endif %}>1st Year</option><option {% if form.year_level.value == '2nd Year' %}selected{% endif %}>2nd Year</option>
+              <option {% if form.year_level.value == '3rd Year' %}selected{% endif %}>3rd Year</option><option {% if form.year_level.value == '4th Year' %}selected{% endif %}>4th Year</option>
             </select>
             <div class="field-error" id="err-year_level">{% if form.year_level.errors %}{{ form.year_level.errors.0 }}{% else %}Please select your year level.{% endif %}</div>
           </div>
           <div class="form-group" id="field-department" style="display:none;">
             <label for="id_department">Department <span class="req">*</span></label>
-            <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS">
+            <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS" aria-describedby="err-department" value="{{ form.department.value|default:'' }}">
             <div class="field-error" id="err-department">{% if form.department.errors %}{{ form.department.errors.0 }}{% else %}Please enter your department.{% endif %}</div>
           </div>
           <div class="form-group" id="field-position" style="display:none;">
             <label for="id_position">Position / Designation</label>
-            <input type="text" id="id_position" name="position" class="reg-input" placeholder="e.g. Department Head">
+            <input type="text" id="id_position" name="position" class="reg-input" placeholder="e.g. Department Head" value="{{ form.position.value|default:'' }}">
           </div>
         </div>
 
@@ -296,8 +334,9 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="id_phone">Phone Number <span class="req">*</span></label>
-            <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX" required>
+            <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX" required aria-describedby="err-phone" value="{{ form.phone.value|default:'' }}">
             <div class="field-error" id="err-phone">{% if form.phone.errors %}{{ form.phone.errors.0 }}{% else %}Please enter a valid phone number.{% endif %}</div>
+            <div class="field-hint">Enter a Philippine mobile number (e.g. 09123456789)</div>
           </div>
           <div class="form-group">
             <!-- spacer -->
@@ -306,12 +345,12 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="id_emergency_contact_name">Emergency Contact Name <span class="req">*</span></label>
-            <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input" required>
+            <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input" required aria-describedby="err-emergency_contact_name" value="{{ form.emergency_contact_name.value|default:'' }}">
             <div class="field-error" id="err-emergency_contact_name">{% if form.emergency_contact_name.errors %}{{ form.emergency_contact_name.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
           <div class="form-group">
             <label for="id_emergency_contact_phone">Emergency Contact Phone <span class="req">*</span></label>
-            <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input" required>
+            <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input" required aria-describedby="err-emergency_contact_phone" value="{{ form.emergency_contact_phone.value|default:'' }}">
             <div class="field-error" id="err-emergency_contact_phone">{% if form.emergency_contact_phone.errors %}{{ form.emergency_contact_phone.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
@@ -336,54 +375,54 @@
         <div class="sec-label">Medical History (Optional)</div>
         <div class="check-panel">
           <div class="check-grid">
-            <label class="check-item"><input type="checkbox" name="hypertension"> Hypertension</label>
-            <label class="check-item"><input type="checkbox" name="diabetes"> Diabetes</label>
-            <label class="check-item"><input type="checkbox" name="asthma"> Asthma</label>
-            <label class="check-item"><input type="checkbox" name="cardiac_problems"> Cardiac Problems</label>
-            <label class="check-item"><input type="checkbox" name="arthritis"> Arthritis</label>
+            <label class="check-item"><input type="checkbox" name="hypertension" {% if form.hypertension.value %}checked{% endif %}> Hypertension</label>
+            <label class="check-item"><input type="checkbox" name="diabetes" {% if form.diabetes.value %}checked{% endif %}> Diabetes</label>
+            <label class="check-item"><input type="checkbox" name="asthma" {% if form.asthma.value %}checked{% endif %}> Asthma</label>
+            <label class="check-item"><input type="checkbox" name="cardiac_problems" {% if form.cardiac_problems.value %}checked{% endif %}> Cardiac Problems</label>
+            <label class="check-item"><input type="checkbox" name="arthritis" {% if form.arthritis.value %}checked{% endif %}> Arthritis</label>
           </div>
         </div>
         <div class="form-group">
           <label for="id_other_conditions">Other Conditions</label>
-          <textarea id="id_other_conditions" name="other_conditions" class="reg-input" rows="2" placeholder="List any other diagnosed conditions…"></textarea>
+          <textarea id="id_other_conditions" name="other_conditions" class="reg-input" rows="2" placeholder="List any other diagnosed conditions…">{{ form.other_conditions.value|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label for="id_known_allergies">Known Allergies</label>
-          <textarea id="id_known_allergies" name="known_allergies" class="reg-input" rows="2" placeholder="e.g. Penicillin, shellfish, dust…"></textarea>
+          <textarea id="id_known_allergies" name="known_allergies" class="reg-input" rows="2" placeholder="e.g. Penicillin, shellfish, dust…">{{ form.known_allergies.value|default:'' }}</textarea>
         </div>
 
         <div class="sec-label sec-label-gap">Immunization History</div>
         <div class="check-panel imm">
           <div class="check-grid">
-            <label class="check-item"><input type="checkbox" name="bcg"> BCG</label>
-            <label class="check-item"><input type="checkbox" name="dpt"> DPT</label>
-            <label class="check-item"><input type="checkbox" name="opv"> OPV</label>
-            <label class="check-item"><input type="checkbox" name="hepatitis_b"> Hepatitis B</label>
-            <label class="check-item"><input type="checkbox" name="measles"> Measles</label>
-            <label class="check-item"><input type="checkbox" name="tt"> TT (Tetanus)</label>
+            <label class="check-item"><input type="checkbox" name="bcg" {% if form.bcg.value %}checked{% endif %}> BCG</label>
+            <label class="check-item"><input type="checkbox" name="dpt" {% if form.dpt.value %}checked{% endif %}> DPT</label>
+            <label class="check-item"><input type="checkbox" name="opv" {% if form.opv.value %}checked{% endif %}> OPV</label>
+            <label class="check-item"><input type="checkbox" name="hepatitis_b" {% if form.hepatitis_b.value %}checked{% endif %}> Hepatitis B</label>
+            <label class="check-item"><input type="checkbox" name="measles" {% if form.measles.value %}checked{% endif %}> Measles</label>
+            <label class="check-item"><input type="checkbox" name="tt" {% if form.tt.value %}checked{% endif %}> TT (Tetanus)</label>
           </div>
         </div>
         <div class="form-group">
           <label for="id_immunization_others">Other Immunizations</label>
-          <textarea id="id_immunization_others" name="immunization_others" class="reg-input" rows="2" placeholder="e.g. COVID-19 vaccine, Flu shot…"></textarea>
+          <textarea id="id_immunization_others" name="immunization_others" class="reg-input" rows="2" placeholder="e.g. COVID-19 vaccine, Flu shot…">{{ form.immunization_others.value|default:'' }}</textarea>
         </div>
 
         <div class="sec-label sec-label-gap">Medical Background</div>
         <div class="form-group">
           <label for="id_current_medications">Current Medications</label>
-          <textarea id="id_current_medications" name="current_medications" class="reg-input" rows="2" placeholder="List any medications you currently take…"></textarea>
+          <textarea id="id_current_medications" name="current_medications" class="reg-input" rows="2" placeholder="List any medications you currently take…">{{ form.current_medications.value|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label for="id_previous_illnesses">Previous Illnesses</label>
-          <textarea id="id_previous_illnesses" name="previous_illnesses" class="reg-input" rows="2" placeholder="e.g. Dengue, Typhoid fever…"></textarea>
+          <textarea id="id_previous_illnesses" name="previous_illnesses" class="reg-input" rows="2" placeholder="e.g. Dengue, Typhoid fever…">{{ form.previous_illnesses.value|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label for="id_previous_hospitalizations">Previous Hospitalizations</label>
-          <textarea id="id_previous_hospitalizations" name="previous_hospitalizations" class="reg-input" rows="2" placeholder="Reason and year if applicable…"></textarea>
+          <textarea id="id_previous_hospitalizations" name="previous_hospitalizations" class="reg-input" rows="2" placeholder="Reason and year if applicable…">{{ form.previous_hospitalizations.value|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label for="id_vices">Vices / Lifestyle Habits</label>
-          <textarea id="id_vices" name="vices" class="reg-input" rows="2" placeholder="e.g. Smoking, alcohol use…"></textarea>
+          <textarea id="id_vices" name="vices" class="reg-input" rows="2" placeholder="e.g. Smoking, alcohol use…">{{ form.vices.value|default:'' }}</textarea>
         </div>
 
         {% if form.non_field_errors %}
@@ -397,7 +436,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Back
           </button>
-          <button type="submit" class="btn-submit">Complete Registration</button>
+          <button type="submit" id="completeRegBtn" class="btn-submit" style="display:flex;align-items:center;justify-content:center;gap:8px;">Complete Registration</button>
         </div>
       </div>
 
@@ -417,6 +456,7 @@
 <script>
   const REGISTER_SEND_OTP_URL = "{% url 'accounts:send_registration_otp' %}";
   const REGISTER_VERIFY_OTP_URL = "{% url 'accounts:verify_registration_otp' %}";
+  const REGISTER_COURSES_URL = "{% url 'accounts:courses_by_college' %}";
 </script>
 <script src="{% static 'accounts/js/register.js' %}"></script>
 {% endblock %}

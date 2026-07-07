@@ -87,6 +87,7 @@
       <div><div class="info-item-label">Age</div><div class="info-item-value">{% if patient.age %}{{ patient.age }} years old{% elif profile and profile.birthday is None %}<span class="muted">Birthday not set</span>{% else %}—{% endif %}</div></div>
       <div><div class="info-item-label">Birthday</div><div class="info-item-value">{% if profile and profile.birthday %}{{ profile.birthday|date:"F d, Y" }}{% else %}<span class="info-item-value muted">Not set</span>{% endif %}</div></div>
       <div><div class="info-item-label">College</div><div class="info-item-value">{% if patient.college %}{{ patient.college.abbreviation }} — {{ patient.college.name }}{% else %}—{% endif %}</div></div>
+      {% if patient.course %}<div><div class="info-item-label">Course</div><div class="info-item-value">{{ patient.course.name }}</div></div>{% endif %}
       {% if patient.department %}<div><div class="info-item-label">Department</div><div class="info-item-value">{{ patient.department }}</div></div>{% endif %}
       {% if patient.position %}<div><div class="info-item-label">Position</div><div class="info-item-value">{{ patient.position }}</div></div>{% endif %}
     </div>
