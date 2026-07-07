@@ -94,7 +94,7 @@ def _build_disease_queryset(keyword, date_from, date_to, patient_type, college_i
     )
 
     if keyword:
-        qs = qs.filter(prescriptions__diagnosis__icontains=keyword)
+        qs = qs.filter(prescriptions__diagnosis__icontains=keyword).distinct()
     if date_from:
         qs = qs.filter(created_at__gte=_make_aware_dt(date_from))
     if date_to:
@@ -912,7 +912,7 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
     if college_id:
         base_qs = base_qs.filter(patient__college_id=college_id)
     if keyword:
-        base_qs = base_qs.filter(prescriptions__diagnosis__icontains=keyword)
+        base_qs = base_qs.filter(prescriptions__diagnosis__icontains=keyword).distinct()
 
     completed_qs  = base_qs.filter(status=Consultation.Status.COMPLETED)
     cancelled_qs  = base_qs.filter(status=Consultation.Status.CANCELLED)

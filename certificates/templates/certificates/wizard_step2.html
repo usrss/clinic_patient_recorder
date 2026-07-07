@@ -1,4 +1,4 @@
-{% extends 'core/base_staff.html' %}
+{% extends base_template %}
 {% block title %}Certificate Details — Step 2{% endblock %}
 
 {% block extra_css %}
@@ -135,11 +135,6 @@
         {{ form.fitness_status }}
         {% if form.fitness_status.errors %}<div class="form-error">{{ form.fitness_status.errors.0 }}</div>{% endif %}
       </div>
-      {% endif %}
-
-      {# Dental — just diagnosis #}
-      {% if certificate.certificate_type == 'dental' %}
-      <div class="form-hint" style="margin-bottom:16px;">Dental diagnosis and findings</div>
       {% endif %}
 
       {# Remarks — always shown #}

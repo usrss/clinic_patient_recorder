@@ -542,21 +542,25 @@ def dashboard(request):
         daily_activity = []
         for i in range(6, -1, -1):
             day = now.date() - timedelta(days=i)
-            count = Consultation.objects.filter(
-                triages__triaged_by=user,
-                updated_at__date=day
+            count = Triage.objects.filter(
+                triaged_by=user,
+                triaged_at__date=day
             ).count()
             daily_activity.append({'date': day.strftime('%a'), 'count': count})
 
         recent_consults = Consultation.objects.filter(
             triages__triaged_by=user
-        ).select_related('patient').order_by('-updated_at')[:5]
+        ).select_related('patient').distinct().order_by('-updated_at')[:5]
 
-        urgent_triage_count = Triage.objects.filter(
-            triaged_by=user,
-            urgency='high',
-            triaged_at__gte=thirty_days_ago
-        ).count()
+        urgent_triage_count = Consultation.objects.filter(
+            triages__triaged_by=user,
+            triages__urgency='high',
+            status__in=[
+                Consultation.Status.QUEUED,
+                Consultation.Status.SCHEDULED,
+                Consultation.Status.TRIAGED,
+            ]
+        ).distinct().count()
 
         context = {
             'user': user,
@@ -670,9 +674,11 @@ def change_password(request):
 
         return redirect('accounts:dashboard')
 
+    base_tpl = 'core/base.html' if user.role == User.Role.PATIENT else _base_template(request.user)
     return render(request, 'accounts/change_password.html', {
         'form': form,
         'forced': user.force_password_change,
+        'base_template': base_tpl,
     })
 
 
@@ -935,7 +941,7 @@ def profile_settings(request):
         if is_info_post:
             if user.role == User.Role.PATIENT:
                 info_form = PatientProfileEditForm(
-                    request.POST, request.FILES, instance=profile, patient=patient
+                    request.POST, request.FILES, instance=profile, patient=patient, user=user
                 )
                 if patient.college:
                     info_form.fields['course'].queryset = Course.objects.filter(college=patient.college).order_by('name')
@@ -983,6 +989,10 @@ def profile_settings(request):
                         update_fields.append('profile_picture')
 
                     patient.save(update_fields=update_fields)
+
+                    # Sync email to User model so Forgot Password can find it
+                    user.email = info_form.cleaned_data.get('email', '')
+                    user.save(update_fields=['email'])
 
                 else:
                     # ── Staff branch ─────────────────────────────────────
@@ -1137,7 +1147,7 @@ def complete_profile(request):
     if patient.course:
         initial['course'] = patient.course
 
-    form = ProfileCompletionForm(request.POST or None, request.FILES or None, initial=initial)
+    form = ProfileCompletionForm(request.POST or None, request.FILES or None, initial=initial, user=request.user)
 
     # Ensure course dropdown is populated with the correct college's courses.
     # On GET, use the patient's existing college. On POST re-render (after
@@ -1180,6 +1190,10 @@ def complete_profile(request):
                 update_fields.append('profile_picture')
 
             patient.save(update_fields=update_fields)
+
+            # Sync email to User model so Forgot Password can find it
+            user.email = cd.get('email', '')
+            user.save(update_fields=['email'])
 
             profile.birthday = cd.get('birthday') or profile.birthday
             profile.address = cd.get('address', '')

@@ -275,6 +275,7 @@ class PatientProfileEditForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         patient = kwargs.pop('patient', None)
         super().__init__(*args, **kwargs)
         # Pre-fill Patient fields into form initials
@@ -299,6 +300,16 @@ class PatientProfileEditForm(forms.ModelForm):
         self.fields['height_cm'].validators.append(MaxValueValidator(250))
         self.fields['weight_kg'].validators.append(MinValueValidator(10))
         self.fields['weight_kg'].validators.append(MaxValueValidator(300))
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip()
+        if email:
+            qs = User.objects.filter(email=email)
+            if self.user and self.user.pk:
+                qs = qs.exclude(pk=self.user.pk)
+            if qs.exists():
+                raise forms.ValidationError('This email is already registered to another account.')
+        return email
 
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
@@ -333,7 +344,7 @@ class ProfileCompletionForm(forms.Form):
     # ── Editable fields ──
     role = forms.ChoiceField(choices=ROLE_CHOICES, label='Role')
     phone = forms.CharField(max_length=30, required=False, label='Phone Number')
-    email = forms.EmailField(required=False, label='Email Address')
+    email = forms.EmailField(required=True, label='Email Address')
 
     # ── Personal Info ──
     address = forms.CharField(max_length=300, required=False)
@@ -434,6 +445,20 @@ class ProfileCompletionForm(forms.Form):
     previous_hospitalizations = forms.CharField(
         max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2})
     )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip()
+        if email:
+            qs = User.objects.filter(email=email)
+            if self.user and self.user.pk:
+                qs = qs.exclude(pk=self.user.pk)
+            if qs.exists():
+                raise forms.ValidationError('This email is already registered to another account.')
+        return email
 
     def clean(self):
         cleaned = super().clean()

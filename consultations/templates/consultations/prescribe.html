@@ -100,9 +100,10 @@
   }
   .medicine-row:last-child { margin-bottom: 0; }
   .remove-row-btn {
-    position: absolute; top: 10px; right: 12px;
+    position: absolute; top: 10px; right: 8px;
     background: none; border: none; cursor: pointer;
-    color: #ef4444; font-size: 16px; padding: 2px 6px; border-radius: 4px; line-height: 1;
+    color: #ef4444; padding: 4px 6px; border-radius: 4px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   .remove-row-btn:hover { background: #fee2e2; }
 
@@ -336,7 +337,7 @@
           <input type="text" id="ata-instructions-other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
         </div>
         <div>
-          <button type="button" class="btn-apply-all" id="apply-all-btn">⟳ Apply to All</button>
+          <button type="button" class="btn-apply-all" id="apply-all-btn"><ion-icon name="refresh-outline" style="font-size:14px;"></ion-icon> Apply to All</button>
         </div>
       </div>
 
@@ -345,7 +346,7 @@
         {% for item_form in formset %}
         {# ── Each row: inventory mode + custom mode in SEPARATE divs with UNIQUE names ── #}
         <div class="medicine-row" data-index="{{ forloop.counter0 }}">
-          <button type="button" class="remove-row-btn" title="Remove row">✕</button>
+          <button type="button" class="remove-row-btn" title="Remove row"><ion-icon name="close-outline" style="font-size:16px;"></ion-icon></button>
 
           <!-- Hidden source field (set by JS when radio changes) -->
           <input type="hidden" name="meds-{{ forloop.counter0 }}-source" value="inventory" class="source-field">
@@ -618,7 +619,7 @@
   function buildRowHTML(idx) {
     var p = PREFIX + '-' + idx + '-';
     return '' +
-      '<button type="button" class="remove-row-btn" title="Remove row">✕</button>' +
+      '<button type="button" class="remove-row-btn" title="Remove row"><ion-icon name="close-outline" style="font-size:16px;"></ion-icon></button>' +
       '<input type="hidden" name="' + p + 'source" value="inventory" class="source-field">' +
 
       '<div style="margin-bottom:12px;">' +
@@ -763,10 +764,10 @@
 
     /* Visual feedback */
     var btn = document.getElementById('apply-all-btn');
-    var orig = btn.textContent;
-    btn.textContent = '✓ Applied!';
+    var origHTML = btn.innerHTML;
+    btn.innerHTML = '<ion-icon name="checkmark-circle" style="font-size:14px;"></ion-icon> Applied!';
     btn.style.background = '#16a34a';
-    setTimeout(function () { btn.textContent = orig; btn.style.background = ''; }, 1500);
+    setTimeout(function () { btn.innerHTML = origHTML; btn.style.background = ''; }, 1500);
   });
 
   /* ════════════════════════════════════════════════════════════

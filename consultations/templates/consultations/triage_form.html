@@ -219,9 +219,9 @@
       <div>
         <div class="lbl">Status</div>
         {% if consultation.status == 'queued' %}
-          <span class="status-pill status-pill-queued">🗂 Queue #{{ consultation.queue_number }}</span>
+          <span class="status-pill status-pill-queued"><ion-icon name="folder-outline" style="font-size:11px;"></ion-icon> Queue #{{ consultation.queue_number }}</span>
         {% elif consultation.status == 'scheduled' %}
-          <span class="status-pill status-pill-scheduled">📅 {{ consultation.scheduled_at|date:"M d, H:i" }}</span>
+          <span class="status-pill status-pill-scheduled"><ion-icon name="calendar-outline" style="font-size:11px;"></ion-icon> {{ consultation.scheduled_at|date:"M d, H:i" }}</span>
         {% endif %}
       </div>
     </div>
@@ -270,11 +270,12 @@
 
         {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis and not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
         <div class="alert-warning">
-          ⚠ No medical history recorded. Please update below.
+          <ion-icon name="warning-outline" style="font-size:14px;vertical-align:middle;color:#f59e0b;"></ion-icon>
+          <strong>No medical history recorded.</strong> Please update the patient's medical history and immunization status below. These will be saved to their permanent record.
         </div>
         {% endif %}
 
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">🏥 Medical History</div>
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="clipboard-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Medical History</div>
         <div class="checkbox-grid">
           <label>{{ form.hypertension }} Hypertension</label>
           <label>{{ form.diabetes }} Diabetes</label>
@@ -284,7 +285,7 @@
         </div>
         <div class="form-group" style="margin-bottom:14px;">{{ form.other_conditions }}</div>
 
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">💉 Immunization</div>
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="medkit-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Immunization</div>
         <div class="immunization-grid">
           <label>{{ form.bcg }} BCG</label>
           <label>{{ form.dpt }} DPT</label>
@@ -362,7 +363,7 @@
       <div class="btn-row">
         <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
           <ion-icon name="checkmark-circle-outline" style="font-size:16px;"></ion-icon>
-          Next
+          Complete Triage &amp; Continue
         </button>
         <a href="{% url 'consultations:triage_list' %}" class="btn btn-secondary">Cancel</a>
       </div>
@@ -376,8 +377,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('form').addEventListener('submit', function(e) {

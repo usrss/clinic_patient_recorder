@@ -3,11 +3,6 @@
 {% block page_title %}My Patients{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} patient{{ consultations.count|pluralize }} ready for consultation{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block extra_css %}
 <style>
   .sec-heading {
@@ -119,11 +114,11 @@
           <td>
             {% with tc=c.triages.first %}{% if tc %}
               {% if tc.urgency == 'high' %}
-                <span class="urgency-badge urgency-high">🔴 High</span>
+                <span class="urgency-badge urgency-high"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> High</span>
               {% elif tc.urgency == 'medium' %}
-                <span class="urgency-badge urgency-med">🟡 Medium</span>
+                <span class="urgency-badge urgency-med"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> Medium</span>
               {% else %}
-                <span class="urgency-badge urgency-low">🟢 Low</span>
+                <span class="urgency-badge urgency-low"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> Low</span>
               {% endif %}
             {% else %}—{% endif %}{% endwith %}
           </td>

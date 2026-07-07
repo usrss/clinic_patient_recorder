@@ -11,6 +11,13 @@ from .models import MedicalCertificate, CertificateAuditLog, CertificateTemplate
 from .forms import CertificateTypeForm, CertificateDetailsForm, CertificateVoidForm, CertificateTemplateTextForm
 from accounts.decorators import doctor_required, clinical_staff_required, admin_required
 from audit_logs.services import log_create, log_audit_entry
+
+
+def _base_template(user):
+    """Return the correct base template for the current user's role."""
+    if user.role == 'admin':
+        return 'core/base_admin.html'
+    return 'core/base_staff.html'
 from certificates.services.docx_export import generate_certificate_docx_bytes, CertificateDocxError
 from certificates.services.pdf_export import convert_docx_bytes_to_pdf, CertificatePdfError
 
@@ -50,7 +57,6 @@ _LEGACY_SLOT_ORDER = {
     'standard': ['diagnosis_statement', 'diagnosis_line', 'rest_period_single', 'rest_period_range', 'closing_statement'],
     'fit_to_work': ['statement', 'findings_line', 'closing_statement'],
     'fit_to_play': ['statement', 'findings_line', 'closing_statement'],
-    'dental': ['diagnosis_statement', 'diagnosis_line', 'closing_statement'],
 }
 
 
@@ -74,12 +80,10 @@ def _get_certificate_text(certificate):
         # New string-format snapshot
         return snapshot
 
-    # Dental inherits standard's template text
     ct = certificate.certificate_type
-    source_type = 'standard' if ct == MedicalCertificate.CertificateType.DENTAL else ct
 
     body = CertificateTemplateText.objects.filter(
-        certificate_type=source_type,
+        certificate_type=ct,
         slot_key='body',
     ).first()
     if not body:
@@ -147,6 +151,7 @@ def wizard_type(request, consultation_pk):
         'consultation': consultation,
         'form': form,
         'diagnosis_list': diagnosis_list,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -179,6 +184,7 @@ def wizard_details(request, pk):
         'certificate': certificate,
         'consultation': consultation,
         'form': form,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -219,6 +225,7 @@ def wizard_preview(request, pk):
     return render(request, 'certificates/wizard_step3.html', {
         'certificate': certificate,
         'slot_text': slot_text,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -270,6 +277,7 @@ def print_certificate(request, pk):
     # ── Render the PDF-preview wrapper page ──────────────────────────
     return render(request, 'certificates/certificate_preview.html', {
         'certificate': certificate,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -404,6 +412,7 @@ def void_certificate(request, pk):
     return render(request, 'certificates/certificate_void.html', {
         'certificate': certificate,
         'form': form,
+        'base_template': _base_template(request.user),
     })
 
 
@@ -413,7 +422,7 @@ def void_certificate(request, pk):
 @admin_required
 def template_text_list(request):
     """List all editable template text slots, grouped by certificate type."""
-    order = ['standard', 'fit_to_work', 'fit_to_play', 'dental']
+    order = ['standard', 'fit_to_work', 'fit_to_play']
     grouped = {}
     for ct in order:
         rows = CertificateTemplateText.objects.filter(certificate_type=ct)

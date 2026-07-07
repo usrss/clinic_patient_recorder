@@ -1,4 +1,4 @@
-{% extends 'core/base_staff.html' %}
+{% extends base_template %}
 {% load static %}
 {% block title %}Preview Certificate — Step 3{% endblock %}
 
@@ -142,8 +142,6 @@
           to participate in <strong>{{ certificate.activity_name }}</strong>.
         </p>
 
-        {% elif certificate.certificate_type == 'dental' %}
-        <p><strong>Diagnosis:</strong> {{ certificate.diagnosis }}</p>
         {% endif %}
 
         {% if certificate.remarks %}

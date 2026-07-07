@@ -4,11 +4,6 @@
 {% block page_title %}Triage Queue{% endblock %}
 {% block page_subtitle %}{{ consultations.count }} patient{{ consultations.count|pluralize }} awaiting triage{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block extra_css %}
 <style>
   .sec-heading {
@@ -101,23 +96,18 @@
     <table class="q-table">
       <thead>
         <tr>
-          <th>#</th>
           <th>Type</th>
           <th>Patient</th>
           <th>Patient ID</th>
-          <th>Status</th>
           <th>Queue / Schedule</th>
-          <th>Vitals</th>
-          <th>Severity</th>
+          <th>Symptoms</th>
           <th>Submitted</th>
-          <th>Queue Pos</th>
           <th>Action</th>
         </tr>
       </thead>
       <tbody>
         {% for c in consultations %}
         <tr>
-          <td style="color:#94a3b8;font-size:11px;font-weight:600;">{{ c.pk }}</td>
           <td>
             {% if c.pk in follow_up_consultation_ids %}
             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
@@ -137,30 +127,18 @@
             {% endif %}
           </td>
           <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
-          <td>
-            {% if c.status == 'queued' %}
-              <span class="status-badge status-queued">🗂 Queued</span>
-            {% elif c.status == 'scheduled' %}
-              <span class="status-badge status-scheduled">📅 Scheduled</span>
-            {% endif %}
-          </td>
           <td style="font-size:13px;color:#6b7280;">
-            {% if c.queue_number %}#{{ c.queue_number }}
-            {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
-            {% else %}—{% endif %}
+            <span class="status-badge {% if c.status == 'queued' %}status-queued{% else %}status-scheduled{% endif %}">
+              <ion-icon name="{% if c.status == 'queued' %}folder-outline{% else %}calendar-outline{% endif %}" style="font-size:11px;"></ion-icon>
+              {% if c.queue_number %}#{{ c.queue_number }}
+              {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
+              {% else %}—{% endif %}
+            </span>
           </td>
-          <td class="vitals-cell">
-            {% with tc=c.triages.first %}{% if tc %}
-              BP: <strong>{{ tc.blood_pressure }}</strong><br>
-              Temp: <strong>{{ tc.temperature }}°C</strong><br>
-              Pulse: <strong>{{ tc.pulse_rate }} bpm</strong>
-            {% else %}—{% endif %}{% endwith %}
-          </td>
-          <td style="font-size:12px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            {{ c.severity_description|truncatechars:35 }}
+          <td style="font-size:12px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ c.severity_description|truncatechars:40 }}
           </td>
           <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
-          <td><span class="id-badge" style="background:#e0f2fe;color:#0369a1;">#{{ queue_positions|dict_key:c.pk }}</span></td>
           <td>
             <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn">
               Triage

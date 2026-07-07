@@ -258,21 +258,21 @@
       <div class="consult-top">
         <span class="consult-id">#{{ c.pk }}</span>
         {% if c.status == 'pending' %}
-          <span class="status-badge s-pending">⏳ Pending</span>
+          <span class="status-badge s-pending"><ion-icon name="time-outline" style="font-size:12px;"></ion-icon> Pending</span>
         {% elif c.status == 'queued' %}
-          <span class="status-badge s-queued">🗂 Queued {% if c.queue_number %}#{{ c.queue_number }}{% endif %}</span>
+          <span class="status-badge s-queued"><ion-icon name="folder-outline" style="font-size:12px;"></ion-icon> Queued {% if c.queue_number %}#{{ c.queue_number }}{% endif %}</span>
         {% elif c.status == 'scheduled' %}
-          <span class="status-badge s-scheduled">📅 {{ c.scheduled_at|date:"M d, H:i" }}</span>
+          <span class="status-badge s-scheduled"><ion-icon name="calendar-outline" style="font-size:12px;"></ion-icon> {{ c.scheduled_at|date:"M d, H:i" }}</span>
         {% elif c.status == 'triaged' %}
-          <span class="status-badge s-triaged">🩺 Triaged</span>
+          <span class="status-badge s-triaged"><ion-icon name="medkit-outline" style="font-size:12px;"></ion-icon> Triaged</span>
         {% elif c.status == 'completed' %}
-          <span class="status-badge s-completed">✅ Completed</span>
+          <span class="status-badge s-completed"><ion-icon name="checkmark-circle-outline" style="font-size:12px;"></ion-icon> Completed</span>
         {% elif c.status == 'cancelled' %}
-          <span class="status-badge s-cancelled">✕ Cancelled</span>
+          <span class="status-badge s-cancelled"><ion-icon name="close-circle-outline" style="font-size:12px;"></ion-icon> Cancelled</span>
         {% elif c.status == 'active_follow_up' %}
-          <span class="status-badge s-active-follow-up">🔄 Active Follow-up</span>
+          <span class="status-badge s-active-follow-up"><ion-icon name="sync-outline" style="font-size:12px;"></ion-icon> Active Follow-up</span>
         {% elif c.status == 'closed' %}
-          <span class="status-badge s-closed">🔒 Closed</span>
+          <span class="status-badge s-closed"><ion-icon name="lock-closed-outline" style="font-size:12px;"></ion-icon> Closed</span>
         {% endif %}
 
         {% if c.follow_up_count > 0 %}

@@ -3,11 +3,6 @@
 {% block page_title %}{{ patient.get_full_name }}{% endblock %}
 {% block page_subtitle %}Patient record{% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
-
 {% block extra_css %}
 <style>
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -189,12 +184,12 @@
         <tr>
           <td style="color:#94a3b8;font-size:11px;">{{ c.pk }}</td>
           <td>
-            {% if c.status == 'pending' %}<span class="status-badge s-pending">⏳ Pending</span>
-            {% elif c.status == 'queued' %}<span class="status-badge s-queued">🗂 Queued</span>
-            {% elif c.status == 'scheduled' %}<span class="status-badge s-scheduled">📅 Scheduled</span>
-            {% elif c.status == 'triaged' %}<span class="status-badge s-triaged">🩺 Triaged</span>
-            {% elif c.status == 'completed' %}<span class="status-badge s-completed">✅ Completed</span>
-            {% elif c.status == 'cancelled' %}<span class="status-badge s-cancelled">✕ Cancelled</span>{% endif %}
+            {% if c.status == 'pending' %}<span class="status-badge s-pending"><ion-icon name="time-outline" style="font-size:11px;"></ion-icon> Pending</span>
+            {% elif c.status == 'queued' %}<span class="status-badge s-queued"><ion-icon name="folder-outline" style="font-size:11px;"></ion-icon> Queued</span>
+            {% elif c.status == 'scheduled' %}<span class="status-badge s-scheduled"><ion-icon name="calendar-outline" style="font-size:11px;"></ion-icon> Scheduled</span>
+            {% elif c.status == 'triaged' %}<span class="status-badge s-triaged"><ion-icon name="medkit-outline" style="font-size:11px;"></ion-icon> Triaged</span>
+            {% elif c.status == 'completed' %}<span class="status-badge s-completed"><ion-icon name="checkmark-circle-outline" style="font-size:11px;"></ion-icon> Completed</span>
+            {% elif c.status == 'cancelled' %}<span class="status-badge s-cancelled"><ion-icon name="close-circle-outline" style="font-size:11px;"></ion-icon> Cancelled</span>{% endif %}
           </td>
           <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.symptoms|truncatechars:60 }}</td>
           <td style="color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, Y" }}</td>

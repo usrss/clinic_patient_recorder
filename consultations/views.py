@@ -27,6 +27,53 @@ from .utils import assign_next_queue_number
 from inventory.utils import deduct_medicine_stock
 from certificates.models import MedicalCertificate, CertificateAuditLog
 from audit_logs.services import log_create, log_change
+from django.http import JsonResponse
+
+
+# ─── SIDEBAR COUNTS API ───────────────────────────────────────────────────────
+
+@login_required
+def sidebar_counts(request):
+    """Return per-sidebar-item counts as JSON.
+
+    Each sidebar nav link that needs a badge gets its own count.
+    When the count is 0, the badge shows a muted "0" so users can
+    see at a glance that a section is empty.
+    """
+    user = request.user
+    role = user.role
+    counts = {}
+
+    # Triage Queue (doctor): consultations queued/scheduled for triage
+    if role == 'doctor':
+        counts['triage_queue'] = Consultation.objects.filter(
+            status__in=[Consultation.Status.QUEUED, Consultation.Status.SCHEDULED]
+        ).count()
+
+    # My Patients (doctor): triaged patients waiting for consultation
+    if role == 'doctor':
+        counts['my_patients'] = Consultation.objects.filter(
+            status=Consultation.Status.TRIAGED
+        ).count()
+
+    # Queue (frontdesk + admin): pending consultations
+    if role in ('frontdesk', 'admin'):
+        counts['queue'] = Consultation.objects.filter(
+            status=Consultation.Status.PENDING
+        ).count()
+
+    # Archived patients pending (admin)
+    if role == 'admin':
+        from patients.models import Patient
+        counts['archives'] = Patient.objects.filter(
+            archived_at__isnull=False
+        ).count()
+
+    # Unread notifications (all roles)
+    import notifications.utils as notif_utils
+    counts['notifications'] = notif_utils.get_unread_count(user)
+
+    return JsonResponse(counts)
 
 
 # ─── PATIENT VIEWS ────────────────────────────────────────────────────────────
@@ -477,7 +524,7 @@ def consultation_create(request):
                         patient=patient,
                         birthday=cd['birthdate'],
                     )
-                    # Auto-create User account
+                    # Auto-create User account (no email — patient provides it during profile completion)
                     user, temp_password = create_patient_user(patient)
 
                 # Create Consultation

@@ -22,6 +22,9 @@ urlpatterns = [
     # ── Admin ─────────────────────────────────────────────────────────
     path('<int:pk>/reopen/', views.admin_reopen, name='admin_reopen'),
 
+    # ── Sidebar Counts API ────────────────────────────────────────────
+    path('sidebar-counts/', views.sidebar_counts, name='sidebar_counts'),
+
     # ── Doctor (includes triage) ──────────────────────────────────────
     path('triage/', views.triage_list, name='triage_list'),
     path('triage/<int:pk>/', views.triage_form, name='triage_form'),

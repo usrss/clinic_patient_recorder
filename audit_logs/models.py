@@ -30,7 +30,6 @@ class AuditLog(models.Model):
         APPOINTMENTS = 'Appointments', 'Appointments'
         CONSULTATIONS = 'Consultations', 'Consultations'
         MEDICAL_CERTIFICATES = 'Medical Certificates', 'Medical Certificates'
-        DENTAL_CERTIFICATES = 'Dental Certificates', 'Dental Certificates'
         REPORTS = 'Reports', 'Reports'
         USER_MANAGEMENT = 'User Management', 'User Management'
         SETTINGS = 'Settings', 'Settings'

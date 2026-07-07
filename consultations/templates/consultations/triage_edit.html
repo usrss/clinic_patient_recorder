@@ -46,10 +46,7 @@
 </style>
 {% endblock %}
 
-{% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-{% endblock %}
+{% block extra_js %}{% endblock %}
 
 {% block content %}
 <div class="amend-page">
@@ -111,6 +108,12 @@
         <div class="val">{{ triage.triaged_at|date:"M d, Y H:i" }}</div>
       </div>
     </div>
+    {% if triage.notes %}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8ecf1;">
+      <div class="lbl" style="margin-bottom:4px;">Current Notes</div>
+      <div style="font-size:13px;color:#374151;white-space:pre-line;">{{ triage.notes }}</div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="sec-label">Corrected Vitals</div>

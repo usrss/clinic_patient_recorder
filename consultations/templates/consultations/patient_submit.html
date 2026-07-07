@@ -2,8 +2,6 @@
 {% block title %}Request Consultation — Patient Record System{% endblock %}
 
 {% block extra_js %}
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // ── Character counter on textareas ──
@@ -250,7 +248,7 @@
   <div class="follow-up-card">
     <div class="follow-up-header">
       <span class="follow-up-id">Consultation #{{ c.pk }}</span>
-      <span class="follow-up-badge">🔄 Active Follow-up</span>
+      <span class="follow-up-badge"><ion-icon name="sync-outline" style="font-size:11px;"></ion-icon> Active Follow-up</span>
     </div>
     <div class="follow-up-symptoms">{{ c.symptoms|truncatechars:100 }}</div>
     {% if c.recommended_follow_up_date %}

@@ -1,51 +1,76 @@
-// Notification badges — updates all badge elements on the page (desktop, mobile, sidebar)
+// ═══════════════════════════════════════════════════════════════════
+// Sidebar + notification badges — only show red badge when count > 0
+// ═══════════════════════════════════════════════════════════════════
+// Sidebar nav badges use data-sidebar-count="<key>" to map to the
+// JSON response from the sidebar-counts endpoint.
+// Notification badges use the separate unread-count endpoint.
+// All badges are hidden when count is 0.
+// ═══════════════════════════════════════════════════════════════════
+
 (function() {
+  'use strict';
+
   const scriptTag = document.currentScript;
   const unreadUrl = scriptTag.dataset.unreadUrl;
+  const sidebarCountsUrl = scriptTag.dataset.sidebarCountsUrl;
 
-  // Collect all notification badge elements
-  function getBadges() {
-    const badges = [];
-    // Known badge element IDs
-    const ids = ['unread-badge', 'unread-badge-mobile', 'sidebar-notif-badge', 'notif-dot'];
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) badges.push(el);
+  /* ── Update notification badges (desktop + mobile + sidebar) ── */
+  function updateNotifBadges(count) {
+    var ids = ['unread-badge', 'unread-badge-mobile', 'sidebar-notif-badge'];
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (count > 0) {
+        el.textContent = count;
+        el.style.display = 'inline';
+        el.style.background = '#ef4444';
+        el.style.color = '#fff';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+    // Notification dot in topbar
+    var dot = document.getElementById('notif-dot');
+    if (dot) {
+      dot.style.display = count > 0 ? 'inline' : 'none';
     }
-    // Also find elements with data-notif-badge attribute
-    document.querySelectorAll('[data-notif-badge]').forEach(el => badges.push(el));
-    return badges;
   }
 
   function fetchUnreadCount() {
     fetch(unreadUrl)
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.json();
-      })
-      .then(data => {
-        const count = data.count || 0;
-        const badges = getBadges();
-        badges.forEach(badge => {
-          if (count > 0) {
-            if (badge.id === 'notif-dot') {
-              badge.style.display = 'inline';
-            } else {
-              badge.textContent = count;
-              badge.style.display = 'inline';
-            }
-          } else {
-            badge.style.display = 'none';
-          }
-        });
-      })
-      .catch(() => {
-        // Silently retry on next interval
-      });
+      .then(function(r) { if (!r.ok) throw new Error('fetch failed'); return r.json(); })
+      .then(function(data) { updateNotifBadges(data.count || 0); })
+      .catch(function() {});
   }
 
+  /* ── Update sidebar navigation count badges ── */
+  function updateSidebarBadges(counts) {
+    document.querySelectorAll('[data-sidebar-count]').forEach(function(badge) {
+      var key = badge.getAttribute('data-sidebar-count');
+      var count = (counts[key] !== undefined) ? counts[key] : 0;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline';
+        badge.style.background = '#ef4444';
+        badge.style.color = '#fff';
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+  }
+
+  function fetchSidebarCounts() {
+    fetch(sidebarCountsUrl)
+      .then(function(r) { if (!r.ok) throw new Error('fetch failed'); return r.json(); })
+      .then(function(data) { updateSidebarBadges(data); })
+      .catch(function() {});
+  }
+
+  /* ── Initial fetch + polling ── */
   fetchUnreadCount();
+  fetchSidebarCounts();
   setInterval(fetchUnreadCount, 10000);
+  setInterval(fetchSidebarCounts, 15000);
 })();
 
 // Toast initialization

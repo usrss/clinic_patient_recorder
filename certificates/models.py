@@ -14,10 +14,9 @@ class MedicalCertificate(models.Model):
     """
 
     class CertificateType(models.TextChoices):
-        STANDARD = 'standard', 'Medical Certificate-Absences of classes-work'
-        FIT_TO_PLAY = 'fit_to_play', 'Medical Certificate_Activitiest-training-seminars'
+        STANDARD = 'standard', 'Medical Certificate-Absences  of classes-work'
         FIT_TO_WORK = 'fit_to_work', 'Medical Certificate-OJT'
-        DENTAL = 'dental', 'Dental Certificate'
+        FIT_TO_PLAY = 'fit_to_play', 'Medical Certificate_Activitiest-training-seminars'
 
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Draft'
@@ -255,10 +254,8 @@ class MedicalCertificate(models.Model):
         ct = self.certificate_type
 
         # Dental inherits standard's template text
-        source_type = 'standard' if ct == self.CertificateType.DENTAL else ct
-
         templates = CertificateTemplateText.objects.filter(
-            certificate_type=source_type,
+            certificate_type=ct,
         )
         # Get the body entry (there should be one per certificate type)
         body_template = templates.filter(slot_key='body').first()

@@ -50,8 +50,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'accounts.middleware.ProfileCompletionMiddleware',
     'accounts.middleware.IdleSessionTimeoutMiddleware',
+    'accounts.middleware.ProfileCompletionMiddleware',
     'audit_logs.middleware.AuditIPMiddleware',
 ]
 
@@ -168,7 +168,11 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ── Idle session timeout (minutes) ───────────────────────────────────────
+# ── Session & idle timeout ────────────────────────────────────────────────
+# Server-side session expiry. Must be >= IDLE_SESSION_TIMEOUT_MINUTES so the
+# session data (including last_activity) doesn't vanish before the idle check.
+SESSION_COOKIE_AGE = 86400  # 24 hours (seconds) — longer than idle timeout so the idle check is the effective limiter
+
 # After this many minutes of inactivity, the user is automatically logged out.
 # Set to 0 or None to disable idle timeout.
-IDLE_SESSION_TIMEOUT_MINUTES = 30
+IDLE_SESSION_TIMEOUT_MINUTES = 720
