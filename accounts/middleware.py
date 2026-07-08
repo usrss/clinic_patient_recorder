@@ -32,15 +32,17 @@ class ProfileCompletionMiddleware:
             except Resolver404:
                 url_name = None
 
-            is_patient = getattr(request.user, 'role', None) == 'patient'
-            if is_patient and url_name not in self.SAFE_URL_NAMES:
-                # Force password change first (walk-in patients have temp passwords)
+            if url_name not in self.SAFE_URL_NAMES:
+                # Force password change first (walk-in patients have temp passwords;
+                # staff can have this flag set by admin)
                 if request.user.force_password_change:
                     return redirect('accounts:change_password')
-                # Then force profile completion (including email setup)
-                patient = request.user.get_patient_record()
-                if patient and not patient.is_profile_complete:
-                    return redirect('accounts:complete_profile')
+                # Then force profile completion for patients (including email setup)
+                is_patient = getattr(request.user, 'role', None) == 'patient'
+                if is_patient:
+                    patient = request.user.get_patient_record()
+                    if patient and not patient.is_profile_complete:
+                        return redirect('accounts:complete_profile')
 
         return self.get_response(request)
 

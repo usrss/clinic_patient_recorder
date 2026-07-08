@@ -23,4 +23,6 @@ urlpatterns = [
     path('complete-profile/', views.complete_profile, name='complete_profile'),
     path('api/courses-by-college/', views.courses_by_college, name='courses_by_college'),
     path('logout-all-devices/', views.logout_all_devices, name='logout_all_devices'),
+    path('walkin-patients/', views.walkin_patient_list, name='walkin_patient_list'),
+    path('walkin-patients/<int:pk>/get-password/', views.walkin_get_password, name='walkin_get_password'),
 ]

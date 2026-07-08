@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, SetPasswordForm
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from .models import User
@@ -66,12 +66,6 @@ class UserCreateForm(UserCreationForm):
         }),
         validators=[validate_profile_picture],
     )
-    force_password_change = forms.BooleanField(
-        required=False,
-        initial=True,
-        label='Force password change on next login',
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-    )
 
     class Meta:
         model = User
@@ -86,11 +80,6 @@ class UserCreateForm(UserCreationForm):
 
 class UserEditForm(forms.ModelForm):
     """Admin edits an existing staff user."""
-    force_password_change = forms.BooleanField(
-        required=False,
-        label='Force password change on next login',
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-    )
 
     class Meta:
         model = User
@@ -109,10 +98,6 @@ class UserEditForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'form-control')
         self.fields['profile_picture'].required = False
         self.fields['profile_picture'].label = 'Profile Picture'
-        # Pre-fill force_password_change from instance
-        if self.instance and self.instance.pk:
-            self.fields['force_password_change'].initial = self.instance.force_password_change
-
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
         if file:
@@ -126,6 +111,26 @@ class StaffPasswordChangeForm(PasswordChangeForm):
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
         self.fields['old_password'].label = 'Current Password'
+        self.fields['new_password1'].label = 'New Password'
+        self.fields['new_password2'].label = 'Confirm New Password'
+        # Add right padding for eye toggle icon
+        for name in ('old_password', 'new_password1', 'new_password2'):
+            if name in self.fields:
+                field = self.fields[name]
+                existing_style = field.widget.attrs.get('style', '')
+                if 'padding-right' not in existing_style:
+                    field.widget.attrs['style'] = existing_style + 'padding-right:44px!important;box-sizing:border-box;'
+
+
+class ForcePasswordChangeForm(SetPasswordForm):
+    """
+    Used when force_password_change is True — skips the old password
+    requirement so the user can set a new password directly.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
         self.fields['new_password1'].label = 'New Password'
         self.fields['new_password2'].label = 'Confirm New Password'
 

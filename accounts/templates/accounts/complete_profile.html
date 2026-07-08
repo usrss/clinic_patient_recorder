@@ -17,6 +17,9 @@
     cursor: not-allowed;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .email-error { font-size:11px;color:#ef4444;margin-top:6px;display:none;align-items:center;gap:4px; }
+  .email-error.visible { display:flex; }
+  .reg-input.email-taken { border-color:#ef4444;background:#fef2f2; }
 </style>
 {% endblock %}
 
@@ -55,7 +58,7 @@
   <div class="reg-card">
     <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form" data-track-changes="true">
       {% csrf_token %}
-      <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}">
+      <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}" autocomplete="off">
 
       <!-- ══════════════════════════════════════════
            STEP 1 — Personal & Academic Info
@@ -239,9 +242,24 @@
                    value="{{ form.phone.value|default:'' }}">
           </div>
           <div class="form-group">
-            <label for="id_email">Email Address</label>
-            <input type="email" id="id_email" name="email" class="reg-input" placeholder="you@norsu.edu.ph"
-                   value="{{ form.email.value|default:'' }}">
+            <label for="id_email">Email Address <span class="req">*</span></label>
+            <div style="display:flex;align-items:center;position:relative;">
+              <input type="email" id="id_email" name="email" class="reg-input{% if form.email.errors %} email-taken{% endif %}" placeholder="you@norsu.edu.ph"
+                     value="{{ form.email.value|default:'' }}" style="flex:1;"{% if form.email.errors %} data-server-error="true"{% endif %}>
+            </div>
+            {% if form.email.errors %}
+              {% for error in form.email.errors %}
+                <div class="email-error visible" id="emailError">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span id="emailErrorText">{{ error }}</span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="email-error" id="emailError">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span id="emailErrorText"></span>
+              </div>
+            {% endif %}
           </div>
         </div>
         <div class="grid-2">
@@ -404,6 +422,25 @@
 
   function goNext(step) {
     if (step === 1) {
+      var emailEl = document.getElementById('id_email');
+      var emailError = document.getElementById('emailError');
+
+      // If email has a visible server-side error (from a previous form submission), block
+      if (emailError.classList.contains('visible')) {
+        emailEl.classList.add('email-taken');
+        emailEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        emailEl.focus();
+        return;
+      }
+
+      // If the server previously flagged this email as taken (from a re-rendered form), block
+      if (emailEl.getAttribute('data-server-error') === 'true') {
+        emailEl.classList.add('email-taken');
+        emailEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        emailEl.focus();
+        return;
+      }
+
       let valid = true;
 
       // Validate role is selected
@@ -452,6 +489,18 @@
       if (valid) showStep(2);
     }
   }
+
+  // ── Clear server-side email error when user edits the field ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var emailEl = document.getElementById('id_email');
+    if (emailEl) {
+      emailEl.addEventListener('input', function() {
+        this.removeAttribute('data-server-error');
+        this.classList.remove('email-taken');
+        document.getElementById('emailError').classList.remove('visible');
+      });
+    }
+  });
 
   // ── Course stash for restoring on goBack ──
   let savedCourseIdCP = '';

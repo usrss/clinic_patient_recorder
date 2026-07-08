@@ -21,89 +21,10 @@
         onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const colors = ['#0078d4', '#8b5cf6', '#f97316', '#10b981', '#ef4444', '#6b7280'];
-  const blueGradient = 'rgba(0,120,212,';
-  const purpleGradient = 'rgba(139,92,246,';
-
-  // ── 1. Consultation Status (donut) ──
-  const ctx1 = document.getElementById('chart-status');
+  // ── Patients by College (bar) ──
+  const ctx1 = document.getElementById('chart-college');
   if (ctx1) {
     new Chart(ctx1, {
-      type: 'doughnut',
-      data: {
-        labels: {{ consultation_status_labels|safe }},
-        datasets: [{
-          data: {{ consultation_status_data|safe }},
-          backgroundColor: colors,
-          borderWidth: 0,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { padding: 8, usePointStyle: true, font: { size: 10 } } },
-        },
-        cutout: '72%',
-      }
-    });
-  }
-
-  // ── 2. Daily Consultations (line) ──
-  const ctx2 = document.getElementById('chart-daily');
-  if (ctx2) {
-    new Chart(ctx2, {
-      type: 'line',
-      data: {
-        labels: {{ daily_labels|safe }},
-        datasets: [{
-          label: 'Consultations',
-          data: {{ daily_consultations|safe }},
-          borderColor: '#0078d4',
-          backgroundColor: blueGradient + '0.08)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointBackgroundColor: '#0078d4',
-          borderWidth: 2,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
-        }
-      }
-    });
-  }
-
-  // ── 3. Patient Sex Distribution (pie) ──
-  const ctx3 = document.getElementById('chart-sex');
-  if (ctx3) {
-    new Chart(ctx3, {
-      type: 'pie',
-      data: {
-        labels: ['Male', 'Female'],
-        datasets: [{
-          data: [{{ male_count }}, {{ female_count }}],
-          backgroundColor: ['#0078d4', '#ec4899'],
-          borderWidth: 0,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { padding: 8, usePointStyle: true, font: { size: 10 } } },
-        }
-      }
-    });
-  }
-
-  // ── 4. Patients by College (bar) ──
-  const ctx4 = document.getElementById('chart-college');
-  if (ctx4) {
-    new Chart(ctx4, {
       type: 'bar',
       data: {
         labels: {{ college_labels|safe }},
@@ -126,10 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // ── 5. Medical Conditions (horizontal bar) ──
-  const ctx5 = document.getElementById('chart-conditions');
-  if (ctx5) {
-    new Chart(ctx5, {
+  // ── Medical Conditions (horizontal bar) ──
+  const ctx2 = document.getElementById('chart-conditions');
+  if (ctx2) {
+    new Chart(ctx2, {
       type: 'bar',
       data: {
         labels: ['Hypertension', 'Diabetes', 'Asthma', 'Cardiac', 'Arthritis'],
@@ -148,6 +69,32 @@ document.addEventListener('DOMContentLoaded', function () {
         scales: {
           x: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } },
           y: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ── Diseases per College (bar) ──
+  const ctx3 = document.getElementById('chart-disease-college');
+  if (ctx3) {
+    new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: {{ disease_college_labels|safe }},
+        datasets: [{
+          label: 'Patients Diagnosed',
+          data: {{ disease_college_data|safe }},
+          backgroundColor: ['#ef4444', '#f97316', '#10b981', '#8b5cf6', '#0078d4', '#ec4899', '#14b8a6', '#f59e0b'],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
         }
       }
     });
@@ -233,33 +180,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   <div class="chart-card">
     <div class="chart-card-header">
-      <span class="chart-title">Consultation Status</span>
-    </div>
-    <div class="chart-canvas-wrap">
-      <canvas id="chart-status"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <span class="chart-title">Consultations (Last 30 Days)</span>
-    </div>
-    <div class="chart-canvas-wrap">
-      <canvas id="chart-daily" height="140"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
-      <span class="chart-title">Patient Sex</span>
-    </div>
-    <div class="chart-canvas-wrap">
-      <canvas id="chart-sex"></canvas>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">
       <span class="chart-title">Patients by College</span>
     </div>
     <div class="chart-canvas-wrap">
@@ -275,6 +195,17 @@ document.addEventListener('DOMContentLoaded', function () {
       <canvas id="chart-conditions" height="120"></canvas>
     </div>
   </div>
+
+  <a href="{% url 'reports:disease_report' %}" class="chart-card" style="grid-column: span 2;text-decoration:none;color:inherit;display:block;">
+    <div class="chart-card-header">
+      <span class="chart-title">Diseases per College
+        <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-left:6px;"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+      </span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-disease-college" height="140"></canvas>
+    </div>
+  </a>
 
 </div>
 
