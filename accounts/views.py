@@ -1118,7 +1118,7 @@ def walkin_get_password(request, pk):
 
         return JsonResponse({
             'success': True,
-            'password': patient.temp_password,
+            'access_code': patient.temp_password,
             'username': target_user.username,
             'name': target_user.get_full_name() or target_user.username,
         })

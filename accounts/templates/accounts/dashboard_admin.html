@@ -187,16 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
   </div>
 
-  <div class="chart-card" style="grid-column: span 2;">
-    <div class="chart-card-header">
-      <span class="chart-title">Patient Medical Conditions</span>
-    </div>
-    <div class="chart-canvas-wrap">
-      <canvas id="chart-conditions" height="120"></canvas>
-    </div>
-  </div>
-
-  <a href="{% url 'reports:disease_report' %}" class="chart-card" style="grid-column: span 2;text-decoration:none;color:inherit;display:block;">
+  <a href="{% url 'reports:disease_report' %}" class="chart-card" style="text-decoration:none;color:inherit;display:block;">
     <div class="chart-card-header">
       <span class="chart-title">Diseases per College
         <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-left:6px;"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
@@ -206,6 +197,15 @@ document.addEventListener('DOMContentLoaded', function () {
       <canvas id="chart-disease-college" height="140"></canvas>
     </div>
   </a>
+
+  <div class="chart-card" style="grid-column: span 2;">
+    <div class="chart-card-header">
+      <span class="chart-title">Patient Medical Conditions</span>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="chart-conditions" height="120"></canvas>
+    </div>
+  </div>
 
 </div>
 

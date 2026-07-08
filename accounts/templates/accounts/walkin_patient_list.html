@@ -151,7 +151,7 @@
     .then(function(data) {
       document.getElementById('pwSpinner').style.display = 'none';
       if (data.success) {
-        currentPassword = data.password;
+        currentPassword = data.access_code;
         document.getElementById('pwText').textContent = currentPassword;
         document.getElementById('pwText').style.color = '#0078d4';
       } else {
