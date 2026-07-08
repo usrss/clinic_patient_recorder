@@ -305,7 +305,6 @@
   }
   @media (max-width: 860px) {
     .chart-grid { grid-template-columns: 1fr; }
-    .chart-grid .chart-card:nth-child(5) { grid-column: span 1 !important; }
   }
   .chart-card {
     background: #fff;
@@ -332,9 +331,9 @@
     height: auto !important;
     min-height: 140px;
   }
-  .chart-grid .chart-card:nth-child(5) .chart-canvas-wrap {
+  .chart-grid .chart-card:last-child .chart-canvas-wrap {
     min-height: 120px;
   }
-  .chart-grid .chart-card:nth-child(5) .chart-canvas-wrap canvas {
+  .chart-grid .chart-card:last-child .chart-canvas-wrap canvas {
     min-height: 100px;
   }

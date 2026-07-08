@@ -16,13 +16,14 @@ import random
 from .models import User
 from .forms import (
     LoginForm, UserCreateForm, UserEditForm,
-    StaffPasswordChangeForm, PatientProfileEditForm, UserProfileForm,
+    StaffPasswordChangeForm, ForcePasswordChangeForm,
+    PatientProfileEditForm, UserProfileForm,
     PasswordResetRequestForm, PasswordResetForm, RegistrationForm,
     ProfileCompletionForm,
 )
 from django.db.models import Count, Q, F
 from consultations.models import Consultation, Triage
-from .decorators import admin_required
+from .decorators import admin_required, frontdesk_required
 from colleges.models import College, Course
 from patients.models import Patient, PatientProfile
 from inventory.models import Medicine
@@ -579,26 +580,6 @@ def dashboard(request):
         return render(request, 'accounts/dashboard_frontdesk.html', {'user': user})
 
     if user.role == User.Role.ADMIN:
-        now = timezone.now()
-        thirty_days_ago = now - timedelta(days=30)
-
-        status_counts = Consultation.objects.values('status').annotate(count=Count('pk'))
-        status_data = {s['status']: s['count'] for s in status_counts}
-        status_labels = ['Pending', 'Queued', 'Triaged', 'Completed', 'Cancelled', 'Closed']
-        status_keys = ['pending', 'queued', 'triaged', 'completed', 'cancelled', 'closed']
-        consultation_status_data = [status_data.get(k, 0) for k in status_keys]
-
-        daily_consultations = []
-        daily_labels = []
-        for i in range(29, -1, -1):
-            day = now.date() - timedelta(days=i)
-            count = Consultation.objects.filter(created_at__date=day).count()
-            daily_labels.append(day.strftime('%b %d'))
-            daily_consultations.append(count)
-
-        male_count = Patient.objects.filter(is_archived=False, sex='M').count()
-        female_count = Patient.objects.filter(is_archived=False, sex='F').count()
-
         college_data = []
         college_labels = []
         for college in College.objects.annotate(patient_count=Count('patients', filter=Q(patients__is_archived=False))):
@@ -614,6 +595,19 @@ def dashboard(request):
 
         low_stock_medicines = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
 
+        # Diseases per college (synced with disease report logic)
+        _disease_by_college = (
+            Consultation.objects.filter(
+                status=Consultation.Status.COMPLETED,
+                patient__college__isnull=False,
+            )
+            .values('patient__college__abbreviation')
+            .annotate(count=Count('patient', distinct=True))
+            .order_by('-count')
+        )
+        disease_college_labels = [d['patient__college__abbreviation'] for d in _disease_by_college]
+        disease_college_data = [d['count'] for d in _disease_by_college]
+
         staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
         doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()
         frontdesk_count = User.objects.filter(role=User.Role.FRONTDESK).count()
@@ -626,14 +620,10 @@ def dashboard(request):
             'front_desk_count': frontdesk_count,
             'admin_count': admin_count,
             'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
-            'consultation_status_labels': status_labels,
-            'consultation_status_data': consultation_status_data,
-            'daily_labels': daily_labels,
-            'daily_consultations': daily_consultations,
-            'male_count': male_count,
-            'female_count': female_count,
             'college_labels': college_labels,
             'college_data': college_data,
+            'disease_college_labels': disease_college_labels,
+            'disease_college_data': disease_college_data,
             'cond_hypertension': cond_hypertension,
             'cond_diabetes': cond_diabetes,
             'cond_asthma': cond_asthma,
@@ -651,7 +641,11 @@ def dashboard(request):
 @login_required
 def change_password(request):
     user = request.user
-    form = StaffPasswordChangeForm(user, request.POST or None)
+    forced = user.force_password_change
+
+    # Use the form without old-password requirement when forced
+    form_class = ForcePasswordChangeForm if forced else StaffPasswordChangeForm
+    form = form_class(user, request.POST or None)
 
     if request.method == 'POST' and form.is_valid():
         user = form.save()
@@ -677,7 +671,7 @@ def change_password(request):
     base_tpl = 'core/base.html' if user.role == User.Role.PATIENT else _base_template(request.user)
     return render(request, 'accounts/change_password.html', {
         'form': form,
-        'forced': user.force_password_change,
+        'forced': forced,
         'base_template': base_tpl,
     })
 
@@ -734,7 +728,8 @@ def user_create(request):
     form = UserCreateForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save(commit=False)
-        new_user.force_password_change = form.cleaned_data.get('force_password_change', False)
+        # New staff accounts always require a password change on first login
+        new_user.force_password_change = True
         new_user.save()
         form.save_m2m()  # in case there are any M2M fields
 
@@ -791,8 +786,6 @@ def user_edit(request, pk):
             'role': target.role,
             'is_active': target.is_active,
         }
-        # Handle force_password_change (not in Meta.fields but added to form)
-        target.force_password_change = form.cleaned_data.get('force_password_change', target.force_password_change)
         form.save()
         target.refresh_from_db()
 
@@ -835,9 +828,8 @@ def user_reset_password(request, pk):
         return redirect('accounts:user_list')
     target_user = get_object_or_404(User, pk=pk)
 
-    import secrets
-    import string
-    new_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+    from .utils import generate_temp_password
+    new_password = generate_temp_password(length=4)
     target_user.set_password(new_password)
     target_user.force_password_change = True
     target_user.failed_login_attempts = 0
@@ -1048,6 +1040,96 @@ def profile_settings(request):
 
 
 @login_required
+@frontdesk_required
+def walkin_patient_list(request):
+    """
+    Lists walk-in patients (created by front desk, not yet logged in).
+    Front desk staff can reset/view the temp password for these patients.
+    """
+    # Walk-in patients: User is patient role, force_password_change=True,
+    # and the linked Patient has never logged in
+    walkin_users = User.objects.filter(
+        role=User.Role.PATIENT,
+        force_password_change=True,
+    ).select_related().order_by('-date_joined')
+
+    # Attach patient records
+    walkin_data = []
+    for u in walkin_users:
+        patient = Patient.objects.filter(patient_id=u.username).first()
+        if patient and not patient.has_logged_in:
+            walkin_data.append({
+                'user': u,
+                'patient': patient,
+            })
+
+    return render(request, 'accounts/walkin_patient_list.html', {
+        'walkin_data': walkin_data,
+        'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@frontdesk_required
+def walkin_get_password(request, pk):
+    """
+    AJAX endpoint: retrieves the stored plaintext temp password for a
+    walk-in patient. Returns it as JSON so the modal can display it.
+
+    If no stored temp_password exists (e.g. patient was created before the
+    temp_password field was added), one is generated on the fly, stored,
+    and returned — subsequent clicks will show the same password.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+    try:
+        target_user = get_object_or_404(User, pk=pk)
+        patient = Patient.objects.filter(patient_id=target_user.username).first()
+
+        if not patient:
+            return JsonResponse({
+                'success': False,
+                'error': 'Patient record not found.',
+            })
+
+        # If no stored temp_password (e.g. pre-migration patients),
+        # generate one now and store it for future lookups.
+        if not patient.temp_password:
+            from .utils import generate_temp_password
+            new_tmp = generate_temp_password(length=4)
+            patient.temp_password = new_tmp
+            patient.save(update_fields=['temp_password'])
+
+            # Also update the User's password hash so it matches.
+            target_user.set_password(new_tmp)
+            target_user.force_password_change = True
+            target_user.save(update_fields=['password', 'force_password_change'])
+
+            log_change(
+                user=request.user,
+                module='Patients',
+                description=f'Generated temp password for walk-in patient — {target_user.username}',
+                object_model='patients.Patient',
+                object_id=patient.pk,
+                object_repr=str(patient),
+                request=request,
+            )
+
+        return JsonResponse({
+            'success': True,
+            'access_code': patient.temp_password,
+            'username': target_user.username,
+            'name': target_user.get_full_name() or target_user.username,
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+        })
+
+
+@login_required
 def logout_all_devices(request):
     """
     Logs out the current user from all other sessions (except the current one).
@@ -1237,7 +1319,30 @@ def complete_profile(request):
         )
         return redirect('accounts:dashboard')
 
-    current_step = request.POST.get('current_step', '1') if request.method == 'POST' else '1'
+    # ── Determine which step to show ──
+    # When form validation fails, navigate to the step whose fields have errors
+    # so the user can see and fix the problem.
+    if request.method == 'POST':
+        step_1_fields = {'role', 'email', 'phone', 'address', 'blood_type',
+                         'religion', 'civil_status', 'height_cm', 'weight_kg',
+                         'college', 'course', 'year_level', 'department', 'position',
+                         'emergency_contact_name', 'emergency_contact_phone',
+                         'profile_picture'}
+        step_2_fields = {'hypertension', 'diabetes', 'asthma', 'cardiac_problems',
+                         'arthritis', 'other_conditions', 'known_allergies',
+                         'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt',
+                         'immunization_others', 'current_medications', 'vices',
+                         'previous_illnesses', 'previous_hospitalizations'}
+        error_fields = set(form.errors.keys())
+        if error_fields & step_1_fields:
+            current_step = '1'
+        elif error_fields & step_2_fields:
+            current_step = '2'
+        else:
+            current_step = request.POST.get('current_step', '1')
+    else:
+        current_step = '1'
+
     return render(request, 'accounts/complete_profile.html', {
         'form': form,
         'patient': patient,

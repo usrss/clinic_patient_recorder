@@ -4,12 +4,11 @@ import string
 from .models import User
 
 
-def generate_temp_password(length=8):
+def generate_temp_password(length=4):
     """
-    Return a random string of letters and digits of the given length.
+    Return a random string of digits of the given length.
     """
-    chars = string.ascii_letters + string.digits
-    return ''.join(random.choices(chars, k=length))
+    return ''.join(random.choices(string.digits, k=length))
 
 
 def calculate_graduation_year(year_level):
@@ -49,6 +48,8 @@ def create_patient_user(patient, email=''):
 
     The user account is marked with ``force_password_change = True`` so
     the patient must change their password on first login.
+    The temp password is stored in plaintext on ``patient.temp_password``
+    so the front desk can retrieve it later.
     """
     temp_password = generate_temp_password(length=4)
     user = User.objects.create_user(
@@ -61,4 +62,7 @@ def create_patient_user(patient, email=''):
     )
     user.force_password_change = True
     user.save(update_fields=['force_password_change'])
+    # Store plaintext temp password for front-desk retrieval
+    patient.temp_password = temp_password
+    patient.save(update_fields=['temp_password'])
     return user, temp_password

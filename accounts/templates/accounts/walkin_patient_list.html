@@ -1,0 +1,203 @@
+{% extends base_template %}
+{% block title %}Walk-in Patients — Patient Record System{% endblock %}
+{% block page_title %}Walk-in Patients{% endblock %}
+{% block page_subtitle %}Manage temporary passwords for walk-in patients{% endblock %}
+
+{% block content %}
+
+<div style="max-width:800px;margin:0 auto;">
+
+  <a href="{% url 'accounts:dashboard' %}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#0078d4;text-decoration:none;margin-bottom:20px;">
+    ← Back to Dashboard
+  </a>
+
+  {% if walkin_data %}
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
+      These patients were registered by the front desk but haven't logged in yet.
+      Click a patient to view or reset their temporary password.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for item in walkin_data %}
+      <div style="background:#fff;border-radius:12px;padding:16px 20px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;gap:16px;">
+        <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="font-size:14px;font-weight:700;color:#1e40af;">{{ item.patient.get_full_name|first|upper }}</span>
+          </div>
+          <div style="min-width:0;">
+            <strong style="font-size:14px;color:#1a1a2e;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.patient.get_full_name }}</strong>
+            <span style="font-size:12px;color:#6b7280;">ID: {{ item.patient.patient_id }}</span>
+            {% if item.patient.college %}
+              <span style="font-size:11px;color:#94a3b8;margin-left:8px;">{{ item.patient.college.abbreviation }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:#fef3c7;color:#92400e;">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Pending
+          </span>
+          <button type="button" class="pw-show-btn"
+                  data-url="{% url 'accounts:walkin_get_password' item.user.pk %}"
+                  data-name="{{ item.patient.get_full_name }}"
+                  data-username="{{ item.patient.patient_id }}"
+                  style="padding:8px 16px;background:#0078d4;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.15s;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;"
+                  onmouseover="this.style.background='#006cbd'" onmouseout="this.style.background='#0078d4'">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Show Password
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="background:#fff;border-radius:14px;padding:48px 28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-align:center;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg width="28" height="28" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3 style="font-size:16px;font-weight:700;color:#1a1a2e;margin:0 0 6px;">No walk-in patients</h3>
+      <p style="font-size:13px;color:#6b7280;margin:0 0 20px;max-width:320px;margin-left:auto;margin-right:auto;">
+        All registered walk-in patients have already logged in. New walk-in patients will appear here once created.
+      </p>
+    </div>
+  {% endif %}
+
+</div>
+
+{# ── Password Reset Modal ── #}
+<div class="modal-overlay" id="pwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:center;justify-content:center;" onclick="if(event.target===this)closePwModal()">
+  <div style="background:#fff;border-radius:16px;padding:32px 28px 24px;width:100%;max-width:400px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.15);position:relative;">
+    <button type="button" onclick="closePwModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;padding:4px;">&times;</button>
+
+    <div style="width:56px;height:56px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="24" height="24" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+
+    <h3 style="font-size:17px;font-weight:700;color:#1a1a2e;margin:0 0 4px;" id="modalPatientName"></h3>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 20px;" id="modalPatientId"></p>
+
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e8ecf1;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Temporary Password</div>
+      <div style="font-size:28px;font-weight:800;color:#0078d4;letter-spacing:6px;font-family:'Courier New',monospace;user-select:all;min-height:42px;display:flex;align-items:center;justify-content:center;">
+        <span id="pwText"></span>
+        <span id="pwSpinner" style="display:none;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="animation:spin 0.8s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke="#0078d4" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" fill="none" opacity="0.3"/>
+            <circle cx="12" cy="12" r="10" stroke="#0078d4" stroke-width="3" stroke-linecap="round" stroke-dasharray="31.4 31.4" fill="none" stroke-dashoffset="10" opacity="0.9"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button type="button" onclick="copyPassword()" id="copyBtn" style="padding:9px 18px;background:#0078d4;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;"
+              onmouseover="this.style.background='#006cbd'" onmouseout="this.style.background='#0078d4'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Password
+      </button>
+    </div>
+
+    <p id="copyFeedback" style="font-size:11px;color:#10b981;margin:10px 0 0;display:none;">Copied to clipboard!</p>
+    <p id="errorFeedback" style="font-size:11px;color:#ef4444;margin:10px 0 0;display:none;"></p>
+  </div>
+</div>
+
+<style>
+  .modal-overlay { display: none; }
+  .modal-overlay.open { display: flex !important; }
+  .pw-show-btn { transition: all 0.15s; }
+  .pw-show-btn:active { transform: scale(0.96); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  let currentUrl = null;
+  let currentPassword = '';
+
+  // ── Open modal & fetch stored password ──
+  document.querySelectorAll('.pw-show-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentUrl = this.getAttribute('data-url');
+      document.getElementById('modalPatientName').textContent = this.getAttribute('data-name');
+      document.getElementById('modalPatientId').textContent = 'ID: ' + this.getAttribute('data-username');
+      document.getElementById('pwText').textContent = '';
+      document.getElementById('pwSpinner').style.display = 'flex';
+      document.getElementById('copyFeedback').style.display = 'none';
+      document.getElementById('errorFeedback').style.display = 'none';
+      document.getElementById('pwModal').classList.add('open');
+      fetchPassword();
+    });
+  });
+
+  function closePwModal() {
+    document.getElementById('pwModal').classList.remove('open');
+    document.getElementById('pwSpinner').style.display = 'none';
+  }
+
+  // ── Fetch the stored temp password (no new password generated) ──
+  function fetchPassword() {
+    if (!currentUrl) return;
+    document.getElementById('pwSpinner').style.display = 'flex';
+    document.getElementById('pwText').textContent = '';
+
+    fetch(currentUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('pwSpinner').style.display = 'none';
+      if (data.success) {
+        currentPassword = data.access_code;
+        document.getElementById('pwText').textContent = currentPassword;
+        document.getElementById('pwText').style.color = '#0078d4';
+      } else {
+        document.getElementById('pwText').textContent = 'Not available';
+        document.getElementById('pwText').style.color = '#ef4444';
+        document.getElementById('errorFeedback').textContent = data.error || 'Unknown error';
+        document.getElementById('errorFeedback').style.display = 'block';
+      }
+    })
+    .catch(function(err) {
+      document.getElementById('pwSpinner').style.display = 'none';
+      document.getElementById('pwText').textContent = 'Error';
+      document.getElementById('pwText').style.color = '#ef4444';
+      document.getElementById('errorFeedback').textContent = 'Request failed — check console (F12)';
+      document.getElementById('errorFeedback').style.display = 'block';
+      console.error('Walk-in password fetch error:', err);
+    });
+  }
+
+  // ── Copy to clipboard ──
+  function copyPassword() {
+    if (!currentPassword) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentPassword).then(function() {
+        showCopied();
+      }).catch(function() { fallbackCopy(); });
+    } else {
+      fallbackCopy();
+    }
+  }
+
+  function fallbackCopy() {
+    var ta = document.createElement('textarea');
+    ta.value = currentPassword;
+    ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showCopied(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  function showCopied() {
+    var el = document.getElementById('copyFeedback');
+    el.style.display = 'block';
+    setTimeout(function() { el.style.display = 'none'; }, 2000);
+  }
+</script>
+
+{% endblock %}

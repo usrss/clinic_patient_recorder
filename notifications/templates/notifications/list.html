@@ -217,6 +217,158 @@
   }
   .empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
   .empty-sub { font-size: 12px; color: #94a3b8; }
+
+  /* ── Detail Modal ── */
+  .notif-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(15,23,42,0.6);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    padding: 20px;
+  }
+  .notif-modal-overlay.open { opacity: 1; visibility: visible; }
+
+  .notif-modal {
+    background: #fff;
+    border-radius: 20px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+    transform: scale(0.95) translateY(8px);
+    transition: transform 0.25s ease;
+  }
+  .notif-modal-overlay.open .notif-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  .notif-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 12px;
+  }
+  .notif-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1.4;
+  }
+  .notif-modal-header .nmh-time {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  .notif-modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid #e8ecf1;
+    background: #fafbfc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .notif-modal-close:hover { background: #f1f5f9; color: #374151; }
+
+  .notif-modal-body { padding: 20px 24px 24px; }
+
+  .nm-section { margin-bottom: 20px; }
+  .nm-section:last-child { margin-bottom: 0; }
+
+  .nm-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .nm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 480px) { .nm-grid { grid-template-columns: 1fr; } }
+
+  .nm-field {}
+  .nm-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 2px;
+  }
+  .nm-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a2e;
+  }
+  .nm-value.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .nm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .nm-badge.high { background: #fef2f2; color: #dc2626; }
+  .nm-badge.medium { background: #fff8e1; color: #d97706; }
+  .nm-badge.low { background: #f0fdf4; color: #16a34a; }
+  .nm-badge.completed { background: #f0fdf4; color: #16a34a; }
+  .nm-badge.default { background: #f3f4f6; color: #6b7280; }
+
+  .nm-text-block {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .nm-text-block.empty {
+    color: #94a3b8;
+    font-style: italic;
+  }
+
+  .nm-rx-item {
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e8ecf1;
+    margin-bottom: 6px;
+  }
+  .nm-rx-item:last-child { margin-bottom: 0; }
+  .nm-rx-item-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+  .nm-rx-item-detail { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .nm-no-data {
+    text-align: center;
+    padding: 32px 16px;
+    color: #94a3b8;
+    font-size: 13px;
+  }
+  .nm-no-data svg { display: block; margin: 0 auto 10px; opacity: 0.5; }
 </style>
 {% endblock %}
 
@@ -267,8 +419,9 @@
     {% for n in result.notifications %}
     <div class="notif-card {% if not n.is_read %}unread{% endif %}">
 
-      {# Main clickable body — marks as read and navigates to link #}
-      <a href="{% url 'notifications:mark_read' n.pk %}" class="notif-card-body">
+      {# Main clickable body — opens detail modal #}
+      <div class="notif-card-body" onclick="openNotifDetail({{ n.pk }})" role="button" tabindex="0" data-notif-pk="{{ n.pk }}">
+        <form method="post" action="{% url 'notifications:mark_read_no_redirect' n.pk %}" style="display:none;">{% csrf_token %}</form>
         <div style="display:flex;align-items:flex-start;gap:14px;">
           <div class="notif-icon" style="background:{% if not n.is_read %}#dbeafe{% else %}#f3f4f6{% endif %};color:{% if not n.is_read %}#3b82f6{% else %}#9ca3af{% endif %};">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -285,7 +438,7 @@
             <div class="notif-unread-dot"></div>
           {% endif %}
         </div>
-      </a>
+      </div>
 
       {# ── Card action buttons (visible on hover) ── #}
       <div class="notif-card-actions">
@@ -345,4 +498,279 @@
 
 </div>
 </div>
+
+{# ── Notification Detail Modal ── #}
+<div class="notif-modal-overlay" id="notifDetailModal">
+  <div class="notif-modal">
+    <div class="notif-modal-header">
+      <div>
+        <h3 id="nmTitle">Notification</h3>
+        <div class="nmh-time" id="nmTime"></div>
+      </div>
+      <button class="notif-modal-close" onclick="closeNotifModal()" aria-label="Close">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="notif-modal-body" id="nmBody">
+      <div class="nm-no-data" id="nmLoading">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        <div style="margin-top:8px;">Loading details…</div>
+      </div>
+      <div id="nmContent" style="display:none;"></div>
+      <div class="nm-no-data" id="nmEmpty" style="display:none;">
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>No additional details available for this notification.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="nmTmplConsultation">
+  <div class="nm-section">
+    <div class="nm-section-title">Consultation</div>
+    <div class="nm-grid">
+      <div class="nm-field" style="grid-column:1/-1;">
+        <div class="nm-label">Patient</div>
+        <div class="nm-value" id="nmPatient"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Status</div>
+        <div id="nmStatus"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Submitted</div>
+        <div class="nm-value" id="nmConsultDate"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="nm-label">Symptoms</div>
+      <div class="nm-text-block" id="nmSymptoms"></div>
+    </div>
+  </div>
+</template>
+
+<template id="nmTmplTriage">
+  <div class="nm-section">
+    <div class="nm-section-title">Triage Vitals</div>
+    <div class="nm-grid">
+      <div class="nm-field">
+        <div class="nm-label">Blood Pressure</div>
+        <div class="nm-value" id="nmBP"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Temperature</div>
+        <div class="nm-value" id="nmTemp"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Pulse Rate</div>
+        <div class="nm-value" id="nmPulse"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Respiratory Rate</div>
+        <div class="nm-value" id="nmRR"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">O₂ Saturation</div>
+        <div class="nm-value" id="nmSpO2"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Weight</div>
+        <div class="nm-value" id="nmWeight"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Urgency</div>
+        <div id="nmUrgency"></div>
+      </div>
+      <div class="nm-field">
+        <div class="nm-label">Triaged By</div>
+        <div class="nm-value" id="nmTriagedBy"></div>
+      </div>
+      <div class="nm-field" style="grid-column:1/-1;">
+        <div class="nm-label">Triage Notes</div>
+        <div class="nm-text-block" id="nmTriageNotes"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="nmTmplPrescription">
+  <div class="nm-section">
+    <div class="nm-section-title">Prescription</div>
+    <div style="margin-bottom:10px;">
+      <div class="nm-label">Diagnosis</div>
+      <div class="nm-text-block" id="nmDiagnosis"></div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div class="nm-label">Treatment Plan</div>
+      <div class="nm-text-block" id="nmTreatmentPlan"></div>
+    </div>
+    <div id="nmRxItems"></div>
+  </div>
+</template>
+
+<script>
+// ── Notification Detail Modal ──
+var NOTIF_DETAIL_PK = null;
+
+function openNotifDetail(pk) {
+  NOTIF_DETAIL_PK = pk;
+  var overlay = document.getElementById('notifDetailModal');
+  if (!overlay) return;
+
+  // Reset modal
+  document.getElementById('nmTitle').textContent = 'Notification';
+  document.getElementById('nmTime').textContent = '';
+  document.getElementById('nmLoading').style.display = '';
+  document.getElementById('nmContent').style.display = 'none';
+  document.getElementById('nmContent').innerHTML = '';
+  document.getElementById('nmEmpty').style.display = 'none';
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Mark as read via AJAX using hidden form inside card body
+  var cardBodyEl = document.querySelector('[data-notif-pk="' + pk + '"]');
+  if (cardBodyEl) {
+    var readForm = cardBodyEl.querySelector('form[action*="mark_read_no_redirect"]');
+    if (readForm) {
+      fetch(readForm.action, {
+        method: 'POST',
+        body: new FormData(readForm),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).catch(function() {});
+    }
+    // Un-dot the card visually
+    var card = cardBodyEl.closest('.notif-card');
+    if (card) { card.classList.remove('unread'); }
+  }
+
+  // Fetch detail data
+  fetch('/notifications/' + pk + '/detail/')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('nmLoading').style.display = 'none';
+
+      if (data.notification) {
+        document.getElementById('nmTitle').textContent = data.notification.title || 'Notification';
+        if (data.notification.created_at) {
+          var d = new Date(data.notification.created_at);
+          document.getElementById('nmTime').textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' \u00b7 ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+      }
+
+      var contentEl = document.getElementById('nmContent');
+      var html = '';
+
+      if (data.consultation) {
+        var tmpl = document.getElementById('nmTmplConsultation');
+        var clone = tmpl.content.cloneNode(true);
+
+        clone.querySelector('#nmPatient').textContent = (data.consultation.patient_name || '') + ' (' + (data.consultation.patient_id || '') + ')';
+
+        var statusEl = clone.querySelector('#nmStatus');
+        var status = data.consultation.status || '—';
+        statusEl.innerHTML = '<span class="nm-badge ' + (status === 'Completed' ? 'completed' : 'default') + '">' + status + '</span>';
+
+        if (data.consultation.created_at) {
+          var d2 = new Date(data.consultation.created_at);
+          clone.querySelector('#nmConsultDate').textContent = d2.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        clone.querySelector('#nmSymptoms').textContent = data.consultation.symptoms || 'None reported';
+        if (!data.consultation.symptoms) { clone.querySelector('#nmSymptoms').classList.add('empty'); }
+
+        var tmpDiv = document.createElement('div');
+        tmpDiv.appendChild(clone);
+        html += tmpDiv.innerHTML;
+      }
+
+      if (data.triage) {
+        var tmpl2 = document.getElementById('nmTmplTriage');
+        var clone2 = tmpl2.content.cloneNode(true);
+
+        clone2.querySelector('#nmBP').textContent = data.triage.blood_pressure || '—';
+        clone2.querySelector('#nmTemp').textContent = data.triage.temperature != null ? data.triage.temperature + ' °C' : '—';
+        clone2.querySelector('#nmPulse').textContent = data.triage.pulse_rate != null ? data.triage.pulse_rate + ' bpm' : '—';
+        clone2.querySelector('#nmRR').textContent = data.triage.respiratory_rate != null ? data.triage.respiratory_rate + ' /min' : '—';
+        clone2.querySelector('#nmSpO2').textContent = data.triage.oxygen_saturation != null ? data.triage.oxygen_saturation + '%' : '—';
+        clone2.querySelector('#nmWeight').textContent = data.triage.weight != null ? data.triage.weight + ' kg' : '—';
+
+        var urg = (data.triage.urgency || '').toLowerCase();
+        clone2.querySelector('#nmUrgency').innerHTML = '<span class="nm-badge ' + urg + '">' + (data.triage.urgency || '—') + '</span>';
+        clone2.querySelector('#nmTriagedBy').textContent = data.triage.triaged_by || '—';
+        clone2.querySelector('#nmTriageNotes').textContent = data.triage.notes || 'No notes';
+        if (!data.triage.notes) { clone2.querySelector('#nmTriageNotes').classList.add('empty'); }
+
+        var tmpDiv2 = document.createElement('div');
+        tmpDiv2.appendChild(clone2);
+        html += tmpDiv2.innerHTML;
+      }
+
+      if (data.prescription) {
+        var tmpl3 = document.getElementById('nmTmplPrescription');
+        var clone3 = tmpl3.content.cloneNode(true);
+
+        clone3.querySelector('#nmDiagnosis').textContent = data.prescription.diagnosis || '—';
+        if (!data.prescription.diagnosis) { clone3.querySelector('#nmDiagnosis').classList.add('empty'); }
+        clone3.querySelector('#nmTreatmentPlan').textContent = data.prescription.treatment_plan || 'None';
+        if (!data.prescription.treatment_plan) { clone3.querySelector('#nmTreatmentPlan').classList.add('empty'); }
+
+        var itemsEl = clone3.querySelector('#nmRxItems');
+        if (data.prescription.items && data.prescription.items.length > 0) {
+          var itemsHtml = '';
+          data.prescription.items.forEach(function(item) {
+            var detail = '';
+            if (item.dosage) detail += item.dosage;
+            if (item.frequency) detail += (detail ? ' — ' : '') + item.frequency;
+            if (item.duration) detail += (detail ? ', ' : '') + item.duration;
+            itemsHtml += '<div class="nm-rx-item"><div class="nm-rx-item-name">' + item.name + '</div>';
+            if (detail) itemsHtml += '<div class="nm-rx-item-detail">' + detail + '</div>';
+            if (item.instructions) itemsHtml += '<div class="nm-rx-item-detail" style="color:#6b7280;">' + item.instructions + '</div>';
+            itemsHtml += '</div>';
+          });
+          itemsEl.innerHTML = itemsHtml;
+        } else {
+          itemsEl.innerHTML = '<div class="nm-text-block empty">No medications prescribed.</div>';
+        }
+
+        var tmpDiv3 = document.createElement('div');
+        tmpDiv3.appendChild(clone3);
+        html += tmpDiv3.innerHTML;
+      }
+
+      if (html) {
+        contentEl.innerHTML = html;
+        contentEl.style.display = '';
+      } else {
+        document.getElementById('nmEmpty').style.display = '';
+      }
+    })
+    .catch(function() {
+      document.getElementById('nmLoading').style.display = 'none';
+      document.getElementById('nmEmpty').style.display = '';
+      document.getElementById('nmEmpty').querySelector('div').textContent = 'Could not load notification details.';
+    });
+}
+
+function closeNotifModal() {
+  var overlay = document.getElementById('notifDetailModal');
+  if (overlay) {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+// Close on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+  var overlay = document.getElementById('notifDetailModal');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closeNotifModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeNotifModal();
+    });
+  }
+});
+</script>
 {% endblock %}

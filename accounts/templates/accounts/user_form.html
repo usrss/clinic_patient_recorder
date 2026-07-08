@@ -176,16 +176,6 @@
         </div>
         {% endif %}
 
-        {% if form.force_password_change %}
-        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#fffbeb;border-radius:10px;border:1px solid #fde68a;margin-bottom:16px;">
-          {{ form.force_password_change }}
-          <label for="{{ form.force_password_change.id_for_label }}" style="font-size:14px;color:#92400e;margin:0;cursor:pointer;font-weight:500;">
-            Force password change on next login
-          </label>
-        </div>
-        {% endif %}
-
-
         {% if form.role %}
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
           <ion-icon name="information-circle-outline" style="font-size:16px;color:#3b82f6;flex-shrink:0;margin-top:1px;"></ion-icon>

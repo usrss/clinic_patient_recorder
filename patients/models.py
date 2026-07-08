@@ -102,6 +102,13 @@ class Patient(models.Model):
         help_text='Reason for archiving (e.g. Graduated — no activity after academic year end).',
     )
 
+    # ── Temp Password (plaintext, for front-desk retrieval only) ─────────
+    temp_password = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text='Temporary password in plaintext (cleared after patient logs in).',
+    )
+
     # ── Profile Picture ────────────────────────────────────────────────────
     profile_picture = models.ImageField(
         upload_to='patients/',

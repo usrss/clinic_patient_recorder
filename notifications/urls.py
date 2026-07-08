@@ -11,4 +11,5 @@ urlpatterns = [
     path('mark-all-read/', views.mark_all_read, name='mark_all_read'),
     path('delete-read/', views.delete_read_notifications, name='delete_read_notifications'),
     path('unread-count/', views.unread_count, name='unread_count'),
+    path('<int:pk>/detail/', views.notification_detail_api, name='detail_api'),
 ]

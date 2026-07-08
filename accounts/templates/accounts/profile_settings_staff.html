@@ -1,223 +1,11 @@
 {% extends base_template %}
+{% load static %}
 {% block title %}Settings — Patient Record System{% endblock %}
 {% block page_title %}Settings{% endblock %}
 {% block page_subtitle %}Manage your profile and account preferences{% endblock %}
 
-{% block extra_css %}
-<style>
-  .settings-page { width: 100%; max-width: 900px; margin: 0 auto; }
-
-  .card-panel {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
-    padding: 32px 28px;
-    margin-bottom: 20px;
-  }
-
-  .section-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 20px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-  @media (max-width: 600px) { .form-grid-2 { grid-template-columns: 1fr; } }
-
-  /* ── Input styling ── */
-  .field-group { margin-bottom: 16px; }
-  .field-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .field-wrap { position: relative; }
-
-  .reg-input {
-    width: 100%;
-    padding: 10px 13px;
-    border: 1.5px solid #e1e5eb;
-    border-radius: 10px;
-    font-size: 14px;
-    color: #1a1a2e;
-    background: #fafbfc;
-    transition: all 0.2s;
-    outline: none;
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
-  }
-  .reg-input:focus {
-    border-color: #0078d4;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
-  }
-  .reg-input.readonly {
-    background: #f3f4f6;
-    color: #6b7280;
-    cursor: not-allowed;
-  }
-  textarea.reg-input { resize: vertical; min-height: 80px; }
-  select.reg-input { appearance: none; cursor: pointer; }
-  input[type="password"].reg-input { padding-right: 44px; }
-  select.reg-input {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
-  }
-
-  /* ── Validation indicator ── */
-  .val-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 16px;
-    display: none;
-    pointer-events: none;
-  }
-  .val-icon.valid { color: #10b981; }
-  .val-icon.invalid { color: #ef4444; }
-  .reg-input.val-valid { border-color: #10b981; background: #f0fdf4; }
-  .reg-input.val-invalid { border-color: #ef4444; background: #fef2f2; }
-  .field-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
-
-  /* ── Avatar upload ── */
-  .avatar-section {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-  .avatar-preview {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #eff6ff, #bfdbfe);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    position: relative;
-  }
-  .avatar-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .avatar-preview .initials {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1e40af;
-  }
-
-  .file-upload-wrap {
-    flex: 1;
-    min-width: 180px;
-  }
-  .file-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 16px;
-    border: 1.5px dashed #cbd5e1;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #374151;
-    background: #fafbfc;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
-  }
-  .file-upload-btn:hover {
-    border-color: #0078d4;
-    color: #0078d4;
-    background: #eff6ff;
-  }
-  .file-name {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 6px;
-    display: none;
-  }
-  .file-name.visible { display: block; }
-  input[type="file"] { display: none; }
-  .remove-pic-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #dc2626;
-    cursor: pointer;
-    margin-top: 8px;
-  }
-  .remove-pic-label:hover { color: #b91c1c; }
-
-  /* ── Buttons ── */
-  .btn-save {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 24px;
-    background: #0078d4;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(0,120,212,0.2);
-    font-family: 'Inter', sans-serif;
-    margin-top: 8px;
-  }
-  .btn-save:hover { background: #006bbf; box-shadow: 0 4px 14px rgba(0,120,212,0.3); }
-  .btn-save:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,120,212,0.2); }
-
-  @media (min-width: 601px) {
-    .btn-save { width: auto; }
-  }
-
-  .pw-toggle {
-    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; padding: 4px; cursor: pointer;
-    color: #94a3b8; display: flex; align-items: center;
-    border-radius: 6px; transition: color 0.15s;
-  }
-  .pw-toggle:hover { color: #475569; }
-
-  .alert {
-    margin-bottom: 16px; padding: 12px 16px; border-radius: 10px;
-    font-size: 13px; font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .alert-error   { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
-  .alert-warning { background:#fff8e1; color:#92400e; border:1px solid #fed7aa; }
-  .alert-success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
-
-  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 4px; padding-bottom: 24px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-{% endblock %}
-
 {% block content %}
+<link rel="stylesheet" href="{% static 'accounts/css/settings.css' %}">
 <div class="settings-page">
 
   {% if messages %}
@@ -243,35 +31,28 @@
       </div>
       {% endif %}
 
-      {# ═══ PROFILE PICTURE ═══ #}
-      <div class="avatar-section">
-        <div class="avatar-preview" id="avatarPreview">
+      {# ═══ CENTERED PROFILE PICTURE ═══ #}
+      <div class="settings-avatar-wrap">
+        <div class="settings-avatar" id="avatarPreview">
           {% if user.profile_picture %}
-            <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="">
+            <img id="avatarImg" src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
           {% else %}
-            <span class="initials" id="avatarInitials">{{ user.get_full_name|default:user.username|first|upper }}</span>
+            <span class="initials">{{ user.get_full_name|default:user.username|first|upper }}</span>
           {% endif %}
+          <div class="settings-avatar-overlay">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
         </div>
-        <div class="file-upload-wrap">
-          <label class="file-upload-btn" for="id_profile_picture">
-            <ion-icon name="cloud-upload-outline"></ion-icon>
-            Choose Picture
-          </label>
-          {{ info_form.profile_picture }}
-          {% if info_form.profile_picture.errors %}
-            {% for error in info_form.profile_picture.errors %}
-              <div class="field-error" style="margin-top:6px;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
-            {% endfor %}
-          {% endif %}
-          <div class="file-name" id="fileName"></div>
-          {% if user.profile_picture %}
-          <label class="remove-pic-label">
-            {{ info_form.remove_picture }}
-            <ion-icon name="trash-outline"></ion-icon>
-            Remove current picture
-          </label>
-          {% endif %}
-        </div>
+        <span class="settings-avatar-label">Click to view photo</span>
+        {{ info_form.profile_picture }}
+        {% if info_form.profile_picture.errors %}
+          {% for error in info_form.profile_picture.errors %}
+            <div style="font-size:11px;color:#dc2626;margin-top:6px;display:flex;align-items:center;gap:4px;justify-content:center;"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>
+          {% endfor %}
+        {% endif %}
+        {% if user.profile_picture %}
+          <label style="display:none;">{{ info_form.remove_picture }}</label>
+        {% endif %}
       </div>
 
       {# ═══ STAFF FIELDS ═══ #}
@@ -287,28 +68,46 @@
         {% endfor %}
       </div>
 
+      {# ═══ Email & Phone in 2‑column row (same as First Name / Last Name) ═══ #}
+      <div class="form-grid-2">
+        {% for field in info_form %}
+          {% if field.name == 'email' %}
+          <div class="field-group">
+            <label class="field-label">{{ field.label }}</label>
+            <div class="field-wrap">{{ field }}</div>
+            {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        {% for field in info_form %}
+          {% if field.name == 'phone' %}
+          <div class="field-group">
+            <label class="field-label">{{ field.label }}</label>
+            <div class="field-wrap">
+              <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
+            </div>
+            {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
       {% for field in info_form %}
-        {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
+        {% if field.name != 'first_name' and field.name != 'last_name' and field.name != 'email' and field.name != 'phone' and field.name != 'profile_picture' and field.name != 'remove_picture' %}
         <div class="field-group">
           <label class="field-label">{{ field.label }}</label>
-          <div class="field-wrap">
-            {% if field.name == 'email' %}
-              {{ field }}
-            {% elif field.name == 'phone' %}
-              <input type="text" name="{{ field.name }}" value="{{ field.value|default:'' }}" class="reg-input" placeholder="+63 XXX XXX XXXX" id="{{ field.id_for_label }}">
-            {% else %}
-              {{ field }}
-            {% endif %}
-          </div>
+          <div class="field-wrap">{{ field }}</div>
           {% if field.errors %}<div class="field-error">{{ field.errors.0 }}</div>{% endif %}
         </div>
         {% endif %}
       {% endfor %}
 
-      <button type="submit" name="save_info" id="saveProfileBtn" class="btn-save">
-        <ion-icon name="checkmark-outline"></ion-icon>
-        Save Profile
-      </button>
+      <div style="display:flex;justify-content:center;">
+        <button type="submit" name="save_info" id="saveProfileBtn" class="btn-save">
+          <ion-icon name="checkmark-outline"></ion-icon>
+          Save Profile
+        </button>
+      </div>
     </form>
   </div>
 
@@ -317,193 +116,80 @@
     <div class="section-label">Change Password</div>
     <form method="post" novalidate id="passwordForm" data-track-changes="true">
       {% csrf_token %}
-      <div style="display:grid;gap:14px;">
+      <div style="max-width:420px;margin:0 auto;display:grid;gap:14px;">
         {% for field in password_form %}
-        <div class="field-group" style="margin-bottom:0;">
-          <label class="field-label">{{ field.label }}</label>
-          <div class="field-wrap" style="position:relative;display:flex;align-items:center;">
+        <div style="text-align:center;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;text-align:left;">{{ field.label }}</label>
+          <div class="field-wrap" style="position:relative;display:flex;align-items:center;max-width:420px;">
             {{ field }}
             {% if field.field.widget.input_type == 'password' %}
-            <button type="button" class="pw-toggle" onclick="togglePw(this)">
-              <ion-icon name="eye-outline" class="icon-eye" style="font-size:18px;"></ion-icon>
-              <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:18px;display:none;"></ion-icon>
+            <button type="button" class="pw-toggle" onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;padding:6px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:all 0.15s;" onmouseover="this.style.color='#475569';this.style.background='#f1f5f9'" onmouseout="this.style.color='#94a3b8';this.style.background='none'">
+              <ion-icon name="eye-outline" class="icon-eye" style="font-size:20px;"></ion-icon>
+              <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:20px;display:none;"></ion-icon>
             </button>
             {% endif %}
           </div>
-          {% if field.errors %}<div class="field-error" id="{{ field.auto_id }}-error">{{ field.errors.0 }}</div>{% endif %}
+          {% if field.errors %}<div class="field-error" id="{{ field.auto_id }}-error" style="text-align:left;">{{ field.errors.0 }}</div>{% endif %}
         </div>
         {% endfor %}
       </div>
 
       <!-- Password match indicator -->
-      <div id="pwMatchIndicator" style="display:none;margin-top:8px;font-size:12px;font-weight:500;align-items:center;gap:6px;"></div>
+<div id="pwMatchIndicator" style="display:none;margin-top:10px;font-size:12px;font-weight:500;align-items:center;justify-content:center;gap:6px;"></div>
+    </form>
 
-      <button type="submit" name="save_password" id="staffChangePwBtn" class="btn-save">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid #f1f5f9;flex-wrap:wrap;">
+      <button type="submit" form="passwordForm" name="save_password" id="staffChangePwBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;">
         <ion-icon name="lock-closed-outline"></ion-icon>
         Change Password
       </button>
-    </form>
 
-    {# ── Logout all devices ── #}
-    <form method="post" action="{% url 'accounts:logout_all_devices' %}" style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;">
-      {% csrf_token %}
-      <button type="submit" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;"
-              onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
-              onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
-        <ion-icon name="phone-portrait-outline"></ion-icon>
-        Log out all other devices
-      </button>
-    </form>
+      <form method="post" action="{% url 'accounts:logout_all_devices' %}">
+        {% csrf_token %}
+        <button type="submit" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;white-space:nowrap;"
+                onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
+                onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
+          <ion-icon name="phone-portrait-outline"></ion-icon>
+          Log out all other devices
+        </button>
+      </form>
+    </div>
   </div>
 
   <p class="footer-note">Negros Oriental State University — Medical Dental Clinic</p>
 
 </div>
 
-<script>
-  // ── Password strength calculator ──
-  function getStaffPwStrength(val) {
-    var score = 0;
-    if (val.length >= 8) score++;
-    if (val.length >= 12) score++;
-    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[^A-Za-z0-9]/.test(val)) score++;
-    return score;
-  }
+{# ── Photo Modal Overlay ── #}
+<div class="photo-modal-overlay" id="photoModalOverlay">
+  <button class="photo-modal-close" id="photoModalClose" aria-label="Close">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
 
-  // ── Strength meter HTML — appended before the match indicator ──
-  var staffIndicator = document.getElementById('pwMatchIndicator');
-  if (staffIndicator) {
-    var meterDiv = document.createElement('div');
-    meterDiv.id = 'staff-strength-wrap';
-    meterDiv.style.cssText = 'display:none;margin-bottom:6px;';
-    meterDiv.innerHTML = '<div style="display:flex;gap:4px;margin-bottom:4px;">'
-      + '<div class="staff-sbar" id="ssb1" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
-      + '<div class="staff-sbar" id="ssb2" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
-      + '<div class="staff-sbar" id="ssb3" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
-      + '<div class="staff-sbar" id="ssb4" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>'
-      + '</div>'
-      + '<span id="staff-strength-text" style="font-size:11px;font-weight:600;color:#94a3b8;transition:color 0.3s;">Too short</span>';
-    staffIndicator.parentElement.insertBefore(meterDiv, staffIndicator);
-  }
+  <div class="photo-modal-menu">
+    <button class="photo-modal-dots" aria-label="More options">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+      </svg>
+    </button>
+    <div class="photo-modal-dropdown">
+      <button class="photo-modal-dropdown-item" onclick="handleChangePhoto()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Change Photo
+      </button>
+      <button class="photo-modal-dropdown-item danger" onclick="handleRemovePhoto()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Remove Photo
+      </button>
+    </div>
+  </div>
 
-  // ── Update strength meter & match indicator ──
-  function updateStaffPwUI() {
-    var pw1 = document.querySelector('#id_new_password1');
-    var pw2 = document.querySelector('#id_new_password2');
-    var indicator = document.getElementById('pwMatchIndicator');
-    if (!pw1) return;
+  <div class="photo-modal">
+    <img class="photo-modal-img" src="" alt="Profile photo">
+  </div>
+</div>
 
-    // Strength meter
-    var val = pw1.value;
-    var wrap = document.getElementById('staff-strength-wrap');
-    if (!val) { if (wrap) wrap.style.display = 'none'; } else {
-      if (wrap) {
-        wrap.style.display = 'block';
-        var score = getStaffPwStrength(val);
-        var level = score <= 1 ? 1 : score <= 2 ? 2 : score <= 3 ? 3 : 4;
-        var colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
-        var labels = ['', 'Too weak', 'Weak', 'Good', 'Strong'];
-        for (var i = 1; i <= 4; i++) {
-          document.getElementById('ssb' + i).style.background = i <= level ? colors[level] : '#e8ecf1';
-        }
-        document.getElementById('staff-strength-text').textContent = labels[level];
-        document.getElementById('staff-strength-text').style.color = colors[level];
-      }
-    }
-
-    // Match indicator
-    if (!pw2 || !indicator) return;
-    var v1 = pw1.value, v2 = pw2.value;
-    if (v2.length === 0 && v1.length === 0) { indicator.style.display = 'none'; return; }
-    indicator.style.display = 'flex';
-    if (v1 && v2 && v1 === v2) {
-      indicator.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:14px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
-    } else if (v2.length > 0) {
-      indicator.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:14px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
-    } else { indicator.style.display = 'none'; }
-  }
-
-  var staffPw1 = document.querySelector('#id_new_password1');
-  var staffPw2 = document.querySelector('#id_new_password2');
-  if (staffPw1) staffPw1.addEventListener('input', updateStaffPwUI);
-  if (staffPw2) staffPw2.addEventListener('input', updateStaffPwUI);
-
-  // ── Live Avatar Preview ──
-  document.addEventListener('DOMContentLoaded', function() {
-    var fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) {
-      fileInput.addEventListener('change', function(e) {
-        var file = e.target.files[0];
-        if (file) {
-          var maxSize = 5 * 1024 * 1024;
-          if (file.size > maxSize) {
-            alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
-            fileInput.value = '';
-            return;
-          }
-          var allowed = ['image/jpeg', 'image/png', 'image/webp'];
-          if (allowed.indexOf(file.type) === -1) {
-            alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
-            fileInput.value = '';
-            return;
-          }
-          var reader = new FileReader();
-          reader.onload = function(ev) {
-            var preview = document.getElementById('avatarPreview');
-            var img = document.getElementById('avatarImg') || document.createElement('img');
-            img.id = 'avatarImg';
-            img.src = ev.target.result;
-            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-            preview.innerHTML = '';
-            preview.appendChild(img);
-            var fn = document.getElementById('fileName');
-            fn.textContent = file.name;
-            fn.classList.add('visible');
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-
-    // ── Loading state: Save Profile ──
-    var profileForm = document.getElementById('profileForm');
-    if (profileForm) {
-      profileForm.addEventListener('submit', function() {
-        var btn = document.getElementById('saveProfileBtn');
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
-        }
-      });
-    }
-
-    // ── Loading state: Change Password ──
-    var passwordForm = document.getElementById('passwordForm');
-    if (passwordForm) {
-      passwordForm.addEventListener('submit', function() {
-        var btn = document.getElementById('staffChangePwBtn');
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Changing...';
-        }
-      });
-    }
-
-    // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
-  });
-
-  function togglePw(btn) {
-    var wrap = btn.parentElement;
-    var input = wrap.querySelector('input');
-    var eye = btn.querySelector('.icon-eye');
-    var eyeOff= btn.querySelector('.icon-eye-off');
-    if (!input) return;
-    var show = input.type === 'password';
-    input.type          = show ? 'text'  : 'password';
-    eye.style.display   = show ? 'none'  : '';
-    eyeOff.style.display= show ? ''      : 'none';
-  }
-</script>
+<script src="{% static 'accounts/js/settings.js' %}"></script>
 {% endblock %}
