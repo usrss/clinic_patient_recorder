@@ -1,0 +1,334 @@
+{% extends 'core/base_admin.html' %}
+{% load static %}
+{% block title %}
+{% if section == 'diagnoses' %}All Diagnoses — Full Report
+{% elif section == 'matrix' %}Diagnosis Distribution by College — Full Report
+{% elif section == 'patients' %}Patients by College — Full Report
+{% else %}Full Diagnosis Report{% endif %} — Patient Record System
+{% endblock %}
+{% block nav_reports %}active{% endblock %}
+{% block page_title %}
+{% if section == 'diagnoses' %}All Diagnoses
+{% elif section == 'matrix' %}Diagnosis Distribution by College
+{% elif section == 'patients' %}Patients by College
+{% else %}Full Diagnosis Report{% endif %}
+{% endblock %}
+{% block page_subtitle %}
+{% if section == 'diagnoses' %}Complete list of all diagnoses recorded in completed consultations, ranked by frequency.
+{% elif section == 'matrix' %}Complete cross-tabulation matrix showing diagnosis counts per college.
+{% elif section == 'patients' %}Clinic utilization by college — counts unique patients seen.
+{% else %}Complete list of all diagnoses with filters and PDF export{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'reports/css/diagnosis_analytics.css' %}">
+<style>
+  .report-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .summary-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #eff6ff;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #1e40af;
+    font-weight: 500;
+  }
+  .summary-badge strong { font-size: 14px; }
+  .btn-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s, box-shadow .15s;
+  }
+  .btn-pdf:hover { background: #b91c1c; color: #fff; text-decoration: none; box-shadow: 0 4px 14px rgba(220,38,38,0.3); }
+  .full-matrix-wrap {
+    overflow-x: auto;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  .full-matrix-wrap .matrix-table th,
+  .full-matrix-wrap .matrix-table td {
+    font-size: 11px;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+  .full-matrix-wrap .matrix-table th:not(:first-child),
+  .full-matrix-wrap .matrix-table td:not(:first-child) {
+    min-width: 60px;
+    text-align: right;
+  }
+  .matrix-count-chip {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .matrix-count-chip.has-data {
+    background: #eff6ff;
+    color: #0078d4;
+  }
+  .matrix-count-chip.no-data {
+    color: #e5e7eb;
+    font-weight: 400;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<nav style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:12px;">
+  <a href="{% url 'reports:diagnosis_analytics' %}" class="back-link" style="margin-bottom:0;">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    Diagnosis Analytics
+  </a>
+  <span style="color:#c8d4e8;font-size:14px;font-weight:300;">›</span>
+  <span style="color:#374151;font-weight:600;">
+    {% if section == 'diagnoses' %}All Diagnoses
+    {% elif section == 'matrix' %}Diagnosis Distribution by College
+    {% elif section == 'patients' %}Patients by College
+    {% else %}Full Report{% endif %}
+  </span>
+</nav>
+
+{# ── Filter Bar ── #}
+<div class="filter-card">
+  <form method="get">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <span class="sec-heading" style="margin-bottom:0;">Report Filters</span>
+      <span style="font-size:11px;color:#9ca3af;">Apply filters to narrow the scope of the report.</span>
+    </div>
+    <div class="filter-row">
+      <div>
+        <label class="filter-label">Date from</label>
+        <input type="date" name="date_from" value="{{ date_from|default:'' }}" class="filter-input">
+      </div>
+      <div>
+        <label class="filter-label">Date to</label>
+        <input type="date" name="date_to" value="{{ date_to|default:'' }}" class="filter-input">
+      </div>
+      <div>
+        <label class="filter-label">College</label>
+        <select name="college_id" class="filter-select">
+          <option value="">All colleges</option>
+          {% for c in colleges %}
+          <option value="{{ c.pk }}" {% if college_id == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.abbreviation }} — {{ c.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button type="submit" class="btn-primary">Apply Filters</button>
+        {% if has_filters %}
+        <a href="{% url 'reports:diagnosis_full_report' %}" class="btn-secondary-sm">Reset</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if section == 'all' or section == 'diagnoses' %}
+{% if section == 'all' %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+  <div>
+    <div class="sec-heading" style="margin-bottom:4px;">Summary</div>
+    <p style="font-size:12px;color:#94a3b8;margin:0;">Key metrics across all diagnoses.</p>
+  </div>
+  <a href="?section=all&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}export=pdf" class="btn-pdf">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Export Full Report (PDF)
+  </a>
+</div>
+{% endif %}
+{# ── Summary Cards ── #}
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value" style="color:#0078d4;">{{ total_all_diagnoses }}</div>
+    <div class="stat-label">Distinct Diagnoses</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#8b5cf6;">{{ total_diagnosis_count }}</div>
+    <div class="stat-label">Total Prescriptions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#10b981;">{{ full_matrix_rows|length }}</div>
+    <div class="stat-label">Diagnoses Listed</div>
+  </div>
+</div>
+
+{# ── Section 1: All Diagnoses ── #}
+<div class="analysis-section" id="all-diagnoses">
+  <div class="report-actions-row">
+    <div>
+      <div class="sec-heading" style="margin-bottom:4px;">All Diagnoses</div>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+        Complete list of all diagnoses recorded in completed consultations, ranked by frequency.
+      </p>
+    </div>
+    {% if section == 'diagnoses' %}
+    <div style="display:flex;align-items:center;gap:8px;">
+      <a href="?section=diagnoses&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}export=pdf" class="btn-pdf">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Export PDF
+      </a>
+      <a href="{% url 'reports:diagnosis_full_report' %}?{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        View All Sections
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% if all_diagnoses %}
+  <div class="panel" style="max-height:480px;overflow-y:auto;">
+    <table>
+      <thead><tr><th>#</th><th>Diagnosis</th><th>Cases</th></tr></thead>
+      <tbody>
+        {% for d in all_diagnoses %}
+        <tr>
+          <td><span class="rank-chip">{{ forloop.counter }}</span></td>
+          <td style="font-weight:500;">{{ d.diagnosis|truncatechars:100 }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ d.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:28px 24px;">
+    <p style="color:#94a3b8;font-size:13px;margin:0;">No diagnosis data available.</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if section == 'all' or section == 'matrix' %}
+{# ── Section 2: Full Diagnosis Distribution by College ── #}
+<div class="analysis-section" id="diagnosis-by-college">
+  <div class="report-actions-row">
+    <div>
+      <div class="sec-heading" style="margin-bottom:4px;">Diagnosis Distribution by College</div>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+        Complete cross-tabulation matrix showing diagnosis counts per college. The table shows all diagnoses as rows — scroll horizontally to view more.
+      </p>
+    </div>
+    {% if section == 'matrix' %}
+    <div style="display:flex;align-items:center;gap:8px;">
+      <a href="?section=matrix&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}export=pdf" class="btn-pdf">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Export PDF
+      </a>
+      <a href="{% url 'reports:diagnosis_full_report' %}?{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        View All Sections
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% if full_matrix_rows %}
+  <div class="panel">
+    <div class="full-matrix-wrap">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Diagnosis</th>
+            {% for col_name in full_col_names %}
+            <th title="{{ col_name }}">{{ col_name|truncatechars:20 }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in full_matrix_rows %}
+          <tr>
+            <td style="font-weight:700;color:#1a1a2e;">{{ row.diagnosis }}</td>
+            {% for val in row.col_data %}
+            <td>
+              <span class="matrix-count-chip {% if val %}has-data{% else %}no-data{% endif %}">
+                {% if val %}{{ val }}{% else %}0{% endif %}
+              </span>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:28px 24px;">
+    <p style="color:#94a3b8;font-size:13px;margin:0;">No college diagnosis data available.</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if section == 'all' or section == 'patients' %}
+{# ── Section 3: Patients by College ── #}
+<div class="analysis-section" id="patients-by-college">
+  <div class="report-actions-row">
+    <div>
+      <div class="sec-heading" style="margin-bottom:4px;">Patients by College</div>
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+        Clinic utilization by college — counts unique patients seen (any consultation status).
+      </p>
+    </div>
+    {% if section == 'patients' %}
+    <div style="display:flex;align-items:center;gap:8px;">
+      <a href="?section=patients&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}export=pdf" class="btn-pdf">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Export PDF
+      </a>
+      <a href="{% url 'reports:diagnosis_full_report' %}?{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        View All Sections
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% if patients_by_college %}
+  <div class="panel">
+    <table>
+      <thead><tr><th>#</th><th>College</th><th>Patients</th></tr></thead>
+      <tbody>
+        {% for row in patients_by_college %}
+        <tr>
+          <td><span class="rank-chip">{{ forloop.counter }}</span></td>
+          <td style="font-weight:600;color:#1a1a2e;">{{ row.patient__college__abbreviation|default:"—" }}</td>
+          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:28px 24px;">
+    <p style="color:#94a3b8;font-size:13px;margin:0;">No patient data available.</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:28px;">
+  Negros Oriental State University — Medical Dental Clinic
+</p>
+
+{% endblock %}

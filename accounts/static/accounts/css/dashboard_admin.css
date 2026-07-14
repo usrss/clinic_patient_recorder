@@ -296,7 +296,26 @@
     .action-grid { grid-template-columns: 1fr; }
   }
 
-  /* ── Chart Grid ── */
+  /* ── Chart Row (40/60 layout) ── */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .chart-row .panel {
+    margin-bottom: 0;
+  }
+  .chart-row .chart-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  @media (max-width: 860px) {
+    .chart-row { grid-template-columns: 1fr; }
+  }
+
+  /* ── Legacy chart grid (kept for compatibility) ── */
   .chart-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

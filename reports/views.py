@@ -1,5 +1,6 @@
 import csv
 import io
+from collections import defaultdict
 from datetime import date, timedelta
 
 from django.shortcuts import render
@@ -85,7 +86,7 @@ def _make_aware_dt(d, hour=0, minute=0, second=0):
     return timezone.make_aware(datetime.datetime.combine(d, datetime.time(hour, minute, second)))
 
 
-def _build_disease_queryset(keyword, date_from, date_to, patient_type, college_id):
+def _build_diagnosis_queryset(keyword, date_from, date_to, patient_type, college_id):
     qs = (
         Consultation.objects
         .filter(status=Consultation.Status.COMPLETED)
@@ -113,46 +114,166 @@ def _build_disease_queryset(keyword, date_from, date_to, patient_type, college_i
     return qs.order_by('-created_at')
 
 
-# ─── DISEASE REPORT ───────────────────────────────────────────────────────────
+# ─── DIAGNOSIS ANALYTICS ──────────────────────────────────────────────────────
 
 @login_required
 @admin_required
-def disease_report(request):
+def diagnosis_analytics(request):
     colleges = College.objects.all().order_by('name')
     user_name = request.user.get_full_name() or request.user.username
 
     keyword       = request.GET.get('keyword', '').strip()
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str   = request.GET.get('date_to', '')
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str   = request.GET.get('date_to', '').strip()
     patient_type  = request.GET.get('patient_type', 'all')
-    college_id    = request.GET.get('college_id', '')
+    college_id    = request.GET.get('college_id', '').strip()
+    sex           = request.GET.get('sex', '').strip()
+    year_level    = request.GET.get('year_level', '').strip()
 
     date_from = _parse_date(date_from_str)
     date_to   = _parse_date(date_to_str)
 
-    consultations = _build_disease_queryset(
+    # ── Build base querysets for analytics (Sections 1-3) ──
+    # Section 3 uses any consultation status (clinic utilization)
+    base_any = Consultation.objects.all()
+    # Sections 1-2 use only completed consultations (diagnosis-based)
+    base_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+
+    if date_from:
+        dt = _make_aware_dt(date_from)
+        base_completed = base_completed.filter(created_at__gte=dt)
+        base_any = base_any.filter(created_at__gte=dt)
+    if date_to:
+        dt = _make_aware_dt(date_to, 23, 59, 59)
+        base_completed = base_completed.filter(created_at__lte=dt)
+        base_any = base_any.filter(created_at__lte=dt)
+    if college_id:
+        base_completed = base_completed.filter(patient__college_id=college_id)
+        base_any = base_any.filter(patient__college_id=college_id)
+
+    # ── Section 1: Top Diagnoses ──
+    top_diagnoses = list(
+        Prescription.objects
+        .filter(consultation__in=base_completed)
+        .values('diagnosis')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    # ── Section 2: Diagnosis Distribution by College (matrix format) ──
+    # Build a college × diagnosis cross-tabulation matrix
+    _diag_all_rows = (
+        Prescription.objects
+        .filter(
+            consultation__in=base_completed,
+            consultation__patient__college__isnull=False,
+        )
+        .values(
+            'consultation__patient__college__abbreviation',
+            'diagnosis',
+        )
+        .annotate(count=Count('id'))
+        .order_by('consultation__patient__college__abbreviation', '-count')
+    )
+
+    # Top 10 diagnosis names = row headers
+    diag_short_names = [d['diagnosis'][:30] for d in top_diagnoses]
+
+    # College names (ordered) = column headers (all colleges, even with zero counts)
+    diag_college_names = list(
+        College.objects
+        .distinct()
+        .values_list('abbreviation', flat=True)
+    )
+
+    # Build matrix: {college: {diagnosis: count}}, then transpose
+    _matrix = defaultdict(lambda: defaultdict(int))
+    for row in _diag_all_rows:
+        c_name = row['consultation__patient__college__abbreviation']
+        diag = row['diagnosis'][:30]
+        _matrix[c_name][diag] = row['count']
+
+    # Transpose: make diagnoses the rows, colleges the columns
+    # Include all diagnoses even if counts are zero across all colleges
+    diag_matrix_rows = []
+    for diag_name in diag_short_names:
+        col_data = [_matrix.get(c_name, {}).get(diag_name, 0) for c_name in diag_college_names]
+        diag_matrix_rows.append({
+            'diagnosis': diag_name,
+            'col_data': col_data,
+        })
+
+    # Also build the flat list for backward compatibility
+    diagnosis_by_college = []
+    for row in diag_matrix_rows:
+        for i, cnt in enumerate(row['col_data']):
+            if cnt:
+                diagnosis_by_college.append({
+                    'college': diag_college_names[i],
+                    'diagnosis': row['diagnosis'],
+                    'count': cnt,
+                })
+
+    # ── Section 3: Number of Patients by College (unique patients, any status) ──
+    # Include all colleges, even those with zero patients
+    _all_college_abbrs = list(College.objects.values_list('abbreviation', flat=True))
+    _patient_counts_qs = (
+        base_any
+        .filter(patient__college__isnull=False)
+        .values('patient__college__abbreviation')
+        .annotate(count=Count('patient', distinct=True))
+    )
+    _counts_dict = {r['patient__college__abbreviation']: r['count'] for r in _patient_counts_qs}
+    patients_by_college = sorted(
+        [{'patient__college__abbreviation': abbr, 'count': _counts_dict.get(abbr, 0)}
+         for abbr in _all_college_abbrs],
+        key=lambda x: x['count'],
+        reverse=True,
+    )
+
+    # ── Section 4: Build search queryset (diagnosis-based, completed only) ──
+    consultations = _build_diagnosis_queryset(
         keyword, date_from, date_to, patient_type, college_id or None,
     )
 
-    if request.GET.get('export') == 'csv':
-        log_export(
-            user=request.user,
-            module='Reports',
-            description=f'Exported disease report as CSV{" — " + keyword if keyword else ""}',
-            request=request,
-        )
-        return _disease_csv(consultations)
-    if request.GET.get('export') == 'pdf':
-        log_export(
-            user=request.user,
-            module='Reports',
-            description=f'Exported disease report as PDF{" — " + keyword if keyword else ""}',
-            request=request,
-        )
-        return _disease_pdf(consultations, keyword, date_from, date_to,
-                            patient_type, college_id, user_name)
+    if sex:
+        consultations = consultations.filter(patient__sex=sex)
 
+    if year_level:
+        consultations = consultations.filter(patient__profile__year_level=year_level)
+
+    # ── Handle exports ──
+    export_fmt = request.GET.get('export', '')
+    export_params = _clean_export_params(request.GET.urlencode())
+    if export_fmt == 'csv':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported diagnosis analytics as CSV{" — " + keyword if keyword else ""}',
+            request=request,
+        )
+        return _diagnosis_analytics_csv(consultations)
+    if export_fmt == 'pdf':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported diagnosis analytics as PDF{" — " + keyword if keyword else ""}',
+            request=request,
+        )
+        return _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to,
+                                        patient_type, college_id, user_name)
+    if export_fmt == 'excel':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported diagnosis analytics as Excel{" — " + keyword if keyword else ""}',
+            request=request,
+        )
+        return _diagnosis_analytics_excel(consultations)
+
+    # ── Compute stats for Section 4 ──
     total_affected = consultations.values('patient').distinct().count()
+    consultations_count = consultations.count()
 
     by_type = {
         'student':    consultations.filter(patient__college__isnull=False)
@@ -174,24 +295,404 @@ def disease_report(request):
         .order_by('-count')
     )
 
-    return render(request, 'reports/disease_report.html', {
-        'consultations':  consultations,
-        'colleges':       colleges,
-        'keyword':        keyword,
-        'date_from':      date_from_str,
-        'date_to':        date_to_str,
-        'patient_type':   patient_type,
-        'college_id':     college_id,
-        'total_affected': total_affected,
-        'by_type':        by_type,
-        'by_college':     by_college,
-        'has_filters':    any([keyword, date_from_str, date_to_str,
-                               patient_type != 'all', college_id]),
+    return render(request, 'reports/diagnosis_analytics.html', {
+        'consultations':         consultations,
+        'consultations_count':   consultations_count,
+        'colleges':              colleges,
+        'keyword':               keyword,
+        'date_from':             date_from_str,
+        'date_to':               date_to_str,
+        'patient_type':          patient_type,
+        'college_id':            college_id,
+        'sex':                   sex,
+        'year_level':            year_level,
+        'total_affected':        total_affected,
+        'by_type':               by_type,
+        'by_college':            by_college,
+        'export_params':         export_params,
+        # Analytics sections
+        'top_diagnoses':         top_diagnoses,
+        'diagnosis_by_college':  diagnosis_by_college,
+        'diag_col_names':        diag_college_names,
+        'diag_matrix_rows':      diag_matrix_rows,
+        'patients_by_college':   patients_by_college,
+        'has_filters':           any([keyword, date_from_str, date_to_str,
+                                      patient_type != 'all', college_id,
+                                      sex, year_level]),
     })
 
 
-def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, college_id, user_name=None):
-    """Generate a professional PDF for the disease report."""
+# ─── DIAGNOSIS FULL REPORT ────────────────────────────────────────────────────
+
+@login_required
+@admin_required
+def diagnosis_full_report(request):
+    """Full diagnosis report page with all diagnoses, filters, and PDF export."""
+    colleges = College.objects.all().order_by('name')
+    user_name = request.user.get_full_name() or request.user.username
+
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str   = request.GET.get('date_to', '').strip()
+    college_id    = request.GET.get('college_id', '').strip()
+    section       = request.GET.get('section', 'all').strip()
+
+    date_from = _parse_date(date_from_str)
+    date_to   = _parse_date(date_to_str)
+
+    has_filters = bool(date_from_str or date_to_str or college_id)
+
+    # ── Build base querysets ──
+    base_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+
+    if date_from:
+        dt = _make_aware_dt(date_from)
+        base_completed = base_completed.filter(created_at__gte=dt)
+    if date_to:
+        dt = _make_aware_dt(date_to, 23, 59, 59)
+        base_completed = base_completed.filter(created_at__lte=dt)
+    if college_id:
+        base_completed = base_completed.filter(patient__college_id=college_id)
+
+    # ── ALL Diagnoses (ranked, no limit) ──
+    all_diagnoses = list(
+        Prescription.objects
+        .filter(consultation__in=base_completed)
+        .values('diagnosis')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    # ── Diagnosis Distribution by College (full matrix with ALL diagnoses) ──
+    _diag_all_rows = (
+        Prescription.objects
+        .filter(
+            consultation__in=base_completed,
+            consultation__patient__college__isnull=False,
+        )
+        .values(
+            'consultation__patient__college__abbreviation',
+            'diagnosis',
+        )
+        .annotate(count=Count('id'))
+        .order_by('consultation__patient__college__abbreviation', '-count')
+    )
+
+    # All diagnosis names = row headers
+    full_diag_names = [d['diagnosis'][:40] for d in all_diagnoses]
+
+    # College names (ordered) = column headers (all colleges, even with zero counts)
+    full_college_names = list(
+        College.objects
+        .distinct()
+        .values_list('abbreviation', flat=True)
+    )
+
+    # Build matrix: {college: {diagnosis: count}}, then transpose
+    _matrix = defaultdict(lambda: defaultdict(int))
+    for row in _diag_all_rows:
+        c_name = row['consultation__patient__college__abbreviation']
+        diag = row['diagnosis'][:40]
+        _matrix[c_name][diag] = row['count']
+
+    # Transpose: make diagnoses the rows, colleges the columns
+    # Include all diagnoses even if counts are zero across all colleges
+    full_matrix_rows = []
+    for diag_name in full_diag_names:
+        col_data = [_matrix.get(c_name, {}).get(diag_name, 0) for c_name in full_college_names]
+        full_matrix_rows.append({
+            'diagnosis': diag_name,
+            'col_data': col_data,
+        })
+
+    # ── Patients by College (any status) ──
+    base_any = Consultation.objects.all()
+    if date_from:
+        base_any = base_any.filter(created_at__gte=_make_aware_dt(date_from))
+    if date_to:
+        base_any = base_any.filter(created_at__lte=_make_aware_dt(date_to, 23, 59, 59))
+    if college_id:
+        base_any = base_any.filter(patient__college_id=college_id)
+
+    # Include all colleges, even those with zero patients
+    _all_college_abbrs = list(College.objects.values_list('abbreviation', flat=True))
+    _patient_counts_qs = (
+        base_any
+        .filter(patient__college__isnull=False)
+        .values('patient__college__abbreviation')
+        .annotate(count=Count('patient', distinct=True))
+    )
+    _counts_dict = {r['patient__college__abbreviation']: r['count'] for r in _patient_counts_qs}
+    patients_by_college = sorted(
+        [{'patient__college__abbreviation': abbr, 'count': _counts_dict.get(abbr, 0)}
+         for abbr in _all_college_abbrs],
+        key=lambda x: x['count'],
+        reverse=True,
+    )
+
+    # ── Summary stats ──
+    total_all_diagnoses = len(all_diagnoses)
+    total_diagnosis_count = sum(d['count'] for d in all_diagnoses)
+
+    # ── Handle export ──
+    export_fmt = request.GET.get('export', '')
+    if export_fmt == 'pdf':
+        log_export(
+            user=request.user,
+            module='Reports',
+            description=f'Exported full diagnosis report as PDF (section={section})',
+            request=request,
+        )
+        if section == 'diagnoses':
+            return _diagnoses_pdf(
+                all_diagnoses, date_from, date_to,
+                college_id, user_name,
+            )
+        elif section == 'matrix':
+            return _matrix_pdf(
+                full_matrix_rows, full_college_names, date_from, date_to,
+                college_id, user_name,
+            )
+        elif section == 'patients':
+            return _patients_pdf(
+                patients_by_college, date_from, date_to,
+                college_id, user_name,
+            )
+        else:
+            return _diagnosis_full_report_pdf(
+                all_diagnoses, full_matrix_rows, full_college_names,
+                patients_by_college, date_from, date_to,
+                college_id, user_name,
+            )
+
+    return render(request, 'reports/diagnosis_full_report.html', {
+        'colleges':            colleges,
+        'date_from':           date_from_str,
+        'date_to':             date_to_str,
+        'college_id':          college_id,
+        'section':             section,
+        'has_filters':         has_filters,
+        'all_diagnoses':       all_diagnoses,
+        'total_all_diagnoses': total_all_diagnoses,
+        'total_diagnosis_count': total_diagnosis_count,
+        'full_col_names':      full_college_names,
+        'full_matrix_rows':    full_matrix_rows,
+        'patients_by_college': patients_by_college,
+    })
+
+
+def _diagnosis_full_report_pdf(all_diagnoses, full_matrix_rows, full_college_names,
+                                patients_by_college, date_from, date_to,
+                                college_id, user_name=None):
+    """Generate a professional PDF for the full diagnosis report."""
+    s = _pdf_styles()
+    buf, doc = _pdf_build_doc()
+    footer = _make_pdf_footer(user_name)
+
+    # ── Structured metadata ──
+    meta = [f'<b>Generated Date:</b>  {date.today().strftime("%B %d, %Y")}']
+    if date_from or date_to:
+        period_from = date_from.strftime('%B %d, %Y') if date_from else '—'
+        period_to = date_to.strftime('%B %d, %Y') if date_to else '—'
+        meta.append(f'<b>Report Period:</b>  {period_from} &mdash; {period_to}')
+    if college_id:
+        college = College.objects.filter(pk=college_id).first()
+        if college:
+            meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
+
+    story = []
+    story.extend(_pdf_header_block('Full Diagnosis Report', meta))
+
+    # ── All Diagnoses (ranked) ──
+    story.append(Paragraph('All Diagnoses (Ranked)', s['section_title']))
+    story.append(_pdf_make_table(
+        ['Rank', 'Diagnosis', 'Cases'],
+        [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
+         for i, d in enumerate(all_diagnoses)],
+        col_widths=[1.5*cm, 11*cm, 4.5*cm],
+        aligns=['center', 'left', 'right'],
+    ))
+    story.append(Spacer(1, 8))
+
+    # ── Diagnosis Distribution by College (transposed: diagnoses as rows) ──
+    if full_matrix_rows:
+        story.append(Paragraph('Diagnosis Distribution by College', s['section_title']))
+        # Build table with diagnosis + all college columns
+        n = len(full_college_names)
+        matrix_headers = ['Diagnosis'] + [name[:16] for name in full_college_names]
+        matrix_rows = []
+        for row in full_matrix_rows:
+            matrix_rows.append(
+                [row['diagnosis'][:60]] + [str(v) if v else '—' for v in row['col_data']]
+            )
+        # Auto-adjust: proportional column widths to fit the page
+        # Diagnosis column gets ~35% (up to 5cm), college count columns share the rest
+        page_w = A4[0] - 4 * cm  # usable width ≈ 17cm
+        diag_w = min(5 * cm, page_w * 0.35)
+        count_w = (page_w - diag_w) / max(n, 1)
+        story.append(_pdf_make_table(
+            matrix_headers,
+            matrix_rows,
+            col_widths=[diag_w] + [count_w] * n,
+            aligns=['left'] + ['right'] * n,
+        ))
+        story.append(Spacer(1, 8))
+
+    # ── Patients by College ──
+    if patients_by_college:
+        story.append(Paragraph('Patients by College', s['section_title']))
+        story.append(_pdf_make_table(
+            ['College', 'Patients'],
+            [[r['patient__college__abbreviation'], str(r['count'])]
+             for r in patients_by_college],
+            col_widths=[12*cm, 5*cm],
+            aligns=['left', 'right'],
+        ))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    pdf = buf.getvalue()
+    buf.close()
+
+    filename = f'full_diagnosis_report_{date.today()}.pdf'
+    return HttpResponse(
+        pdf, content_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+# ─── SECTION-SPECIFIC PDF EXPORTS ────────────────────────────────────────────
+
+def _diagnoses_pdf(all_diagnoses, date_from, date_to,
+                   college_id, user_name=None):
+    """PDF with only the ranked diagnoses list."""
+    s = _pdf_styles()
+    buf, doc = _pdf_build_doc()
+    footer = _make_pdf_footer(user_name)
+
+    meta = [f'<b>Generated Date:</b>  {date.today().strftime("%B %d, %Y")}']
+    if date_from or date_to:
+        period_from = date_from.strftime('%B %d, %Y') if date_from else '—'
+        period_to = date_to.strftime('%B %d, %Y') if date_to else '—'
+        meta.append(f'<b>Report Period:</b>  {period_from} &mdash; {period_to}')
+    if college_id:
+        college = College.objects.filter(pk=college_id).first()
+        if college:
+            meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
+
+    story = []
+    story.extend(_pdf_header_block('Diagnoses (Ranked)', meta))
+
+    story.append(Paragraph('All Diagnoses (Ranked)', s['section_title']))
+    story.append(_pdf_make_table(
+        ['Rank', 'Diagnosis', 'Cases'],
+        [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
+         for i, d in enumerate(all_diagnoses)],
+        col_widths=[1.5*cm, 11*cm, 4.5*cm],
+        aligns=['center', 'left', 'right'],
+    ))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    pdf = buf.getvalue()
+    buf.close()
+
+    filename = f'diagnoses_{date.today()}.pdf'
+    return HttpResponse(
+        pdf, content_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+def _matrix_pdf(full_matrix_rows, full_college_names, date_from, date_to,
+                college_id, user_name=None):
+    """PDF with only the Diagnosis Distribution by College matrix."""
+    s = _pdf_styles()
+    buf, doc = _pdf_build_doc()
+    footer = _make_pdf_footer(user_name)
+
+    meta = [f'<b>Generated Date:</b>  {date.today().strftime("%B %d, %Y")}']
+    if date_from or date_to:
+        period_from = date_from.strftime('%B %d, %Y') if date_from else '—'
+        period_to = date_to.strftime('%B %d, %Y') if date_to else '—'
+        meta.append(f'<b>Report Period:</b>  {period_from} &mdash; {period_to}')
+    if college_id:
+        college = College.objects.filter(pk=college_id).first()
+        if college:
+            meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
+
+    story = []
+    story.extend(_pdf_header_block('Diagnosis Distribution by College', meta))
+
+    if full_matrix_rows:
+        story.append(Paragraph('Diagnosis Distribution by College', s['section_title']))
+        n = len(full_college_names)
+        matrix_headers = ['Diagnosis'] + [name[:16] for name in full_college_names]
+        matrix_rows = []
+        for row in full_matrix_rows:
+            matrix_rows.append(
+                [row['diagnosis'][:60]] + [str(v) if v else '—' for v in row['col_data']]
+            )
+        page_w = A4[0] - 4 * cm
+        diag_w = min(5 * cm, page_w * 0.35)
+        count_w = (page_w - diag_w) / max(n, 1)
+        story.append(_pdf_make_table(
+            matrix_headers, matrix_rows,
+            col_widths=[diag_w] + [count_w] * n,
+            aligns=['left'] + ['right'] * n,
+        ))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    pdf = buf.getvalue()
+    buf.close()
+
+    filename = f'diagnosis_by_college_{date.today()}.pdf'
+    return HttpResponse(
+        pdf, content_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+def _patients_pdf(patients_by_college, date_from, date_to,
+                  college_id, user_name=None):
+    """PDF with only the Patients by College table."""
+    s = _pdf_styles()
+    buf, doc = _pdf_build_doc()
+    footer = _make_pdf_footer(user_name)
+
+    meta = [f'<b>Generated Date:</b>  {date.today().strftime("%B %d, %Y")}']
+    if date_from or date_to:
+        period_from = date_from.strftime('%B %d, %Y') if date_from else '—'
+        period_to = date_to.strftime('%B %d, %Y') if date_to else '—'
+        meta.append(f'<b>Report Period:</b>  {period_from} &mdash; {period_to}')
+    if college_id:
+        college = College.objects.filter(pk=college_id).first()
+        if college:
+            meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
+
+    story = []
+    story.extend(_pdf_header_block('Patients by College', meta))
+
+    if patients_by_college:
+        story.append(Paragraph('Patients by College', s['section_title']))
+        story.append(_pdf_make_table(
+            ['College', 'Patients'],
+            [[r['patient__college__abbreviation'], str(r['count'])]
+             for r in patients_by_college],
+            col_widths=[12*cm, 5*cm],
+            aligns=['left', 'right'],
+        ))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    pdf = buf.getvalue()
+    buf.close()
+
+    filename = f'patients_by_college_{date.today()}.pdf'
+    return HttpResponse(
+        pdf, content_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient_type, college_id, user_name=None):
+    """Generate a professional PDF for the diagnosis analytics report."""
     s = _pdf_styles()
     buf, doc = _pdf_build_doc()
     footer = _make_pdf_footer(user_name)
@@ -274,17 +775,17 @@ def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, colle
     pdf = buf.getvalue()
     buf.close()
 
-    filename = f'disease_report_{date.today()}.pdf'
+    filename = f'diagnosis_analytics_{date.today()}.pdf'
     return HttpResponse(
         pdf, content_type='application/pdf',
         headers={'Content-Disposition': f'attachment; filename="{filename}"'},
     )
 
 
-def _disease_csv(consultations):
+def _diagnosis_analytics_csv(consultations):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
-        f'attachment; filename="disease_report_{date.today()}.csv"'
+        f'attachment; filename="diagnosis_analytics_{date.today()}.csv"'
     )
 
     # Annotate each consultation row with the first prescription's diagnosis
@@ -325,7 +826,85 @@ def _disease_csv(consultations):
     return response
 
 
-# ─── (Summary Report removed — merged into Report Builder) ───────────────────
+def _diagnosis_analytics_excel(consultations):
+    """Generate an Excel (.xlsx) export for diagnosis analytics search results."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        return HttpResponse('openpyxl not installed.', status=500)
+
+    # Annotate each consultation row with the first prescription's diagnosis
+    # and treatment_plan via subquery, matching the CSV approach.
+    first_rx = Prescription.objects.filter(
+        consultation=OuterRef('pk'),
+    ).order_by('prescribed_at').values('diagnosis', 'treatment_plan')[:1]
+
+    consultations = consultations.annotate(
+        _first_diagnosis=Subquery(first_rx.values('diagnosis')),
+        _first_treatment=Subquery(first_rx.values('treatment_plan')),
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Diagnosis Analytics'
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(fill_type='solid', fgColor='0078d4')
+
+    # Title row
+    ws.merge_cells('A1:H1')
+    ws.cell(row=1, column=1, value='Diagnosis Analytics — Search Results').font = Font(bold=True, size=14)
+    ws.cell(row=1, column=1).alignment = Alignment(horizontal='center')
+
+    # Header row
+    headers = ['#', 'Date', 'Patient Name', 'Patient ID', 'Sex',
+               'Type', 'College / Department', 'Diagnosis', 'Treatment Plan']
+    for col_idx, col in enumerate(headers, start=1):
+        cell = ws.cell(row=3, column=col_idx, value=col)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    # Data rows
+    for row_idx, c in enumerate(consultations.iterator(), start=4):
+        p = c.patient
+        if p.college:
+            p_type, p_org = 'Student', p.college.abbreviation
+        elif p.department:
+            p_type, p_org = 'Staff', p.department
+        else:
+            p_type, p_org = 'Instructor', p.position or '—'
+
+        sex = {'M': 'Male', 'F': 'Female'}.get(p.sex, '—')
+
+        ws.cell(row=row_idx, column=1, value=c.pk)
+        ws.cell(row=row_idx, column=2, value=c.created_at.strftime('%Y-%m-%d'))
+        ws.cell(row=row_idx, column=3, value=p.get_full_name())
+        ws.cell(row=row_idx, column=4, value=p.patient_id)
+        ws.cell(row=row_idx, column=5, value=sex)
+        ws.cell(row=row_idx, column=6, value=p_type)
+        ws.cell(row=row_idx, column=7, value=p_org)
+        ws.cell(row=row_idx, column=8, value=c._first_diagnosis or '—')
+        ws.cell(row=row_idx, column=9, value=c._first_treatment or '—')
+
+    # Auto-fit column widths
+    for col in ws.columns:
+        max_len = max((len(str(c.value or '')) for c in col), default=10)
+        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 60)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    response = HttpResponse(
+        buf,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="diagnosis_analytics_{date.today()}.xlsx"'
+    )
+    return response
 
 
 # ─── FEEDBACK REPORT ───────────────────────────────────────────────────────────
