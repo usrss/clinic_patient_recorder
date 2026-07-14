@@ -21,8 +21,10 @@ from .forms import (
     PasswordResetRequestForm, PasswordResetForm, RegistrationForm,
     ProfileCompletionForm,
 )
+import json
+from collections import defaultdict
 from django.db.models import Count, Q, F
-from consultations.models import Consultation, Triage
+from consultations.models import Consultation, Triage, Prescription
 from .decorators import admin_required, frontdesk_required
 from colleges.models import College, Course
 from patients.models import Patient, PatientProfile
@@ -587,31 +589,88 @@ def dashboard(request):
                 college_labels.append(college.abbreviation)
                 college_data.append(college.patient_count)
 
-        cond_hypertension = PatientProfile.objects.filter(hypertension=True).count()
-        cond_diabetes = PatientProfile.objects.filter(diabetes=True).count()
-        cond_asthma = PatientProfile.objects.filter(asthma=True).count()
-        cond_cardiac = PatientProfile.objects.filter(cardiac_problems=True).count()
-        cond_arthritis = PatientProfile.objects.filter(arthritis=True).count()
-
         low_stock_medicines = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
 
-        # Diseases per college (synced with disease report logic)
-        _disease_by_college = (
-            Consultation.objects.filter(
-                status=Consultation.Status.COMPLETED,
-                patient__college__isnull=False,
-            )
-            .values('patient__college__abbreviation')
-            .annotate(count=Count('patient', distinct=True))
-            .order_by('-count')
+        # ── Diagnosis Analytics chart data ──
+        completed_qs = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+
+        # Top 5 diagnoses
+        _top_diags = list(
+            Prescription.objects
+            .filter(consultation__in=completed_qs)
+            .values('diagnosis')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:5]
         )
-        disease_college_labels = [d['patient__college__abbreviation'] for d in _disease_by_college]
-        disease_college_data = [d['count'] for d in _disease_by_college]
+        diag_labels = [d['diagnosis'][:25] for d in _top_diags]
+        diag_counts = [d['count'] for d in _top_diags]
+
+        # ── Diagnosis Distribution by College (matrix: college × diagnosis) ──
+        # Get all prescription counts grouped by college + diagnosis
+        _diag_all_rows = (
+            Prescription.objects
+            .filter(
+                consultation__in=completed_qs,
+                consultation__patient__college__isnull=False,
+            )
+            .values(
+                'consultation__patient__college__abbreviation',
+                'diagnosis',
+            )
+            .annotate(count=Count('id'))
+            .order_by('consultation__patient__college__abbreviation', '-count')
+        )
+
+        # Get college names (ordered)
+        dash_diag_college_labels = list(
+            College.objects
+            .filter(patients__isnull=False)
+            .distinct()
+            .values_list('abbreviation', flat=True)[:8]
+        )
+
+        # Top 5 diagnosis names overall = column headers
+        top_diag_names = [d['diagnosis'][:25] for d in _top_diags]
+
+        # Build matrix: {college: {diagnosis: count}}
+        _matrix = defaultdict(lambda: defaultdict(int))
+        for row in _diag_all_rows:
+            c_name = row['consultation__patient__college__abbreviation']
+            diag = row['diagnosis'][:25]
+            _matrix[c_name][diag] = row['count']
+
+        # Build datasets for Chart.js stacked bar (one dataset per diagnosis)
+        _colors = ['#ef4444', '#f97316', '#10b981', '#8b5cf6', '#ec4899',
+                   '#14b8a6', '#f59e0b', '#3b82f6']
+        _datasets = []
+        for i, diag in enumerate(top_diag_names):
+            data_row = [_matrix.get(c, {}).get(diag, 0) for c in dash_diag_college_labels]
+            _datasets.append({
+                'label': diag,
+                'data': data_row,
+                'backgroundColor': _colors[i % len(_colors)],
+                'borderRadius': 2,
+                'borderSkipped': False,
+            })
+
+        dash_diag_college_datasets = json.dumps(_datasets)
 
         staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
         doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()
         frontdesk_count = User.objects.filter(role=User.Role.FRONTDESK).count()
         admin_count = User.objects.filter(role=User.Role.ADMIN).count()
+
+        # ── Check if academic year needs updating ──
+        from patients.models import AcademicYearSettings as AYS
+        academic_year_needs_update = False
+        academic_year_settings = AYS.objects.first()
+        if academic_year_settings:
+            today = timezone.now().date()
+            year_end = academic_year_settings.academic_year_end
+            # Notify if the year end date has passed OR the configured year is older than current
+            if year_end.year < today.year or year_end < today:
+                academic_year_needs_update = True
+
         context = {
             'user': user,
             'total_staff': staff_count,
@@ -622,14 +681,14 @@ def dashboard(request):
             'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
             'college_labels': college_labels,
             'college_data': college_data,
-            'disease_college_labels': disease_college_labels,
-            'disease_college_data': disease_college_data,
-            'cond_hypertension': cond_hypertension,
-            'cond_diabetes': cond_diabetes,
-            'cond_asthma': cond_asthma,
-            'cond_cardiac': cond_cardiac,
-            'cond_arthritis': cond_arthritis,
             'low_stock_medicines': low_stock_medicines,
+            'academic_year_needs_update': academic_year_needs_update,
+            'academic_year_settings': academic_year_settings,
+            # Diagnosis Analytics charts
+            'dash_diag_labels': diag_labels,
+            'dash_diag_counts': diag_counts,
+            'dash_diag_college_labels': dash_diag_college_labels,
+            'dash_diag_college_datasets': dash_diag_college_datasets,
         }
         return render(request, 'accounts/dashboard_admin.html', context)
 
