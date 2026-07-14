@@ -1,12 +1,12 @@
 import csv
 import io
 from datetime import date, timedelta
-from collections import defaultdict
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, F, Count, Q, Avg, OuterRef, Subquery, FloatField, ExpressionWrapper
+from django.db.models.functions import ExtractYear, ExtractMonth
 from django.utils import timezone
 import datetime
 
@@ -241,10 +241,10 @@ def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, colle
             ['Patients Diagnosed', str(total_affected)],
             ['Total Consultations', str(total_consultations)],
             ['Student Patients', str(student_count)],
-            ['Faculty Patients', str(instructor_count)],
+            ['Instructor Patients', str(instructor_count)],
             ['Staff Patients', str(staff_count)],
         ],
-        col_widths=[6*cm, 4*cm],
+        col_widths=[12*cm, 5*cm],
         aligns=['left', 'right'],
         h_align='CENTER',
     ))
@@ -258,59 +258,8 @@ def _disease_pdf(consultations, keyword, date_from, date_to, patient_type, colle
             [[f"{r['patient__college__abbreviation']} &mdash; {r['patient__college__name']}",
               str(r['count'])]
              for r in by_college],
-            col_widths=[10*cm, 3*cm],
+            col_widths=[12*cm, 5*cm],
             aligns=['left', 'right'],
-        ))
-        story.append(Spacer(1, 8))
-
-    # ── Detailed Records ──
-    story.append(Paragraph('Detailed Records', s['section_title']))
-    if total_consultations == 0:
-        story.append(Paragraph(
-            'No consultations match the current filters.', s['td']
-        ))
-    else:
-        # Annotate with the first prescription's diagnosis via subquery,
-        # avoiding N+1 queries even though prefetch_related is present.
-        first_rx = Prescription.objects.filter(
-            consultation=OuterRef('pk'),
-        ).order_by('prescribed_at').values('diagnosis')[:1]
-        consultations = consultations.annotate(
-            _first_diagnosis=Subquery(first_rx.values('diagnosis')),
-        )
-
-        rows = []
-        for c in consultations[:100]:
-            p = c.patient
-            if p.college:
-                p_type = 'Student'
-                org = p.college.abbreviation
-            elif p.department:
-                p_type = 'Staff'
-                org = p.department
-            else:
-                p_type = 'Faculty'
-                org = p.position or '&mdash;'
-
-            diagnosis = c._first_diagnosis[:60] if c._first_diagnosis else '&mdash;'
-            date_str = c.created_at.strftime('%b %d, %Y') if c.created_at else '&mdash;'
-
-            rows.append([
-                date_str,
-                p.get_full_name() or '&mdash;',
-                p.patient_id or '&mdash;',
-                p_type,
-                org,
-                diagnosis,
-            ])
-
-        # Widths ~15%, 20%, 15%, 12%, 18%, 20% of 17cm usable
-        story.append(_pdf_make_table(
-            ['Consultation\nDate', 'Patient Name', 'Patient ID',
-             'Patient\nCategory', 'College /\nDepartment', 'Diagnosis'],
-            rows,
-            col_widths=[2.5*cm, 3.4*cm, 2.5*cm, 2*cm, 3*cm, 3.6*cm],
-            aligns=['center', 'left', 'left', 'center', 'left', 'left'],
         ))
 
         if total_consultations > 100:
@@ -376,133 +325,7 @@ def _disease_csv(consultations):
     return response
 
 
-# ─── SUMMARY REPORT ───────────────────────────────────────────────────────────
-
-@login_required
-@admin_required
-def summary_report(request):
-    today = timezone.now().date()
-
-    period = request.GET.get('period', 'monthly')
-
-    if period == 'daily':
-        trend_data = []
-        for i in range(29, -1, -1):
-            d = today - timedelta(days=i)
-            trend_data.append({
-                'label': d.strftime('%b %d'),
-                'count': Consultation.objects.filter(
-                    created_at__gte=_make_aware_dt(d),
-                    created_at__lte=_make_aware_dt(d, 23, 59, 59),
-                ).count(),
-            })
-    elif period == 'annually':
-        trend_data = []
-        for i in range(4, -1, -1):
-            yr = today.year - i
-            trend_data.append({
-                'label': str(yr),
-                'count': Consultation.objects.filter(created_at__year=yr).count(),
-            })
-    else:
-        trend_data = []
-        for i in range(11, -1, -1):
-            year  = today.year
-            month = today.month - i
-            while month <= 0:
-                month += 12
-                year  -= 1
-            count = Consultation.objects.filter(
-                created_at__year=year,
-                created_at__month=month,
-            ).count()
-            trend_data.append({
-                'label': date(year, month, 1).strftime('%b %Y'),
-                'count': count,
-            })
-
-    top_diagnoses = (
-        Prescription.objects
-        .values('diagnosis')
-        .annotate(count=Count('id'))
-        .order_by('-count')[:10]
-    )
-
-    top_per_college = []
-    for college in College.objects.all():
-        top = (
-            Prescription.objects
-            .filter(consultation__patient__college=college)
-            .values('diagnosis')
-            .annotate(count=Count('id'))
-            .order_by('-count')
-            .first()
-        )
-        if top:
-            top_per_college.append({
-                'college':   college.abbreviation,
-                'diagnosis': top['diagnosis'],
-                'count':     top['count'],
-            })
-
-    frequent_patients = (
-        Consultation.objects
-        .values('patient__first_name', 'patient__last_name',
-                'patient__patient_id', 'patient__college__abbreviation')
-        .annotate(count=Count('id'))
-        .order_by('-count')[:5]
-    )
-
-    thirty_days_ago = today - timedelta(days=30)
-    recent_count = Consultation.objects.filter(
-        created_at__gte=_make_aware_dt(thirty_days_ago),
-    ).count()
-    avg_per_day = round(recent_count / 30, 1)
-
-    total_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED).count()
-    total_cancelled = Consultation.objects.filter(status=Consultation.Status.CANCELLED).count()
-    total_closed = Consultation.objects.filter(status=Consultation.Status.CLOSED).count()
-    total_all = Consultation.objects.count()
-
-    resolved = total_completed + total_cancelled + total_closed
-    completion_rate = round(total_completed / resolved * 100, 1) if resolved else 0
-    cancellation_rate = round(total_cancelled / resolved * 100, 1) if resolved else 0
-
-    top_medicines = (
-        StockMovement.objects
-        .filter(movement_type=StockMovement.MovementType.OUT)
-        .values('medicine__name')
-        .annotate(total=Sum('quantity'))
-        .order_by('-total')[:5]
-    )
-
-    cases_by_sex = (
-        Consultation.objects
-        .values('patient__sex')
-        .annotate(count=Count('id'))
-        .order_by('-count')
-    )
-
-    low_stock = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
-
-    return render(request, 'reports/summary_report.html', {
-        'trend_data':         trend_data,
-        'period':             period,
-        'monthly_data':       trend_data,
-        'top_diagnoses':      top_diagnoses,
-        'top_per_college':    top_per_college,
-        'frequent_patients':  frequent_patients,
-        'avg_per_day':        avg_per_day,
-        'total_completed':    total_completed,
-        'total_cancelled':    total_cancelled,
-        'total_all':          total_all,
-        'completion_rate':    completion_rate,
-        'cancellation_rate':  cancellation_rate,
-        'top_medicines':      top_medicines,
-        'cases_by_sex':       cases_by_sex,
-        'low_stock':          low_stock,
-        'today':              today,
-    })
+# ─── (Summary Report removed — merged into Report Builder) ───────────────────
 
 
 # ─── FEEDBACK REPORT ───────────────────────────────────────────────────────────
@@ -591,61 +414,72 @@ def _feedback_csv(feedbacks):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PDF DESIGN SYSTEM — shared layout, styles, and helpers
+# PDF DESIGN SYSTEM — shared layout, styles, and helpers (grayscale, formal)
 # ═══════════════════════════════════════════════════════════════════════
 
-_PDF_DARK   = colors.HexColor('#1a1a2e')
-_PDF_MUTED  = colors.HexColor('#6b7280')
-_PDF_LIGHT  = colors.HexColor('#f3f4f6')
-_PDF_BORDER = colors.HexColor('#d1d5db')
-_PDF_TEXT   = colors.HexColor('#374151')
+_PDF_BLACK      = colors.black
+_PDF_DARK_GRAY  = colors.HexColor('#333333')
+_PDF_MID_GRAY   = colors.HexColor('#666666')
+_PDF_MUTED      = colors.HexColor('#888888')
+_PDF_LIGHT_GRAY = colors.HexColor('#f0f0f0')
+_PDF_WHITE      = colors.white
+_PDF_BORDER     = colors.HexColor('#999999')
 
 
 def _pdf_styles():
-    """Return a dict of shared ParagraphStyle objects for PDF generation."""
+    """Return a dict of shared ParagraphStyle objects for PDF generation (grayscale)."""
     base = getSampleStyleSheet()
     return {
         'clinic_name': ParagraphStyle(
             'PdfClinicName', parent=base['Heading1'],
-            fontSize=16, spaceAfter=2, textColor=_PDF_DARK, alignment=1,
+            fontName='Times-Bold', fontSize=16, spaceAfter=2,
+            textColor=_PDF_BLACK, alignment=1,
         ),
         'clinic_subtitle': ParagraphStyle(
             'PdfClinicSubtitle', parent=base['Normal'],
-            fontSize=9, textColor=_PDF_MUTED, spaceAfter=10, alignment=1,
+            fontName='Times-Roman', fontSize=9,
+            textColor=_PDF_DARK_GRAY, spaceAfter=10, alignment=1,
         ),
         'report_title': ParagraphStyle(
             'PdfReportTitle', parent=base['Heading2'],
-            fontSize=14, spaceAfter=4, textColor=_PDF_DARK,
+            fontName='Times-Bold', fontSize=13, spaceAfter=4,
+            textColor=_PDF_BLACK,
         ),
         'report_meta': ParagraphStyle(
             'PdfReportMeta', parent=base['Normal'],
-            fontSize=8, textColor=_PDF_MUTED, spaceAfter=14, leading=12,
+            fontName='Times-Roman', fontSize=8,
+            textColor=_PDF_MID_GRAY, spaceAfter=14, leading=12,
         ),
         'section_title': ParagraphStyle(
             'PdfSectionTitle', parent=base['Heading3'],
-            fontSize=10, spaceAfter=6, spaceBefore=12, textColor=_PDF_DARK,
+            fontName='Times-Bold', fontSize=10, spaceAfter=6,
+            spaceBefore=12, textColor=_PDF_BLACK,
         ),
         'th': ParagraphStyle(
             'PdfTH', parent=base['Normal'],
-            fontSize=8, leading=10, textColor=colors.white,
+            fontName='Helvetica-Bold', fontSize=8, leading=10,
+            textColor=_PDF_BLACK,
         ),
         'td': ParagraphStyle(
             'PdfTD', parent=base['Normal'],
-            fontSize=8, leading=11, textColor=_PDF_TEXT,
+            fontName='Times-Roman', fontSize=8, leading=11,
+            textColor=_PDF_BLACK,
         ),
         'td_c': ParagraphStyle(
             'PdfTDC', parent=base['Normal'],
-            fontSize=8, leading=11, textColor=_PDF_TEXT, alignment=1,
+            fontName='Times-Roman', fontSize=8, leading=11,
+            textColor=_PDF_BLACK, alignment=1,
         ),
         'td_r': ParagraphStyle(
             'PdfTDR', parent=base['Normal'],
-            fontSize=8, leading=11, textColor=_PDF_TEXT, alignment=2,
+            fontName='Times-Roman', fontSize=8, leading=11,
+            textColor=_PDF_BLACK, alignment=2,
         ),
     }
 
 
 def _pdf_header_block(report_title, meta_lines=None):
-    """Return story elements: clinic identity + report title + metadata."""
+    """Return story elements: clinic identity + report title + metadata (grayscale)."""
     s = _pdf_styles()
     els = []
     els.append(Paragraph('NEGROS ORIENTAL STATE UNIVERSITY', s['clinic_name']))
@@ -657,7 +491,7 @@ def _pdf_header_block(report_title, meta_lines=None):
         'Patient Record Management System',
         ParagraphStyle('PdfSub2', parent=s['clinic_subtitle'], spaceAfter=10),
     ))
-    els.append(HRFlowable(width='100%', thickness=1, color=_PDF_BORDER))
+    els.append(HRFlowable(width='100%', thickness=0.5, color=_PDF_BORDER))
     els.append(Spacer(1, 10))
     els.append(Paragraph(report_title, s['report_title']))
     if meta_lines:
@@ -668,15 +502,15 @@ def _pdf_header_block(report_title, meta_lines=None):
 
 
 def _make_pdf_footer(user_name=None):
-    """Return a page footer callback with confidentiality notice, user, and page number."""
+    """Return a page footer callback with confidentiality notice, user, and page number (grayscale)."""
     def _footer(canvas, doc):
         canvas.saveState()
         margin = 2 * cm
         canvas.setStrokeColor(_PDF_BORDER)
-        canvas.setLineWidth(0.5)
+        canvas.setLineWidth(0.3)
         canvas.line(margin, 1.5 * cm, A4[0] - margin, 1.5 * cm)
-        canvas.setFont('Helvetica', 7)
-        canvas.setFillColor(_PDF_MUTED)
+        canvas.setFont('Times-Roman', 7)
+        canvas.setFillColor(_PDF_MID_GRAY)
         canvas.drawCentredString(
             A4[0] / 2, 1.1 * cm,
             'Confidential Medical Record - For authorized clinic personnel only',
@@ -689,7 +523,9 @@ def _make_pdf_footer(user_name=None):
 
 
 def _pdf_make_table(headers, rows, col_widths=None, aligns=None, h_align='LEFT'):
-    """Create a professionally styled table with header row and alternating fills.
+    """
+    Create a clean bordered table with light gray header background, black text,
+    and thin gray grid lines. No colored fills.
 
     aligns: optional list of 'left'|'center'|'right' per column.
     h_align: horizontal table alignment — 'LEFT', 'CENTER', or 'RIGHT'.
@@ -697,7 +533,16 @@ def _pdf_make_table(headers, rows, col_widths=None, aligns=None, h_align='LEFT')
     s = _pdf_styles()
     align_map = {'left': s['td'], 'center': s['td_c'], 'right': s['td_r']}
 
-    header_row = [Paragraph(h, s['th']) for h in headers]
+    # Header row: each header's alignment should match its column's data alignment
+    header_row = []
+    for i, h in enumerate(headers):
+        h_style = align_map.get(aligns[i] if aligns else 'left', s['td'])
+        # Header uses Helvetica-Bold but the same alignment as data
+        header_style = ParagraphStyle(
+            'PdfTH_custom', fontName='Helvetica-Bold', fontSize=8, leading=10,
+            textColor=_PDF_BLACK, alignment=h_style.alignment,
+        )
+        header_row.append(Paragraph(h, header_style))
     data = [header_row]
 
     for row in rows:
@@ -712,16 +557,15 @@ def _pdf_make_table(headers, rows, col_widths=None, aligns=None, h_align='LEFT')
 
     t = Table(data, colWidths=col_widths, repeatRows=1, hAlign=h_align)
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), _PDF_DARK),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 0.5, _PDF_BORDER),
+        ('BACKGROUND', (0, 0), (-1, 0), _PDF_LIGHT_GRAY),
+        ('TEXTCOLOR', (0, 0), (-1, -1), _PDF_BLACK),
+        ('GRID', (0, 0), (-1, -1), 0.3, _PDF_BORDER),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, _PDF_LIGHT]),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.6, _PDF_BLACK),
     ]))
     return t
 
@@ -785,7 +629,7 @@ def _feedback_pdf(feedbacks, search, rating, user_name=None):
             students = rating_qs.filter(
                 consultation__patient__college__isnull=False
             ).count()
-            faculty = rating_qs.filter(
+            instructor_rating = rating_qs.filter(
                 consultation__patient__college__isnull=True,
                 consultation__patient__position__gt='',
             ).count()
@@ -797,13 +641,13 @@ def _feedback_pdf(feedbacks, search, rating, user_name=None):
             pct = round(cnt / total * 100, 1) if total else 0
             dist_rows.append([
                 f'{r} Star' + ('s' if r > 1 else ''),
-                str(students), str(faculty), str(staff),
+                str(students), str(instructor_rating), str(staff),
                 str(cnt), f'{pct}%',
             ])
         story.append(_pdf_make_table(
-            ['Rating', 'Students', 'Faculty', 'Staff', 'Total', '%'],
+            ['Rating', 'Students', 'Instructor', 'Staff', 'Total', '%'],
             dist_rows,
-            col_widths=[3*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm],
+            col_widths=[3*cm, 3*cm, 3*cm, 3*cm, 3*cm, 2*cm],
             aligns=['left', 'right', 'right', 'right', 'right', 'right'],
         ))
 
@@ -826,8 +670,10 @@ ALL_METRICS = [
     ('completion_rate',       'Completion Rate (%)'),
     ('cancellation_rate',     'Cancellation Rate (%)'),
     ('avg_per_day',           'Average Consultations / Day'),
+    ('trend',                 'Consultation Trend'),
     ('top_diagnoses',         'Top Diagnoses'),
     ('top_medicines',         'Most Prescribed Medicines'),
+    ('top_diagnosis_per_college', 'Top Diagnosis per College'),
     ('cases_per_college',     'Cases per College'),
     ('cases_by_sex',          'Cases by Sex'),
     ('cases_by_patient_type', 'Cases by Patient Type'),
@@ -836,6 +682,7 @@ ALL_METRICS = [
     ('low_stock',             'Low Stock Medicines'),
     ('new_patients',          'New Patients in Period'),
     ('repeat_patients',       'Repeat vs. New Patient Ratio'),
+    ('frequent_patients',     'Most Frequent Patients'),
 ]
 
 
@@ -1047,6 +894,83 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
             'repeat_pct': round(repeat_count / total_unique * 100, 1) if total_unique else 0,
         }
 
+    if 'trend' in metrics:
+        days = (date_to - date_from).days
+        if days <= 31:
+            results['trend'] = [
+                {
+                    'label': day.strftime('%b %d'),
+                    'count': base_qs.filter(
+                        created_at__gte=_make_aware_dt(day),
+                        created_at__lte=_make_aware_dt(day, 23, 59, 59),
+                    ).count(),
+                }
+                for day in [date_from + timedelta(days=i) for i in range(days + 1)]
+            ]
+        elif days <= 365:
+            monthly = (
+                base_qs
+                .annotate(yr=ExtractYear('created_at'), mo=ExtractMonth('created_at'))
+                .values('yr', 'mo')
+                .annotate(count=Count('id'))
+                .order_by('yr', 'mo')
+            )
+            results['trend'] = []
+            for g in monthly:
+                if g['yr'] is not None and g['mo'] is not None:
+                    results['trend'].append({
+                        'label': date(int(g['yr']), int(g['mo']), 1).strftime('%b %Y'),
+                        'count': g['count'],
+                    })
+        else:
+            yearly = (
+                base_qs
+                .annotate(yr=ExtractYear('created_at'))
+                .values('yr')
+                .annotate(count=Count('id'))
+                .order_by('yr')
+            )
+            results['trend'] = []
+            for g in yearly:
+                if g['yr'] is not None:
+                    results['trend'].append({
+                        'label': str(int(g['yr'])),
+                        'count': g['count'],
+                    })
+
+    if 'frequent_patients' in metrics:
+        results['frequent_patients'] = list(
+            base_qs
+            .values(
+                'patient__first_name', 'patient__last_name',
+                'patient__patient_id', 'patient__college__abbreviation',
+            )
+            .annotate(count=Count('id'))
+            .order_by('-count')[:10]
+        )
+
+    if 'top_diagnosis_per_college' in metrics:
+        per_college = []
+        for college in College.objects.all():
+            top = (
+                Prescription.objects
+                .filter(
+                    consultation__in=completed_qs,
+                    consultation__patient__college=college,
+                )
+                .values('diagnosis')
+                .annotate(count=Count('id'))
+                .order_by('-count')
+                .first()
+            )
+            if top:
+                per_college.append({
+                    'college':   college.abbreviation,
+                    'diagnosis': top['diagnosis'],
+                    'count':     top['count'],
+                })
+        results['top_diagnosis_per_college'] = per_college
+
     if 'low_stock' in metrics:
         results['low_stock'] = list(
             Medicine.objects.filter(quantity__lte=F('low_stock_threshold'))
@@ -1063,6 +987,52 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
             completed_qs.values('prescriptions__diagnosis')
             .annotate(count=Count('id')).order_by('-count')[:20]
         )
+    elif grouping == 'date':
+        days = (date_to - date_from).days
+        if days <= 31:
+            # Group by day
+            results['grouped'] = [
+                {
+                    'label': day.strftime('%b %d'),
+                    'count': base_qs.filter(
+                        created_at__gte=_make_aware_dt(day),
+                        created_at__lte=_make_aware_dt(day, 23, 59, 59),
+                    ).count(),
+                }
+                for day in [date_from + timedelta(days=i) for i in range(days + 1)]
+            ]
+        elif days <= 365:
+            # Group by month using Extract
+            month_grouped = (
+                base_qs
+                .annotate(yr=ExtractYear('created_at'), mo=ExtractMonth('created_at'))
+                .values('yr', 'mo')
+                .annotate(count=Count('id'))
+                .order_by('yr', 'mo')
+            )
+            results['grouped'] = []
+            for g in month_grouped:
+                if g['yr'] is not None and g['mo'] is not None:
+                    results['grouped'].append({
+                        'label': date(int(g['yr']), int(g['mo']), 1).strftime('%b %Y'),
+                        'count': g['count'],
+                    })
+        else:
+            # Group by year using Extract
+            year_grouped = (
+                base_qs
+                .annotate(yr=ExtractYear('created_at'))
+                .values('yr')
+                .annotate(count=Count('id'))
+                .order_by('yr')
+            )
+            results['grouped'] = []
+            for g in year_grouped:
+                if g['yr'] is not None:
+                    results['grouped'].append({
+                        'label': str(int(g['yr'])),
+                        'count': g['count'],
+                    })
 
     return results
 
@@ -1107,6 +1077,32 @@ def _report_csv(results, date_from, date_to):
         writer.writerow(['Medicine', 'Count'])
         for row in results['top_medicines']:
             writer.writerow([row['medicine_name'], row['count']])
+        writer.writerow([])
+
+    if 'frequent_patients' in results and results['frequent_patients']:
+        writer.writerow(['Most Frequent Patients', ''])
+        writer.writerow(['Patient', 'ID', 'College', 'Visits'])
+        for row in results['frequent_patients']:
+            writer.writerow([
+                f"{row['patient__first_name']} {row['patient__last_name']}",
+                row['patient__patient_id'] or '—',
+                row['patient__college__abbreviation'] or '—',
+                row['count'],
+            ])
+        writer.writerow([])
+
+    if 'top_diagnosis_per_college' in results and results['top_diagnosis_per_college']:
+        writer.writerow(['Top Diagnosis per College', ''])
+        writer.writerow(['College', 'Diagnosis', 'Count'])
+        for row in results['top_diagnosis_per_college']:
+            writer.writerow([row['college'], row['diagnosis'], row['count']])
+        writer.writerow([])
+
+    if 'trend' in results and results['trend']:
+        writer.writerow(['Consultation Trend', ''])
+        writer.writerow(['Period', 'Consultations'])
+        for row in results['trend']:
+            writer.writerow([row.get('label', '—'), row['count']])
         writer.writerow([])
 
     return response
@@ -1185,6 +1181,29 @@ def _report_excel(results, date_from, date_to):
     if 'top_medicines' in results and results['top_medicines']:
         add_table(['Medicine', 'Count'], [[r['medicine_name'], r['count']] for r in results['top_medicines']])
 
+    if 'frequent_patients' in results and results['frequent_patients']:
+        add_table(
+            ['Patient', 'ID', 'College', 'Visits'],
+            [[
+                f"{r['patient__first_name']} {r['patient__last_name']}",
+                r['patient__patient_id'] or '—',
+                r['patient__college__abbreviation'] or '—',
+                r['count'],
+            ] for r in results['frequent_patients']]
+        )
+
+    if 'top_diagnosis_per_college' in results and results['top_diagnosis_per_college']:
+        add_table(
+            ['College', 'Diagnosis', 'Count'],
+            [[r['college'], r['diagnosis'], r['count']] for r in results['top_diagnosis_per_college']]
+        )
+
+    if 'trend' in results and results['trend']:
+        add_table(
+            ['Period', 'Consultations'],
+            [[r.get('label', '—'), r['count']] for r in results['trend']]
+        )
+
     for col in ws.columns:
         max_len = max((len(str(c.value or '')) for c in col), default=10)
         ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 60)
@@ -1237,7 +1256,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
         story.append(_pdf_make_table(
             ['Metric', 'Count'],
             summary_rows,
-            col_widths=[6*cm, 4*cm],
+            col_widths=[12*cm, 5*cm],
             aligns=['left', 'right'],
             h_align='CENTER',
         ))
@@ -1253,7 +1272,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
                 ['New Patients (1 visit)', str(rp['new']), f"{100 - rp['repeat_pct']}%"],
                 ['Repeat Visitors', str(rp['repeat']), f"{rp['repeat_pct']}%"],
             ],
-            col_widths=[6*cm, 3*cm, 3*cm],
+            col_widths=[10*cm, 3.5*cm, 3.5*cm],
             aligns=['left', 'right', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1265,7 +1284,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             ['Rank', 'Diagnosis', 'Cases'],
             [[str(i + 1), r['diagnosis'][:80], str(r['count'])]
              for i, r in enumerate(results['top_diagnoses'])],
-            col_widths=[1.5*cm, 9*cm, 2.5*cm],
+            col_widths=[1.5*cm, 11*cm, 4.5*cm],
             aligns=['center', 'left', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1277,7 +1296,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             ['Rank', 'Medicine', 'Prescriptions'],
             [[str(i + 1), r['medicine_name'], str(r['count'])]
              for i, r in enumerate(results['top_medicines'])],
-            col_widths=[1.5*cm, 9*cm, 2.5*cm],
+            col_widths=[1.5*cm, 11*cm, 4.5*cm],
             aligns=['center', 'left', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1290,7 +1309,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             [[f"{r['patient__college__abbreviation']} &mdash; {r['patient__college__name']}",
               str(r['count'])]
              for r in results['cases_per_college']],
-            col_widths=[10*cm, 3*cm],
+            col_widths=[12*cm, 5*cm],
             aligns=['left', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1304,7 +1323,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             sex_rows.append([sex, str(row['count'])])
         story.append(_pdf_make_table(
             ['Sex', 'Cases'], sex_rows,
-            col_widths=[4*cm, 4*cm],
+            col_widths=[10*cm, 7*cm],
             aligns=['left', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1319,7 +1338,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
              ['Staff', str(t['staff'])],
              ['Instructors', str(t['instructors'])],
              ['Other', str(t['other'])]],
-            col_widths=[6*cm, 4*cm],
+            col_widths=[10*cm, 7*cm],
             aligns=['left', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1331,7 +1350,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             ['Urgency', 'Count'],
             [[r['urgency'].capitalize(), str(r['count'])]
              for r in results['urgency_breakdown']],
-            col_widths=[6*cm, 4*cm],
+            col_widths=[10*cm, 7*cm],
             aligns=['left', 'center'],
         ))
         story.append(Spacer(1, 8))
@@ -1343,7 +1362,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             ['Medicine', 'Unit', 'Total Dispensed'],
             [[r['medicine__name'], r['medicine__unit'], str(r['total_dispensed'])]
              for r in results['medicine_dispensed']],
-            col_widths=[6*cm, 3*cm, 3*cm],
+            col_widths=[8*cm, 4.5*cm, 4.5*cm],
             aligns=['left', 'right', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1355,7 +1374,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
             ['Medicine', 'Current Stock', 'Threshold'],
             [[r['name'], str(r['quantity']), str(r['low_stock_threshold'])]
              for r in results['low_stock']],
-            col_widths=[6*cm, 3*cm, 3*cm],
+            col_widths=[8*cm, 4.5*cm, 4.5*cm],
             aligns=['left', 'right', 'right'],
         ))
         story.append(Spacer(1, 8))
@@ -1367,11 +1386,11 @@ def _report_pdf(results, date_from, date_to, user_name=None):
         group_header = grouping_label if grouping_label else 'Group'
         story.append(_pdf_make_table(
             [group_header, 'Consultations'],
-            [[(r.get('patient__college__abbreviation') or
+            [[(r.get('label') or r.get('patient__college__abbreviation') or
                r.get('prescriptions__diagnosis') or '&mdash;'),
               str(r['count'])]
              for r in results['grouped']],
-            col_widths=[10*cm, 3*cm],
+            col_widths=[12*cm, 5*cm],
             aligns=['left', 'right'],
         ))
 
