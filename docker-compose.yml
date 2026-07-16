@@ -1,0 +1,81 @@
+# ── Docker Compose for local-network deployment ────────────────────────────
+# Three services: MySQL 8, Redis 7, Django/Gunicorn.
+# No nginx, no HTTPS — direct port 8000 access on the local network.
+#
+# First-time setup (after copying .env.example -> .env and editing values):
+#
+#   1. docker compose build          # Build the web image
+#   2. docker compose up -d          # Start all services in background
+#   3. docker compose exec web python manage.py migrate
+#   4. docker compose exec web python manage.py createsuperuser
+#                                   # → Access at http://<server-ip>:8000
+#
+# Subsequent starts:
+#   docker compose up -d
+#
+# Stop:       docker compose down
+# Stop+clean: docker compose down -v   (⚠ deletes volumes — loses DB + Redis data)
+
+services:
+
+  # ── Database ──────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: cpr-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: clinic_db
+      MYSQL_USER: cpr_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+#    ports:
+      # Expose on host so you can connect with external DB tools if needed.
+      # Remove or comment out if you don't need host-level access.
+      #      - "3306:3306"
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7
+    container_name: cpr-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    # Redis append-only file + RDB snapshots enabled by default — data and
+    # cached sessions survive container restarts.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Django / Gunicorn ────────────────────────────────────────────────────
+  web:
+    build: .
+    container_name: cpr-web
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/app/media
+
+volumes:
+  db_data:
+    name: cpr-db-data
+  redis_data:
+    name: cpr-redis-data
+  media_data:
+    name: cpr-media-data

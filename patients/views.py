@@ -10,6 +10,7 @@ from accounts.decorators import clinical_staff_required, admin_required
 from audit_logs.services import log_create, log_change, log_view
 from accounts.models import User
 from consultations.models import Consultation
+from notifications.models import Notification
 from .models import Patient, PatientProfile, AcademicYearSettings
 from .forms import (
     PatientSearchForm, PatientContactForm,
@@ -253,6 +254,13 @@ def archive_settings(request):
                 changes_after={'academic_year_end': str(settings.academic_year_end), 'archive_after_months': settings.archive_after_months},
                 request=request,
             )
+            # Clear any stale academic year update notifications
+            Notification.objects.filter(
+                recipient_role='admin',
+                title='Academic year needs updating',
+                is_read=False,
+            ).update(is_read=True)
+
             messages.success(request, 'Academic year settings updated.')
             return redirect('patients:archive_settings')
     else:

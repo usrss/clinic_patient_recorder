@@ -13,6 +13,28 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from decouple import config
 from pathlib import Path
 
+# ── Redis / Cache ──────────────────────────────────────────────────────────
+# django-redis configuration used for both caching and session storage.
+# Requires django-redis to be installed (see requirements.txt).
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/1')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            # Ignores connection test errors so Django can start without Redis
+            'IGNORE_EXCEPTIONS': True,
+        },
+        'KEY_PREFIX': 'cpr',
+    }
+}
+
+# Store Django sessions in Redis (via the cache backend) for fast reads/writes
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
@@ -61,8 +83,8 @@ EMAIL_HOST          = 'smtp.gmail.com'
 EMAIL_USE_TLS       = False
 EMAIL_USE_SSL       = True
 EMAIL_PORT          = 465
-EMAIL_HOST_USER     = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER     = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL  = config('EMAIL_HOST_USER')
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -85,6 +107,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.idle_session_timeout',
             ],
         },
     },
@@ -159,13 +182,16 @@ MESSAGE_TAGS = {
 
 # ── Production security settings ────────────────────────────────────────
 # These are safe to always have enabled; they only activate when DEBUG=False
-# and the request is served over HTTPS (which PythonAnywhere provides).
+# and the request is served over HTTPS.
+#
+# For local-network HTTP deployments (Docker, no domain, no HTTPS), set the
+# env vars below explicitly to False to avoid cookie/redirect issues.
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
-SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=not DEBUG, cast=bool)
 SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=not DEBUG, cast=bool)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=not DEBUG, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=not DEBUG, cast=bool)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ── Session & idle timeout ────────────────────────────────────────────────

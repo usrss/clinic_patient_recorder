@@ -1,0 +1,144 @@
+{% if user.is_authenticated %}
+{# ── Idle Session Timeout Warning ── #}
+<!-- Timeout warning modal -->
+<div class="modal fade" id="sessionTimeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="sessionTimeoutLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow" style="border-radius:16px;">
+      <div class="modal-body text-center p-4">
+        <div style="width:48px;height:48px;border-radius:50%;background:#fff8e1;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+          <svg width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h5 id="sessionTimeoutLabel" style="font-weight:700;margin-bottom:4px;">Session expiring</h5>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">You've been inactive for a while.</p>
+        <p style="font-size:24px;font-weight:700;color:#f59e0b;font-variant-numeric:tabular-nums;" id="timeout-countdown">2:00</p>
+        <p style="font-size:12px;color:#9ca3af;margin-bottom:20px;">Your session will expire soon.</p>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button type="button" id="staySignedInBtn" class="btn btn-primary btn-sm" style="border-radius:8px;min-width:100px;" onclick="extendSession()">
+            Stay signed in
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Idle Session Timeout ──────────────────────────────────────────────
+// Uses the backend-configured idle timeout from Django settings.
+var SESSION_TIMEOUT_SECONDS = {{ idle_session_timeout_seconds|default:1800 }};
+var WARNING_BEFORE_SECONDS = 120; // show warning 2 min before expiry
+var HEARTBEAT_INTERVAL_SECONDS = 60; // ping server every 60s
+var LOGOUT_URL = '{% url "accounts:logout" %}';
+var LOGIN_URL = '{% url "accounts:login" %}';
+
+var lastActivity = Date.now();
+var warningShown = false;
+var timeoutModal = null;
+var countdownInterval = null;
+// Helper: read a cookie value by name (used for CSRF token)
+function getCookie(name) {
+  var value = '; ' + document.cookie;
+  var parts = value.split('; ' + name + '=');
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+// Track user activity
+function resetActivityTimer() {
+  lastActivity = Date.now();
+  if (warningShown) {
+    hideWarning();
+  }
+}
+
+document.addEventListener('click', resetActivityTimer);
+document.addEventListener('keydown', resetActivityTimer);
+document.addEventListener('mousemove', resetActivityTimer);
+document.addEventListener('scroll', resetActivityTimer);
+document.addEventListener('touchstart', resetActivityTimer);
+
+// Check idle time every second
+setInterval(function() {
+  if (warningShown) return;
+  var elapsed = (Date.now() - lastActivity) / 1000;
+  var remaining = SESSION_TIMEOUT_SECONDS - elapsed;
+
+  if (remaining <= WARNING_BEFORE_SECONDS && remaining > 0) {
+    showWarning(remaining);
+  } else if (remaining <= 0) {
+    // Session expired — log out then redirect
+    performLogout();
+  }
+}, 1000);
+
+function showWarning(remaining) {
+  warningShown = true;
+  var modalEl = document.getElementById('sessionTimeoutModal');
+  if (!modalEl) return;
+  timeoutModal = new bootstrap.Modal(modalEl);
+  timeoutModal.show();
+
+  var countdownEl = document.getElementById('timeout-countdown');
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(function() {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      if (timeoutModal) timeoutModal.hide();
+      performLogout();
+      return;
+    }
+    var m = Math.floor(remaining / 60);
+    var s = Math.floor(remaining % 60);
+    countdownEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+}
+
+function hideWarning() {
+  warningShown = false;
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  if (timeoutModal) {
+    timeoutModal.hide();
+    timeoutModal = null;
+  }
+}
+
+function performLogout() {
+  // Read the CSRF token fresh from the cookie — avoids stale-token race
+  // conditions when Django rotates the token while the page is open.
+  var token = getCookie('csrftoken');
+  if (token) {
+    fetch(LOGOUT_URL, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': token,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }).catch(function() {}).finally(function() {
+      window.location.href = LOGIN_URL;
+    });
+  } else {
+    window.location.href = LOGIN_URL;
+  }
+}
+
+function extendSession() {
+  // Send a HEAD request to the current URL to reset the server-side timer
+  fetch(window.location.href, {
+    method: 'HEAD'
+  }).catch(function() {});
+  resetActivityTimer();
+  hideWarning();
+}
+
+// Periodic heartbeat to keep session alive
+setInterval(function() {
+  fetch(window.location.href, {
+    method: 'HEAD'
+  }).catch(function() {});
+}, HEARTBEAT_INTERVAL_SECONDS * 1000);
+</script>
+{% endif %}
