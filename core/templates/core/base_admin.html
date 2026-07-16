@@ -470,6 +470,8 @@
           onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
   <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}" data-sidebar-counts-url="{% url 'consultations:sidebar_counts' %}"></script>
 
+  {% include 'core/session_timeout.html' %}
+
   <script>
     function openSidebar() {
       document.getElementById('adminSidebar').classList.add('open');

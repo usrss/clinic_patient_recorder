@@ -10,6 +10,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
+from .email_utils import otp_email, temp_password_email, welcome_email
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 import random
@@ -32,6 +33,10 @@ from inventory.models import Medicine
 from audit_logs.services import log_create, log_change
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.sessions.models import Session as DjangoSession
+from django.urls import reverse
+from notifications.utils import notify_role
+from notifications.models import Notification
+from django.core.cache import cache
 
 
 MAX_FAILED_ATTEMPTS = 5
@@ -280,12 +285,14 @@ def send_registration_otp(request):
     request.session['registration_otp_pending'] = True
     request.session['registration_otp_sent_at'] = timezone.now().isoformat()
 
+    plain_body, html_body = otp_email(otp, 'registration')
     send_mail(
         'Registration OTP — Patient Record System',
-        f'Your OTP is: {otp}\n\nExpires in 3 minutes.',
+        plain_body,
         settings.DEFAULT_FROM_EMAIL,
         [email],
         fail_silently=False,
+        html_message=html_body,
     )
     return JsonResponse({'success': True})
 
@@ -386,12 +393,14 @@ def forgot_password(request):
         local, domain = email.split('@')
         masked_email = local[0] + ('*' * (len(local) - 2)) + local[-1] + '@' + domain
 
+        plain_body, html_body = otp_email(otp, 'password reset')
         send_mail(
             'Password Reset OTP — Patient Record System',
-            f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 3 minutes.',
+            plain_body,
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
+            html_message=html_body,
         )
 
         request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
@@ -434,12 +443,14 @@ def verify_otp(request, user_id):
 
             # Send email
             email = user.email
+            plain_body, html_body = otp_email(otp, 'password reset')
             send_mail(
                 'Password Reset OTP — Patient Record System',
-                f'Your OTP for password reset is: {otp}\n\nThis OTP expires in 3 minutes.',
+                plain_body,
                 settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
+                html_message=html_body,
             )
 
             request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
@@ -532,163 +543,210 @@ def dashboard(request):
         })
 
     if user.role == User.Role.DOCTOR:
-        now = timezone.now()
-        thirty_days_ago = now - timedelta(days=30)
+        today_iso = timezone.now().date().isoformat()
+        cache_key = f'cpr:dashboard:doctor:{user.pk}:{today_iso}'
+        context = cache.get(cache_key)
 
-        doctor_triages = Triage.objects.filter(
-            triaged_by=user,
-            triaged_at__gte=thirty_days_ago
-        )
-        urgency_counts = doctor_triages.values('urgency').annotate(count=Count('pk'))
-        urgency_data = {u['urgency']: u['count'] for u in urgency_counts}
+        if context is None:
+            now = timezone.now()
+            thirty_days_ago = now - timedelta(days=30)
 
-        daily_activity = []
-        for i in range(6, -1, -1):
-            day = now.date() - timedelta(days=i)
-            count = Triage.objects.filter(
+            doctor_triages = Triage.objects.filter(
                 triaged_by=user,
-                triaged_at__date=day
-            ).count()
-            daily_activity.append({'date': day.strftime('%a'), 'count': count})
+                triaged_at__gte=thirty_days_ago
+            )
+            urgency_counts = doctor_triages.values('urgency').annotate(count=Count('pk'))
+            urgency_data = {u['urgency']: u['count'] for u in urgency_counts}
 
-        recent_consults = Consultation.objects.filter(
-            triages__triaged_by=user
-        ).select_related('patient').distinct().order_by('-updated_at')[:5]
+            daily_activity = []
+            for i in range(6, -1, -1):
+                day = now.date() - timedelta(days=i)
+                count = Triage.objects.filter(
+                    triaged_by=user,
+                    triaged_at__date=day
+                ).count()
+                daily_activity.append({'date': day.strftime('%a'), 'count': count})
 
-        urgent_triage_count = Consultation.objects.filter(
-            triages__triaged_by=user,
-            triages__urgency='high',
-            status__in=[
-                Consultation.Status.QUEUED,
-                Consultation.Status.SCHEDULED,
-                Consultation.Status.TRIAGED,
-            ]
-        ).distinct().count()
+            recent_consults = list(
+                Consultation.objects.filter(
+                    triages__triaged_by=user
+                ).select_related('patient').distinct().order_by('-updated_at')[:5]
+            )
 
-        context = {
-            'user': user,
-            'urgency_data_json': {
-                'Low': urgency_data.get('low', 0),
-                'Medium': urgency_data.get('medium', 0),
-                'High': urgency_data.get('high', 0),
-            },
-            'daily_activity_json': daily_activity,
-            'recent_consults': recent_consults,
-            'urgent_triage_count': urgent_triage_count,
-        }
+            urgent_triage_count = Consultation.objects.filter(
+                triages__triaged_by=user,
+                triages__urgency='high',
+                status__in=[
+                    Consultation.Status.QUEUED,
+                    Consultation.Status.SCHEDULED,
+                    Consultation.Status.TRIAGED,
+                ]
+            ).distinct().count()
+
+            context = {
+                'user': user,
+                'urgency_data_json': {
+                    'Low': urgency_data.get('low', 0),
+                    'Medium': urgency_data.get('medium', 0),
+                    'High': urgency_data.get('high', 0),
+                },
+                'daily_activity_json': daily_activity,
+                'recent_consults': recent_consults,
+                'urgent_triage_count': urgent_triage_count,
+            }
+            cache.set(cache_key, context, 120)
+
         return render(request, 'accounts/dashboard_doctor.html', context)
 
     if user.role == User.Role.FRONTDESK:
         return render(request, 'accounts/dashboard_frontdesk.html', {'user': user})
 
     if user.role == User.Role.ADMIN:
-        college_data = []
-        college_labels = []
-        for college in College.objects.annotate(patient_count=Count('patients', filter=Q(patients__is_archived=False))):
-            if college.patient_count > 0:
-                college_labels.append(college.abbreviation)
-                college_data.append(college.patient_count)
+        # ── Cacheable heavy aggregations ──
+        today_iso = timezone.now().date().isoformat()
+        cache_key = f'cpr:dashboard:admin:{user.pk}:{today_iso}'
+        cached_data = cache.get(cache_key)
 
-        low_stock_medicines = Medicine.objects.filter(quantity__lte=F('low_stock_threshold')).order_by('quantity')
+        if cached_data is None:
+            college_data = []
+            college_labels = []
+            for college in College.objects.annotate(patient_count=Count('patients', filter=Q(patients__is_archived=False))):
+                if college.patient_count > 0:
+                    college_labels.append(college.abbreviation)
+                    college_data.append(college.patient_count)
 
-        # ── Diagnosis Analytics chart data ──
-        completed_qs = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+            # ── Diagnosis Analytics chart data ──
+            completed_qs = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
 
-        # Top 5 diagnoses
-        _top_diags = list(
-            Prescription.objects
-            .filter(consultation__in=completed_qs)
-            .values('diagnosis')
-            .annotate(count=Count('id'))
-            .order_by('-count')[:5]
-        )
-        diag_labels = [d['diagnosis'][:25] for d in _top_diags]
-        diag_counts = [d['count'] for d in _top_diags]
-
-        # ── Diagnosis Distribution by College (matrix: college × diagnosis) ──
-        # Get all prescription counts grouped by college + diagnosis
-        _diag_all_rows = (
-            Prescription.objects
-            .filter(
-                consultation__in=completed_qs,
-                consultation__patient__college__isnull=False,
+            # Top 5 diagnoses
+            _top_diags = list(
+                Prescription.objects
+                .filter(consultation__in=completed_qs)
+                .values('diagnosis')
+                .annotate(count=Count('id'))
+                .order_by('-count')[:5]
             )
-            .values(
-                'consultation__patient__college__abbreviation',
-                'diagnosis',
+            diag_labels = [d['diagnosis'][:25] for d in _top_diags]
+            diag_counts = [d['count'] for d in _top_diags]
+
+            # ── Diagnosis Distribution by College (matrix: college × diagnosis) ──
+            _diag_all_rows = (
+                Prescription.objects
+                .filter(
+                    consultation__in=completed_qs,
+                    consultation__patient__college__isnull=False,
+                )
+                .values(
+                    'consultation__patient__college__abbreviation',
+                    'diagnosis',
+                )
+                .annotate(count=Count('id'))
+                .order_by('consultation__patient__college__abbreviation', '-count')
             )
-            .annotate(count=Count('id'))
-            .order_by('consultation__patient__college__abbreviation', '-count')
-        )
 
-        # Get college names (ordered)
-        dash_diag_college_labels = list(
-            College.objects
-            .filter(patients__isnull=False)
-            .distinct()
-            .values_list('abbreviation', flat=True)[:8]
-        )
+            # Get college names (ordered)
+            dash_diag_college_labels = list(
+                College.objects
+                .filter(patients__isnull=False)
+                .distinct()
+                .values_list('abbreviation', flat=True)[:8]
+            )
 
-        # Top 5 diagnosis names overall = column headers
-        top_diag_names = [d['diagnosis'][:25] for d in _top_diags]
+            # Top 5 diagnosis names overall = column headers
+            top_diag_names = [d['diagnosis'][:25] for d in _top_diags]
 
-        # Build matrix: {college: {diagnosis: count}}
-        _matrix = defaultdict(lambda: defaultdict(int))
-        for row in _diag_all_rows:
-            c_name = row['consultation__patient__college__abbreviation']
-            diag = row['diagnosis'][:25]
-            _matrix[c_name][diag] = row['count']
+            # Build matrix: {college: {diagnosis: count}}
+            _matrix = defaultdict(lambda: defaultdict(int))
+            for row in _diag_all_rows:
+                c_name = row['consultation__patient__college__abbreviation']
+                diag = row['diagnosis'][:25]
+                _matrix[c_name][diag] = row['count']
 
-        # Build datasets for Chart.js stacked bar (one dataset per diagnosis)
-        _colors = ['#ef4444', '#f97316', '#10b981', '#8b5cf6', '#ec4899',
-                   '#14b8a6', '#f59e0b', '#3b82f6']
-        _datasets = []
-        for i, diag in enumerate(top_diag_names):
-            data_row = [_matrix.get(c, {}).get(diag, 0) for c in dash_diag_college_labels]
-            _datasets.append({
-                'label': diag,
-                'data': data_row,
-                'backgroundColor': _colors[i % len(_colors)],
-                'borderRadius': 2,
-                'borderSkipped': False,
-            })
+            # Build datasets for Chart.js stacked bar (one dataset per diagnosis)
+            _colors = ['#ef4444', '#f97316', '#10b981', '#8b5cf6', '#ec4899',
+                       '#14b8a6', '#f59e0b', '#3b82f6']
+            _datasets = []
+            for i, diag in enumerate(top_diag_names):
+                data_row = [_matrix.get(c, {}).get(diag, 0) for c in dash_diag_college_labels]
+                _datasets.append({
+                    'label': diag,
+                    'data': data_row,
+                    'backgroundColor': _colors[i % len(_colors)],
+                    'borderRadius': 2,
+                    'borderSkipped': False,
+                })
 
-        dash_diag_college_datasets = json.dumps(_datasets)
+            dash_diag_college_datasets = json.dumps(_datasets)
 
-        staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
-        doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()
-        frontdesk_count = User.objects.filter(role=User.Role.FRONTDESK).count()
-        admin_count = User.objects.filter(role=User.Role.ADMIN).count()
+            staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
+            doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()
+            frontdesk_count = User.objects.filter(role=User.Role.FRONTDESK).count()
+            admin_count = User.objects.filter(role=User.Role.ADMIN).count()
 
-        # ── Check if academic year needs updating ──
+            cached_data = {
+                'college_labels': college_labels,
+                'college_data': college_data,
+                'dash_diag_labels': diag_labels,
+                'dash_diag_counts': diag_counts,
+                'dash_diag_college_labels': dash_diag_college_labels,
+                'dash_diag_college_datasets': dash_diag_college_datasets,
+                'total_staff': staff_count,
+                'doctors': doctor_count,
+                'front_desk_count': frontdesk_count,
+                'admin_count': admin_count,
+            }
+            cache.set(cache_key, cached_data, 300)
+
+        # ── Non-cached parts (simple queries + DB writes) ──
+        low_stock_medicines = Medicine.objects.filter(
+            quantity__lte=F('low_stock_threshold')
+        ).order_by('quantity')
+
+        total_patients = Patient.objects.filter(
+            is_active=True, is_archived=False
+        ).count()
+
+        pending_consultations = Consultation.objects.filter(
+            status=Consultation.Status.PENDING
+        ).count()
+
+        # ── Academic year check (ALWAYS runs — has DB write side effects) ──
         from patients.models import AcademicYearSettings as AYS
         academic_year_needs_update = False
         academic_year_settings = AYS.objects.first()
         if academic_year_settings:
             today = timezone.now().date()
             year_end = academic_year_settings.academic_year_end
-            # Notify if the year end date has passed OR the configured year is older than current
-            if year_end.year < today.year or year_end < today:
+            if year_end.year < today.year or year_end <= today:
                 academic_year_needs_update = True
+
+        if academic_year_needs_update:
+            if not Notification.objects.filter(
+                recipient_role='admin',
+                title='Academic year needs updating',
+                is_read=False,
+            ).exists():
+                notify_role(
+                    'admin',
+                    'Academic year needs updating',
+                    'The configured academic year end has passed. Please update the settings for the new term.',
+                    reverse('patients:archive_settings'),
+                )
+        else:
+            Notification.objects.filter(
+                recipient_role='admin',
+                title='Academic year needs updating',
+                is_read=False,
+            ).update(is_read=True)
 
         context = {
             'user': user,
-            'total_staff': staff_count,
-            'total_patients': Patient.objects.filter(is_active=True, is_archived=False).count(),
-            'doctors': doctor_count,
-            'front_desk_count': frontdesk_count,
-            'admin_count': admin_count,
-            'pending_consultations': Consultation.objects.filter(status=Consultation.Status.PENDING).count(),
-            'college_labels': college_labels,
-            'college_data': college_data,
+            **cached_data,
+            'total_patients': total_patients,
+            'pending_consultations': pending_consultations,
             'low_stock_medicines': low_stock_medicines,
             'academic_year_needs_update': academic_year_needs_update,
             'academic_year_settings': academic_year_settings,
-            # Diagnosis Analytics charts
-            'dash_diag_labels': diag_labels,
-            'dash_diag_counts': diag_counts,
-            'dash_diag_college_labels': dash_diag_college_labels,
-            'dash_diag_college_datasets': dash_diag_college_datasets,
         }
         return render(request, 'accounts/dashboard_admin.html', context)
 
@@ -811,16 +869,17 @@ def user_create(request):
         # Send welcome email if user has an email address
         if new_user.email:
             try:
+                plain_body, html_body = welcome_email(
+                    new_user.username,
+                    recipient_name=new_user.first_name or new_user.username,
+                )
                 send_mail(
                     'Welcome to the Patient Record System',
-                    f'Hi {new_user.first_name or new_user.username},\n\n'
-                    f'A staff account has been created for you.\n'
-                    f'Username: {new_user.username}\n'
-                    f'You will need to set your password on first login.\n\n'
-                    f'Please visit the system to log in.',
+                    plain_body,
                     settings.DEFAULT_FROM_EMAIL,
                     [new_user.email],
                     fail_silently=True,
+                    html_message=html_body,
                 )
             except Exception:
                 pass  # Email delivery is best-effort
@@ -909,16 +968,18 @@ def user_reset_password(request, pk):
     # Email the new password (best-effort) and always show it to the admin
     if target_user.email:
         try:
+            plain_body, html_body = temp_password_email(
+                new_password,
+                target_user.username,
+                recipient_name=target_user.first_name or target_user.username,
+            )
             send_mail(
                 'Your password has been reset',
-                f'Hi {target_user.first_name or target_user.username},\n\n'
-                f'An administrator has reset your password.\n'
-                f'Your temporary password is: {new_password}\n\n'
-                f'You will be required to change it on your next login.\n\n'
-                f'Username: {target_user.username}',
+                plain_body,
                 settings.DEFAULT_FROM_EMAIL,
                 [target_user.email],
                 fail_silently=True,
+                html_message=html_body,
             )
         except Exception:
             pass
@@ -1192,23 +1253,49 @@ def walkin_get_password(request, pk):
 def logout_all_devices(request):
     """
     Logs out the current user from all other sessions (except the current one).
-    Works by finding and deleting all Django sessions that have this user's ID.
+
+    Uses Redis-backed session iteration when SESSION_ENGINE is cache-based
+    (fast, avoids full table scan). Falls back to the DB-based iteration
+    for compatibility when sessions are still stored in the database.
     """
     if request.method != 'POST':
         return redirect('accounts:profile_settings')
 
     user = request.user
     current_session_key = request.session.session_key
-
     deleted_count = 0
-    for session in DjangoSession.objects.all().iterator():
-        try:
-            data = session.get_decoded()
-        except Exception:
-            continue
-        if str(data.get('_auth_user_id', '')) == str(user.pk) and session.session_key != current_session_key:
-            session.delete()
-            deleted_count += 1
+
+    session_engine = getattr(settings, 'SESSION_ENGINE', '')
+    uses_cache_sessions = 'cache' in session_engine
+
+    if uses_cache_sessions:
+        # Django's cache-based session backend prefixes keys with this constant
+        SESSION_CACHE_KEY_PREFIX = 'django.contrib.sessions.cache'
+        current_session_cache_key = f'{SESSION_CACHE_KEY_PREFIX}{current_session_key}'
+
+        all_keys = cache.keys('*')
+        for key in all_keys:
+            if key == current_session_cache_key:
+                continue  # never delete the session serving THIS request
+            value = cache.get(key)
+            if value is None:
+                continue
+            try:
+                if isinstance(value, dict) and str(value.get('_auth_user_id')) == str(user.pk):
+                    cache.delete(key)
+                    deleted_count += 1
+            except Exception:
+                continue
+    else:
+        # ── DB-backed: fallback to DjangoSession table scan ────────────────
+        for session in DjangoSession.objects.all().iterator():
+            try:
+                data = session.get_decoded()
+            except Exception:
+                continue
+            if str(data.get('_auth_user_id', '')) == str(user.pk) and session.session_key != current_session_key:
+                session.delete()
+                deleted_count += 1
 
     messages.success(
         request,
