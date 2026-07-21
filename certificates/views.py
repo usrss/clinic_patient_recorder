@@ -52,46 +52,6 @@ def _get_issued_certificate(consultation):
     ).first()
 
 
-# ── Slot order for legacy dict-format snapshots ──────────────────────────
-_LEGACY_SLOT_ORDER = {
-    'standard': ['diagnosis_statement', 'diagnosis_line', 'rest_period_single', 'rest_period_range', 'closing_statement'],
-    'fit_to_work': ['statement', 'findings_line', 'closing_statement'],
-    'fit_to_play': ['statement', 'findings_line', 'closing_statement'],
-}
-
-
-def _get_certificate_text(certificate):
-    """Return the rendered body text for a certificate.
-
-    For issued certs, returns the frozen rendered_text_snapshot (string).
-    For drafts, resolves text live from CertificateTemplateText.
-    Handles legacy dict-format snapshots by concatenating fragments.
-    """
-    if certificate.rendered_text_snapshot:
-        snapshot = certificate.rendered_text_snapshot
-        # Legacy dict-format snapshot: concatenate in defined order
-        if isinstance(snapshot, dict):
-            order = _LEGACY_SLOT_ORDER.get(
-                certificate.certificate_type,
-                list(snapshot.keys()),
-            )
-            parts = [snapshot[k] for k in order if k in snapshot and snapshot[k]]
-            return '\n\n'.join(parts)
-        # New string-format snapshot
-        return snapshot
-
-    ct = certificate.certificate_type
-
-    body = CertificateTemplateText.objects.filter(
-        certificate_type=ct,
-        slot_key='body',
-    ).first()
-    if not body:
-        return ''
-
-    return certificate._resolve_text(body.text)
-
-
 # ─── STEP 1: CERTIFICATE TYPE SELECTION ────────────────────────────────────
 
 @login_required
@@ -219,12 +179,8 @@ def wizard_preview(request, pk):
         )
         return redirect('certificates:print_certificate', pk=certificate.pk)
 
-    # Resolve live text from CertificateTemplateText for preview
-    slot_text = _get_certificate_text(certificate)
-
     return render(request, 'certificates/wizard_step3.html', {
         'certificate': certificate,
-        'slot_text': slot_text,
         'base_template': _base_template(request.user),
     })
 
@@ -296,11 +252,15 @@ def certificate_pdf_preview(request, pk):
     """
     certificate = get_object_or_404(MedicalCertificate, pk=pk)
 
-    if certificate.status != MedicalCertificate.Status.ISSUED:
-        return HttpResponse('Only issued certificates can be previewed.', status=403)
-
-    if request.user.role == 'doctor' and certificate.doctor != request.user:
-        return HttpResponse('You can only preview certificates you issued.', status=403)
+    # Allow DRAFT preview for the owning doctor (wizard step 3)
+    if certificate.status == MedicalCertificate.Status.DRAFT:
+        if request.user.role != 'doctor' or certificate.doctor != request.user:
+            return HttpResponse('You can only preview your own draft certificates.', status=403)
+    elif certificate.status == MedicalCertificate.Status.ISSUED:
+        if request.user.role == 'doctor' and certificate.doctor != request.user:
+            return HttpResponse('You can only preview certificates you issued.', status=403)
+    else:
+        return HttpResponse('Certificate cannot be previewed in its current state.', status=403)
 
     try:
         docx_bytes = generate_certificate_docx_bytes(certificate)

@@ -25,4 +25,6 @@ urlpatterns = [
     path('logout-all-devices/', views.logout_all_devices, name='logout_all_devices'),
     path('walkin-patients/', views.walkin_patient_list, name='walkin_patient_list'),
     path('walkin-patients/<int:pk>/get-password/', views.walkin_get_password, name='walkin_get_password'),
+    path('staff-temp-passwords/', views.staff_temp_password_list, name='staff_temp_password_list'),
+    path('staff-temp-passwords/<int:pk>/get-password/', views.staff_get_password, name='staff_get_password'),
 ]

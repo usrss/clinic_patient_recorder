@@ -54,28 +54,27 @@ class LoginForm(AuthenticationForm):
     )
 
 
-class UserCreateForm(UserCreationForm):
-    """Admin creates a staff user account."""
+class UserCreateForm(forms.ModelForm):
+    """Admin creates a staff user account.
 
-    profile_picture = forms.ImageField(
-        required=False,
-        label='Profile Picture',
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': 'image/jpeg,image/png,image/webp',
-        }),
-        validators=[validate_profile_picture],
-    )
+    Password is auto-generated (4-digit temp password), not set by admin.
+    Profile picture is handled by the staff member themselves in settings.
+    """
 
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
-                  'role', 'phone', 'profile_picture', 'password1', 'password2']
+                  'role', 'phone']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+        # Staff creation form should only show staff roles, not 'patient'
+        self.fields['role'].choices = [
+            (k, v) for k, v in self.fields['role'].choices
+            if k != User.Role.PATIENT
+        ]
 
 
 class UserEditForm(forms.ModelForm):
@@ -98,6 +97,11 @@ class UserEditForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'form-control')
         self.fields['profile_picture'].required = False
         self.fields['profile_picture'].label = 'Profile Picture'
+        # Staff edit form should only show staff roles, not 'patient'
+        self.fields['role'].choices = [
+            (k, v) for k, v in self.fields['role'].choices
+            if k != User.Role.PATIENT
+        ]
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
         if file:

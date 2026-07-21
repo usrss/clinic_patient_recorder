@@ -12,27 +12,26 @@ class CertificatePdfError(Exception):
     pass
 
 
-# ── Locate soffice on Windows ──────────────────────────────────────────────
-_LIBREOFFICE_CANDIDATES = [
-    # Standard install paths on Windows
+# ── Locate soffice binary ──────────────────────────────────────────────────
+# On Linux/macOS (including Docker), ``shutil.which("soffice")`` finds
+# the binary on PATH. On Windows fall back to common install locations.
+_WINDOWS_SOFFICE_CANDIDATES = [
     "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
     "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
 ]
 
 
 def _find_soffice() -> str:
-    """Return the path to the soffice executable.
-
-    Checks common install locations first, then falls back to ``soffice``
-    on the system PATH (works on Linux/macOS and Windows with PATH set).
-    """
-    for candidate in _LIBREOFFICE_CANDIDATES:
-        if os.path.exists(candidate):
-            return candidate
+    """Return the path to the soffice executable."""
+    # 1. Try PATH first (works on Linux/macOS/Docker, also on Windows with PATH set)
     on_path = shutil.which("soffice")
     if on_path:
         return on_path
-    # Final fallback — let subprocess raise a clear error
+    # 2. Fall back to common Windows install paths
+    for candidate in _WINDOWS_SOFFICE_CANDIDATES:
+        if os.path.exists(candidate):
+            return candidate
+    # 3. Let subprocess raise a clear FileNotFoundError
     return "soffice"
 
 
@@ -57,15 +56,26 @@ def convert_docx_bytes_to_pdf(docx_bytes: bytes) -> bytes:
         docx_path.write_bytes(docx_bytes)
 
         try:
+            # Point the LibreOffice user profile to a temp dir so it doesn't
+            # try to write to ~/.config/libreoffice (which may fail in Docker).
+            profile_dir = tmp_path / "libreoffice-profile"
+            profile_dir.mkdir(parents=True, exist_ok=True)
+
             result = subprocess.run(
                 [
-                    _SOFFICE_PATH, "--headless", "--norestore",
+                    _SOFFICE_PATH, "--headless", "--norestore", "--nofirststartwizard",
+                    "-env:UserInstallation=file://" + str(profile_dir).replace("\\", "/"),
                     "--convert-to", "pdf", "--outdir", str(tmp_path),
                     str(docx_path),
                 ],
                 capture_output=True,
-                timeout=60,
+                timeout=120,
                 check=True,
+            )
+        except FileNotFoundError:
+            raise CertificatePdfError(
+                "LibreOffice (soffice) is not installed or not found on PATH. "
+                "Install it or check the Dockerfile."
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             logger.exception("LibreOffice conversion failed: %s", exc)
