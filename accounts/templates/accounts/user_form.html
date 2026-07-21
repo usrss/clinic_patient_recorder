@@ -27,7 +27,7 @@
 
     {# ── Form Card ── #}
     <div style="background:#fff;border-radius:14px;padding:28px;border:1px solid #e8ecf1;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);">
-      <form method="post" enctype="multipart/form-data" novalidate>
+      <form method="post" novalidate>
         {% csrf_token %}
 
         {# Name row #}
@@ -74,28 +74,6 @@
           {% endif %}
         </div>
 
-        {# Profile Picture #}
-        <div style="margin-bottom:20px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Profile Picture</label>
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;">
-              {% if target and target.profile_picture %}
-                <img src="{{ target.profile_picture.url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
-              {% else %}
-                <span style="font-size:20px;font-weight:700;color:#1e40af;">{{ form.first_name.value|default:'U'|first|upper }}</span>
-              {% endif %}
-            </div>
-            <div style="flex:1;">
-              {{ form.profile_picture }}
-              {% if form.profile_picture.errors %}
-                <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
-                  <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.profile_picture.errors.0 }}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
         {# Role + Phone row #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
           <div>
@@ -118,54 +96,6 @@
           </div>
         </div>
 
-        {# Password fields (create only) #}
-        {% if form.password1 %}
-        <div style="padding-top:20px;margin-top:4px;border-top:1px solid #f1f5f9;margin-bottom:20px;">
-          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:16px;">Set Password</div>
-          <div style="margin-bottom:20px;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Password</label>
-            <div style="position:relative;display:flex;align-items:center;">
-              <input type="password" name="password1" id="id_password1" class="form-pw" placeholder="Create a strong password" required autocomplete="new-password" style="width:100%;padding:10px 13px;padding-right:44px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;color:#1a1a2e;background:#fafbfc;transition:all 0.2s;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;">
-              <button type="button" class="pw-toggle-btn" onclick="toggleUserPw('id_password1', this)" aria-label="Toggle password visibility" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;border-radius:6px;">
-                <ion-icon name="eye-outline" class="icon-eye" style="font-size:18px;"></ion-icon>
-                <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:18px;display:none;"></ion-icon>
-              </button>
-            </div>
-            {# ── Strength meter ── #}
-            <div class="uf-strength-wrap" id="uf-strength-wrap" style="display:none;margin-top:8px;">
-              <div style="display:flex;gap:4px;margin-bottom:4px;">
-                <div class="uf-sbar" id="usb1" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
-                <div class="uf-sbar" id="usb2" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
-                <div class="uf-sbar" id="usb3" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
-                <div class="uf-sbar" id="usb4" style="flex:1;height:4px;border-radius:2px;background:#e8ecf1;transition:background 0.3s;"></div>
-              </div>
-              <span id="uf-strength-text" style="font-size:11px;font-weight:600;color:#94a3b8;transition:color 0.3s;">Too short</span>
-            </div>
-            {% if form.password1.errors %}
-              <div id="uf-pw1-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
-                <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password1.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Confirm Password</label>
-            <div style="position:relative;display:flex;align-items:center;">
-              <input type="password" name="password2" id="id_password2" class="form-pw" placeholder="Repeat your password" required autocomplete="new-password" style="width:100%;padding:10px 13px;padding-right:44px;border:1.5px solid #e1e5eb;border-radius:10px;font-size:14px;color:#1a1a2e;background:#fafbfc;transition:all 0.2s;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;">
-              <button type="button" class="pw-toggle-btn" onclick="toggleUserPw('id_password2', this)" aria-label="Toggle password visibility" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;border-radius:6px;">
-                <ion-icon name="eye-outline" class="icon-eye" style="font-size:18px;"></ion-icon>
-                <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:18px;display:none;"></ion-icon>
-              </button>
-            </div>
-            <div id="uf-pw-match-indicator" style="display:none;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:500;"></div>
-            {% if form.password2.errors %}
-              <div id="uf-pw2-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
-                <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.password2.errors.0 }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
-
         {# Active toggle #}
         {% if form.is_active %}
         <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:16px;">
@@ -180,7 +110,7 @@
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
           <ion-icon name="information-circle-outline" style="font-size:16px;color:#3b82f6;flex-shrink:0;margin-top:1px;"></ion-icon>
           <p style="font-size:12px;color:#1e40af;margin:0;line-height:1.6;">
-            Patients can self-register at the <a href="{% url 'accounts:register' %}" style="color:#0078d4;font-weight:600;">registration page</a>.
+            A 4-digit temporary password will be auto-generated. The staff member must change it on first login.
           </p>
         </div>
         {% endif %}
@@ -228,69 +158,6 @@
   </style>
 
 <script>
-  // ── Password strength calculator ──
-  function getUfStrength(val) {
-    var score = 0;
-    if (val.length >= 8) score++;
-    if (val.length >= 12) score++;
-    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[^A-Za-z0-9]/.test(val)) score++;
-    return score;
-  }
-
-  // ── Update strength meter & match indicator ──
-  function updateUfPwUI() {
-    var pw1 = document.getElementById('id_password1');
-    var pw2 = document.getElementById('id_password2');
-    if (!pw1) return;
-
-    // Strength meter
-    var val = pw1.value;
-    var wrap = document.getElementById('uf-strength-wrap');
-    if (!val) { wrap.style.display = 'none'; } else {
-      wrap.style.display = 'block';
-      var score = getUfStrength(val);
-      var level = score <= 1 ? 1 : score <= 2 ? 2 : score <= 3 ? 3 : 4;
-      var colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
-      var labels = ['', 'Too weak', 'Weak', 'Good', 'Strong'];
-      for (var i = 1; i <= 4; i++) {
-        document.getElementById('usb' + i).style.background = i <= level ? colors[level] : '#e8ecf1';
-      }
-      document.getElementById('uf-strength-text').textContent = labels[level];
-      document.getElementById('uf-strength-text').style.color = colors[level];
-    }
-
-    // Match indicator
-    var matchEl = document.getElementById('uf-pw-match-indicator');
-    if (!pw2 || !matchEl) return;
-    var v1 = pw1.value, v2 = pw2.value;
-    if (v2.length === 0 && v1.length === 0) { matchEl.style.display = 'none'; return; }
-    matchEl.style.display = 'flex';
-    if (v1 && v2 && v1 === v2) {
-      matchEl.innerHTML = '<ion-icon name="checkmark-circle" style="color:#10b981;font-size:14px;"></ion-icon><span style="color:#10b981;">Passwords match</span>';
-    } else if (v2.length > 0) {
-      matchEl.innerHTML = '<ion-icon name="close-circle" style="color:#ef4444;font-size:14px;"></ion-icon><span style="color:#ef4444;">Passwords do not match</span>';
-    } else { matchEl.style.display = 'none'; }
-  }
-
-  var ufPw1 = document.getElementById('id_password1');
-  var ufPw2 = document.getElementById('id_password2');
-  if (ufPw1) ufPw1.addEventListener('input', updateUfPwUI);
-  if (ufPw2) ufPw2.addEventListener('input', updateUfPwUI);
-
-  // ── Password visibility toggle ──
-  function toggleUserPw(inputId, btn) {
-    var input = document.getElementById(inputId);
-    var eye = btn.querySelector('.icon-eye');
-    var eyeOff = btn.querySelector('.icon-eye-off');
-    if (!input) return;
-    var show = input.type === 'password';
-    input.type          = show ? 'text'  : 'password';
-    eye.style.display   = show ? 'none'  : '';
-    eyeOff.style.display= show ? ''      : 'none';
-  }
-
   // ── Loading state on submit ──
   document.addEventListener('DOMContentLoaded', function() {
     var form = document.querySelector('form');

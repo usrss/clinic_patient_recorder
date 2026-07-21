@@ -36,6 +36,12 @@ class User(AbstractUser):
         help_text='Optional profile picture (JPG, PNG, WebP)',
     )
 
+    temp_password = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text='Temporary password in plaintext (cleared after user changes password).',
+    )
+
     force_password_change = models.BooleanField(default=False)
 
     failed_login_attempts = models.PositiveIntegerField(default=0)
@@ -85,6 +91,10 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if self.is_superuser and self.role != self.Role.ADMIN:
             self.role = self.Role.ADMIN
+        # Normalise empty email to NULL so MySQL's unique constraint allows
+        # multiple users with no email (NULLs are distinct; empty strings are not).
+        if not self.email:
+            self.email = None
         super().save(*args, **kwargs)
 
     def __str__(self):

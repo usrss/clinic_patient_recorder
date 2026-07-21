@@ -5,55 +5,148 @@
 {% block extra_css %}
 <style>
   .wizard-page {
-    min-height: 100vh;
+    height: calc(100vh - var(--topbar-h));
     background: linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);
-    padding: 36px 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .wizard-wrap { width: 100%; max-width: 740px; margin: 0 auto; }
-  .step-indicator { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px; }
-  .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .wizard-wrap {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 24px 0;
+    min-height: 0;
+  }
+
+  /* Step indicator */
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
   .step-dot.completed { background: #059669; color: #fff; }
   .step-dot.active { background: #0078d4; color: #fff; }
   .step-line { width: 40px; height: 2px; background: #059669; }
-  .wizard-header { margin-bottom: 24px; }
-  .wizard-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
-  .wizard-header p { font-size: 13px; color: #6b7280; margin: 4px 0 0; }
 
-  /* ── Preview Card (mirrors the print layout) ── */
-  .preview-card {
+  /* Header */
+  .wizard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .wizard-header-left h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+  }
+  .wizard-header-left p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+  .wizard-header-left .cert-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #fef3c7;
+    color: #92400e;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  /* PDF container */
+  .pdf-container {
+    flex: 1;
+    min-height: 0;
     background: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 40px 48px 48px;
-    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,.06);
-    font-family: 'Times New Roman', Times, serif;
-    font-size: 12pt;
-    line-height: 1.7;
-    color: #000;
   }
-  .preview-header {
-    text-align: center;
-    padding-bottom: 20px;
-    margin-bottom: 28px;
-    border-bottom: 2px solid #000;
+  .pdf-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
   }
-  .preview-header .univ-name { font-size: 14pt; font-weight: 700; text-transform: uppercase; }
-  .preview-header .clinic-name { font-size: 11.5pt; font-weight: 600; }
-  .preview-header .address { font-size: 8.5pt; color: #444; }
-  .preview-title { font-size: 14pt; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin-top: 12px; }
-  .preview-content p { margin-bottom: 14px; text-align: justify; }
-  .preview-signature { margin-top: 48px; text-align: right; }
-  .preview-signature .sig-line { width: 240px; display: inline-block; text-align: center; }
-  .preview-signature .sig-name { border-top: 1.5px solid #000; padding-top: 6px; font-weight: 700; }
 
-  .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
-  .btn-primary { background: #059669; color: #fff; box-shadow: 0 2px 8px rgba(5,150,105,0.25); }
-  .btn-primary:hover { background: #047857; transform: translateY(-1px); }
-  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
-  .btn-secondary:hover { background: #f9fafb; }
-  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
+  /* Action buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding: 12px 0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(5,150,105,0.25);
+  }
+  .btn-primary:hover {
+    background: #047857;
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+  }
+  .btn-secondary:hover {
+    background: #f9fafb;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    padding: 4px 0 8px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    .wizard-header { flex-direction: column; align-items: flex-start; }
+  }
 </style>
 {% endblock %}
 
@@ -71,103 +164,30 @@
   </div>
 
   <div class="wizard-header">
-    <h1>Preview Certificate</h1>
-    <p>Step 3 of 3 — Review and confirm issuance</p>
+    <div class="wizard-header-left">
+      <h1>{{ certificate.get_certificate_type_display }}</h1>
+      <p>Step 3 of 3 — Review the certificate preview below, then confirm to issue</p>
+      <span class="cert-badge">DRAFT — Not yet issued</span>
+    </div>
   </div>
 
-  {# Preview #}
-  <div class="preview-card">
-    <div class="preview-header">
-      <div class="univ-name">Negros Oriental State University</div>
-      <div class="clinic-name">Medical Clinic</div>
-      <div class="address">Bayawan City, Negros Oriental, Philippines</div>
-      <div class="preview-title">{{ certificate.get_certificate_type_display }}</div>
-    </div>
-
-    <div class="preview-content">
-      <p style="font-weight:700;">To Whom It May Concern:</p>
-
-      {% if slot_text %}
-        {# ── Live preview from consolidated template body ── #}
-        {% if slot_text|length > 0 %}
-          {{ slot_text|linebreaks }}
-        {% endif %}
-
-        {% if certificate.remarks %}
-        <hr style="border:none;border-top:1px solid #ccc;margin:20px 0;">
-        <p><strong>Remarks:</strong> {{ certificate.remarks }}</p>
-        {% endif %}
-      {% else %}
-        {# ── Fallback: direct model rendering ── #}
-        <p>
-          This is to certify that
-          <strong>{{ certificate.consultation.patient.get_full_name }}</strong>,
-          {{ certificate.consultation.patient.age|default:"—" }} years of age,
-          {{ certificate.consultation.patient.get_sex_display|lower }},
-          {% if certificate.consultation.patient.college %}
-            from {{ certificate.consultation.patient.college.name }},
-          {% endif %}
-          was examined at this clinic.
-        </p>
-
-        {% if certificate.certificate_type == 'standard' %}
-        <p><strong>Diagnosis:</strong> {{ certificate.diagnosis }}</p>
-        {% if certificate.rest_from and certificate.rest_to %}
-        <p>
-          The patient is advised to rest from
-          <strong>{{ certificate.rest_from|date:"F d, Y" }}</strong>
-          to <strong>{{ certificate.rest_to|date:"F d, Y" }}</strong>.
-        </p>
-        {% endif %}
-
-        {% elif certificate.certificate_type == 'fit_to_work' %}
-        <p><strong>Findings:</strong> {{ certificate.diagnosis }}</p>
-        <p>
-          The patient has been examined and found to be
-          <strong>{{ certificate.get_work_assessment_display|default:"PHYSICALLY FIT" }}</strong>
-          to return to work.
-        </p>
-        {% if certificate.return_date %}
-        <p><strong>Recommended Return Date:</strong> {{ certificate.return_date|date:"F d, Y" }}</p>
-        {% endif %}
-        {% if certificate.restrictions %}
-        <p><strong>Restrictions:</strong> {{ certificate.restrictions }}</p>
-        {% endif %}
-
-        {% elif certificate.certificate_type == 'fit_to_play' %}
-        <p><strong>Findings:</strong> {{ certificate.diagnosis }}</p>
-        <p>
-          The patient has been examined and found to be
-          <strong>{% if certificate.fitness_status == 'cleared' %}PHYSICALLY FIT{% else %}NOT CLEARED{% endif %}</strong>
-          to participate in <strong>{{ certificate.activity_name }}</strong>.
-        </p>
-
-        {% endif %}
-
-        {% if certificate.remarks %}
-        <p><strong>Remarks:</strong> {{ certificate.remarks }}</p>
-        {% endif %}
-
-        <hr style="border:none;border-top:1px solid #ccc;margin:20px 0;">
-
-        <p>This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</p>
-      {% endif %}
-    </div>
-
-    <div class="preview-signature">
-      <div class="sig-line">
-        <div class="sig-name">Dr. {{ certificate.doctor.get_full_name|default:certificate.doctor.username }}</div>
-        <div style="font-size:10pt;color:#333;">Attending Physician</div>
-      </div>
-    </div>
+  {# PDF preview iframe — generated from the actual docx template #}
+  <div class="pdf-container">
+    <iframe id="pdfFrame"
+            src="{% url 'certificates:certificate_pdf_preview' certificate.pk %}"
+            title="Certificate PDF Preview"></iframe>
   </div>
 
   {# Actions #}
   <form method="post" novalidate>
     {% csrf_token %}
     <div class="btn-row">
-      <a href="{% url 'certificates:wizard_details' certificate.pk %}" class="btn btn-secondary">&larr; Back to Edit</a>
-      <button type="submit" class="btn btn-primary">&#10003; Confirm &amp; Issue Certificate</button>
+      <a href="{% url 'certificates:wizard_details' certificate.pk %}" class="btn btn-secondary">
+        &larr; Back to Edit
+      </a>
+      <button type="submit" class="btn btn-primary">
+        &#10003; Confirm &amp; Issue Certificate
+      </button>
     </div>
   </form>
 
@@ -175,4 +195,7 @@
 
 </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
 {% endblock %}

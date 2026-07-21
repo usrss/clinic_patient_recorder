@@ -842,19 +842,17 @@ def user_list(request):
 @login_required
 @admin_required
 def user_create(request):
-    form = UserCreateForm(request.POST or None, request.FILES or None)
+    form = UserCreateForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         new_user = form.save(commit=False)
-        # New staff accounts always require a password change on first login
+
+        # ── Auto-generate 4-digit temp password ──
+        from .utils import generate_temp_password
+        temp_password = generate_temp_password(length=4)
+        new_user.set_password(temp_password)
+        new_user.temp_password = temp_password
         new_user.force_password_change = True
         new_user.save()
-        form.save_m2m()  # in case there are any M2M fields
-
-        # Handle profile picture (not in UserCreationForm by default)
-        picture = form.cleaned_data.get('profile_picture')
-        if picture:
-            new_user.profile_picture = picture
-            new_user.save(update_fields=['profile_picture'])
 
         log_create(
             user=request.user,
@@ -866,15 +864,16 @@ def user_create(request):
             request=request,
         )
 
-        # Send welcome email if user has an email address
+        # Send welcome email with temp password if user has an email address
         if new_user.email:
             try:
-                plain_body, html_body = welcome_email(
+                plain_body, html_body = temp_password_email(
+                    temp_password,
                     new_user.username,
                     recipient_name=new_user.first_name or new_user.username,
                 )
                 send_mail(
-                    'Welcome to the Patient Record System',
+                    'Your staff account has been created',
                     plain_body,
                     settings.DEFAULT_FROM_EMAIL,
                     [new_user.email],
@@ -884,7 +883,12 @@ def user_create(request):
             except Exception:
                 pass  # Email delivery is best-effort
 
-        messages.success(request, 'Staff user created successfully.')
+        messages.success(
+            request,
+            f'Staff user created successfully. '
+            f'Temporary password for {new_user.username}: {temp_password}'
+            f'{" (also emailed to them)." if new_user.email else " (user has no email — share this manually)."}'
+        )
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_form.html', {'form': form, 'action': 'Create'})
 
@@ -949,10 +953,11 @@ def user_reset_password(request, pk):
     from .utils import generate_temp_password
     new_password = generate_temp_password(length=4)
     target_user.set_password(new_password)
+    target_user.temp_password = new_password
     target_user.force_password_change = True
     target_user.failed_login_attempts = 0
     target_user.locked_until = None
-    target_user.save(update_fields=['password', 'force_password_change',
+    target_user.save(update_fields=['password', 'temp_password', 'force_password_change',
                                      'failed_login_attempts', 'locked_until'])
 
     log_change(
@@ -991,6 +996,68 @@ def user_reset_password(request, pk):
         f' {"(also emailed to them)." if target_user.email else "(user has no email — share this manually)."}'
     )
     return redirect('accounts:user_list')
+
+
+@login_required
+@admin_required
+def staff_temp_password_list(request):
+    """
+    Lists staff users who have a temp password and haven't changed it yet
+    (force_password_change=True). Admin can view/reset their temp passwords.
+    """
+    staff_tmp = User.objects.filter(
+        force_password_change=True,
+    ).exclude(role=User.Role.PATIENT).order_by('role', 'username')
+
+    return render(request, 'accounts/staff_temp_password_list.html', {
+        'staff_tmp': staff_tmp,
+    })
+
+
+@login_required
+@admin_required
+def staff_get_password(request, pk):
+    """
+    AJAX endpoint: retrieves the stored plaintext temp password for a staff user.
+    Returns JSON so the modal can display it.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+    try:
+        target_user = get_object_or_404(User, pk=pk)
+
+        # If no stored temp_password (e.g. pre-migration users),
+        # generate one now and store it for future lookups.
+        if not target_user.temp_password:
+            from .utils import generate_temp_password
+            new_tmp = generate_temp_password(length=4)
+            target_user.temp_password = new_tmp
+            target_user.set_password(new_tmp)
+            target_user.force_password_change = True
+            target_user.save(update_fields=['temp_password', 'password', 'force_password_change'])
+
+            log_change(
+                user=request.user,
+                module='User Management',
+                description=f'Generated temp password for staff — {target_user.username}',
+                object_model='accounts.User',
+                object_id=target_user.pk,
+                object_repr=str(target_user),
+                request=request,
+            )
+
+        return JsonResponse({
+            'success': True,
+            'access_code': target_user.temp_password,
+            'username': target_user.username,
+            'name': target_user.get_full_name() or target_user.username,
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+        })
 
 
 @login_required

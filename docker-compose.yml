@@ -71,6 +71,7 @@ services:
       - "8000:8000"
     volumes:
       - media_data:/app/media
+      - .:/app
 
 volumes:
   db_data:
