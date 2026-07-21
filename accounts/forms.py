@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from .models import User
@@ -377,17 +377,6 @@ class ProfileCompletionForm(forms.Form):
         validators=[MinValueValidator(50), MaxValueValidator(250)])
     weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
         validators=[MinValueValidator(10), MaxValueValidator(300)])
-
-    # ── Profile Picture ──
-    profile_picture = forms.ImageField(
-        required=False,
-        label='Profile Picture',
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': 'image/jpeg,image/png,image/webp',
-        }),
-        validators=[validate_profile_picture],
-    )
 
     # College — required for student and faculty (enforced in clean())
     college = forms.ModelChoiceField(

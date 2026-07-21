@@ -56,7 +56,7 @@
 
   <!-- Form card -->
   <div class="reg-card">
-    <form method="post" enctype="multipart/form-data" novalidate autocomplete="off" id="profile-form" data-track-changes="true">
+    <form method="post" novalidate autocomplete="off" id="profile-form" data-track-changes="true">
       {% csrf_token %}
       <input type="hidden" name="current_step" id="current_step" value="{{ current_step|default:'1' }}" autocomplete="off">
 
@@ -212,26 +212,7 @@
                  value="{{ form.position.value|default:'' }}">
         </div>
 
-        <!-- Profile Picture -->
-        <div class="sec-label sec-label-gap">Profile Picture</div>
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;">
-            {% if patient.profile_picture %}
-              <img src="{{ patient.profile_picture.url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
-            {% else %}
-              <span style="font-size:24px;font-weight:700;color:#065f46;">{{ patient.get_full_name|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div style="flex:1;">
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Upload Picture</label>
-            <input type="file" id="id_profile_picture" name="profile_picture" class="reg-input" accept="image/jpeg,image/png,image/webp">
-            {% if form.profile_picture.errors %}
-              {% for error in form.profile_picture.errors %}
-                <div style="font-size:11px;color:#ef4444;margin-top:6px;display:flex;align-items:center;gap:4px;"><ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon> {{ error }}</div>
-              {% endfor %}
-            {% endif %}
-          </div>
-        </div>
+
 
         <!-- Contact & Emergency -->
         <div class="sec-label sec-label-gap">Contact &amp; Emergency</div>
@@ -381,28 +362,6 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────
   let currentStep = parseInt(document.getElementById('current_step').value) || 1;
-
-  // ── Client-side file validation for profile picture ──
-  document.addEventListener('DOMContentLoaded', function() {
-    var picInput = document.getElementById('id_profile_picture');
-    if (picInput) {
-      picInput.addEventListener('change', function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var maxSize = 5 * 1024 * 1024;
-        if (file.size > maxSize) {
-          alert('File size (' + Math.round(file.size / 1024) + ' KB) exceeds the maximum allowed size of 5 MB.');
-          picInput.value = '';
-          return;
-        }
-        var allowed = ['image/jpeg', 'image/png', 'image/webp'];
-        if (allowed.indexOf(file.type) === -1) {
-          alert('Unsupported file type. Allowed types: JPG, PNG, WebP.');
-          picInput.value = '';
-        }
-      });
-    }
-  });
 
   // ── Step navigation ────────────────────────────────────────────────
   function showStep(n) {

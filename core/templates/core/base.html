@@ -303,12 +303,16 @@
         <!-- Mobile: user identity header inside menu -->
         <div class="mobile-user-row">
           <div class="user-avatar" style="overflow:hidden;">
-              {% if user.profile_picture %}
+            {% with patient_record=user.get_patient_record %}
+              {% if patient_record and patient_record.profile_picture %}
+                <img src="{{ patient_record.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+              {% elif user.profile_picture %}
                 <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
               {% else %}
                 {{ user.get_full_name|default:user.username|first|upper }}
               {% endif %}
-            </div>
+            {% endwith %}
+          </div>
           <div class="user-meta">
             <strong>{{ user.get_full_name|default:user.username }}</strong>
             <span>{{ user.get_role_display|default:user.role }}</span>
@@ -372,11 +376,15 @@
           <div class="ms-1 dropdown">
             <a class="user-chip dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <div class="user-avatar" style="overflow:hidden;">
-                {% if user.profile_picture %}
-                  <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                {% else %}
-                  {{ user.get_full_name|default:user.username|first|upper }}
-                {% endif %}
+                {% with patient_record=user.get_patient_record %}
+                  {% if patient_record and patient_record.profile_picture %}
+                    <img src="{{ patient_record.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                  {% elif user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                  {% else %}
+                    {{ user.get_full_name|default:user.username|first|upper }}
+                  {% endif %}
+                {% endwith %}
               </div>
           <span class="user-name-text">{{ user.get_full_name|default:user.username }}</span>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>

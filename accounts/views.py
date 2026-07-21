@@ -10,7 +10,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from django.core.mail import send_mail
-from .email_utils import otp_email, temp_password_email, welcome_email
+from .email_utils import otp_email, temp_password_email
 from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 import random
@@ -1442,7 +1442,7 @@ def complete_profile(request):
     if patient.course:
         initial['course'] = patient.course
 
-    form = ProfileCompletionForm(request.POST or None, request.FILES or None, initial=initial, user=request.user)
+    form = ProfileCompletionForm(request.POST or None, initial=initial, user=request.user)
 
     # Ensure course dropdown is populated with the correct college's courses.
     # On GET, use the patient's existing college. On POST re-render (after
@@ -1464,11 +1464,6 @@ def complete_profile(request):
             patient.department = cd.get('department', '')
             patient.position = cd.get('position', '')
 
-            # FIX: use cleaned_data for image
-            picture = cd.get('profile_picture')
-            if picture:
-                patient.profile_picture = picture
-
             from accounts.utils import calculate_graduation_year
             year_level = cd.get('year_level', '')
             if cd.get('role') == 'student' and year_level:
@@ -1481,8 +1476,6 @@ def complete_profile(request):
                 'emergency_contact_phone', 'college', 'course', 'department', 'position',
                 'expected_graduation_year',
             ]
-            if picture:
-                update_fields.append('profile_picture')
 
             patient.save(update_fields=update_fields)
 
@@ -1539,8 +1532,7 @@ def complete_profile(request):
         step_1_fields = {'role', 'email', 'phone', 'address', 'blood_type',
                          'religion', 'civil_status', 'height_cm', 'weight_kg',
                          'college', 'course', 'year_level', 'department', 'position',
-                         'emergency_contact_name', 'emergency_contact_phone',
-                         'profile_picture'}
+                         'emergency_contact_name', 'emergency_contact_phone'}
         step_2_fields = {'hypertension', 'diabetes', 'asthma', 'cardiac_problems',
                          'arthritis', 'other_conditions', 'known_allergies',
                          'bcg', 'dpt', 'opv', 'hepatitis_b', 'measles', 'tt',
