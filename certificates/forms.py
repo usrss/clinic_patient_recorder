@@ -22,6 +22,7 @@ class CertificateDetailsForm(forms.ModelForm):
             'work_assessment', 'return_date', 'restrictions',
             'activity_name', 'fitness_status',
             'remarks',
+            'place',
         ]
         widgets = {
             'diagnosis': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'e.g. Upper respiratory tract infection'}),
@@ -33,6 +34,7 @@ class CertificateDetailsForm(forms.ModelForm):
             'restrictions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Work restrictions...'}),
             'activity_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Basketball tournament'}),
             'fitness_status': forms.Select(attrs={'class': 'form-control'}),
+            'place': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. NORSU Clinic, Bayawan City'}),
         }
         labels = {
             'diagnosis': 'Diagnosis / Findings',
@@ -44,12 +46,13 @@ class CertificateDetailsForm(forms.ModelForm):
             'restrictions': 'Restrictions / Limitations',
             'activity_name': 'Activity / Event Name',
             'fitness_status': 'Fitness Status',
+            'place': 'Place of Issuance',
         }
 
     def __init__(self, *args, **kwargs):
         self.cert_type = kwargs.pop('cert_type', MedicalCertificate.CertificateType.STANDARD)
         super().__init__(*args, **kwargs)
-        for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'fitness_status']:
+        for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'fitness_status', 'place']:
             self.fields[f].required = False
 
     def clean(self):

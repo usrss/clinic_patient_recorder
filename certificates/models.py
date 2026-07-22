@@ -82,6 +82,12 @@ class MedicalCertificate(models.Model):
     rest_from = models.DateField(null=True, blank=True, help_text='Rest period start date')
     rest_to = models.DateField(null=True, blank=True, help_text='Rest period end date')
     remarks = models.TextField(blank=True, help_text='Additional remarks or restrictions')
+    place = models.CharField(
+        max_length=255,
+        blank=True,
+        default='Negros Oriental State University, Bayawan-Sta. Catalina Campus, Bayawan City, Philippines',
+        help_text='Clinic location / place of issuance',
+    )
 
     # ── Fit-to-Work specific ──────────────────────────────────────────────
     work_assessment = models.CharField(
@@ -226,6 +232,7 @@ class MedicalCertificate(models.Model):
             'fitness_status': self.get_fitness_status_display() or '',
             'work_assessment': self.get_work_assessment_display() or '',
             'restrictions': self.restrictions or '',
+            'place': self.place or '',
             # ── New keys for .docx templates ───────────────────────────
             'remarks': self.remarks or '',
             'doctor_name': doctor_name,
