@@ -56,7 +56,7 @@ class CertificateRaceConditionTest(TestCase):
             consultation=consultation,
             patient=self.patient,
             doctor=self.doctor,
-            certificate_type=MedicalCertificate.CertificateType.STANDARD,
+            certificate_type=MedicalCertificate.CertificateType.ABSENCES,
             status=MedicalCertificate.Status.DRAFT,
             diagnosis='Race condition test',
         )
@@ -75,7 +75,7 @@ class CertificateRaceConditionTest(TestCase):
                         consultation=consultation,
                         patient=self.patient,
                         doctor=self.doctor,
-                        certificate_type=MedicalCertificate.CertificateType.STANDARD,
+                        certificate_type=MedicalCertificate.CertificateType.ABSENCES,
                         status=MedicalCertificate.Status.DRAFT,
                         diagnosis='Race retry',
                     )
@@ -170,7 +170,7 @@ class CertificateAccessScopingTest(TestCase):
             consultation=consultation,
             patient=self.patient,
             doctor=doctor,
-            certificate_type=MedicalCertificate.CertificateType.STANDARD,
+            certificate_type=MedicalCertificate.CertificateType.ABSENCES,
             status=MedicalCertificate.Status.ISSUED,
             diagnosis='Test diagnosis',
             certificate_number='MC-2026-000001',
@@ -237,7 +237,7 @@ class CertificateStatusGuardTest(TestCase):
             consultation=consultation,
             patient=self.patient,
             doctor=self.admin,
-            certificate_type=MedicalCertificate.CertificateType.STANDARD,
+            certificate_type=MedicalCertificate.CertificateType.ABSENCES,
             status=status,
             diagnosis='Test',
         )
@@ -295,26 +295,26 @@ class CertificateTemplateTextTest(TestCase):
         # Clear any rows from data migration so we control the exact set
         CertificateTemplateText.objects.all().delete()
         CertificateTemplateText.objects.bulk_create([
-            # ── Standard ─────────────────────────────────────────────────
+            # ── Absences ─────────────────────────────────────────────────
             CertificateTemplateText(
-                certificate_type='standard',
+                certificate_type='absences',
                 slot_key='body',
                 text='This is to certify that {patient_name}, {age} years of age, was examined on {exam_date}.\n\n'
                      'Diagnosis: {diagnosis}\n\n'
                      'The patient is advised to rest from {rest_from} to {rest_to}.\n\n'
                      'This certificate is issued for legal purposes.',
             ),
-            # ── Fit-to-Work ──────────────────────────────────────────────
+            # ── OJT ──────────────────────────────────────────────────────
             CertificateTemplateText(
-                certificate_type='fit_to_work',
+                certificate_type='ojt',
                 slot_key='body',
                 text='This is to certify that {patient_name} is FIT to work. Assessment: {work_assessment}.\n\n'
                      'Findings: {diagnosis}\n\n'
                      'This certificate is issued upon the request of the patient for legal purposes.',
             ),
-            # ── Fit-to-Play ──────────────────────────────────────────────
+            # ── Activities ───────────────────────────────────────────────
             CertificateTemplateText(
-                certificate_type='fit_to_play',
+                certificate_type='activities',
                 slot_key='body',
                 text='This is to certify that {patient_name} is FIT to play. Status: {fitness_status}.\n\n'
                      'Findings: {diagnosis}\n\n'
@@ -346,7 +346,7 @@ class CertificateTemplateTextTest(TestCase):
     def test_edit_after_issue_does_not_change_snapshot(self):
         """Editing a template after a cert is issued should NOT change that cert's rendered_text_snapshot."""
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.STANDARD,
+            MedicalCertificate.CertificateType.ABSENCES,
             rest_from=timezone.localtime(timezone.now()).date(),
             rest_to=timezone.localtime(timezone.now()).date(),
         )
@@ -356,7 +356,7 @@ class CertificateTemplateTextTest(TestCase):
 
         # Now edit the template text
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='body',
+            certificate_type='absences', slot_key='body',
         )
         slot.text = 'EDITED: {patient_name} was examined on {exam_date}.'
         slot.save()
@@ -375,13 +375,13 @@ class CertificateTemplateTextTest(TestCase):
         """A new certificate issued after a template edit should use the new wording."""
         # Edit the template text first
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='body',
+            certificate_type='absences', slot_key='body',
         )
         slot.text = 'NEW WORDING: {patient_name} was examined on {exam_date}.'
         slot.save()
 
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.STANDARD,
+            MedicalCertificate.CertificateType.ABSENCES,
             rest_from=timezone.localtime(timezone.now()).date(),
             rest_to=timezone.localtime(timezone.now()).date(),
         )
@@ -398,10 +398,10 @@ class CertificateTemplateTextTest(TestCase):
 
     # ── Test 3: Standard certificate renders body from standard template ──
 
-    def test_standard_certificate_renders_body(self):
-        """Standard certificate should render body text from the template."""
+    def test_absences_certificate_renders_body(self):
+        """Absences certificate should render body text from the template."""
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.STANDARD,
+            MedicalCertificate.CertificateType.ABSENCES,
             rest_from=timezone.localtime(timezone.now()).date(),
             rest_to=timezone.localtime(timezone.now()).date(),
         )
@@ -414,11 +414,11 @@ class CertificateTemplateTextTest(TestCase):
     # ── Test 4: Body text contains diagnosis and rest period ──
 
     def test_body_contains_diagnosis_and_rest(self):
-        """Standard certificate body should include diagnosis and rest period."""
+        """Absences certificate body should include diagnosis and rest period."""
         same_day = timezone.localtime(timezone.now()).date()
 
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.STANDARD,
+            MedicalCertificate.CertificateType.ABSENCES,
             rest_from=same_day,
             rest_to=same_day,
         )
@@ -434,7 +434,7 @@ class CertificateTemplateTextTest(TestCase):
     def test_html_tags_are_stripped(self):
         """HTML tags should be stripped from template text by bleach."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='body',
+            certificate_type='absences', slot_key='body',
         )
         slot.text = '<script>alert("xss")</script>'
         slot.save()
@@ -450,7 +450,7 @@ class CertificateTemplateTextTest(TestCase):
     def test_unicode_escaped_injection_stripped(self):
         """Unicode-escaped HTML injection should be stripped."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='body',
+            certificate_type='absences', slot_key='body',
         )
         slot.text = '<script>alert(1)</script>'
         slot.save()
@@ -464,7 +464,7 @@ class CertificateTemplateTextTest(TestCase):
     def test_html_entity_encoded_injection_stripped(self):
         """HTML-entity-encoded injection should be stripped."""
         slot = CertificateTemplateText.objects.get(
-            certificate_type='standard', slot_key='body',
+            certificate_type='absences', slot_key='body',
         )
         slot.text = '&lt;script&gt;alert(1)&lt;/script&gt;'
         slot.save()
@@ -475,17 +475,17 @@ class CertificateTemplateTextTest(TestCase):
 
     # ── Test 8: Body text editable and snapshots correctly ──
 
-    def test_body_editable_and_snapshots_for_fit_to_work(self):
-        """Fit-to-Work body text should be editable and snapshot correctly on issue."""
+    def test_body_editable_and_snapshots_for_ojt(self):
+        """OJT body text should be editable and snapshot correctly on issue."""
         # Edit the body
         slot = CertificateTemplateText.objects.get(
-            certificate_type='fit_to_work', slot_key='body',
+            certificate_type='ojt', slot_key='body',
         )
         slot.text = 'Custom work cert: {patient_name} — assessment: {work_assessment}.'
         slot.save()
 
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.FIT_TO_WORK,
+            MedicalCertificate.CertificateType.OJT,
             work_assessment='fit_to_return',
             return_date=timezone.localtime(timezone.now()).date(),
         )
@@ -495,17 +495,17 @@ class CertificateTemplateTextTest(TestCase):
         self.assertIn('Custom work cert:', snapshot)
         self.assertIn('Test Patient', snapshot)  # patient full name
 
-    def test_body_editable_and_snapshots_for_fit_to_play(self):
-        """Fit-to-Play body text should be editable and snapshot correctly on issue."""
+    def test_body_editable_and_snapshots_for_activities(self):
+        """Activities body text should be editable and snapshot correctly on issue."""
         # Edit the body
         slot = CertificateTemplateText.objects.get(
-            certificate_type='fit_to_play', slot_key='body',
+            certificate_type='activities', slot_key='body',
         )
         slot.text = 'Custom play cert: {patient_name} cleared for {activity_name}.'
         slot.save()
 
         cert = self._create_cert(
-            MedicalCertificate.CertificateType.FIT_TO_PLAY,
+            MedicalCertificate.CertificateType.ACTIVITIES,
             activity_name='Basketball tournament',
             fitness_status='cleared',
         )

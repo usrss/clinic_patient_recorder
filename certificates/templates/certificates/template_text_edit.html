@@ -71,7 +71,7 @@
   <!-- Example section -->
   <div class="example-section">
     <h3>Example — {{ slot.get_cert_type_label }} Template</h3>
-    {% if slot.certificate_type == 'standard' %}
+    {% if slot.certificate_type == 'absences' %}
     <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}was examined and treated at this clinic on {exam_date}.
 
 Diagnosis: {diagnosis}
@@ -79,7 +79,7 @@ Diagnosis: {diagnosis}
 The patient is advised to rest from {rest_from} to {rest_to}.
 
 This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
-    {% elif slot.certificate_type == 'fit_to_work' %}
+    {% elif slot.certificate_type == 'ojt' %}
     <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {position_info}has been examined and found to be PHYSICALLY FIT to return to work.
 
 Assessment: {work_assessment}
@@ -87,7 +87,7 @@ Assessment: {work_assessment}
 Findings: {diagnosis}
 
 This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
-    {% elif slot.certificate_type == 'fit_to_play' %}
+    {% elif slot.certificate_type == 'activities' %}
     <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}has been examined and found to be PHYSICALLY FIT to participate in:
 
 {activity_name}

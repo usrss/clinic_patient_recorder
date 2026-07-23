@@ -7,7 +7,7 @@ class CertificateTypeForm(forms.Form):
     certificate_type = forms.ChoiceField(
         choices=MedicalCertificate.CertificateType.choices,
         widget=forms.RadioSelect(attrs={'class': 'cert-type-radio'}),
-        initial=MedicalCertificate.CertificateType.STANDARD,
+        initial=MedicalCertificate.CertificateType.ABSENCES,
     )
 
 
@@ -50,7 +50,7 @@ class CertificateDetailsForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.cert_type = kwargs.pop('cert_type', MedicalCertificate.CertificateType.STANDARD)
+        self.cert_type = kwargs.pop('cert_type', MedicalCertificate.CertificateType.ABSENCES)
         super().__init__(*args, **kwargs)
         for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'fitness_status', 'place']:
             self.fields[f].required = False
@@ -61,19 +61,19 @@ class CertificateDetailsForm(forms.ModelForm):
         rf = cleaned.get('rest_from')
         rt = cleaned.get('rest_to')
 
-        if ct == MedicalCertificate.CertificateType.STANDARD:
+        if ct == MedicalCertificate.CertificateType.ABSENCES:
             if not rf:
                 self.add_error('rest_from', 'Rest start date is required for medical certificates.')
             if not rt:
                 self.add_error('rest_to', 'Rest end date is required for medical certificates.')
 
-        if ct == MedicalCertificate.CertificateType.FIT_TO_WORK:
+        if ct == MedicalCertificate.CertificateType.OJT:
             if not cleaned.get('work_assessment'):
                 self.add_error('work_assessment', 'Assessment is required.')
             if not cleaned.get('return_date'):
                 self.add_error('return_date', 'Return date is required.')
 
-        if ct == MedicalCertificate.CertificateType.FIT_TO_PLAY:
+        if ct == MedicalCertificate.CertificateType.ACTIVITIES:
             if not cleaned.get('activity_name', '').strip():
                 self.add_error('activity_name', 'Activity name is required.')
             if not cleaned.get('fitness_status'):

@@ -14,9 +14,9 @@ class MedicalCertificate(models.Model):
     """
 
     class CertificateType(models.TextChoices):
-        STANDARD = 'standard', 'Medical Certificate-Absences  of classes-work'
-        FIT_TO_WORK = 'fit_to_work', 'Medical Certificate-OJT'
-        FIT_TO_PLAY = 'fit_to_play', 'Medical Certificate_Activitiest-training-seminars'
+        ABSENCES = 'absences', 'Medical Certificate — Absences (Classes/Work)'
+        OJT = 'ojt', 'Medical Certificate — OJT'
+        ACTIVITIES = 'activities', 'Medical Certificate — Activities/Training/Seminars'
 
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Draft'
@@ -64,7 +64,7 @@ class MedicalCertificate(models.Model):
     certificate_type = models.CharField(
         max_length=20,
         choices=CertificateType.choices,
-        default=CertificateType.STANDARD,
+        default=CertificateType.ABSENCES,
     )
     status = models.CharField(
         max_length=10,
@@ -260,7 +260,7 @@ class MedicalCertificate(models.Model):
         """Compute and return a single body string of resolved template text."""
         ct = self.certificate_type
 
-        # Dental inherits standard's template text
+        # Dental inherits absences' template text
         templates = CertificateTemplateText.objects.filter(
             certificate_type=ct,
         )

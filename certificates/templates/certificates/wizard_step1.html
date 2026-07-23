@@ -10,26 +10,31 @@
   }
   .wizard-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
 
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  /* ── Progress bar ──────────────────────────────────── */
+  .progress-wrap {
     margin-bottom: 32px;
   }
-  .step-dot {
-    width: 32px; height: 32px;
-    border-radius: 50%;
+  .progress-bar {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
+    gap: 4px;
+    height: 6px;
+    margin-bottom: 6px;
   }
-  .step-dot.active { background: #0078d4; color: #fff; }
-  .step-dot.inactive { background: #e5e7eb; color: #9ca3af; }
-  .step-line { width: 40px; height: 2px; background: #e5e7eb; }
-  .step-line.active { background: #0078d4; }
+  .progress-seg {
+    flex: 1;
+    border-radius: 3px;
+    background: #e5e7eb;
+    transition: background 0.25s;
+  }
+  .progress-seg.completed { background: #059669; }
+  .progress-seg.active { background: #0078d4; }
+  .progress-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .progress-label span { color: #374151; }
 
   .wizard-header { margin-bottom: 24px; }
   .wizard-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
@@ -59,27 +64,112 @@
   .patient-name { font-weight: 600; font-size: 14px; color: #1a1a2e; }
   .patient-meta { font-size: 12px; color: #94a3b8; }
 
-  .type-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  /* ── Single-column type cards ──────────────────────── */
+  .type-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 24px;
   }
   .type-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     background: #fff;
     border: 2px solid #e5e7eb;
     border-radius: 14px;
-    padding: 20px 16px;
-    text-align: center;
+    padding: 18px 20px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.2s;
+    position: relative;
   }
-  .type-card:hover { border-color: #bfdbfe; background: #f8faff; }
-  .type-card.selected { border-color: #0078d4; background: #eff6ff; }
-  .type-card input[type="radio"] { display: none; }
-  .type-icon { font-size: 32px; margin-bottom: 8px; }
-  .type-name { font-size: 13px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
-  .type-desc { font-size: 11px; color: #6b7280; }
+  .type-card:hover {
+    border-color: #bfdbfe;
+    background: #fafbff;
+    box-shadow: 0 2px 8px rgba(0,120,212,0.08);
+  }
+  .type-card.selected {
+    border-color: #0078d4;
+    background: #f0f6ff;
+    box-shadow: 0 0 0 3px rgba(0,120,212,0.12);
+  }
+  .type-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Checkmark circle — always visible, toggles fill */
+  .type-check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    color: transparent;
+    font-size: 16px;
+  }
+  .type-card.selected .type-check {
+    border-color: #0078d4;
+    background: #0078d4;
+    color: #fff;
+  }
+
+  .type-body { flex: 1; min-width: 0; }
+  .type-name { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+  .type-desc { font-size: 12px; color: #6b7280; line-height: 1.4; }
+
+  /* ── Diagnosis panel ───────────────────────────────── */
+  .diagnosis-panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid #e8ecf1;
+    margin-bottom: 20px;
+  }
+  .diagnosis-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+  .diagnosis-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    letter-spacing: 0.02em;
+  }
+  .diagnosis-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .diagnosis-value {
+    padding: 8px 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+    border: 1px solid #e5e7eb;
+  }
+  .diagnosis-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 5px;
+  }
 
   .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
   .btn {
@@ -89,7 +179,7 @@
     transition: all 0.15s;
   }
   .btn-primary { background: #0078d4; color: #fff; }
-  .btn-primary:hover { background: #006bbf; }
+  .btn-primary:hover { background: #006bbf; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,120,212,0.25); }
   .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
   .btn-secondary:hover { background: #f9fafb; }
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
@@ -100,19 +190,20 @@
 <div class="wizard-page">
 <div class="wizard-wrap">
 
-  {# Step indicator #}
-  <div class="step-indicator">
-    <div class="step-dot active">1</div>
-    <div class="step-line active"></div>
-    <div class="step-dot inactive">2</div>
-    <div class="step-line"></div>
-    <div class="step-dot inactive">3</div>
+  {# ── Step indicator: 3-segment progress bar ── #}
+  <div class="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-seg active"></div>
+      <div class="progress-seg"></div>
+      <div class="progress-seg"></div>
+    </div>
+    <div class="progress-label">Step <span>1</span> of 3 — Select Certificate Type</div>
   </div>
 
   {# Header #}
   <div class="wizard-header">
     <h1>Issue Medical Certificate</h1>
-    <p>Step 1 of 3 — Select Certificate Type</p>
+    <p>Choose the type of certificate you want to issue</p>
   </div>
 
   {# Patient info #}
@@ -124,42 +215,65 @@
     </div>
   </div>
 
-  {# Type selection #}
+  {# Type selection — single-column stack #}
   <form method="post" novalidate>
     {% csrf_token %}
-    {{ form.certificate_type }}
 
-    <div class="type-grid" id="type-grid">
-      <label class="type-card" data-value="standard">
-        <input type="radio" name="certificate_type" value="standard" checked>
-        <div class="type-icon">&#128203;</div>
-        <div class="type-name">Medical Certificate-Absences  of classes-work</div>
-        <div class="type-desc">For class absences or work-related medical certification</div>
+    <div class="type-stack" id="type-stack">
+      <label class="type-card" data-value="absences">
+        <input type="radio" name="certificate_type" value="absences" checked>
+        <div class="type-check">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="type-body">
+          <div class="type-name">Medical Certificate — Absences (Classes/Work)</div>
+          <div class="type-desc">For class absences or work-related medical certification</div>
+        </div>
       </label>
-      <label class="type-card" data-value="fit_to_work">
-        <input type="radio" name="certificate_type" value="fit_to_work">
-        <div class="type-icon">&#128188;</div>
-        <div class="type-name">Medical Certificate-OJT</div>
-        <div class="type-desc">For OJT / internship clearance certification</div>
+      <label class="type-card" data-value="ojt">
+        <input type="radio" name="certificate_type" value="ojt">
+        <div class="type-check">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="type-body">
+          <div class="type-name">Medical Certificate — OJT</div>
+          <div class="type-desc">For OJT / internship clearance certification</div>
+        </div>
       </label>
-      <label class="type-card" data-value="fit_to_play">
-        <input type="radio" name="certificate_type" value="fit_to_play">
-        <div class="type-icon">&#127936;</div>
-        <div class="type-name">Medical Certificate_Activitiest-training-seminars</div>
-        <div class="type-desc">For sports, training, or seminar participation clearance</div>
+      <label class="type-card" data-value="activities">
+        <input type="radio" name="certificate_type" value="activities">
+        <div class="type-check">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="type-body">
+          <div class="type-name">Medical Certificate — Activities/Training/Seminars</div>
+          <div class="type-desc">For sports, training, or seminar participation clearance</div>
+        </div>
       </label>
     </div>
 
-    {# Multi-diagnosis selector: shown when the consultation has multiple prescriptions #}
-    {% if diagnosis_list|length > 1 %}
-    <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e8ecf1;margin-bottom:20px;">
-      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Select Diagnosis</label>
-      <select name="selected_diagnosis" class="form-control" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;">
+    {# Diagnosis info with lock badge #}
+    {% if diagnosis_list %}
+    <div class="diagnosis-panel">
+      <div class="diagnosis-heading">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6M12 9v6"/><path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2s10 4.48 10 10z"/></svg>
+        Diagnosis{% if diagnosis_list|length > 1 %} — Select one{% endif %}
+        <span class="diagnosis-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          from prescription
+        </span>
+      </div>
+      {% if diagnosis_list|length > 1 %}
+      <select name="selected_diagnosis" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;">
         {% for d in diagnosis_list %}
         <option value="{{ d }}">{{ d }}</option>
         {% endfor %}
       </select>
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Multiple diagnoses found — choose which to include on this certificate.</div>
+      <div class="diagnosis-hint">Multiple diagnoses found — choose which to include on this certificate.</div>
+      {% else %}
+      <div class="diagnosis-value">{{ diagnosis_list.0 }}</div>
+      <div class="diagnosis-hint">This diagnosis will be included on the certificate.</div>
+      {% endif %}
     </div>
     {% endif %}
 

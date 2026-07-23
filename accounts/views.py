@@ -81,9 +81,13 @@ def login_view(request):
 
             login(request, user)
 
-            # ── Remember me: unchecked = session-only (close browser to expire) ──
-            if request.POST.get('remember_me') != 'on':
-                request.session.set_expiry(0)
+            # ── Remember me: checked = persist for 7 days; unchecked = session-only ──
+            if request.POST.get('remember_me') == 'on':
+                request.session.set_expiry(86400 * 7)  # 7 days
+                request.session['remember_me'] = True
+            else:
+                request.session.set_expiry(0)  # Expire on browser close
+                request.session['remember_me'] = False
 
             if user.role == User.Role.PATIENT:
                 patient = user.get_patient_record()

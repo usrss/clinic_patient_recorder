@@ -76,6 +76,10 @@ class IdleSessionTimeoutMiddleware:
             except Resolver404:
                 url_name = None
 
+            # Skip idle timeout for remember-me sessions (user chose to stay signed in)
+            if request.session.get('remember_me'):
+                return self.get_response(request)
+
             # Skip timeout check for safe URLs
             if url_name not in self.SAFE_URL_NAMES:
                 last_activity = request.session.get('last_activity')

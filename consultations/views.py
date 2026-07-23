@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
@@ -1046,9 +1047,11 @@ def prescribe(request, pk):
 @clinical_staff_required
 def clinical_detail(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
+    back_url = request.GET.get('next') or reverse('consultations:doctor_list')
     return render(request, 'consultations/clinical_detail.html', {
         'consultation': consultation,
         'base_template': _base_template(request.user),
+        'back_url': back_url,
     })
 
 
@@ -1526,6 +1529,9 @@ def print_consultation(request, pk):
         pk=pk,
     )
 
+    back_url = request.GET.get('next') or reverse('consultations:clinical_detail', args=[pk])
+
     return render(request, 'consultations/print_consultation.html', {
         'consultation': consultation,
+        'back_url': back_url,
     })

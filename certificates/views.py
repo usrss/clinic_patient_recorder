@@ -61,15 +61,24 @@ def wizard_type(request, consultation_pk):
     consultation = get_object_or_404(Consultation, pk=consultation_pk)
 
     # Check if an issued certificate already exists
-    existing = _get_issued_certificate(consultation)
-    if existing:
+    existing_issued = _get_issued_certificate(consultation)
+    if existing_issued:
         messages.info(request, 'An issued certificate already exists for this consultation.')
-        return redirect('certificates:print_certificate', pk=existing.pk)
+        return redirect('certificates:print_certificate', pk=existing_issued.pk)
 
     # Check prescription exists
     if not consultation.prescriptions.exists():
         messages.error(request, 'The consultation must have a prescription before issuing a certificate.')
         return redirect('consultations:clinical_detail', pk=consultation.pk)
+
+    # Check if there's already a draft — reuse it instead of creating a new one
+    existing_draft = consultation.certificates.filter(
+        doctor=request.user,
+        status=MedicalCertificate.Status.DRAFT,
+    ).first()
+    if existing_draft and request.method == 'GET':
+        messages.info(request, 'You already have a draft in progress. Continue editing it.')
+        return redirect('certificates:wizard_details', pk=existing_draft.pk)
 
     form = CertificateTypeForm(request.POST or None)
     diagnoses, diagnosis_list = _prefill_diagnosis(consultation)
@@ -82,28 +91,37 @@ def wizard_type(request, consultation_pk):
         if not selected_diagnosis:
             selected_diagnosis = diagnoses  # fallback to pre-fill
 
-        # Create DRAFT certificate within a transaction so that the audit
-        # log is rolled back if certificate creation fails (and vice versa).
         with transaction.atomic():
-            certificate = MedicalCertificate.objects.create(
-                consultation=consultation,
-                patient=consultation.patient,
-                doctor=request.user,
-                certificate_type=cert_type,
-                status=MedicalCertificate.Status.DRAFT,
-                diagnosis=selected_diagnosis,
-            )
-            _log_audit(certificate, request.user, 'created',
-                       f'Draft created (type: {cert_type})')
-            log_create(
-                user=request.user,
-                module='Medical Certificates',
-                description=f'Created draft {cert_type} certificate — {consultation.patient.get_full_name()}',
-                object_model='certificates.MedicalCertificate',
-                object_id=certificate.pk,
-                object_repr=str(certificate),
-                request=request,
-            )
+            if existing_draft:
+                # Update existing draft instead of creating a new one
+                certificate = existing_draft
+                certificate.certificate_type = cert_type
+                certificate.diagnosis = selected_diagnosis
+                certificate.save(update_fields=['certificate_type', 'diagnosis'])
+                _log_audit(certificate, request.user, 'updated',
+                           f'Type changed to {cert_type}')
+            else:
+                # Create DRAFT certificate within a transaction so that the audit
+                # log is rolled back if certificate creation fails (and vice versa).
+                certificate = MedicalCertificate.objects.create(
+                    consultation=consultation,
+                    patient=consultation.patient,
+                    doctor=request.user,
+                    certificate_type=cert_type,
+                    status=MedicalCertificate.Status.DRAFT,
+                    diagnosis=selected_diagnosis,
+                )
+                _log_audit(certificate, request.user, 'created',
+                           f'Draft created (type: {cert_type})')
+                log_create(
+                    user=request.user,
+                    module='Medical Certificates',
+                    description=f'Created draft {cert_type} certificate — {consultation.patient.get_full_name()}',
+                    object_model='certificates.MedicalCertificate',
+                    object_id=certificate.pk,
+                    object_repr=str(certificate),
+                    request=request,
+                )
 
         return redirect('certificates:wizard_details', pk=certificate.pk)
 
@@ -382,7 +400,7 @@ def void_certificate(request, pk):
 @admin_required
 def template_text_list(request):
     """List all editable template text slots, grouped by certificate type."""
-    order = ['standard', 'fit_to_work', 'fit_to_play']
+    order = ['absences', 'ojt', 'activities']
     grouped = {}
     for ct in order:
         rows = CertificateTemplateText.objects.filter(certificate_type=ct)

@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 TEMPLATE_DIR = Path(settings.BASE_DIR) / "certificates" / "medical_certs_template"
 
 TEMPLATE_MAP = {
-    "standard": "Medical Certificate-Absences  of classes-work.docx",
-    "fit_to_work": "Medical Certificate-OJT.docx",
-    "fit_to_play": "Medical Certificate_Activitiest-training-seminars.docx",
+    "absences": "Medical Certificate-Absences  of classes-work.docx",
+    "ojt": "Medical Certificate-OJT.docx",
+    "activities": "Medical Certificate_Activitiest-training-seminars.docx",
 }
 
 

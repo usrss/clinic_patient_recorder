@@ -9,13 +9,30 @@
     padding: 36px 24px;
   }
   .wizard-wrap { width: 100%; max-width: 640px; margin: 0 auto; }
-  .step-indicator { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 32px; }
-  .step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-  .step-dot.active { background: #0078d4; color: #fff; }
-  .step-dot.completed { background: #059669; color: #fff; }
-  .step-dot.inactive { background: #e5e7eb; color: #9ca3af; }
-  .step-line { width: 40px; height: 2px; background: #e5e7eb; }
-  .step-line.active { background: #059669; }
+  .progress-wrap {
+    margin-bottom: 24px;
+  }
+  .progress-bar {
+    display: flex;
+    gap: 4px;
+    height: 6px;
+    margin-bottom: 6px;
+  }
+  .progress-seg {
+    flex: 1;
+    border-radius: 3px;
+    background: #e5e7eb;
+    transition: background 0.25s;
+  }
+  .progress-seg.completed { background: #059669; }
+  .progress-seg.active { background: #0078d4; }
+  .progress-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .progress-label span { color: #374151; }
   .wizard-header { margin-bottom: 24px; }
   .wizard-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; }
   .wizard-header p { font-size: 13px; color: #6b7280; margin: 4px 0 0; }
@@ -37,6 +54,7 @@
   .btn-primary:hover { background: #006bbf; }
   .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
   .btn-secondary:hover { background: #f9fafb; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
   select.form-control, textarea.form-control, input.form-control { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; font-family: inherit; }
   select.form-control:focus, textarea.form-control:focus, input.form-control:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.1); }
@@ -47,18 +65,19 @@
 <div class="wizard-page">
 <div class="wizard-wrap">
 
-  {# Step indicator #}
-  <div class="step-indicator">
-    <div class="step-dot completed">&#10003;</div>
-    <div class="step-line active"></div>
-    <div class="step-dot active">2</div>
-    <div class="step-line"></div>
-    <div class="step-dot inactive">3</div>
+  {# Step indicator: 3-segment progress bar #}
+  <div class="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-seg completed"></div>
+      <div class="progress-seg active"></div>
+      <div class="progress-seg"></div>
+    </div>
+    <div class="progress-label">Step <span>2</span> of 3 — Fill in Certificate Details</div>
   </div>
 
   <div class="wizard-header">
     <h1>Certificate Details</h1>
-    <p>Step 2 of 3 — Fill in the certificate information</p>
+    <p>Fill in the specific information for this certificate</p>
   </div>
 
   <div class="patient-chip">
@@ -75,17 +94,22 @@
     <form method="post" novalidate>
       {% csrf_token %}
 
-      {# Diagnosis — always shown #}
+      {# Diagnosis — always shown, pre-filled from prescription #}
       <div class="form-group">
         <label class="form-label">
           Diagnosis / Findings <span class="req">*</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:9px;font-weight:600;color:#6b7280;background:#f3f4f6;border:1px solid #e5e7eb;letter-spacing:0.02em;text-transform:none;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            from prescription
+          </span>
         </label>
         {{ form.diagnosis }}
         {% if form.diagnosis.errors %}<div class="form-error">{{ form.diagnosis.errors.0 }}</div>{% endif %}
+        <div class="form-hint">Pre-filled from the consultation prescription. Edit if needed.</div>
       </div>
 
-      {# Standard: Rest Period #}
-      {% if certificate.certificate_type == 'standard' %}
+      {# Absences: Rest Period #}
+      {% if certificate.certificate_type == 'absences' %}
       <div class="form-group">
         <label class="form-label">Rest Period</label>
         <div class="field-row">
@@ -103,8 +127,8 @@
       </div>
       {% endif %}
 
-      {# Fit-to-Work #}
-      {% if certificate.certificate_type == 'fit_to_work' %}
+      {# OJT #}
+      {% if certificate.certificate_type == 'ojt' %}
       <div class="form-group">
         <label class="form-label">Assessment <span class="req">*</span></label>
         {{ form.work_assessment }}
@@ -122,8 +146,8 @@
       </div>
       {% endif %}
 
-      {# Fit-to-Play #}
-      {% if certificate.certificate_type == 'fit_to_play' %}
+      {# Activities #}
+      {% if certificate.certificate_type == 'activities' %}
       <div class="form-group">
         <label class="form-label">Activity / Event Name <span class="req">*</span></label>
         {{ form.activity_name }}
@@ -144,9 +168,17 @@
         <div class="form-hint">Optional additional notes</div>
       </div>
 
+      {# Place of Issuance — always shown #}
+      <div class="form-group">
+        <label class="form-label">Place of Issuance</label>
+        {{ form.place }}
+        {% if form.place.errors %}<div class="form-error">{{ form.place.errors.0 }}</div>{% endif %}
+        <div class="form-hint">Location where this certificate is being issued</div>
+      </div>
+
       <div class="btn-row">
-        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn btn-secondary">&larr; Back</a>
-        <button type="submit" class="btn btn-primary">Preview &rarr;</button>
+        <a href="{% url 'consultations:completion_summary' consultation.pk %}" class="btn btn-secondary">&larr; Back to Summary</a>
+        <button type="submit" class="btn btn-primary" id="submit-btn">Preview &rarr;</button>
       </div>
     </form>
   </div>
@@ -155,4 +187,14 @@
 
 </div>
 </div>
+
+<script>
+  document.querySelector('.form-card form')?.addEventListener('submit', function() {
+    var btn = this.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;margin-right:4px;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving…';
+    }
+  });
+</script>
 {% endblock %}

@@ -259,7 +259,7 @@
 <body>
 
   <button class="print-btn no-print" onclick="window.print();"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Form</button>
-  <a href="{% url 'consultations:clinical_detail' consultation.pk %}" class="back-link no-print">← Back</a>
+  <a href="{{ back_url }}" class="back-link no-print">← Back</a>
 
   <div class="page-wrapper">
 

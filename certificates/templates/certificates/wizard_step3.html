@@ -23,28 +23,32 @@
     min-height: 0;
   }
 
-  /* Step indicator */
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 12px;
+  /* Step indicator: 3-segment progress bar */
+  .progress-wrap {
+    margin-bottom: 8px;
     flex-shrink: 0;
   }
-  .step-dot {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+  .progress-bar {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
+    gap: 4px;
+    height: 6px;
+    margin-bottom: 6px;
   }
-  .step-dot.completed { background: #059669; color: #fff; }
-  .step-dot.active { background: #0078d4; color: #fff; }
-  .step-line { width: 40px; height: 2px; background: #059669; }
+  .progress-seg {
+    flex: 1;
+    border-radius: 3px;
+    background: #e5e7eb;
+    transition: background 0.25s;
+  }
+  .progress-seg.completed { background: #059669; }
+  .progress-seg.active { background: #0078d4; }
+  .progress-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .progress-label span { color: #374151; }
 
   /* Header */
   .wizard-header {
@@ -79,6 +83,7 @@
   }
 
   /* PDF container */
+  /* PDF load state */
   .pdf-container {
     flex: 1;
     min-height: 0;
@@ -87,6 +92,7 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,.06);
+    position: relative;
   }
   .pdf-container iframe {
     width: 100%;
@@ -94,6 +100,43 @@
     border: none;
     display: block;
   }
+
+  .pdf-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    z-index: 2;
+    transition: opacity 0.3s;
+  }
+  .pdf-loading.hidden { opacity: 0; pointer-events: none; }
+  .pdf-loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #0078d4;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .pdf-loading-text { font-size: 13px; color: #6b7280; margin-top: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pdf-error {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    z-index: 2;
+  }
+  .pdf-error.visible { display: flex; }
+  .pdf-error-icon { font-size: 40px; margin-bottom: 12px; }
+  .pdf-error-text { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
+  .pdf-error-detail { font-size: 12px; color: #9ca3af; }
 
   /* Action buttons */
   .btn-row {
@@ -154,13 +197,14 @@
 <div class="wizard-page">
 <div class="wizard-wrap">
 
-  {# Step indicator #}
-  <div class="step-indicator">
-    <div class="step-dot completed">&#10003;</div>
-    <div class="step-line"></div>
-    <div class="step-dot completed">&#10003;</div>
-    <div class="step-line"></div>
-    <div class="step-dot active">3</div>
+  {# Step indicator: 3-segment progress bar #}
+  <div class="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-seg completed"></div>
+      <div class="progress-seg completed"></div>
+      <div class="progress-seg active"></div>
+    </div>
+    <div class="progress-label">Step <span>3</span> of 3 — Review &amp; Issue Certificate</div>
   </div>
 
   <div class="wizard-header">
@@ -173,9 +217,19 @@
 
   {# PDF preview iframe — generated from the actual docx template #}
   <div class="pdf-container">
+    <div class="pdf-loading" id="pdfLoading">
+      <div class="pdf-loading-spinner"></div>
+      <div class="pdf-loading-text">Generating certificate preview…</div>
+    </div>
+    <div class="pdf-error" id="pdfError">
+      <div class="pdf-error-icon">&#9888;</div>
+      <div class="pdf-error-text">Could not generate certificate preview.</div>
+      <div class="pdf-error-detail">Please go back and check your details, then try again.</div>
+    </div>
     <iframe id="pdfFrame"
             src="{% url 'certificates:certificate_pdf_preview' certificate.pk %}"
-            title="Certificate PDF Preview"></iframe>
+            title="Certificate PDF Preview"
+            onload="document.getElementById('pdfLoading').classList.add('hidden');"></iframe>
   </div>
 
   {# Actions #}
@@ -198,4 +252,13 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  // Fallback: hide loading spinner after 15 seconds in case iframe onload never fires
+  setTimeout(function() {
+    var loading = document.getElementById('pdfLoading');
+    if (loading && !loading.classList.contains('hidden')) {
+      loading.classList.add('hidden');
+    }
+  }, 15000);
+</script>
 {% endblock %}
