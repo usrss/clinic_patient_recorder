@@ -165,11 +165,6 @@
 {% block content %}
 <div class="prescribe-wrap">
 
-  <!-- Messages -->
-  {% if messages %}
-    {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
-  {% endif %}
-
   <!-- Patient Summary -->
   <div class="card-panel">
     <div class="sec-label">Patient</div>

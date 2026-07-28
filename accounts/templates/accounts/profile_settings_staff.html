@@ -8,15 +8,6 @@
 <link rel="stylesheet" href="{% static 'accounts/css/settings.css' %}">
 <div class="settings-page">
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">
-        <ion-icon name="{% if message.tags == 'error' %}alert-circle{% elif message.tags == 'success' %}checkmark-circle{% elif message.tags == 'warning' %}warning{% else %}information-circle{% endif %}"></ion-icon>
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-
   <!-- ═══════ PROFILE INFORMATION CARD ═══════ -->
   <div class="card-panel">
     <div class="section-label">Profile Information</div>

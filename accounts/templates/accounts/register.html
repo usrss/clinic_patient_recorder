@@ -16,13 +16,6 @@
     <p>NORSU Medical Dental Clinic</p>
   </div>
 
-  <!-- Messages -->
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
-
   {# ── Form error summary (visible on any step when validation fails) ── #}
   {% if form.errors %}
   <div style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca;box-shadow:0 1px 4px rgba(0,0,0,0.04);">

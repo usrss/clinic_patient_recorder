@@ -296,6 +296,62 @@ main { flex: 1; }
 }
 .footer-right a:hover { color: var(--primary); }
 
+.footer-right a.developed-by {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: #94a3b8;
+    transition: all 0.15s ease;
+}
+.footer-right a.developed-by:hover {
+    color: #0078d4;
+    background: #eff6ff;
+}
+
+/* Sidebar credit link (staff/admin sidebar footer) */
+.sidebar-credit-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin-top: 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.sidebar-credit-link:hover {
+    color: #0078d4;
+    background: #eff6ff;
+}
+
+/* Version badge next to credits */
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: all 0.15s ease;
+    cursor: default;
+}
+.version-badge:hover {
+    color: #059669;
+    background: #ecfdf5;
+}
+
+/* Sidebar: space between credit link and version badge */
+.sidebar-credit-link + .version-badge {
+    margin-left: 8px;
+}
+
 .footer-brand {
     display: inline-flex;
     align-items: center;
@@ -328,6 +384,184 @@ main { flex: 1; }
     border: none !important;
 }
 .toast-body { font-weight: 500; }
+
+/* ── Notification Banner (floating overlay) ── */
+.msg-banner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    padding: 8px 16px 0;
+    pointer-events: none;
+}
+
+/* When placed under a sticky navbar (patient side) */
+.msg-banner-container.under-navbar {
+    top: 56px;
+    z-index: 999;
+}
+
+/* When placed under a fixed topbar (staff/admin side) */
+.msg-banner-container.under-topbar {
+    top: 65px;
+    z-index: 50;
+}
+
+.msg-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    min-height: 0;
+    max-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    transform: translateY(-120%);
+    width: 100%;
+    max-width: 520px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    transition: opacity 0.35s ease,
+                transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                max-height 0.35s ease,
+                padding 0.35s ease;
+}
+
+.msg-banner.success-anim {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 48px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.msg-banner.dismissing {
+    opacity: 0;
+    transform: translateY(-120%);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.msg-banner-success {
+    background: linear-gradient(135deg, #059669, #10b981);
+}
+
+.msg-banner-danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.msg-banner-warning {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+}
+
+.msg-banner-info {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+.msg-banner-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.msg-banner-icon svg {
+    width: 13px;
+    height: 13px;
+}
+
+.msg-banner-text {
+    flex: 1;
+    line-height: 1.3;
+    font-weight: 450;
+    letter-spacing: 0.01em;
+}
+
+.msg-banner-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0.5;
+    margin-right: -4px;
+}
+
+.msg-banner-close:hover {
+    opacity: 1;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.msg-banner-close svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ── Dismiss All button ── */
+.msg-banner-dismiss-all-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 4px 24px 8px;
+    background: linear-gradient(180deg, var(--surface), var(--surface-alt));
+    border-bottom: 1px solid var(--border);
+    animation: dismissAllFadeIn 0.3s ease forwards;
+}
+
+.msg-banner-dismiss-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.2px;
+}
+
+.msg-banner-dismiss-all-btn:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.msg-banner-dismiss-all-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+@keyframes dismissAllFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Buttons ── */
 .btn {

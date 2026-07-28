@@ -73,11 +73,77 @@
   setInterval(fetchSidebarCounts, 15000);
 })();
 
-// Toast initialization
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.toast').forEach(el => {
-    new bootstrap.Toast(el).show();
+// ═══════════════════════════════════════════════════════════════════
+// Notification Banner Management — dismiss, dismiss-all, stacking
+// ═══════════════════════════════════════════════════════════════════
+
+// Dismiss a single banner with smooth animated collapse
+window.dismissBanner = function(el, removeImmediate) {
+  if (!el || el.classList.contains('dismissing')) return;
+  el.classList.add('dismissing');
+  var container = el.closest('.msg-banner-container');
+  setTimeout(function() {
+    el.remove();
+    // Remove dismiss-all button if no banners remain
+    if (container && !container.querySelector('.msg-banner')) {
+      var da = container.querySelector('.msg-banner-dismiss-all-wrap');
+      if (da) da.remove();
+    }
+  }, 350);
+}
+
+// Dismiss all banners with staggered animation
+window.dismissAllBanners = function() {
+  var container = document.querySelector('.msg-banner-container');
+  if (!container) return;
+  var banners = container.querySelectorAll('.msg-banner');
+  // Hide dismiss-all button immediately
+  var da = container.querySelector('.msg-banner-dismiss-all-wrap');
+  if (da) da.style.display = 'none';
+  // Dismiss each banner with staggered delay
+  banners.forEach(function(el, idx) {
+    setTimeout(function() {
+      window.dismissBanner(el);
+    }, idx * 80);
   });
+}
+
+// Auto-initialize banners on page load
+window.initBanners = function() {
+  var container = document.querySelector('.msg-banner-container');
+  if (!container) return;
+  var banners = container.querySelectorAll('.msg-banner');
+  if (!banners.length) return;
+
+  // Add animation class to each banner with staggered delay
+  banners.forEach(function(el, idx) {
+    setTimeout(function() {
+      el.classList.add('success-anim');
+    }, idx * 100);
+  });
+
+  // Show dismiss-all button if multiple banners
+  if (banners.length > 1) {
+    var daWrap = document.createElement('div');
+    daWrap.className = 'msg-banner-dismiss-all-wrap';
+    daWrap.innerHTML = '<button class="msg-banner-dismiss-all-btn" onclick="dismissAllBanners()">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+      + '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      + 'Dismiss All (' + banners.length + ')'
+      + '</button>';
+    container.appendChild(daWrap);
+  }
+
+  // Auto-dismiss each banner after 2 seconds
+  banners.forEach(function(el) {
+    setTimeout(function() {
+      window.dismissBanner(el);
+    }, 2000);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  window.initBanners();
 });
 
 // ── Global Toast Notification ──

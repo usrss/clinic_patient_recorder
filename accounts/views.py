@@ -54,6 +54,11 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
 
+    # Show logout success banner if redirected from logout, then strip param
+    if request.GET.get('logged_out'):
+        messages.success(request, 'You have been logged out successfully.')
+        return redirect('accounts:login')
+
     form = LoginForm(request, data=request.POST or None)
 
     failed_attempts_remaining = None
@@ -514,15 +519,17 @@ def logout_view(request):
     if request.method != 'POST':
         return redirect('accounts:dashboard')
     user = request.user
-    log_auth_event(
-        user=user,
-        action='LOGOUT',
-        description=f'Logout — {user.get_full_name() or user.username}',
-        status='SUCCESS',
-        request=request,
-    )
+    if user.is_authenticated:
+        log_auth_event(
+            user=user,
+            action='LOGOUT',
+            description=f'Logout — {user.get_full_name() or user.username}',
+            status='SUCCESS',
+            request=request,
+        )
     logout(request)
-    return redirect('accounts:login')
+    # Use query param since logout flushes the session (messages would be lost)
+    return redirect(reverse('accounts:login') + '?logged_out=1')
 
 
 @login_required

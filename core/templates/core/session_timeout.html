@@ -118,10 +118,10 @@ function performLogout() {
         'X-Requested-With': 'XMLHttpRequest'
       }
     }).catch(function() {}).finally(function() {
-      window.location.href = LOGIN_URL;
+      window.location.href = LOGIN_URL + '?logged_out=1';
     });
   } else {
-    window.location.href = LOGIN_URL;
+    window.location.href = LOGIN_URL + '?logged_out=1';
   }
 }
 
