@@ -18,7 +18,7 @@ def _base_template(user):
     if user.role == 'admin':
         return 'core/base_admin.html'
     return 'core/base_staff.html'
-from certificates.services.docx_export import generate_certificate_docx_bytes, CertificateDocxError
+from certificates.services.docx_export import generate_certificate_docx_bytes, CertificateDocxError, get_docx_placeholders
 from certificates.services.pdf_export import convert_docx_bytes_to_pdf, CertificatePdfError
 
 
@@ -147,10 +147,29 @@ def wizard_details(request, pk):
     )
     consultation = certificate.consultation
 
+    # Determine which form fields are needed based on the actual .docx template
+    # (the .docx files are the authoritative templates).
+    docx_placeholders = get_docx_placeholders(certificate.certificate_type)
+
+    # Map docx placeholders to form sections
+    # Only show fields whose placeholders actually exist in the .docx template
+    show_rest_period = bool(docx_placeholders & {'rest_from', 'rest_to', 'rest_date'})
+    show_ojt = bool(docx_placeholders & {'work_assessment', 'return_date', 'restrictions'})
+    show_activities = bool(docx_placeholders & {'activity_name', 'fitness_status'})
+    show_place = 'place' in docx_placeholders
+    show_remarks = 'remarks' in docx_placeholders
+    show_diagnosis = 'diagnosis' in docx_placeholders
+
     form = CertificateDetailsForm(
         request.POST or None,
         instance=certificate,
         cert_type=certificate.certificate_type,
+        needs_rest_period=show_rest_period,
+        needs_ojt=show_ojt,
+        needs_activities=show_activities,
+        needs_place=show_place,
+        needs_remarks=show_remarks,
+        needs_diagnosis=show_diagnosis,
     )
 
     if request.method == 'POST' and form.is_valid():
@@ -162,6 +181,11 @@ def wizard_details(request, pk):
         'certificate': certificate,
         'consultation': consultation,
         'form': form,
+        'show_rest_period': show_rest_period,
+        'show_ojt': show_ojt,
+        'show_activities': show_activities,
+        'show_place': show_place,
+        'show_remarks': show_remarks,
         'base_template': _base_template(request.user),
     })
 

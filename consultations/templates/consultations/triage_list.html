@@ -65,8 +65,11 @@
     color: #fff; background: #0078d4;
     text-decoration: none; border: none;
     transition: background 0.15s; white-space: nowrap;
+    min-height: 34px;
+    -webkit-tap-highlight-color: transparent;
   }
   .triage-btn:hover { background: #006cbd; color: #fff; }
+  .triage-btn:active { background: #005a9e; transform: scale(0.96); }
 
   .vitals-cell { font-size: 12px; color: #6b7280; line-height: 1.7; }
   .vitals-cell strong { color: #1a1a2e; }
@@ -78,7 +81,31 @@
   }
   .empty-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 5px; }
   .empty-sub { font-size: 13px; color: #94a3b8; }
-  .table-scroll { overflow-x: auto; }
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Responsive: hide less important columns on mobile ── */
+  @media (max-width: 768px) {
+    .q-table th:nth-child(3),  /* Patient ID */
+    .q-table td:nth-child(3) { display: none; }
+    .q-table th:nth-child(4),  /* Queue / Schedule */
+    .q-table td:nth-child(4) { display: none; }
+    .q-table th:nth-child(5),  /* Symptoms */
+    .q-table td:nth-child(5) { display: none; }
+    .q-table th:nth-child(6),  /* Submitted */
+    .q-table td:nth-child(6) { display: none; }
+    .triage-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      min-height: 40px;
+      min-width: 90px;
+      justify-content: center;
+    }
+    .q-table td { padding: 10px 12px; }
+    .q-table th { padding: 8px 12px; }
+  }
 </style>
 {% endblock %}
 
@@ -107,7 +134,7 @@
       </thead>
       <tbody>
         {% for c in consultations %}
-        <tr>
+        <tr onclick="window.location='{% url 'consultations:triage_form' c.pk %}';" style="cursor:pointer;">
           <td>
             {% if c.pk in follow_up_consultation_ids %}
             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
@@ -129,7 +156,9 @@
           <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
           <td style="font-size:13px;color:#6b7280;">
             <span class="status-badge {% if c.status == 'queued' %}status-queued{% else %}status-scheduled{% endif %}">
-              <ion-icon name="{% if c.status == 'queued' %}folder-outline{% else %}calendar-outline{% endif %}" style="font-size:11px;"></ion-icon>
+              {% if c.queue_number %}<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              {% elif c.scheduled_at %}<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {% endif %}
               {% if c.queue_number %}#{{ c.queue_number }}
               {% elif c.scheduled_at %}{{ c.scheduled_at|date:"M d, H:i" }}
               {% else %}—{% endif %}
@@ -140,7 +169,7 @@
           </td>
           <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
           <td>
-            <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn">
+            <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn" onclick="event.stopPropagation();">
               Triage
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
             </a>

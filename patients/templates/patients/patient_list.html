@@ -113,12 +113,15 @@
   }
   .view-btn {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 12px; border-radius: 7px;
-    font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
     color: #374151; background: #f3f4f6;
     border: 1px solid #e5e7eb; text-decoration: none; transition: all 0.15s;
+    min-height: 36px; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
   }
   .view-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #0078d4; }
+  .view-btn:active { background: #dbeafe; transform: scale(0.96); }
 
   .empty-state { padding: 56px 24px; text-align: center; }
   .empty-icon {
@@ -128,7 +131,49 @@
   }
   .empty-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
   .empty-sub { font-size: 12px; color: #94a3b8; }
-  .table-scroll { overflow-x: auto; }
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Responsive: hide less important columns on small screens ── */
+  @media (max-width: 768px) {
+    .pt-table th:nth-child(4),  /* Age */
+    .pt-table td:nth-child(4) {
+      display: none;
+    }
+    .pt-table th:nth-child(5),  /* College / Dept */
+    .pt-table td:nth-child(5) {
+      display: none;
+    }
+    .pt-table th:nth-child(2),  /* Patient ID */
+    .pt-table td:nth-child(2) {
+      display: none;
+    }
+    /* Make remaining columns fill space better */
+    .pt-table th:last-child,
+    .pt-table td:last-child {
+      text-align: right;
+      padding-right: 16px;
+    }
+    .view-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      min-height: 40px;
+      min-width: 72px;
+      justify-content: center;
+    }
+    .pt-table td { padding: 10px 12px; }
+    .pt-table th { padding: 8px 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .pt-table th:nth-child(6),  /* Status */
+    .pt-table td:nth-child(6) {
+      display: none;
+    }
+    .view-btn svg { display: none; }
+  }
   .sec-heading {
     font-size: 11px; font-weight: 700; color: #94a3b8;
     text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
@@ -211,7 +256,7 @@
       </thead>
       <tbody>
         {% for patient in patients %}
-        <tr>
+        <tr onclick="window.location='{% url 'patients:patient_detail' patient.pk %}';" style="cursor:pointer;">
           <td>
             <div class="pt-name-cell">
               <div class="pt-avatar" style="{% if patient.is_archived %}background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;{% endif %}">{{ patient.get_full_name|first|upper }}</div>
@@ -249,7 +294,7 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'patients:patient_detail' patient.pk %}" class="view-btn">
+            <a href="{% url 'patients:patient_detail' patient.pk %}" class="view-btn" onclick="event.stopPropagation();">
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               View
             </a>

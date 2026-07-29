@@ -108,8 +108,8 @@
         <div class="form-hint">Pre-filled from the consultation prescription. Edit if needed.</div>
       </div>
 
-      {# Absences: Rest Period #}
-      {% if certificate.certificate_type == 'absences' %}
+      {# Rest Period — only shown if template body contains {rest_from} or {rest_to} #}
+      {% if show_rest_period %}
       <div class="form-group">
         <label class="form-label">Rest Period</label>
         <div class="field-row">
@@ -127,8 +127,8 @@
       </div>
       {% endif %}
 
-      {# OJT #}
-      {% if certificate.certificate_type == 'ojt' %}
+      {# Fit-to-Work / OJT — only shown if template body contains {work_assessment} or {return_date} #}
+      {% if show_ojt %}
       <div class="form-group">
         <label class="form-label">Assessment <span class="req">*</span></label>
         {{ form.work_assessment }}
@@ -146,8 +146,8 @@
       </div>
       {% endif %}
 
-      {# Activities #}
-      {% if certificate.certificate_type == 'activities' %}
+      {# Activities — only shown if template body contains {activity_name} or {fitness_status} #}
+      {% if show_activities %}
       <div class="form-group">
         <label class="form-label">Activity / Event Name <span class="req">*</span></label>
         {{ form.activity_name }}
@@ -161,20 +161,24 @@
       </div>
       {% endif %}
 
-      {# Remarks — always shown #}
+      {# Remarks — only shown if template body contains {remarks} #}
+      {% if show_remarks %}
       <div class="form-group">
         <label class="form-label">Remarks</label>
         {{ form.remarks }}
         <div class="form-hint">Optional additional notes</div>
       </div>
+      {% endif %}
 
-      {# Place of Issuance — always shown #}
+      {# Place of Issuance — only shown if template body contains {place} #}
+      {% if show_place %}
       <div class="form-group">
         <label class="form-label">Place of Issuance</label>
         {{ form.place }}
         {% if form.place.errors %}<div class="form-error">{{ form.place.errors.0 }}</div>{% endif %}
         <div class="form-hint">Location where this certificate is being issued</div>
       </div>
+      {% endif %}
 
       <div class="btn-row">
         <a href="{% url 'consultations:completion_summary' consultation.pk %}" class="btn btn-secondary">&larr; Back to Summary</a>

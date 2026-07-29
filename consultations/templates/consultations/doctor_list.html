@@ -57,8 +57,11 @@
     color: #fff; background: #7c3aed;
     text-decoration: none; border: none;
     transition: background 0.15s; white-space: nowrap;
+    min-height: 34px;
+    -webkit-tap-highlight-color: transparent;
   }
   .prescribe-btn:hover { background: #6d28d9; color: #fff; }
+  .prescribe-btn:active { background: #5b21b6; transform: scale(0.96); }
 
   .vitals-cell { font-size: 12px; color: #6b7280; line-height: 1.7; }
   .vitals-cell strong { color: #1a1a2e; }
@@ -70,7 +73,31 @@
   }
   .empty-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 5px; }
   .empty-sub { font-size: 13px; color: #94a3b8; }
-  .table-scroll { overflow-x: auto; }
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Responsive: hide less important columns on mobile ── */
+  @media (max-width: 768px) {
+    .q-table th:nth-child(1),  /* # */
+    .q-table td:nth-child(1) { display: none; }
+    .q-table th:nth-child(3),  /* Patient ID */
+    .q-table td:nth-child(3) { display: none; }
+    .q-table th:nth-child(5),  /* Vitals */
+    .q-table td:nth-child(5) { display: none; }
+    .q-table th:nth-child(7),  /* Triaged */
+    .q-table td:nth-child(7) { display: none; }
+    .prescribe-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      min-height: 40px;
+      min-width: 100px;
+      justify-content: center;
+    }
+    .q-table td { padding: 10px 12px; }
+    .q-table th { padding: 8px 12px; }
+  }
 </style>
 {% endblock %}
 
@@ -100,7 +127,7 @@
       </thead>
       <tbody>
         {% for c in consultations %}
-        <tr>
+        <tr onclick="window.location='{% url 'consultations:prescribe' c.pk %}';" style="cursor:pointer;">
           <td style="color:#94a3b8;font-size:11px;font-weight:600;">{{ c.pk }}</td>
           <td>
             <div class="patient-name">{{ c.patient.get_full_name }}</div>
@@ -114,11 +141,11 @@
           <td>
             {% with tc=c.triages.first %}{% if tc %}
               {% if tc.urgency == 'high' %}
-                <span class="urgency-badge urgency-high"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> High</span>
+                <span class="urgency-badge urgency-high"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> High</span>
               {% elif tc.urgency == 'medium' %}
-                <span class="urgency-badge urgency-med"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> Medium</span>
+                <span class="urgency-badge urgency-med"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> Medium</span>
               {% else %}
-                <span class="urgency-badge urgency-low"><ion-icon name="ellipse" style="font-size:8px;"></ion-icon> Low</span>
+                <span class="urgency-badge urgency-low"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> Low</span>
               {% endif %}
             {% else %}—{% endif %}{% endwith %}
           </td>
@@ -136,7 +163,7 @@
             {% with tc=c.triages.first %}{% if tc %}{{ tc.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}{% endwith %}
           </td>
           <td>
-            <a href="{% url 'consultations:prescribe' c.pk %}" class="prescribe-btn">
+            <a href="{% url 'consultations:prescribe' c.pk %}" class="prescribe-btn" onclick="event.stopPropagation();">
               Prescribe
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
             </a>

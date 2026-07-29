@@ -181,18 +181,22 @@ MESSAGE_TAGS = {
 }
 
 # ── Production security settings ────────────────────────────────────────
-# These are safe to always have enabled; they only activate when DEBUG=False
-# and the request is served over HTTPS.
+# For local-network HTTP deployments (Docker, no domain, no HTTPS), these
+# default to safe HTTP-friendly values. Override via .env if deploying
+# behind a real HTTPS proxy.
 #
-# For local-network HTTP deployments (Docker, no domain, no HTTPS), set the
-# env vars below explicitly to False to avoid cookie/redirect issues.
+# IMPORTANT: When DEBUG=False, cookies default to Secure=True which breaks
+# HTTP access. Set SESSION_COOKIE_SECURE=0 and CSRF_COOKIE_SECURE=0 in .env
+# if you are NOT using HTTPS.
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
-SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=not DEBUG, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
-CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=not DEBUG, cast=bool)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=not DEBUG, cast=bool)
-SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=not DEBUG, cast=bool)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+# Only trust X-Forwarded-Proto when behind a proxy. Avoids false HTTPS
+# detection from browser extensions or Docker networking quirks.
+SECURE_PROXY_SSL_HEADER = config('SECURE_PROXY_SSL_HEADER', default=None, cast=lambda v: ('HTTP_X_FORWARDED_PROTO', 'https') if v and v not in ('0', 'false', 'False') else None)
 
 # ── Session & idle timeout ────────────────────────────────────────────────
 # Server-side session expiry. Must be >= IDLE_SESSION_TIMEOUT_MINUTES so the

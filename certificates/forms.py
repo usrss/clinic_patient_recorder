@@ -51,29 +51,34 @@ class CertificateDetailsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.cert_type = kwargs.pop('cert_type', MedicalCertificate.CertificateType.ABSENCES)
+        self.needs_rest_period = kwargs.pop('needs_rest_period', True)
+        self.needs_ojt = kwargs.pop('needs_ojt', False)
+        self.needs_activities = kwargs.pop('needs_activities', False)
+        self.needs_place = kwargs.pop('needs_place', True)
+        self.needs_remarks = kwargs.pop('needs_remarks', True)
+        self.needs_diagnosis = kwargs.pop('needs_diagnosis', True)
         super().__init__(*args, **kwargs)
         for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'fitness_status', 'place']:
             self.fields[f].required = False
 
     def clean(self):
         cleaned = super().clean()
-        ct = self.cert_type
         rf = cleaned.get('rest_from')
         rt = cleaned.get('rest_to')
 
-        if ct == MedicalCertificate.CertificateType.ABSENCES:
+        if self.needs_rest_period:
             if not rf:
-                self.add_error('rest_from', 'Rest start date is required for medical certificates.')
+                self.add_error('rest_from', 'Rest start date is required.')
             if not rt:
-                self.add_error('rest_to', 'Rest end date is required for medical certificates.')
+                self.add_error('rest_to', 'Rest end date is required.')
 
-        if ct == MedicalCertificate.CertificateType.OJT:
+        if self.needs_ojt:
             if not cleaned.get('work_assessment'):
                 self.add_error('work_assessment', 'Assessment is required.')
             if not cleaned.get('return_date'):
                 self.add_error('return_date', 'Return date is required.')
 
-        if ct == MedicalCertificate.CertificateType.ACTIVITIES:
+        if self.needs_activities:
             if not cleaned.get('activity_name', '').strip():
                 self.add_error('activity_name', 'Activity name is required.')
             if not cleaned.get('fitness_status'):
@@ -82,7 +87,7 @@ class CertificateDetailsForm(forms.ModelForm):
         if rf and rt and rt < rf:
             self.add_error('rest_to', 'End date must be after start date.')
 
-        if not cleaned.get('diagnosis', '').strip():
+        if self.needs_diagnosis and not cleaned.get('diagnosis', '').strip():
             self.add_error('diagnosis', 'Diagnosis is required.')
 
         return cleaned

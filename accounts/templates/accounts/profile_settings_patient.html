@@ -169,8 +169,8 @@
 
         {% endif %}
 
-        <button type="submit" name="save_info" id="saveProfileBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;">
-          <ion-icon name="checkmark-outline"></ion-icon>
+        <button type="submit" name="save_info" id="saveProfileBtn" class="btn-save" style="width:auto;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Save Profile
         </button>
       </form>
@@ -192,9 +192,9 @@
             <div style="position:relative;display:flex;align-items:center;max-width:420px;">
               {{ field }}
               {% if field.field.widget.input_type == 'password' %}
-              <button type="button" aria-label="Toggle password" onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;padding:6px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:all 0.15s;" onmouseover="this.style.color='#475569';this.style.background='#f1f5f9'" onmouseout="this.style.color='#94a3b8';this.style.background='none'">
-                <ion-icon name="eye-outline" class="icon-eye" style="font-size:20px;"></ion-icon>
-                <ion-icon name="eye-off-outline" class="icon-eye-off" style="font-size:20px;display:none;"></ion-icon>
+              <button type="button" aria-label="Toggle password" onclick="togglePw(this)" class="pw-toggle">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="icon-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="icon-eye-off" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg>
               </button>
               {% endif %}
             </div>
@@ -208,7 +208,7 @@
 
       <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid #f1f5f9;flex-wrap:wrap;">
         <button type="submit" form="passwordForm" name="save_password" id="changePwBtn" style="padding:12px 24px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;">
-          <ion-icon name="lock-closed-outline"></ion-icon>
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Change Password
         </button>
 

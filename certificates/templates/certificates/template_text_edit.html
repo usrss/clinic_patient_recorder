@@ -72,33 +72,50 @@
   <div class="example-section">
     <h3>Example — {{ slot.get_cert_type_label }} Template</h3>
     {% if slot.certificate_type == 'absences' %}
-    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}was examined and treated at this clinic on {exam_date}.
+    <div class="example-body">This is to certify that {patient_name}, {age} years old and a {course} student in this campus, was examined and treated at this clinic on {exam_date}.
 
-Diagnosis: {diagnosis}
+Diagnosis:
+• {diagnosis}
 
 The patient is advised to rest from {rest_from} to {rest_to}.
 
-This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+Remarks:
+{remarks}
+
+Given this {day} day of {month}, {year} at {place}, for whatever legal purpose it may serve.</div>
     {% elif slot.certificate_type == 'ojt' %}
-    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {position_info}has been examined and found to be PHYSICALLY FIT to return to work.
+    <div class="example-body">This is to certify that {patient_name}, {age} years old and a {course} student in this campus, has been examined and found to be PHYSICALLY FIT to return to On-the-Job Training (OJT).
 
 Assessment: {work_assessment}
 
-Findings: {diagnosis}
+Findings:
+• {diagnosis}
 
-This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+Recommended Return Date: {return_date}
+
+Restrictions/Limitations:
+{restrictions}
+
+Given this {day} day of {month}, {year} at {place}, for whatever legal purpose it may serve.
+
+Remarks:
+{remarks}</div>
     {% elif slot.certificate_type == 'activities' %}
-    <div class="example-body">This is to certify that {patient_name}, {age} years of age, {sex}, {college_info}has been examined and found to be PHYSICALLY FIT to participate in:
+    <div class="example-body">This is to certify that {patient_name}, {age} years old and a {course} student in this campus, has been examined and found to be PHYSICALLY FIT to participate in:
 
 {activity_name}
 
 Fitness Status: {fitness_status}
 
-Findings: {diagnosis}
+Findings:
+• {diagnosis}
 
-This certificate is issued upon the request of the patient for whatever legal purpose it may serve.</div>
+Given this {day} day of {month}, {year} at {place}, for whatever legal purpose it may serve.
+
+Remarks:
+{remarks}</div>
     {% endif %}
-    <div class="example-note">Use blank lines between paragraphs to create separate paragraphs in the printed certificate. The Remarks field from the certificate form is appended automatically after the body text.</div>
+    <div class="example-note">Use blank lines between paragraphs to create spacing in the printed certificate. Any {placeholder} tokens included above will be replaced with actual data from the form. Tokens not present in the body text will not show corresponding form fields. The form dynamically adapts to match which placeholders you use.</div>
   </div>
 
   <!-- Placeholder reference -->

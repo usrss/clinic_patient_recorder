@@ -1,11 +1,14 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic.base import RedirectView
 from core.views import home
 
 urlpatterns = [
     path('', home, name='home'),
+    # Redirect /favicon.ico to static logo (browsers auto-request this at root)
+    re_path(r'^favicon\.ico$', RedirectView.as_view(url=settings.STATIC_URL + 'core/images/norsu-logo.png', permanent=True)),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('inventory/', include('inventory.urls', namespace='inventory')),
