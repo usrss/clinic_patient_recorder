@@ -24,8 +24,8 @@
       </span>
       <span class="brand-text">NORSU Clinic – BSC Campus</span>
     </a>
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#homeNav">
-      <span class="navbar-toggler-icon"></span>
+    <button class="navbar-toggler home-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#homeNav" aria-label="Toggle navigation">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <div class="collapse navbar-collapse" id="homeNav">
       <ul class="navbar-nav ms-auto align-items-center">
@@ -65,7 +65,7 @@
       <div class="hero-cta">
         <a href="{% url 'accounts:register' %}" class="btn btn-ghost btn-lg">Create Account</a>
         <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">Sign In</a>
-        <a href="#features" class="btn btn-ghost btn-lg">Explore Features</a>
+        <a href="#features" class="hero-link">Explore Features &rarr;</a>
       </div>
 
       <div class="hero-divider" aria-hidden="true">
@@ -78,13 +78,22 @@
       </div>
 
       <div class="hero-meta">
-        <span>Patient Records</span>
-        <span class="sep">·</span>
-        <span>Consultations</span>
-        <span class="sep">·</span>
-        <span>E-Prescriptions</span>
-        <span class="sep">·</span>
-        <span>History Tracking</span>
+        <span class="meta-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Records
+        </span>
+        <span class="meta-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Consultations
+        </span>
+        <span class="meta-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          E-Prescriptions
+        </span>
+        <span class="meta-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          History
+        </span>
       </div>
 
     </div>

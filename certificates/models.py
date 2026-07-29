@@ -193,7 +193,7 @@ class MedicalCertificate(models.Model):
 
         # ── Doctor info ────────────────────────────────────────────────
         if self.doctor:
-            doctor_name = f"Dr. {self.doctor.get_full_name() or self.doctor.username}"
+            doctor_name = self.doctor.get_full_name() or self.doctor.username
         else:
             doctor_name = 'Attending Physician'
 
@@ -211,7 +211,7 @@ class MedicalCertificate(models.Model):
         respiratory_rate = str(latest_triage.respiratory_rate) if latest_triage and latest_triage.respiratory_rate else ''
 
         return {
-            'patient_name': patient.get_full_name(),
+            'patient_name': patient.get_full_name().title(),
             'age': self._resolve_placeholder('age', patient.age, '—'),
             'sex': self._resolve_placeholder('sex', patient.get_sex_display().lower(), ''),
             'college_info': college_info,

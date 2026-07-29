@@ -51,7 +51,7 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     padding: 0;
-    height: 64px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     position: sticky;
@@ -60,7 +60,13 @@
     box-shadow: var(--shadow-sm);
 }
 
-.home-navbar .container { height: 100%; display: flex; align-items: center; }
+.home-navbar .container {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    position: relative; /* anchors the mobile dropdown panel */
+    flex-wrap: nowrap;
+}
 
 .home-navbar .navbar-brand {
     display: flex;
@@ -109,6 +115,25 @@
     background: var(--primary-subtle);
 }
 
+/* ── Simplified hamburger toggler ── */
+.home-toggler {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+.home-toggler:hover { color: var(--text); background: var(--surface-alt); }
+.home-toggler:focus { outline: none; box-shadow: none; }
+
 .home-navbar .btn-primary {
     padding: 8px 20px;
     border-radius: var(--radius);
@@ -144,6 +169,55 @@
     border-color: var(--primary);
     color: var(--primary);
     background: var(--primary-subtle);
+}
+
+/* ── Mobile nav dropdown (fixes overlap bug) ──
+   On < lg, Bootstrap's .navbar-collapse.show becomes display:block
+   inside a flex row, which used to overflow the 64px header and
+   float on top of the hero text. Pulling it out of flow into an
+   absolutely-positioned, opaque panel fixes that. */
+@media (max-width: 991.98px) {
+    .home-navbar .navbar-collapse {
+        position: absolute;
+        top: calc(100% + 1px);
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
+        padding: 12px 20px 20px;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+        z-index: 1001;
+    }
+
+    .home-navbar .navbar-nav {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 4px;
+        margin: 0 !important;
+    }
+
+    .home-navbar .navbar-nav .nav-item {
+        width: 100%;
+    }
+
+    .home-navbar .nav-link-pill {
+        width: 100%;
+        padding: 11px 14px;
+    }
+
+    .home-navbar .navbar-nav .nav-item.ms-lg-3,
+    .home-navbar .navbar-nav .nav-item.ms-lg-2 {
+        margin-left: 0 !important;
+        margin-top: 8px;
+    }
+
+    .home-navbar .navbar-nav .nav-item.ms-lg-3 .btn,
+    .home-navbar .navbar-nav .nav-item.ms-lg-2 .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* ── Hero Section ── */
@@ -282,6 +356,30 @@
     color: var(--primary);
     transform: translateY(-1px);
     box-shadow: var(--shadow);
+}
+
+/* "Explore Features" — was a bare, unstyled <a> that inherited plain
+   link styles and read as body text. Give it real button affordance. */
+.hero-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius-full);
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--primary-subtle);
+    border: 1px solid rgba(0, 120, 212, 0.15);
+    transition: var(--transition);
+}
+.hero-link:hover {
+    background: #e0eefc;
+    border-color: rgba(0, 120, 212, 0.3);
+    color: var(--primary-dark);
+    gap: 9px;
+    transform: translateY(-1px);
 }
 
 /* Decorative divider */
@@ -646,9 +744,27 @@
 
 @media (max-width: 767.98px) {
     .hero-section { padding: 60px 0 70px; }
+    .home-navbar .container,
+    .hero-section .container,
+    .features-section .container,
+    .about-section .container,
+    .contact-section .container,
+    .cta-section .container {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
     .hero-center h1 { font-size: 2.25rem; }
     .hero-sub { font-size: 15px; }
-    .hero-cta .btn { width: 100%; justify-content: center; }
+    .hero-cta {
+        flex-direction: column;
+        align-items: stretch;
+        max-width: 320px;
+        margin: 0 auto 52px;
+    }
+    .hero-cta .btn {
+        width: 100%;
+        justify-content: center;
+    }
     .hero-meta { gap: 8px; font-size: 12px; }
     .hero-meta .sep { display: none; }
     .section-header h2 { font-size: 1.75rem; }
