@@ -230,7 +230,19 @@ function goNext(step) {
       const yearEl = document.getElementById('id_year_level');
       if (!yearEl.value) { showErr('year_level', true); yearEl.classList.add('error'); valid = false; }
       else { showErr('year_level', false); yearEl.classList.remove('error'); }
+    } else if (role === 'faculty') {
+      // Faculty needs both college and department
+      const col = document.getElementById('id_college');
+      if (!col.value) { showErr('college', true); col.classList.add('error'); valid = false; }
+      else { showErr('college', false); col.classList.remove('error'); }
+      const dept = document.getElementById('id_department');
+      if (!dept.value.trim()) { showErr('department', true); dept.classList.add('error'); valid = false; }
+      else { showErr('department', false); dept.classList.remove('error'); }
+      // Clear course and year errors if switching from student
+      showErr('course', false);
+      showErr('year_level', false);
     } else {
+      // Staff only needs department
       const dept = document.getElementById('id_department');
       if (!dept.value.trim()) { showErr('department', true); dept.classList.add('error'); valid = false; }
       else { showErr('department', false); dept.classList.remove('error'); }
@@ -439,16 +451,18 @@ function verifyOtp() {
 function updateRoleFields() {
   const role = document.getElementById('id_role').value;
   const isStudent = role === 'student';
-  document.getElementById('field-college').style.display    = isStudent ? '' : 'none';
+  const isFaculty = role === 'faculty';
+  const showCollege = isStudent || isFaculty;
+  document.getElementById('field-college').style.display    = showCollege ? '' : 'none';
   document.getElementById('field-year').style.display       = isStudent ? '' : 'none';
   document.getElementById('field-department').style.display = isStudent ? 'none' : '';
   document.getElementById('field-position').style.display   = isStudent ? 'none' : '';
   const fieldCourse = document.getElementById('field-course');
   if (fieldCourse) fieldCourse.style.display = isStudent ? '' : 'none';
 
-  document.getElementById('id_college').required    = isStudent;
+  document.getElementById('id_college').required    = showCollege;
   document.getElementById('id_department').required = !isStudent;
-  if (isStudent) loadCourses();
+  if (showCollege) loadCourses();
 }
 
 // ── Load courses dynamically when college changes ──────────────────────
@@ -460,11 +474,12 @@ function loadCourses() {
 
   courseSelect.innerHTML = '<option value="">Select Course</option>';
 
+  var role = document.getElementById('id_role').value;
   if (!collegeId) {
     if (fieldCourse) fieldCourse.style.display = 'none';
     return;
   }
-  if (fieldCourse) fieldCourse.style.display = '';
+  if (fieldCourse) fieldCourse.style.display = (role === 'student' && collegeId) ? '' : 'none';
 
   fetch(REGISTER_COURSES_URL + '?college_id=' + collegeId)
     .then(r => r.json())

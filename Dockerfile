@@ -50,4 +50,4 @@ RUN python manage.py collectstatic --noinput --clear
 # ── Runtime ───────────────────────────────────────────────────────────────
 # Gunicorn listens on 0.0.0.0:8000 (inside the container). The host port
 # mapping is defined in docker-compose.yml.
-CMD ["gunicorn", "main.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["gunicorn", "main.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]

@@ -165,7 +165,7 @@
         <!-- Academic Info -->
         <div class="sec-label sec-label-gap">Academic &amp; Employment Info</div>
 
-        <div class="form-group" id="field-college" {% if form.role.value != 'student' %}style="display:none;"{% endif %}>
+        <div class="form-group" id="field-college" {% if form.role.value == 'staff' %}style="display:none;"{% endif %}>
           <label for="id_college">College <span class="req">*</span></label>
           <select id="id_college" name="college" class="reg-input" onchange="loadCourses()">
             <option value=""> Select College </option>
@@ -469,7 +469,24 @@
         } else if (yearEl) {
           yearEl.classList.remove('error');
         }
-      } else if (role === 'faculty' || role === 'staff') {
+      } else if (role === 'faculty') {
+        // Faculty needs both college and department
+        const collegeEl = document.getElementById('id_college');
+        if (collegeEl && !collegeEl.value) {
+          collegeEl.classList.add('error');
+          valid = false;
+        } else if (collegeEl) {
+          collegeEl.classList.remove('error');
+        }
+        const deptEl = document.getElementById('id_department');
+        if (deptEl && !deptEl.value.trim()) {
+          deptEl.classList.add('error');
+          valid = false;
+        } else if (deptEl) {
+          deptEl.classList.remove('error');
+        }
+      } else if (role === 'staff') {
+        // Staff only needs department
         const deptEl = document.getElementById('id_department');
         if (deptEl && !deptEl.value.trim()) {
           deptEl.classList.add('error');
@@ -511,13 +528,15 @@
   function updateRoleFields() {
     const role = document.getElementById('id_role').value;
     const isStudent = role === 'student';
-    document.getElementById('field-college').style.display    = isStudent ? '' : 'none';
+    const isFaculty = role === 'faculty';
+    const showCollege = isStudent || isFaculty;
+    document.getElementById('field-college').style.display    = showCollege ? '' : 'none';
     document.getElementById('field-year').style.display       = isStudent ? '' : 'none';
     document.getElementById('field-department').style.display = isStudent ? 'none' : '';
     document.getElementById('field-position').style.display   = isStudent ? 'none' : '';
     const fieldCourse = document.getElementById('field-course');
     if (fieldCourse) fieldCourse.style.display = isStudent ? '' : 'none';
-    if (isStudent) loadCourses();
+    if (showCollege) loadCourses();
   }
 
   const COURSES_URL = '{% url "accounts:courses_by_college" %}';
@@ -528,8 +547,9 @@
     const fieldCourse = document.getElementById('field-course');
     if (!courseSelect) return Promise.resolve();
     courseSelect.innerHTML = '<option value="">Select Course</option>';
+    var role = document.getElementById('id_role').value;
     if (!collegeId) { if (fieldCourse) fieldCourse.style.display = 'none'; return Promise.resolve(); }
-    if (fieldCourse) fieldCourse.style.display = '';
+    if (fieldCourse) fieldCourse.style.display = (role === 'student' && collegeId) ? '' : 'none';
     return fetch(COURSES_URL + '?college_id=' + collegeId)
       .then(r => r.json())
       .then(data => {

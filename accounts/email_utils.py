@@ -114,7 +114,12 @@ def otp_email(otp: str, purpose: str, recipient_name: str = "") -> tuple:
       <p style="font-size:11px;color:#9ca3af;margin:0 0 20px;">
         Please do not share this code with anyone.
       </p>
-      <hr style="border:none;border-top:1px solid #e8ecf1;margin:20px 0;">
+      <p style="font-size:11px;color:#f59e0b;margin:12px 0 16px;padding:8px 12px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;">
+        &#128161; <strong>Tip:</strong> If you didn't receive this email, check your
+        <strong>Spam</strong> or <strong>Promotions</strong> folder and mark us as
+        <strong>Not Spam</strong> to ensure future deliveries.
+      </p>
+      <hr style="border:none;border-top:1px solid #e8ecf1;margin:16px 0;">
       <p style="font-size:12px;color:#9ca3af;margin:0;line-height:1.5;">
         If you did not request this code, you can safely ignore this email.
       </p>

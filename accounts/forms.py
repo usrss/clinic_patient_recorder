@@ -613,10 +613,11 @@ class RegistrationForm(forms.Form):
     weight_kg = forms.DecimalField(max_digits=5, decimal_places=1, required=False,
         validators=[MinValueValidator(10), MaxValueValidator(300)])
 
-    # College — required for student and faculty, optional for staff
+    # College — required for student and faculty (enforced in clean()),
+    # not required for staff — so field-level required must be False.
     college = forms.ModelChoiceField(
         queryset=College.objects.all().order_by('name'),
-        required=True,   # enforced conditionally in clean()
+        required=False,
         label='College',
         empty_label='Select College',
     )
@@ -631,7 +632,7 @@ class RegistrationForm(forms.Form):
             ('', ''), ('1st Year', '1st Year'), ('2nd Year', '2nd Year'),
             ('3rd Year', '3rd Year'), ('4th Year', '4th Year'),
         ],
-        required=True,
+        required=False,
         label='Year Level',
     )
 

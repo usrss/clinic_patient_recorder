@@ -23,6 +23,8 @@
   /* ── Page header ── */
   .pt-page-header {
     margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e8ecf1;
   }
   .pt-page-header h1 {
     font-size: 20px;
@@ -44,8 +46,9 @@
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin-bottom: 12px;
+    margin: 32px 0 12px;
   }
+  .sec-heading:first-of-type { margin-top: 0; }
 
   /* ── Panel ── */
   .panel {
@@ -146,6 +149,11 @@
     box-shadow: 0 4px 20px rgba(0,120,212,.25);
     color: #fff;
   }
+  /* Secondary action cards need a stronger border so they read as clickable,
+     not disabled, next to the solid-blue primary card. */
+  .action-card:not(.primary) {
+    border-color: #d5deea;
+  }
   .action-icon {
     width: 38px;
     height: 38px;
@@ -186,7 +194,7 @@
     border-bottom: 1px solid #e8ecf1;
   }
   .consult-table td {
-    padding: 11px 18px;
+    padding: 12px 18px;
     font-size: 12px;
     color: #374151;
     border-bottom: 1px solid #f5f7fa;
@@ -248,9 +256,58 @@
   .table-scroll { overflow-x: auto; }
 
   /* ── Responsive ── */
+  @media (max-width: 767.98px) {
+    /* 2-up info grid instead of a single stacked column — halves the
+       vertical scroll height of the "Your Information" card. */
+    .info-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 14px;
+    }
+  }
+
+  /* ── Consultation cards (mobile only) ──
+     A separate, genuine <div>-based rendering of the same recent-
+     consultations data used by .consult-table above. CSS display:block
+     tricks on <tr>/<td> don't reliably render border-radius/borders
+     across browsers, so mobile gets real card elements instead — same
+     data, same template loop, just a second markup path shown only
+     under 600px while the table is hidden. */
+  .consult-cards { display: none; }
+  .consult-card {
+    border: 1px solid #e8ecf1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .consult-card:last-child { margin-bottom: 0; }
+  .consult-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+  }
+  .consult-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .consult-card-value {
+    font-size: 12px;
+    color: #374151;
+    text-align: right;
+  }
+
+  /* ── Responsive ── */
   @media (max-width: 600px) {
-    .pt-page { padding: 20px 14px 40px; }
+    .pt-page { padding: 28px 14px 40px; }
     .action-grid { grid-template-columns: 1fr 1fr; }
+    .table-scroll { display: none; }
+    .consult-cards { display: block; padding: 14px; }
   }
 </style>
 {% endblock %}
@@ -415,6 +472,60 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <div class="consult-cards">
+      {% for c in recent %}
+      <div class="consult-card">
+        <div class="consult-card-row">
+          <span class="consult-card-label">#</span>
+          <span class="consult-card-value">{{ c.pk }}</span>
+        </div>
+        <div class="consult-card-row">
+          <span class="consult-card-label">Status</span>
+          <span class="consult-card-value">
+                     {% if c.status == 'pending' %}
+          <span class="status-badge s-pending">
+            <ion-icon name="time-outline"></ion-icon> Pending
+          </span>
+
+        {% elif c.status == 'queued' %}
+          <span class="status-badge s-queued">
+            <ion-icon name="list-outline"></ion-icon> Queued
+          </span>
+
+        {% elif c.status == 'scheduled' %}
+          <span class="status-badge s-scheduled">
+            <ion-icon name="calendar-outline"></ion-icon> Scheduled
+          </span>
+
+        {% elif c.status == 'triaged' %}
+          <span class="status-badge s-triaged">
+            <ion-icon name="medical-outline"></ion-icon> Triaged
+          </span>
+
+        {% elif c.status == 'completed' %}
+          <span class="status-badge s-completed">
+            <ion-icon name="checkmark-circle-outline"></ion-icon> Completed
+          </span>
+
+        {% elif c.status == 'cancelled' %}
+          <span class="status-badge s-cancelled">
+            <ion-icon name="close-circle-outline"></ion-icon> Cancelled
+          </span>
+        {% endif %}
+          </span>
+        </div>
+        <div class="consult-card-row">
+          <span class="consult-card-label">Symptoms</span>
+          <span class="consult-card-value">{{ c.symptoms|truncatechars:60 }}</span>
+        </div>
+        <div class="consult-card-row">
+          <span class="consult-card-label">Submitted</span>
+          <span class="consult-card-value">{{ c.created_at|date:"M d, Y" }}</span>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   </div>
 

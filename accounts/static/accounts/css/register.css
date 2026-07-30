@@ -453,5 +453,14 @@
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
     .role-grid { grid-template-columns: 1fr; }
     .otp-box { width: 44px; height: 50px; font-size: 18px; }
+    .otp-inputs { gap: 6px; }
+    .step-label { font-size: 9px; white-space: normal; max-width: 75px; line-height: 1.2; }
+    .step-circle { width: 28px; height: 28px; font-size: 11px; }
+    .step-item:not(:last-child)::after { top: 14px; }
+    .progress-wrap { padding: 14px 12px; }
     .reg-card { padding: 24px 18px; }
+    .reg-page { padding: 24px 12px 36px; }
+    .btn-row { gap: 8px; margin-top: 20px; }
+    .btn-back { padding: 12px 14px; font-size: 13px; }
+    .btn-next { font-size: 13px; padding: 12px 10px; }
   }

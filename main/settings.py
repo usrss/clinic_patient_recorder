@@ -43,6 +43,34 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='').split(',') if h.strip()]
 
+# ── CSRF Trusted Origins ──────────────────────────────────────────────────
+# Required for Cloudflare tunnels and other proxy setups that inject an
+# Origin header different from the Host header (e.g. trycloudflare.com).
+#
+# Set explicitly in .env as a comma-separated list (with scheme) to override.
+# Examples:
+#   CSRF_TRUSTED_ORIGINS=https://*.trycloudflare.com
+#   CSRF_TRUSTED_ORIGINS=http://localhost:8000,https://my.domain.com
+#
+# If not set (default), CSRF_TRUSTED_ORIGINS is derived from ALLOWED_HOSTS
+# with both http:// and https:// schemes, so local Docker deployments work
+# out of the box. Cloudflare tunnel users MUST set it explicitly since the
+# tunnel URL changes every session.
+_trusted_origins = config('CSRF_TRUSTED_ORIGINS', default='')
+if _trusted_origins:
+    CSRF_TRUSTED_ORIGINS = [h.strip() for h in _trusted_origins.split(',') if h.strip()]
+else:
+    # Derive both http and https variants from ALLOWED_HOSTS
+    _allowed = [h for h in ALLOWED_HOSTS if h and h != '*']
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{h}" for h in _allowed
+    ] + [
+        f"http://{h}" for h in _allowed
+    ]
+    # Also allow common Cloudflare tunnel domain as a convenience for users
+    # who access via trycloudflare.com without setting the env var.
+    CSRF_TRUSTED_ORIGINS.append('https://*.trycloudflare.com')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -86,6 +114,7 @@ EMAIL_PORT          = 465
 EMAIL_HOST_USER     = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL  = config('EMAIL_HOST_USER')
+EMAIL_TIMEOUT       = 10  # seconds — fail fast if SMTP is unreachable or unresponsive
 AUTH_USER_MODEL = 'accounts.User'
 
 # FIX: LOGIN_URL, LOGIN_REDIRECT_URL, and LOGOUT_REDIRECT_URL must be URL

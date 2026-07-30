@@ -1,4 +1,5 @@
 import datetime
+import logging
 import time as _time
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,6 +16,9 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password, check_password
 import random
 from .models import User
+
+logger = logging.getLogger(__name__)
+
 from .forms import (
     LoginForm, UserCreateForm, UserEditForm,
     StaffPasswordChangeForm, ForcePasswordChangeForm,
@@ -185,6 +189,8 @@ def register(request):
                 email=data['email'],
                 emergency_contact_name=data['emergency_contact_name'],
                 emergency_contact_phone=data['emergency_contact_phone'],
+                department=data.get('department', ''),
+                position=data.get('position', ''),
                 has_logged_in=False,
                 expected_graduation_year=data.get('_expected_graduation_year'),
             )
@@ -295,14 +301,18 @@ def send_registration_otp(request):
     request.session['registration_otp_sent_at'] = timezone.now().isoformat()
 
     plain_body, html_body = otp_email(otp, 'registration')
-    send_mail(
-        'Registration OTP — Patient Record System',
-        plain_body,
-        settings.DEFAULT_FROM_EMAIL,
-        [email],
-        fail_silently=False,
-        html_message=html_body,
-    )
+    try:
+        send_mail(
+            'Registration OTP — Patient Record System',
+            plain_body,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+            html_message=html_body,
+        )
+    except Exception as e:
+        logger.error(f"Failed to send registration OTP to {email}: {e}")
+        return JsonResponse({'success': False, 'error': 'Failed to send OTP email. Please try again later.'})
     return JsonResponse({'success': True})
 
 
@@ -403,14 +413,19 @@ def forgot_password(request):
         masked_email = local[0] + ('*' * (len(local) - 2)) + local[-1] + '@' + domain
 
         plain_body, html_body = otp_email(otp, 'password reset')
-        send_mail(
-            'Password Reset OTP — Patient Record System',
-            plain_body,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-            html_message=html_body,
-        )
+        try:
+            send_mail(
+                'Password Reset OTP — Patient Record System',
+                plain_body,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+                html_message=html_body,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send password reset OTP to {email}: {e}")
+            messages.error(request, 'Failed to send OTP email. Please try again later.')
+            return render(request, 'accounts/forgot_password.html', {'form': form})
 
         request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
 
@@ -453,14 +468,18 @@ def verify_otp(request, user_id):
             # Send email
             email = user.email
             plain_body, html_body = otp_email(otp, 'password reset')
-            send_mail(
-                'Password Reset OTP — Patient Record System',
-                plain_body,
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                fail_silently=False,
-                html_message=html_body,
-            )
+            try:
+                send_mail(
+                    'Password Reset OTP — Patient Record System',
+                    plain_body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                    html_message=html_body,
+                )
+            except Exception as e:
+                logger.error(f"Failed to resend password reset OTP to {email}: {e}")
+                return JsonResponse({'success': False, 'error': 'Failed to resend OTP email. Please try again later.'})
 
             request.session['forgot_password_otp_sent_at'] = timezone.now().isoformat()
 
