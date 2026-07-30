@@ -22,7 +22,7 @@ urlpatterns = [
 ]
 
 # Media files — served by Django only in development (DEBUG=True).
-# In production (PythonAnywhere), configure the Web tab's static file mappings
-# for /media/ -> /home/your-username/.../media instead.
+# In production, nginx serves /media/ directly for better performance.
+# See docker-compose.yml and nginx/nginx.conf.
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

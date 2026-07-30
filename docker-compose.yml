@@ -1,6 +1,7 @@
 # ── Docker Compose for local-network deployment ────────────────────────────
 # Three services: MySQL 8, Redis 7, Django/Gunicorn.
-# No nginx, no HTTPS — direct port 8000 access on the local network.
+# Plus nginx as a reverse proxy that serves static files and media files
+# (profile pictures, logos) for better performance.
 #
 # First-time setup (after copying .env.example -> .env and editing values):
 #
@@ -8,7 +9,7 @@
 #   2. docker compose up -d          # Start all services in background
 #   3. docker compose exec web python manage.py migrate
 #   4. docker compose exec web python manage.py createsuperuser
-#                                   # → Access at http://<server-ip>:8000
+#                                   # → Access at http://<server-ip>:80
 #
 # Subsequent starts:
 #   docker compose up -d
@@ -67,11 +68,29 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"  # Internal only — nginx proxies to this port
     volumes:
       - media_data:/app/media
+      - staticfiles_data:/app/staticfiles
       - .:/app
+    # Run collectstatic on every start so the shared staticfiles volume is
+    # populated, then start Gunicorn.
+    command: bash -c "python manage.py collectstatic --noinput --clear && gunicorn main.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+
+  # ── Nginx (reverse proxy + static/media server) ──────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: cpr-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - staticfiles_data:/app/staticfiles:ro
+      - media_data:/app/media:ro
+    depends_on:
+      - web
 
 volumes:
   db_data:
@@ -80,3 +99,5 @@ volumes:
     name: cpr-redis-data
   media_data:
     name: cpr-media-data
+  staticfiles_data:
+    name: cpr-staticfiles-data

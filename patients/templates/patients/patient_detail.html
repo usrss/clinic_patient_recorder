@@ -64,7 +64,9 @@
 <div class="panel panel-full">
   <div class="panel-body">
     <div class="identity-hero">
-      <div class="identity-avatar" style="overflow:hidden;{% if patient.profile_picture %}cursor:pointer;{% endif %}" onclick="{% if patient.profile_picture %}openPhotoModal('{{ patient.profile_picture.url }}','{{ patient.get_full_name|escapejs }}'){% endif %}">
+      <div class="identity-avatar" style="overflow:hidden;{% if patient.profile_picture %}cursor:pointer;{% endif %}"
+           onclick="{% if patient.profile_picture %}openPhotoModal('{{ patient.profile_picture.url }}','{{ patient.get_full_name|escapejs }}'){% endif %}"
+           title="{% if patient.profile_picture %}Click to view photo{% else %}No profile picture{% endif %}">
         {% if patient.profile_picture %}
           <img src="{{ patient.profile_picture.url }}" alt="{{ patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
         {% else %}

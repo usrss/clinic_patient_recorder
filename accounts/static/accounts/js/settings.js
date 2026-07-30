@@ -55,26 +55,25 @@ function initAvatarPreview() {
   });
 }
 
-// ── Photo Modal ──
-function initPhotoModal() {
+// ── Open photo lightbox (called from inline onclick on avatar) ──
+function openPhotoModalView() {
   var avatar = document.querySelector('.settings-avatar');
   if (!avatar) return;
+  var avatarImg = avatar.querySelector('img');
+  if (!avatarImg || !avatarImg.src) return;
+  var overlay = document.getElementById('photoModalOverlay');
+  if (!overlay) return;
+  var modalImg = overlay.querySelector('.photo-modal-img');
+  modalImg.src = avatarImg.src;
+  modalImg.style.display = 'block';
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
 
-  avatar.addEventListener('click', function() {
-    var overlay = document.getElementById('photoModalOverlay');
-    if (!overlay) return;
-    var modalImg = overlay.querySelector('.photo-modal-img');
-    var avatarImg = avatar.querySelector('img');
-    if (avatarImg && avatarImg.src) {
-      modalImg.src = avatarImg.src;
-      modalImg.style.display = 'block';
-    } else {
-      modalImg.style.display = 'none';
-    }
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  });
-
+// ── Photo Modal / Upload trigger ──
+function initPhotoModal() {
+  // Always attach close-button and dismiss listeners FIRST so they work
+  // regardless of whether the avatar has an inline onclick attribute.
   var closeBtn = document.getElementById('photoModalClose');
   if (closeBtn) closeBtn.addEventListener('click', closePhotoModal);
 
@@ -87,6 +86,30 @@ function initPhotoModal() {
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closePhotoModal();
+  });
+
+  var avatar = document.querySelector('.settings-avatar');
+  if (!avatar) return;
+  // If the avatar already has an inline onclick (set by the Django template),
+  // skip adding a duplicate JS listener to avoid double-firing.
+  if (avatar.hasAttribute('onclick')) return;
+
+  avatar.addEventListener('click', function() {
+    var avatarImg = avatar.querySelector('img');
+    if (avatarImg && avatarImg.src && avatarImg.src !== window.location.href) {
+      // Has a profile picture → show the photo lightbox (existing behavior)
+      var overlay = document.getElementById('photoModalOverlay');
+      if (!overlay) return;
+      var modalImg = overlay.querySelector('.photo-modal-img');
+      modalImg.src = avatarImg.src;
+      modalImg.style.display = 'block';
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      // No profile picture → open file picker directly so user can upload one
+      var fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.click();
+    }
   });
 }
 

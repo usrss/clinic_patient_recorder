@@ -259,7 +259,13 @@
         <tr onclick="window.location='{% url 'patients:patient_detail' patient.pk %}';" style="cursor:pointer;">
           <td>
             <div class="pt-name-cell">
-              <div class="pt-avatar" style="{% if patient.is_archived %}background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;{% endif %}">{{ patient.get_full_name|first|upper }}</div>
+              <div class="pt-avatar" style="overflow:hidden;{% if patient.is_archived %}background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;{% endif %}">
+                {% if patient.profile_picture %}
+                  <img src="{{ patient.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                  {{ patient.get_full_name|first|upper }}
+                {% endif %}
+              </div>
               <span class="pt-name">{{ patient.get_full_name }}</span>
             </div>
           </td>

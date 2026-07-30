@@ -318,7 +318,10 @@
 
   {# ── Page Header with Avatar ── #}
   <div class="pt-page-header" style="display:flex;align-items:center;gap:16px;">
-    <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;{% if patient.profile_picture %}cursor:pointer;{% endif %}" onclick="{% if patient.profile_picture %}openPhotoModal('{{ patient.profile_picture.url }}','{{ patient.get_full_name|escapejs }}'){% endif %}">
+    <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:box-shadow 0.2s;"
+         onclick="{% if patient.profile_picture %}openPhotoModal('{{ patient.profile_picture.url }}','{{ patient.get_full_name|escapejs }}'){% else %}window.location.href='{% url 'accounts:profile_settings' %}'{% endif %}"
+         onmouseover="this.style.boxShadow='0 0 0 3px rgba(0,120,212,0.2)'"
+         onmouseout="this.style.boxShadow='none'">
       {% if patient.profile_picture %}
         <img src="{{ patient.profile_picture.url }}" alt="{{ patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
       {% else %}

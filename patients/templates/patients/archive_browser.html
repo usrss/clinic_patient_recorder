@@ -166,8 +166,12 @@
         <tr>
           <td>
             <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#92400e;">
-                {{ patient.get_full_name|first|upper }}
+              <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#92400e;">
+                {% if patient.profile_picture %}
+                  <img src="{{ patient.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                  {{ patient.get_full_name|first|upper }}
+                {% endif %}
               </div>
               <span style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ patient.get_full_name }}</span>
             </div>

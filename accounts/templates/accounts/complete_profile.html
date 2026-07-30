@@ -208,10 +208,12 @@
         <!-- Profile Picture -->
         <div class="sec-label sec-label-gap">Profile Picture</div>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;">
+          <div id="cpAvatar"
+               style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;">
             {% if patient.profile_picture %}
               <img src="{{ patient.profile_picture.url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
             {% else %}
+              <label for="id_profile_picture" style="position:absolute;inset:0;border-radius:50%;cursor:pointer;"></label>
               <span style="font-size:24px;font-weight:700;color:#065f46;">{{ patient.get_full_name|first|upper }}</span>
             {% endif %}
           </div>

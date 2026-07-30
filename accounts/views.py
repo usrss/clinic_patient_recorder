@@ -31,6 +31,7 @@ from collections import defaultdict
 from django.db.models import Count, Q, F
 from consultations.models import Consultation, Triage, Prescription
 from .decorators import admin_required, frontdesk_required
+from .throttle import check_ip_rate_limit
 from colleges.models import College, Course
 from patients.models import Patient, PatientProfile
 from inventory.models import Medicine
@@ -68,6 +69,12 @@ def login_view(request):
     failed_attempts_remaining = None
 
     if request.method == 'POST':
+        # ── IP-based rate limiting: max 10 login POSTs per minute per IP ──
+        is_limited, retry_after = check_ip_rate_limit(request, 'login', max_requests=10, window_seconds=60)
+        if is_limited:
+            messages.error(request, f'Too many login attempts from this IP. Please try again in {retry_after} second(s).')
+            return render(request, 'accounts/login.html', {'form': form})
+
         if form.is_valid():
             user = form.get_user()
 
@@ -282,6 +289,11 @@ def send_registration_otp(request):
     if Patient.objects.filter(patient_id=patient_id).exists():
         return JsonResponse({'success': False, 'error': 'ID already registered.'})
 
+    # ── IP-based rate limiting: max 3 OTP sends per minute per IP ──
+    is_limited, retry_after = check_ip_rate_limit(request, 'otp_send', max_requests=3, window_seconds=60)
+    if is_limited:
+        return JsonResponse({'success': False, 'error': f'Too many OTP requests from this IP. Please try again in {retry_after} second(s).'})
+
     # Rate limit: prevent OTP spam
     last_sent_str = request.session.get('registration_otp_sent_at')
     if last_sent_str:
@@ -376,6 +388,15 @@ def forgot_password(request):
     if request.method == 'POST' and form.is_valid():
         patient_id = form.cleaned_data['patient_id']
 
+        # ── IP-based rate limiting: max 3 forgot-password POSTs per minute per IP ──
+        # Checked before the User lookup so that ALL POSTs (even for non-existent
+        # usernames) count toward the limit — prevents an attacker from probing
+        # non-existent usernames endlessly from the same IP.
+        is_limited, retry_after = check_ip_rate_limit(request, 'otp_send', max_requests=3, window_seconds=60)
+        if is_limited:
+            messages.error(request, f'Too many OTP requests from this IP. Please try again in {retry_after} second(s).')
+            return render(request, 'accounts/forgot_password.html', {'form': form})
+
         try:
             user = User.objects.get(username=patient_id, is_active=True)
         except User.DoesNotExist:
@@ -448,6 +469,11 @@ def verify_otp(request, user_id):
     if request.method == 'POST':
         # ── Handle AJAX resend request ─────────────────────────────────
         if request.POST.get('resend_otp') == '1':
+            # ── IP-based rate limiting: max 3 OTP resends per minute per IP ──
+            is_limited, retry_after = check_ip_rate_limit(request, 'otp_send', max_requests=3, window_seconds=60)
+            if is_limited:
+                return JsonResponse({'success': False, 'error': f'Too many requests from this IP. Please try again in {retry_after} second(s).'})
+
             # Rate limit check
             last_sent_str = request.session.get('forgot_password_otp_sent_at')
             if last_sent_str:

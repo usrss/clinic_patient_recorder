@@ -86,7 +86,15 @@ select {
   padding-right: 36px;
 }
 
-input[type="file"] { display: none; }
+input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 0.1px;
+  height: 0.1px;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
 
 /* ── Field label & error ── */
 .field-label,
