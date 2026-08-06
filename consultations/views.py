@@ -829,6 +829,9 @@ def triage_form(request, pk):
         'hepatitis_b': profile.hepatitis_b,
         'measles': profile.measles,
         'tt': profile.tt,
+        # Pre-fill the final chief complaint with the patient's own words so
+        # the doctor can review and reword it during triage.
+        'chief_complaint': consultation.symptoms,
     }
 
     form = TriageForm(request.POST or None, initial=initial_profile)
@@ -854,8 +857,14 @@ def triage_form(request, pk):
         profile.tt = form.cleaned_data['tt']
         profile.save()
 
+        # Save the doctor-reviewed chief complaint. Blank → keep the
+        # patient's own words so the official record always has a value.
+        consultation.chief_complaint = (
+            (form.cleaned_data.get('chief_complaint') or '').strip()
+            or consultation.symptoms
+        )
         consultation.status = Consultation.Status.TRIAGED
-        consultation.save(update_fields=['status'])
+        consultation.save(update_fields=['status', 'chief_complaint'])
 
         log_change(
             user=request.user,
@@ -896,8 +905,25 @@ def triage_edit(request, pk):
         messages.error(request, 'Triage records cannot be amended after a consultation is completed.')
         return redirect('consultations:triage_list')
 
+    # Amendments are only allowed BEFORE a prescription is made — once the
+    # doctor has prescribed, the triage record is locked.
+    if consultation.prescriptions.exists():
+        messages.error(request, 'Triage records cannot be amended after a prescription has been made.')
+        return redirect('consultations:triage_list')
+
     triage = consultation.triages.first()
-    form = TriageEditForm(request.POST or None, instance=triage)
+
+    # Snapshot before-values for the audit trail
+    before_notes = triage.notes
+    before_cc = consultation.chief_complaint
+
+    form = TriageEditForm(
+        request.POST or None,
+        instance=triage,
+        initial={
+            'chief_complaint': consultation.chief_complaint or consultation.symptoms,
+        },
+    )
 
     if request.method == 'POST' and form.is_valid():
         amended = form.save(commit=False)
@@ -907,6 +933,32 @@ def triage_edit(request, pk):
             if triage.notes else f"[Amended by {request.user.username}: {reason}]"
         )
         amended.save()
+
+        # Allow amending the final chief complaint along with the triage record.
+        new_cc = (
+            (form.cleaned_data.get('chief_complaint') or '').strip()
+            or consultation.symptoms
+        )
+        if new_cc != consultation.chief_complaint:
+            consultation.chief_complaint = new_cc
+            consultation.save(update_fields=['chief_complaint'])
+
+        # Audit trail — record the amendment like every other change in the system
+        log_change(
+            user=request.user,
+            module='Consultations',
+            description=f'Amended triage for consultation #{pk} — {reason}',
+            object_model='consultations.Consultation',
+            object_id=consultation.pk,
+            object_repr=str(consultation),
+            changes_before=(
+                {'notes': before_notes, 'chief_complaint': before_cc}
+                if (before_notes or before_cc) else None
+            ),
+            changes_after={'notes': amended.notes, 'chief_complaint': new_cc},
+            request=request,
+        )
+
         messages.success(request, f'Triage record for Consultation #{pk} has been updated.')
         return redirect('consultations:triage_list')
 
@@ -1167,6 +1219,7 @@ def patient_medical_history_pdf(request, patient_pk):
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_LEFT, TA_CENTER
     import io
+    import html
     from datetime import date
 
     patient = get_object_or_404(Patient, pk=patient_pk)
@@ -1248,9 +1301,17 @@ def patient_medical_history_pdf(request, patient_pk):
                 f'{c.created_at.strftime("%B %d, %Y")} — {status_txt}'
             )
             story.append(Paragraph(header_txt, body_style))
-            story.append(Paragraph(f'<i>Symptoms:</i> {c.symptoms}', small_style))
+            # Show the doctor-reviewed chief complaint (fall back to the
+            # patient's own words). Escaped — raw patient text can contain
+            # XML-special characters that would otherwise break ReportLab.
+            cc = c.chief_complaint or c.symptoms
+            story.append(Paragraph(f'<i>Chief Complaint:</i> {html.escape(cc)}', small_style))
             if c.severity_description:
-                story.append(Paragraph(f'<i>Severity:</i> {c.severity_description}', small_style))
+                # Patient-entered free text — escape so & / < can't crash ReportLab.
+                story.append(Paragraph(
+                    f'<i>Severity:</i> {html.escape(c.severity_description)}',
+                    small_style,
+                ))
 
             t = c.triages.first()
             if t:

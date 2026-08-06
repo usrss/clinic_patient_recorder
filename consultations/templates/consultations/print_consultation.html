@@ -516,7 +516,7 @@
         <tr>
           <td class="col-complaints">
             <div class="col-label">Complaints / Diagnosis</div>
-            <strong>Chief Complaint:</strong>&nbsp;{{ consultation.symptoms }}<br><br>
+            <strong>Chief Complaint:</strong>&nbsp;{{ consultation.chief_complaint|default:consultation.symptoms }}<br><br>
             {% with rx=consultation.prescriptions.first %}
             {% if rx %}
               <strong>Diagnosis:</strong>&nbsp;{{ rx.diagnosis }}

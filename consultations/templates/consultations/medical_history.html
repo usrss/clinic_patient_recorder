@@ -244,7 +244,7 @@
 
       <div style="margin-bottom:10px;padding:10px 14px;background:#f8fafc;border-radius:8px;">
         <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Chief Complaint</div>
-        <div style="font-size:13px;color:#374151;">{{ c.symptoms }}</div>
+        <div style="font-size:13px;color:#374151;">{{ c.chief_complaint|default:c.symptoms }}</div>
       </div>
 
       {% with t=c.triages.first %}{% if t %}

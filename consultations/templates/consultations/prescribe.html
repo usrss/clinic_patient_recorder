@@ -180,7 +180,7 @@
   <div class="card-panel">
     <div class="sec-label">Symptoms & History</div>
     <div style="display:grid;gap:12px;font-size:14px;">
-      <div><div class="info-label">Symptoms</div><div style="color:#374151;">{{ consultation.symptoms }}</div></div>
+      <div><div class="info-label">Chief Complaint</div><div style="color:#374151;">{{ consultation.chief_complaint|default:consultation.symptoms }}</div></div>
       <div><div class="info-label">Severity</div><div style="color:#374151;">{{ consultation.severity_description }}</div></div>
       {% if consultation.medical_history %}<div><div class="info-label">Medical History</div><div style="color:#374151;">{{ consultation.medical_history }}</div></div>{% endif %}
     </div>
@@ -237,6 +237,12 @@
       <div class="vital-box"><div class="vital-val">{% if t.urgency == 'high' %}<span style="color:#ef4444;">High</span>{% elif t.urgency == 'medium' %}<span style="color:#f97316;">Med</span>{% else %}<span style="color:#10b981;">Low</span>{% endif %}</div><div class="vital-lbl">Urgency</div></div>
     </div>
     {% if t.notes %}<p style="font-size:12px;color:#64748b;margin-top:12px;">Notes: {{ t.notes }}</p>{% endif %}
+    <div style="margin-top:14px;border-top:1px solid #e8ecf1;padding-top:12px;">
+      <a href="{% url 'consultations:triage_edit' consultation.pk %}"
+         style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#0078d4;text-decoration:none;">
+        <ion-icon name="create-outline" style="font-size:14px;"></ion-icon> Amend Triage (vitals / chief complaint)
+      </a>
+    </div>
   </div>
   {% endif %}
   {% endwith %}

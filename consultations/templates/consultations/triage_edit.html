@@ -108,6 +108,13 @@
         <div class="val">{{ triage.triaged_at|date:"M d, Y H:i" }}</div>
       </div>
     </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8ecf1;">
+      <div class="lbl" style="margin-bottom:4px;">Final Chief Complaint</div>
+      <div style="font-size:13px;color:#374151;">{{ consultation.chief_complaint|default:consultation.symptoms }}</div>
+      {% if consultation.chief_complaint %}
+      <div class="help-text" style="margin-top:6px;">Patient's own words: {{ consultation.symptoms }}</div>
+      {% endif %}
+    </div>
     {% if triage.notes %}
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8ecf1;">
       <div class="lbl" style="margin-bottom:4px;">Current Notes</div>
@@ -170,6 +177,13 @@
         <label>Clinical Notes</label>
         {{ form.notes }}
         {% if form.notes.errors %}<div class="form-error" aria-live="polite">{{ form.notes.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>{{ form.chief_complaint.label }}</label>
+        {{ form.chief_complaint }}
+        {% if form.chief_complaint.help_text %}<div class="help-text">{{ form.chief_complaint.help_text }}</div>{% endif %}
+        {% if form.chief_complaint.errors %}<div class="form-error" aria-live="polite">{{ form.chief_complaint.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">

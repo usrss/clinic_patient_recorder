@@ -298,7 +298,7 @@
           <div class="tl-content">
             <div class="tl-field">
               <div class="tl-field-label">Symptoms</div>
-              <div>{{ consultation.symptoms }}</div>
+              <div>{{ consultation.chief_complaint|default:consultation.symptoms }}</div>
             </div>
             {% if consultation.severity_description %}
             <div class="tl-field">

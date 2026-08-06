@@ -228,7 +228,7 @@
   </div>
 
   {# ── Consultation Details ── #}
-  <div class="sec-label">Consultation Details</div>
+  <div class="sec-label">Consultation Details (self-reported)</div>
   <div class="info-card">
     <div class="content-grid">
       <div>
@@ -236,7 +236,7 @@
         <div class="val-muted">{{ consultation.symptoms }}</div>
       </div>
       <div>
-        <div class="lbl">Severity (self-reported)</div>
+        <div class="lbl">Severity</div>
         <div class="val-muted">{{ consultation.severity_description }}</div>
       </div>
       {% if consultation.medical_history %}
@@ -259,6 +259,14 @@
   <div class="info-card">
     <form method="post" novalidate data-track-changes="true">
       {% csrf_token %}
+
+      {# ── Final Chief Complaint (doctor review) ── #}
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>{{ form.chief_complaint.label }}</label>
+        {{ form.chief_complaint }}
+        {% if form.chief_complaint.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.chief_complaint.help_text }}</div>{% endif %}
+        {% if form.chief_complaint.errors %}<div class="form-error" aria-live="polite">{{ form.chief_complaint.errors.0 }}</div>{% endif %}
+      </div>
 
       {# Medical History & Immunization #}
       {% if profile %}

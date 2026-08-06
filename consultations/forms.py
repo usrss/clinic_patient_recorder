@@ -197,6 +197,21 @@ class QueueAssignForm(forms.ModelForm):
 
 class TriageForm(forms.ModelForm):
 
+    # ── Doctor-reviewed final chief complaint ───────────────────────────────
+    # Required (pre-filled with the patient's own words) so the doctor
+    # explicitly confirms/rewords the version that appears on official
+    # documents (print form, medical history).
+    chief_complaint = forms.CharField(
+        label='Final Chief Complaint *',
+        help_text='Doctor-reviewed version shown on the official form. '
+                  "Prefilled with the patient's own words — confirm or reword.",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Reword professionally, e.g. “abdominal pain”…',
+        }),
+    )
+
     hypertension = forms.BooleanField(required=False, label='Hypertension')
     diabetes = forms.BooleanField(required=False, label='Diabetes')
     asthma = forms.BooleanField(required=False, label='Asthma')
@@ -321,6 +336,18 @@ class TriageForm(forms.ModelForm):
 
 
 class TriageEditForm(forms.ModelForm):
+    # Doctor-reviewed final chief complaint — same semantics as TriageForm.
+    chief_complaint = forms.CharField(
+        label='Final Chief Complaint *',
+        help_text='Doctor-reviewed version shown on the official form. '
+                  "Prefilled with the patient's own words — confirm or reword.",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Reword professionally, e.g. “abdominal pain”…',
+        }),
+    )
+
     amendment_reason = forms.CharField(
         required=True, max_length=200,
         label='Reason for amendment *',

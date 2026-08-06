@@ -83,6 +83,11 @@ class Consultation(models.Model):
         db_index=True,
     )
     symptoms = models.TextField()
+    chief_complaint = models.TextField(
+        blank=True,
+        help_text='Doctor-reviewed final chief complaint. When empty, the patient\'s '
+                  'own words (symptoms) are shown on official documents.',
+    )
     medical_history = models.TextField(blank=True)
     severity_description = models.TextField(
         help_text='Self-reported severity description by the patient'
