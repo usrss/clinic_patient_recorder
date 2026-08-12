@@ -195,7 +195,7 @@
 
   <!-- Header -->
   <div class="page-header">
-    <a href="{% url 'consultations:prescribe' consultation.pk %}" class="back-link">← Back to Prescription</a>
+    <a href="{% url 'consultations:prescription_edit' consultation.pk %}" class="back-link">← Back to Prescription</a>
     <div>
       <div class="page-title">Complete Consultation</div>
       <div class="page-sub">Consultation #{{ consultation.pk }} — {{ consultation.patient.get_full_name }}</div>
@@ -276,6 +276,12 @@
       </div>
 
       <div class="btn-row">
+        <a href="{% url 'consultations:prescription_edit' consultation.pk %}"
+           class="btn"
+           style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;">
+          <ion-icon name="create-outline" style="font-size:14px;"></ion-icon>
+          Edit Prescription
+        </a>
         <button type="submit" class="btn btn-primary">Complete Consultation</button>
         <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="btn btn-secondary">Skip</a>
       </div>

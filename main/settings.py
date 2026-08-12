@@ -199,6 +199,15 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ── Silenced system checks ──────────────────────────────────────────────────
+# models.W036: "MySQL does not support unique constraints with conditions."
+# The conditional UniqueConstraint on Consultation (unique active consultation
+# per patient) is intentionally kept for PostgreSQL deployments, where it IS
+# created. MySQL gets the same guarantee from the generated `active_flag`
+# column + the unique index on (patient, active_flag) — see
+# consultations/models.py. The warning is expected on MySQL, so silence it.
+SILENCED_SYSTEM_CHECKS = ['models.W036']
+
 from django.contrib.messages import constants as messages_constants
 
 MESSAGE_TAGS = {

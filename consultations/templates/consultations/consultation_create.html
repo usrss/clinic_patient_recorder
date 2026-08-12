@@ -100,6 +100,23 @@
   }
   .btn-ghost:hover { background: #f9fafb; border-color: #d1d5db; }
 
+  /* ── Active consultation warning (single-active-consultation rule) ── */
+  .active-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    font-size: 13px;
+    color: #991b1b;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .active-warning svg { flex-shrink: 0; margin-top: 2px; }
+
   /* ── Patient Found Card ── */
   .patient-card {
     background: #f0fdf4;
@@ -278,6 +295,14 @@
         </div>
         <svg class="check-icon" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
+      {% if looked_up_has_active %}
+      <div class="active-warning">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div><strong>Active Consultation Exists</strong> — This patient already has an
+        active consultation. A new consultation cannot be created until the current
+        one has been completed.</div>
+      </div>
+      {% endif %}
       {% endif %}
 
       {# ── Name fields (always visible) ── #}
@@ -351,7 +376,7 @@
       {% endif %}
 
       <div class="btn-row">
-        <button type="submit" class="btn-primary">
+        <button type="submit" id="create-consultation-btn" class="btn-primary">
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           Create Consultation
         </button>
@@ -383,6 +408,15 @@
     }
 
     // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
+
+    // ── Disable "Create Consultation" while the patient has an active consultation ──
+    const hasActive = {{ looked_up_has_active|yesno:"true,false" }};
+    const createBtn = document.getElementById('create-consultation-btn');
+    if (createBtn && hasActive) {
+      createBtn.disabled = true;
+      createBtn.style.opacity = '0.5';
+      createBtn.style.cursor = 'not-allowed';
+    }
   });
 </script>
 {% endblock %}

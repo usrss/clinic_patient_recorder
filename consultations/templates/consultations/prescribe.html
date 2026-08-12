@@ -1,6 +1,7 @@
 {% extends base_template %}
-{% block title %}Prescribe — Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
-{% block page_title %}Prescribe{% endblock %}
+{% load consultation_extras %}
+{% block title %}{% if edit_mode %}Edit Prescription{% else %}Prescribe{% endif %} — Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
+{% block page_title %}{% if edit_mode %}Edit Prescription{% else %}Prescribe{% endif %}{% endblock %}
 {% block page_subtitle %}Consultation #{{ consultation.pk }}{% endblock %}
 
 {% block extra_css %}
@@ -165,6 +166,17 @@
 {% block content %}
 <div class="prescribe-wrap">
 
+  {% if edit_mode %}
+  <div class="alert alert-info" style="margin-bottom:16px;display:flex;gap:8px;align-items:flex-start;">
+    <ion-icon name="create-outline" style="font-size:16px;margin-top:1px;"></ion-icon>
+    <div>
+      <strong>Editing prescription.</strong> Changes apply to Consultation #{{ consultation.pk }}
+      and are recorded in the audit trail. This prescription can only be edited while
+      the consultation is still open.
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Patient Summary -->
   <div class="card-panel">
     <div class="sec-label">Patient</div>
@@ -261,7 +273,7 @@
         <label>Common Diagnosis</label>
         <select name="diagnosis_select" class="reg-input" id="diagnosis_select_field">
           <option value="">— Select or type below —</option>
-          {% for d in common_diagnoses %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+          {% for d in common_diagnoses %}<option value="{{ d.pk }}" {{ prescription_form.instance.diagnosis|option_selected:d.name }}>{{ d.name }}</option>{% endfor %}
         </select>
       </div>
       {% endif %}
@@ -349,8 +361,8 @@
         <div class="medicine-row" data-index="{{ forloop.counter0 }}">
           <button type="button" class="remove-row-btn" title="Remove row"><ion-icon name="close-outline" style="font-size:16px;"></ion-icon></button>
 
-          <!-- Hidden source field (set by JS when radio changes) -->
-          <input type="hidden" name="meds-{{ forloop.counter0 }}-source" value="inventory" class="source-field">
+          <!-- Hidden source field (set by JS when radio changes; pre-filled on edit) -->
+          <input type="hidden" name="meds-{{ forloop.counter0 }}-source" value="{{ item_form.source.value|default:'inventory' }}" class="source-field">
 
           <!-- Mode selector radios -->
           <div style="margin-bottom:12px;">
@@ -370,7 +382,7 @@
                 <select name="meds-{{ forloop.counter0 }}-medicine" class="reg-input">
                   <option value="">— Select —</option>
                   {% for med in inventory_medicines %}
-                  <option value="{{ med.pk }}">{{ med.name }} ({{ med.quantity }} left)</option>
+                  <option value="{{ med.pk }}" {{ item_form.medicine.value|option_selected:med.pk }}>{{ med.name }} ({{ med.quantity }} left)</option>
                   {% endfor %}
                 </select>
                 {% if item_form.medicine.errors %}<div class="form-error">{{ item_form.medicine.errors.0 }}</div>{% endif %}
@@ -379,53 +391,53 @@
                 <label>Dosage <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-inv_dosage" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>500mg</option><option>250mg</option><option>200mg</option>
-                  <option>100mg</option><option>50mg</option><option>25mg</option>
-                  <option>10mg</option><option>5mg</option>
-                  <option>10ml</option><option>5ml</option><option>2.5ml</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.inv_dosage.value|option_selected:'500mg' }}>500mg</option><option {{ item_form.inv_dosage.value|option_selected:'250mg' }}>250mg</option><option {{ item_form.inv_dosage.value|option_selected:'200mg' }}>200mg</option>
+                  <option {{ item_form.inv_dosage.value|option_selected:'100mg' }}>100mg</option><option {{ item_form.inv_dosage.value|option_selected:'50mg' }}>50mg</option><option {{ item_form.inv_dosage.value|option_selected:'25mg' }}>25mg</option>
+                  <option {{ item_form.inv_dosage.value|option_selected:'10mg' }}>10mg</option><option {{ item_form.inv_dosage.value|option_selected:'5mg' }}>5mg</option>
+                  <option {{ item_form.inv_dosage.value|option_selected:'10ml' }}>10ml</option><option {{ item_form.inv_dosage.value|option_selected:'5ml' }}>5ml</option><option {{ item_form.inv_dosage.value|option_selected:'2.5ml' }}>2.5ml</option>
+                  <option value="other" {{ item_form.inv_dosage.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-inv_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg">
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg" value="{{ item_form.inv_dosage_other.value|default:'' }}">
                 {% if item_form.inv_dosage.errors %}<div class="form-error">{{ item_form.inv_dosage.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Frequency <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-inv_frequency" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>Once daily</option><option>2x a day</option><option>3x a day</option>
-                  <option>4x a day</option><option>Every 4 hours</option>
-                  <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.inv_frequency.value|option_selected:'Once daily' }}>Once daily</option><option {{ item_form.inv_frequency.value|option_selected:'2x a day' }}>2x a day</option><option {{ item_form.inv_frequency.value|option_selected:'3x a day' }}>3x a day</option>
+                  <option {{ item_form.inv_frequency.value|option_selected:'4x a day' }}>4x a day</option><option {{ item_form.inv_frequency.value|option_selected:'Every 4 hours' }}>Every 4 hours</option>
+                  <option {{ item_form.inv_frequency.value|option_selected:'Every 6 hours' }}>Every 6 hours</option><option {{ item_form.inv_frequency.value|option_selected:'Every 8 hours' }}>Every 8 hours</option><option {{ item_form.inv_frequency.value|option_selected:'As needed' }}>As needed</option>
+                  <option value="other" {{ item_form.inv_frequency.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-inv_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours" value="{{ item_form.inv_frequency_other.value|default:'' }}">
                 {% if item_form.inv_frequency.errors %}<div class="form-error">{{ item_form.inv_frequency.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Duration <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-inv_duration" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>1 day</option><option>3 days</option><option>5 days</option>
-                  <option>7 days</option><option>10 days</option><option>14 days</option>
-                  <option>1 month</option><option value="other">Other…</option>
+                  <option {{ item_form.inv_duration.value|option_selected:'1 day' }}>1 day</option><option {{ item_form.inv_duration.value|option_selected:'3 days' }}>3 days</option><option {{ item_form.inv_duration.value|option_selected:'5 days' }}>5 days</option>
+                  <option {{ item_form.inv_duration.value|option_selected:'7 days' }}>7 days</option><option {{ item_form.inv_duration.value|option_selected:'10 days' }}>10 days</option><option {{ item_form.inv_duration.value|option_selected:'14 days' }}>14 days</option>
+                  <option {{ item_form.inv_duration.value|option_selected:'1 month' }}>1 month</option><option value="other" {{ item_form.inv_duration.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-inv_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks" value="{{ item_form.inv_duration_other.value|default:'' }}">
                 {% if item_form.inv_duration.errors %}<div class="form-error">{{ item_form.inv_duration.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Qty <span style="color:#ef4444;">*</span></label>
-                <input type="number" name="meds-{{ forloop.counter0 }}-quantity" class="reg-input" min="1" placeholder="Units">
+                <input type="number" name="meds-{{ forloop.counter0 }}-quantity" class="reg-input" min="1" placeholder="Units" value="{{ item_form.quantity.value|default:'' }}">
                 {% if item_form.quantity.errors %}<div class="form-error">{{ item_form.quantity.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Instructions</label>
                 <select name="meds-{{ forloop.counter0 }}-inv_instructions" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>Take after meals</option><option>Take before meals</option>
-                  <option>Take on empty stomach</option><option>Take with food</option>
-                  <option>Apply topically</option><option>As directed</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.inv_instructions.value|option_selected:'Take after meals' }}>Take after meals</option><option {{ item_form.inv_instructions.value|option_selected:'Take before meals' }}>Take before meals</option>
+                  <option {{ item_form.inv_instructions.value|option_selected:'Take on empty stomach' }}>Take on empty stomach</option><option {{ item_form.inv_instructions.value|option_selected:'Take with food' }}>Take with food</option>
+                  <option {{ item_form.inv_instructions.value|option_selected:'Apply topically' }}>Apply topically</option><option {{ item_form.inv_instructions.value|option_selected:'As directed' }}>As directed</option>
+                  <option value="other" {{ item_form.inv_instructions.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-inv_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+                <input type="text" name="meds-{{ forloop.counter0 }}-inv_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water" value="{{ item_form.inv_instructions_other.value|default:'' }}">
               </div>
             </div>
           </div><!-- /inventory mode -->
@@ -435,55 +447,55 @@
             <div class="cus-grid">
               <div class="field-wrap">
                 <label>Medicine Name <span style="color:#ef4444;">*</span></label>
-                <input type="text" name="meds-{{ forloop.counter0 }}-medicine_name" class="reg-input" placeholder="e.g. Betadine Gargle" autocomplete="off">
+                <input type="text" name="meds-{{ forloop.counter0 }}-medicine_name" class="reg-input" placeholder="e.g. Betadine Gargle" autocomplete="off" value="{{ item_form.medicine_name.value|default:'' }}">
                 {% if item_form.medicine_name.errors %}<div class="form-error">{{ item_form.medicine_name.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Dosage <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-cus_dosage" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>500mg</option><option>250mg</option><option>200mg</option>
-                  <option>100mg</option><option>50mg</option><option>25mg</option>
-                  <option>10mg</option><option>5mg</option>
-                  <option>10ml</option><option>5ml</option><option>2.5ml</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.cus_dosage.value|option_selected:'500mg' }}>500mg</option><option {{ item_form.cus_dosage.value|option_selected:'250mg' }}>250mg</option><option {{ item_form.cus_dosage.value|option_selected:'200mg' }}>200mg</option>
+                  <option {{ item_form.cus_dosage.value|option_selected:'100mg' }}>100mg</option><option {{ item_form.cus_dosage.value|option_selected:'50mg' }}>50mg</option><option {{ item_form.cus_dosage.value|option_selected:'25mg' }}>25mg</option>
+                  <option {{ item_form.cus_dosage.value|option_selected:'10mg' }}>10mg</option><option {{ item_form.cus_dosage.value|option_selected:'5mg' }}>5mg</option>
+                  <option {{ item_form.cus_dosage.value|option_selected:'10ml' }}>10ml</option><option {{ item_form.cus_dosage.value|option_selected:'5ml' }}>5ml</option><option {{ item_form.cus_dosage.value|option_selected:'2.5ml' }}>2.5ml</option>
+                  <option value="other" {{ item_form.cus_dosage.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-cus_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg">
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg" value="{{ item_form.cus_dosage_other.value|default:'' }}">
                 {% if item_form.cus_dosage.errors %}<div class="form-error">{{ item_form.cus_dosage.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Frequency <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-cus_frequency" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>Once daily</option><option>2x a day</option><option>3x a day</option>
-                  <option>4x a day</option><option>Every 4 hours</option>
-                  <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.cus_frequency.value|option_selected:'Once daily' }}>Once daily</option><option {{ item_form.cus_frequency.value|option_selected:'2x a day' }}>2x a day</option><option {{ item_form.cus_frequency.value|option_selected:'3x a day' }}>3x a day</option>
+                  <option {{ item_form.cus_frequency.value|option_selected:'4x a day' }}>4x a day</option><option {{ item_form.cus_frequency.value|option_selected:'Every 4 hours' }}>Every 4 hours</option>
+                  <option {{ item_form.cus_frequency.value|option_selected:'Every 6 hours' }}>Every 6 hours</option><option {{ item_form.cus_frequency.value|option_selected:'Every 8 hours' }}>Every 8 hours</option><option {{ item_form.cus_frequency.value|option_selected:'As needed' }}>As needed</option>
+                  <option value="other" {{ item_form.cus_frequency.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-cus_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours" value="{{ item_form.cus_frequency_other.value|default:'' }}">
                 {% if item_form.cus_frequency.errors %}<div class="form-error">{{ item_form.cus_frequency.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Duration <span style="color:#ef4444;">*</span></label>
                 <select name="meds-{{ forloop.counter0 }}-cus_duration" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>1 day</option><option>3 days</option><option>5 days</option>
-                  <option>7 days</option><option>10 days</option><option>14 days</option>
-                  <option>1 month</option><option value="other">Other…</option>
+                  <option {{ item_form.cus_duration.value|option_selected:'1 day' }}>1 day</option><option {{ item_form.cus_duration.value|option_selected:'3 days' }}>3 days</option><option {{ item_form.cus_duration.value|option_selected:'5 days' }}>5 days</option>
+                  <option {{ item_form.cus_duration.value|option_selected:'7 days' }}>7 days</option><option {{ item_form.cus_duration.value|option_selected:'10 days' }}>10 days</option><option {{ item_form.cus_duration.value|option_selected:'14 days' }}>14 days</option>
+                  <option {{ item_form.cus_duration.value|option_selected:'1 month' }}>1 month</option><option value="other" {{ item_form.cus_duration.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-cus_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks" value="{{ item_form.cus_duration_other.value|default:'' }}">
                 {% if item_form.cus_duration.errors %}<div class="form-error">{{ item_form.cus_duration.errors.0 }}</div>{% endif %}
               </div>
               <div class="field-wrap">
                 <label>Instructions</label>
                 <select name="meds-{{ forloop.counter0 }}-cus_instructions" class="reg-input med-select">
                   <option value="">—</option>
-                  <option>Take after meals</option><option>Take before meals</option>
-                  <option>Take on empty stomach</option><option>Take with food</option>
-                  <option>Apply topically</option><option>As directed</option>
-                  <option value="other">Other…</option>
+                  <option {{ item_form.cus_instructions.value|option_selected:'Take after meals' }}>Take after meals</option><option {{ item_form.cus_instructions.value|option_selected:'Take before meals' }}>Take before meals</option>
+                  <option {{ item_form.cus_instructions.value|option_selected:'Take on empty stomach' }}>Take on empty stomach</option><option {{ item_form.cus_instructions.value|option_selected:'Take with food' }}>Take with food</option>
+                  <option {{ item_form.cus_instructions.value|option_selected:'Apply topically' }}>Apply topically</option><option {{ item_form.cus_instructions.value|option_selected:'As directed' }}>As directed</option>
+                  <option value="other" {{ item_form.cus_instructions.value|option_selected:'other' }}>Other…</option>
                 </select>
-                <input type="text" name="meds-{{ forloop.counter0 }}-cus_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+                <input type="text" name="meds-{{ forloop.counter0 }}-cus_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water" value="{{ item_form.cus_instructions_other.value|default:'' }}">
               </div>
             </div>
           </div><!-- /custom mode -->
@@ -506,8 +518,10 @@
       {% endif %}
 
       <div class="btn-row">
-        <button type="submit" class="btn-primary-custom">Save & Complete</button>
-        <a href="{% url 'consultations:doctor_list' %}" class="btn-ghost">Cancel</a>
+        <button type="submit" class="btn-primary-custom">
+          {% if edit_mode %}Save Changes{% else %}Save & Complete{% endif %}
+        </button>
+        <a href="{% if edit_mode %}{% url 'consultations:clinical_detail' consultation.pk %}{% else %}{% url 'consultations:doctor_list' %}{% endif %}" class="btn-ghost">Cancel</a>
       </div>
     </form>
   </div>
@@ -572,6 +586,11 @@
     var invDiv   = row.querySelector('.med-mode-inventory');
     var cusDiv   = row.querySelector('.med-mode-custom');
     var srcField = row.querySelector('.source-field');
+
+    // Initial mode from the hidden source field (edit pre-fill).
+    if (srcField && srcField.value === 'custom') {
+      radios.forEach(function (r) { if (r.value === 'custom') r.checked = true; });
+    }
 
     function update() {
       var active = row.querySelector('.med-source-radio:checked');

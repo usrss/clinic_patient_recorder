@@ -167,6 +167,11 @@
   <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank">
     <ion-icon name="print-outline" style="font-size:14px;"></ion-icon> Print
   </a>
+  {% if consultation.status == 'triaged' and consultation.prescriptions.exists and user.role == 'doctor' %}
+  <a href="{% url 'consultations:prescription_edit' consultation.pk %}" class="amend-btn" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46;">
+    <ion-icon name="create-outline" style="font-size:14px;"></ion-icon> Edit Prescription
+  </a>
+  {% endif %}
 </div>
 
 {# ── Patient ── #}

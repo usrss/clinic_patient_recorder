@@ -514,3 +514,67 @@ class CertificateTemplateTextTest(TestCase):
         snapshot = cert.rendered_text_snapshot
         self.assertIn('Custom play cert:', snapshot)
         self.assertIn('Basketball tournament', snapshot)
+
+
+class CertificateDoctorNameTest(TestCase):
+    """
+    Certificates must show the doctor's name WITHOUT a 'Dr.'/'Dra.' honorific.
+    The placeholder map feeds both the .docx/PDF output and any prose that
+    references {doctor_name}, so this is the single source of truth.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.patient = Patient.objects.create(
+            patient_id='DOCNAME-001',
+            first_name='Test',
+            last_name='Patient',
+            sex='M',
+        )
+        cls.doctor = User.objects.create_user(
+            username='dr_prefix', password='testpass123', role='doctor',
+            first_name='Dr. Juan', last_name='Dela Cruz',
+            email='dr_prefix@test.clinic',
+        )
+
+    def _create_cert(self):
+        consultation = Consultation.objects.create(
+            patient=self.patient,
+            symptoms='Test symptoms',
+            status=Consultation.Status.COMPLETED,
+        )
+        return MedicalCertificate.objects.create(
+            consultation=consultation,
+            patient=self.patient,
+            doctor=self.doctor,
+            certificate_type=MedicalCertificate.CertificateType.ABSENCES,
+            diagnosis='Test diagnosis',
+        )
+
+    def test_doctor_name_placeholder_has_no_honorific(self):
+        """'Dr. Juan Dela Cruz' renders as 'Juan Dela Cruz' on certificates."""
+        cert = self._create_cert()
+        name = cert._build_placeholder_map()['doctor_name']
+        self.assertEqual(name, 'Juan Dela Cruz')
+        self.assertNotIn('Dr', name)
+
+    def test_doctor_name_without_prefix_is_unchanged(self):
+        self.doctor.first_name = 'Maria'
+        self.doctor.last_name = 'Santos'
+        self.doctor.save()
+        cert = self._create_cert()
+        self.assertEqual(
+            cert._build_placeholder_map()['doctor_name'],
+            'Maria Santos',
+        )
+
+    def test_dra_honorific_is_stripped(self):
+        """The Filipino female honorific 'Dra.' is stripped too."""
+        self.doctor.first_name = 'Dra. Ana'
+        self.doctor.last_name = 'Reyes'
+        self.doctor.save()
+        cert = self._create_cert()
+        self.assertEqual(
+            cert._build_placeholder_map()['doctor_name'],
+            'Ana Reyes',
+        )

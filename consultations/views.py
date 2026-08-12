@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from accounts.models import User
 from notifications.utils import notify_role, notify_user
@@ -15,17 +15,81 @@ from accounts.decorators import (
 frontdesk_required, doctor_required,
 admin_required, clinical_staff_required, patient_required,
 )
-from inventory.models import Medicine
-from patients.models import PatientProfile
+from inventory.models import Medicine, StockMovement
+from patients.models import Patient, PatientProfile
 from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpRequest, \
-FollowUpProgress
+FollowUpProgress, ACTIVE_STATUSES
 from .forms import (
 ConsultationSubmitForm, QueueAssignForm, TriageForm, TriageEditForm,
 PrescriptionForm, PrescriptionItemFormSet, PrescriptionMedicineFormSet,
 PatientConsultationForm, FollowUpProgressForm, CloseConsultationForm, ConsultationStatusUpdateForm,
+DOSAGE_CHOICES, FREQUENCY_CHOICES, DURATION_CHOICES, INSTRUCTIONS_CHOICES,
 )
-from .utils import assign_next_queue_number
+from .utils import (
+    assign_next_queue_number,
+    ACTIVE_CONSULTATION_MESSAGE,
+    ActiveConsultationExists,
+    lock_patient_and_get_active_consultation,
+)
 from inventory.utils import deduct_medicine_stock
+
+
+# ─── PRESCRIPTION EDIT HELPERS ─────────────────────────────────────────────────
+
+def _split_choice_value(value, choices):
+    """Map a stored free-text value back to (select_value, other_value).
+
+    If the value matches one of the fixed choices, return it directly;
+    otherwise return ('other', value) so the "Other…" free-text input is used.
+    """
+    if not value:
+        return '', ''
+    for choice_value, label in choices:
+        if choice_value and (choice_value == value or label == value):
+            return choice_value, ''
+    return 'other', value
+
+
+def _prescription_item_initial(item):
+    """Build initial formset data for an existing PrescriptionItem so the
+    edit form opens with each medicine row pre-filled."""
+    data = {}
+    if item.medicine:
+        data['source'] = 'inventory'
+        data['medicine'] = item.medicine_id
+        data['quantity'] = item.quantity
+        data['inv_dosage'], data['inv_dosage_other'] = _split_choice_value(item.dosage, DOSAGE_CHOICES)
+        data['inv_frequency'], data['inv_frequency_other'] = _split_choice_value(item.frequency, FREQUENCY_CHOICES)
+        data['inv_duration'], data['inv_duration_other'] = _split_choice_value(item.duration, DURATION_CHOICES)
+        data['inv_instructions'], data['inv_instructions_other'] = _split_choice_value(item.instructions, INSTRUCTIONS_CHOICES)
+    else:
+        data['source'] = 'custom'
+        data['medicine_name'] = item.medicine_name
+        data['cus_dosage'], data['cus_dosage_other'] = _split_choice_value(item.dosage, DOSAGE_CHOICES)
+        data['cus_frequency'], data['cus_frequency_other'] = _split_choice_value(item.frequency, FREQUENCY_CHOICES)
+        data['cus_duration'], data['cus_duration_other'] = _split_choice_value(item.duration, DURATION_CHOICES)
+        data['cus_instructions'], data['cus_instructions_other'] = _split_choice_value(item.instructions, INSTRUCTIONS_CHOICES)
+    return data
+
+
+def _prescription_snapshot(prescription):
+    """Capture the current prescription content for the audit trail."""
+    items = [
+        {
+            'name': item.get_display_name(),
+            'dosage': item.dosage,
+            'frequency': item.frequency,
+            'duration': item.duration,
+            'quantity': item.quantity,
+            'instructions': item.instructions,
+        }
+        for item in prescription.items.all()
+    ]
+    return {
+        'diagnosis': prescription.diagnosis,
+        'treatment_plan': prescription.treatment_plan,
+        'items': items,
+    }
 from certificates.models import MedicalCertificate, CertificateAuditLog
 from audit_logs.services import log_create, log_change
 from django.http import JsonResponse
@@ -137,8 +201,11 @@ def patient_submit(request):
         status=Consultation.Status.ACTIVE_FOLLOW_UP,
     ).order_by('-created_at')
 
+    # Most recent active consultation — blocks new request submissions
+    active_consultation = Consultation.objects.active_for_patient(patient).first()
+
     # New consultation form
-    form = PatientConsultationForm(request.POST or None)
+    form = PatientConsultationForm(request.POST or None, patient=patient)
 
     consultation_fields = {
         'symptoms', 'medical_history',
@@ -151,11 +218,29 @@ def patient_submit(request):
 
     if request.method == 'POST' and is_new_consultation_post:
         if form.is_valid():
-            consultation = form.save(commit=False)
-            consultation.patient = patient
-            consultation.status = Consultation.Status.PENDING
-            consultation.is_original_case = True
-            consultation.save()
+            try:
+                with transaction.atomic():
+                    # Serialize concurrent submissions for this patient, then
+                    # re-check the rule under the row lock (source of truth).
+                    if lock_patient_and_get_active_consultation(patient) is not None:
+                        raise ActiveConsultationExists()
+
+                    consultation = form.save(commit=False)
+                    consultation.patient = patient
+                    consultation.status = Consultation.Status.PENDING
+                    consultation.is_original_case = True
+                    consultation.save()
+            except ActiveConsultationExists:
+                messages.error(request, ACTIVE_CONSULTATION_MESSAGE)
+                return render(request, 'consultations/patient_submit.html', {
+                    'form': form,
+                    'active_follow_ups': active_follow_ups,
+                    'active_consultation': (
+                        active_consultation
+                        or Consultation.objects.active_for_patient(patient).first()
+                    ),
+                })
+
             notify_role('frontdesk',
                         'New Consultation Request',
                         f'{patient.get_full_name()} submitted a new consultation request.',
@@ -175,6 +260,7 @@ def patient_submit(request):
     return render(request, 'consultations/patient_submit.html', {
         'form': form,
         'active_follow_ups': active_follow_ups,
+        'active_consultation': active_consultation,
     })
 
 
@@ -500,6 +586,10 @@ def consultation_create(request):
                 'form': form,
                 'base_template': _base_template(request.user),
                 'looked_up_patient': existing if existing else None,
+                'looked_up_has_active': (
+                    Consultation.objects.has_active_for_patient(existing)
+                    if existing else False
+                ),
             })
 
         # ── Handle Create Consultation action ───────────────────────────
@@ -509,36 +599,46 @@ def consultation_create(request):
             is_new_patient = patient is None
             temp_password = None
 
-            with transaction.atomic():
-                if is_new_patient:
-                    # Create minimal Patient record
-                    patient = Patient.objects.create(
-                        patient_id=cd['patient_id'],
-                        first_name=cd['first_name'],
-                        last_name=cd['last_name'],
-                        sex=cd['sex'],
-                        phone=cd.get('contact_number', ''),
-                        is_active=True,
-                    )
-                    # Create PatientProfile with birthday
-                    PatientProfile.objects.create(
-                        patient=patient,
-                        birthday=cd['birthdate'],
-                    )
-                    # Auto-create User account (no email — patient provides it during profile completion)
-                    user, temp_password = create_patient_user(patient)
+            try:
+                with transaction.atomic():
+                    if is_new_patient:
+                        # A brand-new patient cannot have any prior consultation.
+                        # Create minimal Patient record
+                        patient = Patient.objects.create(
+                            patient_id=cd['patient_id'],
+                            first_name=cd['first_name'],
+                            last_name=cd['last_name'],
+                            sex=cd['sex'],
+                            phone=cd.get('contact_number', ''),
+                            is_active=True,
+                        )
+                        # Create PatientProfile with birthday
+                        PatientProfile.objects.create(
+                            patient=patient,
+                            birthday=cd['birthdate'],
+                        )
+                        # Auto-create User account (no email — patient provides it during profile completion)
+                        user, temp_password = create_patient_user(patient)
+                    else:
+                        # Existing patient — enforce the single-active-consultation
+                        # rule atomically (row lock serializes concurrent creates).
+                        if lock_patient_and_get_active_consultation(patient) is not None:
+                            raise ActiveConsultationExists()
 
-                # Create Consultation
-                consultation = Consultation(
-                    patient=patient,
-                    symptoms=cd['symptoms'],
-                    medical_history=cd.get('medical_history', ''),
-                    severity_description=cd['severity_description'],
-                    additional_notes=cd.get('additional_notes', ''),
-                    status=Consultation.Status.PENDING,
-                    is_original_case=True,
-                )
-                consultation.save()
+                    # Create Consultation
+                    consultation = Consultation(
+                        patient=patient,
+                        symptoms=cd['symptoms'],
+                        medical_history=cd.get('medical_history', ''),
+                        severity_description=cd['severity_description'],
+                        additional_notes=cd.get('additional_notes', ''),
+                        status=Consultation.Status.PENDING,
+                        is_original_case=True,
+                    )
+                    consultation.save()
+            except ActiveConsultationExists:
+                messages.error(request, ACTIVE_CONSULTATION_MESSAGE)
+                return redirect('consultations:consultation_create')
 
             # Notify front desk
             log_create(
@@ -593,6 +693,10 @@ def consultation_create(request):
         'form': form,
         'base_template': _base_template(request.user),
         'looked_up_patient': looked_up_patient,
+        'looked_up_has_active': (
+            Consultation.objects.has_active_for_patient(looked_up_patient)
+            if looked_up_patient else False
+        ),
         'new_patient_credentials': new_patient_credentials,
     })
 
@@ -741,6 +845,22 @@ def admin_reopen(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
     if consultation.status != Consultation.Status.CANCELLED:
         messages.error(request, 'Only cancelled consultations can be reopened.')
+        return redirect('consultations:queue')
+
+    # Reopening flips this consultation back to PENDING (an active status).
+    # Block it if the patient already has another active consultation, so the
+    # single-active-consultation rule is never violated.
+    other_active = Consultation.objects.filter(
+        patient=consultation.patient,
+        status__in=ACTIVE_STATUSES,
+    ).exclude(pk=consultation.pk).exists()
+    if other_active:
+        messages.error(
+            request,
+            f'Cannot reopen Consultation #{pk}: {consultation.patient.get_full_name()} '
+            'already has an active consultation. Complete or cancel the active '
+            'consultation first.'
+        )
         return redirect('consultations:queue')
 
     consultation.status = Consultation.Status.PENDING
@@ -988,8 +1108,11 @@ def prescribe(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk, status=Consultation.Status.TRIAGED)
 
     if consultation.prescriptions.exists():
+        # The prescription already exists — send the doctor to the edit form
+        # instead of the read-only print page, so "Back to Prescription"
+        # actually lets them amend it.
         messages.info(request, f'Consultation #{consultation.pk} already has a prescription.')
-        return redirect('consultations:print_consultation', pk=consultation.pk)
+        return redirect('consultations:prescription_edit', pk=consultation.pk)
 
     prescription_form = PrescriptionForm(request.POST or None)
     formset = PrescriptionMedicineFormSet(request.POST or None, prefix='meds')
@@ -1047,6 +1170,9 @@ def prescribe(request, pk):
                                 frequency=form.cleaned_data.get('frequency', '').strip(),
                                 duration=form.cleaned_data.get('duration', '').strip(),
                                 instructions=final_instructions,
+                                # Persist the dispensed quantity so a later edit
+                                # can restore the correct amount of stock.
+                                quantity=qty,
                             )
 
                             if med and qty:
@@ -1090,6 +1216,157 @@ def prescribe(request, pk):
         'inventory_medicines': inventory_medicines,
         'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
         'base_template': _base_template(request.user),
+    })
+
+
+@login_required
+@doctor_required
+def prescription_edit(request, pk):
+    """
+    Doctor edits an existing prescription while the consultation is still
+    open (TRIAGED — not yet completed/closed).
+
+    Stock handling: every edit restores the previously dispensed inventory
+    quantities and re-deducts for the final list, so removing or reducing a
+    medicine returns stock to inventory. The whole change is atomic and is
+    recorded in the audit trail with before/after snapshots.
+    """
+    consultation = get_object_or_404(Consultation, pk=pk)
+
+    if consultation.status != Consultation.Status.TRIAGED:
+        messages.error(
+            request,
+            'This consultation has already been completed. Prescriptions can '
+            'only be edited before the consultation is completed.'
+        )
+        return redirect('consultations:clinical_detail', pk=pk)
+
+    prescription = consultation.prescriptions.first()
+    if prescription is None:
+        messages.error(request, 'No prescription has been made for this consultation yet.')
+        return redirect('consultations:prescribe', pk=pk)
+
+    # Snapshot BEFORE any form validation mutates the in-memory instance.
+    before = _prescription_snapshot(prescription)
+
+    initial_items = [_prescription_item_initial(i) for i in prescription.items.all()]
+
+    # Include medicines that are currently prescribed even if they have run
+    # out of stock, so they are not silently dropped from the edit form.
+    existing_medicine_ids = list(
+        prescription.items.exclude(medicine__isnull=True).values_list('medicine_id', flat=True)
+    )
+    inventory_medicines = Medicine.objects.filter(
+        Q(quantity__gt=0) | Q(pk__in=existing_medicine_ids)
+    ).order_by('name')
+
+    if request.method == 'POST':
+        prescription_form = PrescriptionForm(request.POST, instance=prescription)
+        formset = PrescriptionMedicineFormSet(request.POST, prefix='meds')
+
+        if prescription_form.is_valid() and formset.is_valid():
+            item_rows = [f for f in formset if f.has_data()]
+            global_instructions = request.POST.get('apply_instructions', '').strip()
+
+            try:
+                with transaction.atomic():
+                    # 1) Return stock for every inventory-linked line so the
+                    #    new list is deducted fresh (removed/reduced meds return stock).
+                    for item in prescription.items.select_related('medicine').all():
+                        if item.medicine and item.quantity:
+                            item.medicine.add_stock(item.quantity)
+                            StockMovement.objects.create(
+                                medicine=item.medicine,
+                                movement_type=StockMovement.MovementType.IN,
+                                quantity=item.quantity,
+                                reason=(
+                                    f'Prescription #{prescription.pk} edit — stock returned '
+                                    f'(Consultation #{consultation.pk})'
+                                ),
+                                reference=f'Prescription #{prescription.pk} edit',
+                                created_by=request.user.username,
+                            )
+
+                    # 2) Replace the medicine lines
+                    prescription.items.all().delete()
+
+                    # 3) Update the prescription itself
+                    prescription.diagnosis = prescription_form.cleaned_data['diagnosis']
+                    prescription.treatment_plan = prescription_form.cleaned_data.get('treatment_plan', '')
+                    prescription.save(update_fields=['diagnosis', 'treatment_plan'])
+
+                    # 4) Recreate lines from the formset
+                    for form in item_rows:
+                        med           = form.cleaned_data.get('medicine')
+                        medicine_name = form.cleaned_data.get('medicine_name', '').strip()
+                        qty           = form.cleaned_data.get('quantity')
+
+                        row_instructions   = form.cleaned_data.get('instructions', '').strip()
+                        final_instructions = row_instructions or global_instructions
+
+                        PrescriptionItem.objects.create(
+                            prescription=prescription,
+                            medicine=med,
+                            medicine_name=med.name if med else medicine_name,
+                            dosage=form.cleaned_data.get('dosage', '').strip(),
+                            frequency=form.cleaned_data.get('frequency', '').strip(),
+                            duration=form.cleaned_data.get('duration', '').strip(),
+                            instructions=final_instructions,
+                            # Persist the dispensed quantity so a later edit
+                            # can restore the correct amount of stock.
+                            quantity=qty,
+                        )
+
+                        if med and qty:
+                            deduct_medicine_stock(
+                                medicine_id=med.pk,
+                                quantity=qty,
+                                reason=(
+                                    f'Consultation #{consultation.pk} — '
+                                    f'{consultation.patient.get_full_name()}'
+                                ),
+                                user=request.user,
+                            )
+            except Exception as exc:
+                messages.error(
+                    request,
+                    f'An unexpected error occurred: {exc}. Please try again.',
+                )
+            else:
+                log_change(
+                    user=request.user,
+                    module='Consultations',
+                    description=(
+                        f'Amended prescription for consultation #{consultation.pk} — '
+                        f'{consultation.patient.get_full_name()}'
+                    ),
+                    object_model='consultations.Prescription',
+                    object_id=prescription.pk,
+                    object_repr=str(prescription),
+                    changes_before=before,
+                    changes_after=_prescription_snapshot(prescription),
+                    request=request,
+                )
+                messages.success(
+                    request,
+                    f'Prescription for Consultation #{consultation.pk} has been updated.'
+                )
+                return redirect('consultations:consultation_complete', pk=consultation.pk)
+
+        # Fall through on validation errors → re-render with errors
+    else:
+        prescription_form = PrescriptionForm(instance=prescription)
+        formset = PrescriptionMedicineFormSet(prefix='meds', initial=initial_items)
+
+    return render(request, 'consultations/prescribe.html', {
+        'consultation': consultation,
+        'prescription': prescription,
+        'prescription_form': prescription_form,
+        'formset': formset,
+        'inventory_medicines': inventory_medicines,
+        'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
+        'base_template': _base_template(request.user),
+        'edit_mode': True,
     })
 
 

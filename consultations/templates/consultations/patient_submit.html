@@ -156,6 +156,59 @@
     border: 1px solid #e8ecf1;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
   }
+
+  /* ── Active Consultation Exists alert ── */
+  .active-alert {
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .active-alert-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #fef2f2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .active-alert-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #991b1b;
+    margin-bottom: 5px;
+    letter-spacing: -0.2px;
+  }
+  .active-alert-msg {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+  .active-alert-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .active-alert-btn:hover { background: #dc2626; color: #fff; }
   .form-group {
     margin-bottom: 16px;
   }
@@ -272,12 +325,31 @@
   {# ── Divider ── #}
   <hr class="divider">
 
-  {# ── New Consultation Form ── #}
+  {# ── New Consultation ── #}
   <div class="section-label">New Consultation</div>
   <p style="font-size:12px;color:#6b7280;margin-bottom:14px;">
     Use this form for a new medical concern that is not related to any existing consultation.
   </p>
 
+  {# ── Blocked while an active consultation exists ── #}
+  {% if active_consultation %}
+  <div class="active-alert">
+    <div class="active-alert-icon">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div>
+      <div class="active-alert-title">Active Consultation Exists</div>
+      <div class="active-alert-msg">
+        You already have an active consultation request. You may submit another
+        consultation request once your current consultation has been completed.
+      </div>
+      <a href="{% url 'consultations:patient_detail' active_consultation.pk %}" class="active-alert-btn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        View My Consultation
+      </a>
+    </div>
+  </div>
+  {% else %}
   <div class="form-card">
     <form method="post" novalidate data-track-changes="true">
       {% csrf_token %}
@@ -323,6 +395,7 @@
       </div>
     </form>
   </div>
+  {% endif %}
 
   <p class="footer-note">Negros Oriental State University — Medical Clinic</p>
 

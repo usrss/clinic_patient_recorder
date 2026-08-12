@@ -31,6 +31,7 @@ urlpatterns = [
     path('triage/<int:pk>/edit/', views.triage_edit, name='triage_edit'),
     path('doctor/', views.doctor_list, name='doctor_list'),
     path('prescribe/<int:pk>/', views.prescribe, name='prescribe'),
+    path('prescribe/<int:pk>/edit/', views.prescription_edit, name='prescription_edit'),
 
     # ── Completion Summary ────────────────────────────────────────────
     path('complete/<int:pk>/summary/', views.completion_summary, name='completion_summary'),

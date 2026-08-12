@@ -1,13 +1,34 @@
 from django import forms
 from django.forms import formset_factory
 
-from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpProgress
+from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpProgress, ACTIVE_STATUSES
 from inventory.models import Medicine
 import re
 
 
 class PatientConsultationForm(forms.ModelForm):
     """Used by a logged-in patient to submit their own consultation request."""
+
+    def __init__(self, *args, **kwargs):
+        # The submitting patient is passed in so the single-active-consultation
+        # rule can be enforced at form level (nice inline UX); the view still
+        # re-checks atomically under a row lock as the source of truth.
+        self.patient = kwargs.pop('patient', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.patient is not None and Consultation.objects.filter(
+            patient=self.patient,
+            status__in=ACTIVE_STATUSES,
+        ).exists():
+            raise forms.ValidationError(
+                'You already have an active consultation request. '
+                'You may submit another consultation request once your '
+                'current consultation has been completed.'
+            )
+        return cleaned
+
     class Meta:
         model = Consultation
         fields = ['symptoms', 'medical_history', 'severity_description', 'additional_notes']

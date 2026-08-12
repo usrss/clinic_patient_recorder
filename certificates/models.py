@@ -1,3 +1,4 @@
+import re
 from datetime import date
 
 import bleach
@@ -5,6 +6,16 @@ from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+
+def strip_doctor_honorific(name):
+    """
+    Remove a leading 'Dr.' / 'Dr' / 'Dra.' honorific from a doctor's name so
+    certificates display only the name (e.g. "Dr. Juan Dela Cruz" → "Juan Dela Cruz").
+    """
+    if not name:
+        return name
+    return re.sub(r'^\s*Dr[ra]?\.?\s+', '', name, flags=re.IGNORECASE).strip() or name
 
 
 class MedicalCertificate(models.Model):
@@ -192,10 +203,13 @@ class MedicalCertificate(models.Model):
         position_info = f'{position} — {department}, ' if position or department else ''
 
         # ── Doctor info ────────────────────────────────────────────────
+        # The honorific ("Dr."/"Dra.") is stripped so certificates show
+        # only the doctor's name.
         if self.doctor:
             doctor_name = self.doctor.get_full_name() or self.doctor.username
         else:
             doctor_name = 'Attending Physician'
+        doctor_name = strip_doctor_honorific(doctor_name)
 
         # ── Issue date parts ───────────────────────────────────────────
         issued = self.issued_at or self.created_at

@@ -1,5 +1,22 @@
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
+from django.core.exceptions import ValidationError
+
+
+# ── Status groups for the single-active-consultation rule ─────────────────────
+# A patient may only create a NEW consultation when none of their existing
+# consultations is in an ACTIVE_STATUSES state. Kept as plain module-level
+# constants (rather than enum members) so they can be referenced from the
+# model's Meta.constraints.
+ACTIVE_STATUSES = (
+    'pending',
+    'queued',
+    'scheduled',
+    'triaged',
+    'active_follow_up',
+)
+CLOSED_STATUSES = ('completed', 'cancelled', 'closed')
 
 
 class ConsultationManager(models.Manager):
@@ -57,6 +74,20 @@ class ConsultationManager(models.Manager):
                 Consultation.Status.COMPLETED,
             ]
         ).order_by('-created_at')
+
+    def active_for_patient(self, patient):
+        """
+        Consultations that are still active for a patient — i.e. NOT in a
+        closed state (completed / cancelled / closed). Ordered most recent first.
+        """
+        return self.filter(
+            patient=patient,
+            status__in=ACTIVE_STATUSES,
+        ).order_by('-created_at')
+
+    def has_active_for_patient(self, patient):
+        """True if the patient has at least one active consultation."""
+        return self.active_for_patient(patient).exists()
 
 
 class Consultation(models.Model):
@@ -135,11 +166,58 @@ class Consultation(models.Model):
         help_text='Recommended date for the next follow-up visit'
     )
 
+    # ── MySQL-compatible single-active-consultation backstop ──────────────────
+    # MySQL cannot create conditional (partial) unique constraints, so the
+    # conditional constraint in Meta below is silently skipped on MySQL. This
+    # generated column is 1 while the consultation is active and NULL once it
+    # reaches a closed status. The unique index on (patient, active_flag) then
+    # allows at most one active consultation per patient on EVERY database
+    # (MySQL, SQLite, PostgreSQL all permit multiple NULLs in a unique index,
+    # so closed consultations never conflict).
+    active_flag = models.GeneratedField(
+        expression=models.Case(
+            models.When(status__in=ACTIVE_STATUSES, then=models.Value(1)),
+            default=None,
+            output_field=models.IntegerField(),
+        ),
+        output_field=models.IntegerField(null=True, blank=True),
+        db_persist=True,
+    )
+
     def __str__(self):
         return (
             f'Consultation #{self.pk} — {self.patient.get_full_name()} '
             f'({self.get_status_display()})'
         )
+
+    # ── Single-active-consultation rule ───────────────────────────────────────
+
+    def validate_no_active_consultation(self):
+        """
+        Raise a ValidationError if this patient already has an active
+        consultation. Enforced on creation via clean()/save() so the rule
+        holds for every code path (views, admin, future API, shell).
+        """
+        if self.patient_id is None:
+            return
+        if Consultation.objects.filter(
+            patient_id=self.patient_id,
+            status__in=ACTIVE_STATUSES,
+        ).exists():
+            raise ValidationError(
+                'This patient already has an active consultation. '
+                'A new consultation cannot be created until the current '
+                'one has been completed.'
+            )
+
+    def clean(self):
+        if self.pk is None:
+            self.validate_no_active_consultation()
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.validate_no_active_consultation()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Consultation'
@@ -148,6 +226,25 @@ class Consultation(models.Model):
         indexes = [
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['patient', '-created_at']),
+        ]
+        constraints = [
+            # Database-level guarantee: a patient can never hold more than one
+            # active consultation at the same time, even under concurrent
+            # requests that race past the application-level checks.
+            #
+            # The conditional constraint below works on PostgreSQL but is a
+            # no-op on MySQL (unsupported). The (patient, active_flag) unique
+            # constraint covers MySQL/SQLite/PostgreSQL alike — see the
+            # active_flag generated column above.
+            models.UniqueConstraint(
+                fields=['patient'],
+                condition=Q(status__in=ACTIVE_STATUSES),
+                name='unique_active_consultation_per_patient',
+            ),
+            models.UniqueConstraint(
+                fields=['patient', 'active_flag'],
+                name='unique_active_consultation_per_patient_mysql',
+            ),
         ]
 
 class FollowUpProgress(models.Model):

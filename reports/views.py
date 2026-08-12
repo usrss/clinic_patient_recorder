@@ -503,7 +503,7 @@ def _diagnosis_full_report_pdf(all_diagnoses, full_matrix_rows, full_college_nam
     story.extend(_pdf_header_block('Full Diagnosis Report', meta))
 
     # ── All Diagnoses (ranked) ──
-    story.append(Paragraph('All Diagnoses (Ranked)', s['section_title']))
+    story.append(Paragraph('All Diagnoses', s['section_title']))
     story.append(_pdf_make_table(
         ['Rank', 'Diagnosis', 'Cases'],
         [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
@@ -579,9 +579,9 @@ def _diagnoses_pdf(all_diagnoses, date_from, date_to,
             meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
 
     story = []
-    story.extend(_pdf_header_block('Diagnoses (Ranked)', meta))
+    story.extend(_pdf_header_block('Diagnoses', meta))
 
-    story.append(Paragraph('All Diagnoses (Ranked)', s['section_title']))
+    story.append(Paragraph('All Diagnoses', s['section_title']))
     story.append(_pdf_make_table(
         ['Rank', 'Diagnosis', 'Cases'],
         [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
