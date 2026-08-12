@@ -464,3 +464,29 @@
     .btn-back { padding: 12px 14px; font-size: 13px; }
     .btn-next { font-size: 13px; padding: 12px 10px; }
   }
+
+  /* ── Complete Profile (readonly fields & email validation) ── */
+  .readonly-field {
+    padding: 10px 13px;
+    border: 1.5px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #6b7280;
+    background: #f3f4f6;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: not-allowed;
+  }
+  .email-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-top: 6px;
+    display: none;
+    align-items: center;
+    gap: 4px;
+  }
+  .email-error.visible { display: flex; }
+  .reg-input.email-taken { border-color: #ef4444; background: #fef2f2; }
+
+  /* ── Shared keyframes ── */
+  @keyframes spin { to { transform: rotate(360deg); } }

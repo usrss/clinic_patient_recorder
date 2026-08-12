@@ -1,4 +1,5 @@
 {% extends 'core/base_admin.html' %}
+{% load static %}
 {% block title %}Staff Users — Patient Record System{% endblock %}
 {% block nav_staff %}active{% endblock %}
 {% block page_title %}Staff Users{% endblock %}
@@ -110,7 +111,8 @@
                 {% if u != request.user %}
                   {% if u.is_active %}
                     <button type="button" class="btn btn-sm btn-danger" style="gap:4px;padding:4px 10px;font-size:11px;"
-                            onclick="openDeactivateModal({{ u.pk }}, '{{ u.get_full_name|default:u.username|escapejs }}')">
+                            data-deactivate-user="{{ u.get_full_name|default:u.username }}"
+                            data-toggle-url="{% url 'accounts:user_toggle_active' u.pk %}">
                       Deactivate
                     </button>
                   {% else %}
@@ -188,39 +190,8 @@
       </div>
     </div>
   </div>
+{% endblock %}
 
-  <script>
-    function openDeactivateModal(pk, name) {
-      document.getElementById('deactivateModalName').textContent = 'Deactivate "' + name + '"? They will not be able to log in.';
-      document.getElementById('deactivateForm').action = "{% url 'accounts:user_toggle_active' 0 %}".replace('/0/', '/' + pk + '/');
-      new bootstrap.Modal(document.getElementById('deactivateModal')).show();
-    }
-
-    // ── Loading state on deactivation form submit ──
-    document.addEventListener('DOMContentLoaded', function() {
-      var forms = document.querySelectorAll('form[action*="/toggle/"]');
-      for (var i = 0; i < forms.length; i++) {
-        forms[i].addEventListener('submit', function() {
-          var btn = this.querySelector('button[type="submit"]');
-          if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Activating...</span>';
-          }
-        });
-      }
-
-      // Loading state on deactivate modal button
-      var deactivateForm = document.getElementById('deactivateForm');
-      if (deactivateForm) {
-        deactivateForm.addEventListener('submit', function() {
-          var btn = this.querySelector('button[type="submit"]');
-          if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Deactivating...</span>';
-          }
-        });
-      }
-    });
-  </script>
-
+{% block extra_js %}
+<script src="{% static 'accounts/js/user_list.js' %}" defer></script>
 {% endblock %}

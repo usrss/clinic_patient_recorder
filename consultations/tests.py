@@ -45,11 +45,43 @@ class SingleActiveConsultationTests(TestCase):
 
     def _submit_new(self):
         return self.client.post(reverse('consultations:patient_submit'), {
+            'complaints': 'Headache',
             'symptoms': 'Headache',
             'severity_description': 'Mild since this morning',
             'medical_history': '',
             'additional_notes': '',
         })
+
+    def test_submitted_complaints_saved_as_chief_complaint(self):
+        """The patient-submitted form's Complaints field (required) is saved
+        as the consultation's chief complaint."""
+        response = self.client.post(reverse('consultations:patient_submit'), {
+            'complaints': 'Fever since last night',
+            'symptoms': 'Headache',
+            'severity_description': 'Mild since this morning',
+            'medical_history': '',
+            'additional_notes': '',
+        })
+        self.assertRedirects(
+            response,
+            reverse('consultations:patient_home'),
+            fetch_redirect_response=False,
+        )
+        consultation = Consultation.objects.get(patient=self.patient)
+        self.assertEqual(consultation.chief_complaint, 'Fever since last night')
+        self.assertEqual(consultation.symptoms, 'Headache')
+
+    def test_patient_submit_requires_complaints(self):
+        """Patient submission without Complaints is rejected."""
+        response = self.client.post(reverse('consultations:patient_submit'), {
+            'symptoms': 'Headache',
+            'severity_description': 'Mild',
+            'medical_history': '',
+            'additional_notes': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Consultation.objects.filter(patient=self.patient).count(), 0)
+        self.assertContains(response, 'This field is required')
 
     def assert_blocked(self, response):
         """The submission is refused and no second consultation is created."""
@@ -182,6 +214,7 @@ class SingleActiveConsultationFrontDeskTests(TestCase):
             'birthdate': '2001-05-10',
             'sex': 'M',
             'contact_number': '',
+            'complaints': 'Headache since morning',
             'symptoms': 'Cough and colds',
             'severity_description': 'Moderate',
             'medical_history': '',
@@ -547,6 +580,7 @@ class PatientConsultationSubmitTests(TestCase):
         self.client.force_login(user)
 
         response = self.client.post(reverse('consultations:patient_submit'), {
+            'complaints': 'Fever and sore throat',
             'symptoms': 'Fever and sore throat',
             'severity_description': 'Moderate fever since last night',
             'medical_history': '',
@@ -559,6 +593,7 @@ class PatientConsultationSubmitTests(TestCase):
             fetch_redirect_response=False,
         )
         consultation = Consultation.objects.get(patient=patient)
+        self.assertEqual(consultation.chief_complaint, 'Fever and sore throat')
         self.assertEqual(consultation.symptoms, 'Fever and sore throat')
         self.assertEqual(
             consultation.severity_description,
@@ -727,3 +762,82 @@ class TriageChiefComplaintTests(TestCase):
         self.assertIsNotNone(entry)
         self.assertIn('Amended triage', entry.description)
         self.assertEqual(entry.changes_after['chief_complaint'], 'abdominal pain')
+
+
+class FrontDeskComplaintsFieldTest(TestCase):
+    """The optional Complaints field on the front-desk intake form is saved
+    as the consultation's chief complaint, so certificates can show the
+    patient's complaint separately from the diagnosis (assessment)."""
+
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username='fd_complaints',
+            password='secret12345',
+            role=User.Role.FRONTDESK,
+        )
+        self.patient = Patient.objects.create(
+            patient_id='P-COMPLAINTS',
+            first_name='Liza',
+            last_name='Tan',
+            sex=Patient.Sex.FEMALE,
+        )
+        self.client.force_login(self.staff)
+
+    def test_complaints_field_saved_as_chief_complaint(self):
+        response = self.client.post(reverse('consultations:consultation_create'), {
+            'patient_id': 'P-COMPLAINTS',
+            'first_name': 'Liza',
+            'last_name': 'Tan',
+            'birthdate': '2002-03-15',
+            'sex': 'F',
+            'contact_number': '',
+            'complaints': 'Headache since morning',
+            'symptoms': 'Cough and colds',
+            'severity_description': 'Moderate',
+            'medical_history': '',
+            'additional_notes': '',
+        })
+        self.assertRedirects(response, reverse('consultations:queue'), fetch_redirect_response=False)
+        consultation = Consultation.objects.get(patient=self.patient)
+        self.assertEqual(consultation.chief_complaint, 'Headache since morning')
+        self.assertEqual(consultation.symptoms, 'Cough and colds')
+
+    def test_complaints_is_required(self):
+        """Complaints is required on the walk-in intake form — omitting it
+        re-renders the form with an error and creates no consultation."""
+        response = self.client.post(reverse('consultations:consultation_create'), {
+            'patient_id': 'P-COMPLAINTS',
+            'first_name': 'Liza',
+            'last_name': 'Tan',
+            'birthdate': '2002-03-15',
+            'sex': 'F',
+            'contact_number': '',
+            'symptoms': 'Cough and colds',
+            'severity_description': 'Moderate',
+            'medical_history': '',
+            'additional_notes': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Consultation.objects.filter(patient=self.patient).count(), 0)
+        self.assertContains(response, 'This field is required')
+
+    def test_symptoms_and_severity_are_optional(self):
+        """A walk-in consultation can be created with only Complaints filled."""
+        response = self.client.post(reverse('consultations:consultation_create'), {
+            'patient_id': 'P-COMPLAINTS',
+            'first_name': 'Liza',
+            'last_name': 'Tan',
+            'birthdate': '2002-03-15',
+            'sex': 'F',
+            'contact_number': '',
+            'complaints': 'Headache since morning',
+            'symptoms': '',
+            'severity_description': '',
+            'medical_history': '',
+            'additional_notes': '',
+        })
+        self.assertRedirects(response, reverse('consultations:queue'), fetch_redirect_response=False)
+        consultation = Consultation.objects.get(patient=self.patient)
+        self.assertEqual(consultation.chief_complaint, 'Headache since morning')
+        self.assertEqual(consultation.symptoms, '')
+        self.assertEqual(consultation.severity_description, '')

@@ -1,0 +1,208 @@
+/* ═══════════════════════════════════════════
+   Auth — Shared styles for login / forgot
+   password / reset password / verify OTP /
+   change password pages
+   ═══════════════════════════════════════════ */
+
+/* ── Form inputs (username, password, patient id) ── */
+#id_username,
+#id_password,
+#id_patient_id,
+#id_new_password1,
+#id_new_password2 {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1a1a2e;
+  background: #fafbfc;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+#id_password,
+#id_new_password1,
+#id_new_password2 {
+  padding-right: 44px;
+}
+#id_username:focus,
+#id_password:focus,
+#id_patient_id:focus,
+#id_new_password1:focus,
+#id_new_password2:focus {
+  border-color: #0078d4;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+}
+#id_username::placeholder,
+#id_password::placeholder,
+#id_patient_id::placeholder {
+  color: #c4c9d0;
+}
+
+/* ── Change password page: generic password/text inputs ── */
+.change-password-page input[type="password"],
+.change-password-page input[type="text"] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1a1a2e;
+  background: #fafbfc;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+.change-password-page input[name="old_password"],
+.change-password-page input[name="new_password1"],
+.change-password-page input[name="new_password2"] {
+  padding-right: 44px;
+}
+.change-password-page input[type="password"]:focus,
+.change-password-page input[type="text"]:focus {
+  border-color: #0078d4;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+}
+
+/* ── Field labels (change password page) ── */
+.pw-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+/* ── Password visibility toggle buttons ── */
+.pw-toggle-btn,
+.pw-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.pw-toggle-btn:hover,
+.pw-toggle:hover { color: #475569; }
+.pw-toggle-btn:focus,
+.pw-toggle:focus { color: #0078d4; }
+
+/* ── Primary action button (login / forgot / verify) ── */
+.btn-auth-primary {
+  width: 100%;
+  padding: 12px;
+  background: #0078d4;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,120,212,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Inter', sans-serif;
+}
+.btn-auth-primary:hover {
+  background: #006cbd;
+  box-shadow: 0 4px 12px rgba(0,120,212,0.3);
+}
+
+/* ── Inline text links (forgot password / back to login) ── */
+.auth-link {
+  font-size: 12px;
+  color: #0078d4;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.auth-link:hover { color: #005a9e; }
+
+/* ── Password strength meter ── */
+.strength-wrap { margin-top: 8px; }
+.strength-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e8ecf1;
+  transition: background 0.3s;
+}
+.strength-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.3s;
+}
+
+/* ── OTP digit boxes (verify OTP) ── */
+.otp-digit {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a2e;
+  border: 2px solid #e1e5eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.15s;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.otp-digit:focus {
+  border-color: #0078d4;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,120,212,0.12);
+}
+.otp-digit.filled {
+  border-color: #0078d4;
+  background: #eff6ff;
+}
+.otp-digit.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+}
+@media (max-width: 500px) {
+  .otp-digit {
+    width: 42px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+/* ── Inline "resend code" button (verify OTP) ── */
+.auth-resend-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0078d4;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.15s;
+}
+.auth-resend-btn:hover { color: #005a9e; }
+
+/* ── Shared keyframes ── */
+@keyframes spin { to { transform: rotate(360deg); } }

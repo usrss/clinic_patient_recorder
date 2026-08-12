@@ -237,6 +237,10 @@ class MedicalCertificate(models.Model):
             'position': position,
             'department': department,
             'exam_date': self.consultation.created_at.strftime('%B %d, %Y'),
+            # Patient's complaint for official documents: the doctor-reviewed
+            # chief complaint, falling back to the patient's own words (symptoms)
+            # when the doctor hasn't reworded it.
+            'complaints': (self.consultation.chief_complaint or self.consultation.symptoms).strip(),
             'diagnosis': self.diagnosis,
             'rest_date': self._resolve_placeholder('rest_date', self.rest_from),
             'rest_from': self._resolve_placeholder('rest_from', self.rest_from),

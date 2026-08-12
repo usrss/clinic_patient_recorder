@@ -1,6 +1,10 @@
-
 {% extends 'core/base.html' %}
+{% load static %}
 {% block title %}Verify OTP — Patient Record System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+{% endblock %}
 
 {% block content %}
 <div style="min-height:100vh;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:36px 24px;">
@@ -54,27 +58,21 @@
         </div>
       </div>
 
-
-
       {# ── Resend inline ── #}
       <div style="text-align:center;margin-bottom:24px;">
         <span style="font-size:12px;color:#6b7280;">Didn't get it? </span>
-        <button type="button" id="resend-btn" disabled
-          style="font-size:12px;font-weight:600;color:#0078d4;background:none;border:none;cursor:pointer;padding:0;font-family:'Inter',sans-serif;"
-          onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">Resend code</button>
+        <button type="button" id="resend-btn" class="auth-resend-btn" disabled>Resend code</button>
       </div>
 
       {# ── Verify button with loading state ── #}
-      <button type="submit" id="verifyOtpBtn"
-        style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Inter',sans-serif;"
-        onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+      <button type="submit" id="verifyOtpBtn" class="btn-auth-primary">
         <ion-icon name="checkmark-shield-outline" style="font-size:16px;"></ion-icon>
         Verify OTP
       </button>
     </form>
 
     <div style="text-align:center;margin-top:16px;">
-      <a href="{% url 'accounts:login' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;">
+      <a href="{% url 'accounts:login' %}" class="auth-link">
         ← Back to Login
       </a>
     </div>
@@ -87,193 +85,8 @@
 
 </div>
 </div>
+{% endblock %}
 
-<style>
-  .otp-digit {
-    width: 48px; height: 56px;
-    text-align: center;
-    font-size: 24px; font-weight: 700;
-    color: #1a1a2e;
-    border: 2px solid #e1e5eb;
-    border-radius: 12px;
-    background: #f8fafc;
-    outline: none;
-    transition: all 0.15s;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-  .otp-digit:focus {
-    border-color: #0078d4;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,120,212,0.12);
-  }
-  .otp-digit.filled {
-    border-color: #0078d4;
-    background: #eff6ff;
-  }
-  .otp-digit.error {
-    border-color: #ef4444;
-    background: #fef2f2;
-    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
-  }
-  @media (max-width: 500px) {
-    .otp-digit {
-      width: 42px; height: 50px;
-      font-size: 20px;
-    }
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
-<script>
-  (function() {
-    var digits = [];
-    for (var i = 0; i < 6; i++) digits.push(document.getElementById('otp-' + i));
-
-    function getOtp() {
-      var val = '';
-      for (var i = 0; i < 6; i++) val += digits[i].value;
-      return val;
-    }
-
-    // ── Auto-advance & auto-submit ──
-    for (var i = 0; i < 6; i++) {
-      (function(idx) {
-        digits[idx].addEventListener('input', function() {
-          this.value = this.value.replace(/[^0-9]/g, '').slice(0, 1);
-          if (this.value) {
-            this.classList.add('filled');
-            this.classList.remove('error');
-            if (idx < 5) digits[idx + 1].focus();
-            if (getOtp().length === 6) {
-              document.getElementById('verifyOtpBtn').click();
-            }
-          } else {
-            this.classList.remove('filled');
-          }
-          document.getElementById('otp-error').style.display = 'none';
-        });
-
-        digits[idx].addEventListener('keydown', function(e) {
-          if (e.key === 'Backspace' && !this.value && idx > 0) {
-            digits[idx - 1].focus();
-            digits[idx - 1].value = '';
-            digits[idx - 1].classList.remove('filled');
-          }
-          if (e.key === 'ArrowLeft' && idx > 0) { digits[idx - 1].focus(); }
-          if (e.key === 'ArrowRight' && idx < 5) { digits[idx + 1].focus(); }
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('verifyOtpBtn').click();
-          }
-        });
-
-        digits[idx].addEventListener('paste', function(e) {
-          e.preventDefault();
-          var paste = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
-          for (var j = 0; j < paste.length; j++) {
-            if (idx + j < 6) {
-              digits[idx + j].value = paste[j];
-              digits[idx + j].classList.add('filled');
-              digits[idx + j].classList.remove('error');
-            }
-          }
-          digits[Math.min(idx + paste.length, 5)].focus();
-        });
-      })(i);
-    }
-
-    // ── Countdown timer ──
-    var totalSeconds = 180;
-    var resendBtn = document.getElementById('resend-btn');
-    var verifyBtn = document.getElementById('verifyOtpBtn');
-
-    function updateCountdown() {
-      var mins = Math.floor(totalSeconds / 60);
-      var secs = totalSeconds % 60;
-      var timeStr = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-      resendBtn.textContent = 'Resend code (' + timeStr + ')';
-      if (totalSeconds <= 0) {
-        clearInterval(timer);
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Resend code';
-        resendBtn.style.cursor = 'pointer';
-        resendBtn.style.opacity = '1';
-        verifyBtn.disabled = true;
-        verifyBtn.style.opacity = '0.5';
-        verifyBtn.style.cursor = 'not-allowed';
-        for (var i = 0; i < 6; i++) {
-          digits[i].disabled = true;
-          digits[i].classList.add('error');
-        }
-        document.getElementById('otp-error').textContent = 'Code expired. Please request a new one.';
-        document.getElementById('otp-error').style.display = 'block';
-      } else {
-        totalSeconds--;
-      }
-    }
-    var timer = setInterval(updateCountdown, 1000);
-
-    // ── Inline resend via fetch ──
-    resendBtn.addEventListener('click', function() {
-      var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-      resendBtn.disabled = true;
-      resendBtn.textContent = 'Sending...';
-
-      fetch(window.location.href, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': csrf },
-        body: new URLSearchParams({ resend_otp: '1', csrfmiddlewaretoken: csrf })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.success) {
-          totalSeconds = 180;
-          updateCountdown(); // Immediately show countdown on button
-          resendBtn.disabled = true;
-          verifyBtn.disabled = false;
-          verifyBtn.style.opacity = '1';
-          verifyBtn.style.cursor = 'pointer';
-          for (var i = 0; i < 6; i++) {
-            digits[i].disabled = false;
-            digits[i].value = '';
-            digits[i].classList.remove('filled', 'error');
-          }
-          digits[0].focus();
-          document.getElementById('otp-error').style.display = 'none';
-        } else {
-          resendBtn.textContent = 'Resend code';
-          resendBtn.disabled = false;
-          document.getElementById('otp-error').textContent = data.error || 'Failed to resend.';
-          document.getElementById('otp-error').style.display = 'block';
-        }
-      })
-      .catch(function() {
-        resendBtn.textContent = 'Resend code';
-        resendBtn.disabled = false;
-        document.getElementById('otp-error').textContent = 'Network error.';
-        document.getElementById('otp-error').style.display = 'block';
-      });
-    });
-
-    // ── Loading state on submit ──
-    document.getElementById('verify-otp-form').addEventListener('submit', function(e) {
-      var otpVal = getOtp();
-      if (otpVal.length !== 6) {
-        e.preventDefault();
-        document.getElementById('otp-error').textContent = 'Please enter all 6 digits.';
-        document.getElementById('otp-error').style.display = 'block';
-        for (var i = 0; i < 6; i++) {
-          if (!digits[i].value) digits[i].classList.add('error');
-        }
-        return;
-      }
-      document.getElementById('otp-hidden').value = otpVal;
-      // Show success state (replaces button with checkmark)
-      document.getElementById('otp-success').style.display = 'block';
-      verifyBtn.disabled = true;
-      verifyBtn.innerHTML = '<ion-icon name="checkmark-circle" style="font-size:16px;"></ion-icon> Verified!';
-      verifyBtn.style.background = '#10b981';
-    });
-  })();
-</script>
+{% block extra_js %}
+<script src="{% static 'accounts/js/otp.js' %}" defer></script>
 {% endblock %}

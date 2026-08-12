@@ -26,7 +26,6 @@ from .forms import (
     PasswordResetRequestForm, PasswordResetForm, RegistrationForm,
     ProfileCompletionForm,
 )
-import json
 from collections import defaultdict
 from django.db.models import Count, Q, F
 from consultations.models import Consultation, Triage, Prescription
@@ -732,7 +731,9 @@ def dashboard(request):
                     'borderSkipped': False,
                 })
 
-            dash_diag_college_datasets = json.dumps(_datasets)
+            # Pass the raw list; the template serializes it with json_script
+            # (avoids double-encoding and safely escapes <, >, & in labels).
+            dash_diag_college_datasets = _datasets
 
             staff_count = User.objects.exclude(role=User.Role.PATIENT).count()
             doctor_count = User.objects.filter(role=User.Role.DOCTOR).count()

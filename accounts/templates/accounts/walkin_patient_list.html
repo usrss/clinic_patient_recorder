@@ -1,7 +1,12 @@
 {% extends base_template %}
+{% load static %}
 {% block title %}Walk-in Patients — Patient Record System{% endblock %}
 {% block page_title %}Walk-in Patients{% endblock %}
 {% block page_subtitle %}Manage temporary passwords for walk-in patients{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/temp_password.css' %}">
+{% endblock %}
 
 {% block content %}
 
@@ -40,9 +45,7 @@
           <button type="button" class="pw-show-btn"
                   data-url="{% url 'accounts:walkin_get_password' item.user.pk %}"
                   data-name="{{ item.patient.get_full_name }}"
-                  data-username="{{ item.patient.patient_id }}"
-                  style="padding:8px 16px;background:#0078d4;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.15s;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;"
-                  onmouseover="this.style.background='#006cbd'" onmouseout="this.style.background='#0078d4'">
+                  data-username="{{ item.patient.patient_id }}">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Show Password
           </button>
@@ -65,9 +68,9 @@
 </div>
 
 {# ── Password Reset Modal ── #}
-<div class="modal-overlay" id="pwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:center;justify-content:center;" onclick="if(event.target===this)closePwModal()">
+<div class="modal-overlay" id="pwModal" data-csrf="{{ csrf_token }}">
   <div style="background:#fff;border-radius:16px;padding:32px 28px 24px;width:100%;max-width:400px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.15);position:relative;">
-    <button type="button" onclick="closePwModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;color:#94a3b8;font-size:20px;padding:4px;">&times;</button>
+    <button type="button" class="pw-modal-close" aria-label="Close">&times;</button>
 
     <div style="width:56px;height:56px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
       <svg width="24" height="24" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -90,8 +93,7 @@
     </div>
 
     <div style="display:flex;gap:8px;justify-content:center;">
-      <button type="button" onclick="copyPassword()" id="copyBtn" style="padding:9px 18px;background:#0078d4;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;"
-              onmouseover="this.style.background='#006cbd'" onmouseout="this.style.background='#0078d4'">
+      <button type="button" id="copyBtn" class="pw-copy-btn">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy Password
       </button>
@@ -101,103 +103,8 @@
     <p id="errorFeedback" style="font-size:11px;color:#ef4444;margin:10px 0 0;display:none;"></p>
   </div>
 </div>
+{% endblock %}
 
-<style>
-  .modal-overlay { display: none; }
-  .modal-overlay.open { display: flex !important; }
-  .pw-show-btn { transition: all 0.15s; }
-  .pw-show-btn:active { transform: scale(0.96); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
-<script>
-  let currentUrl = null;
-  let currentPassword = '';
-
-  // ── Open modal & fetch stored password ──
-  document.querySelectorAll('.pw-show-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      currentUrl = this.getAttribute('data-url');
-      document.getElementById('modalPatientName').textContent = this.getAttribute('data-name');
-      document.getElementById('modalPatientId').textContent = 'ID: ' + this.getAttribute('data-username');
-      document.getElementById('pwText').textContent = '';
-      document.getElementById('pwSpinner').style.display = 'flex';
-      document.getElementById('copyFeedback').style.display = 'none';
-      document.getElementById('errorFeedback').style.display = 'none';
-      document.getElementById('pwModal').classList.add('open');
-      fetchPassword();
-    });
-  });
-
-  function closePwModal() {
-    document.getElementById('pwModal').classList.remove('open');
-    document.getElementById('pwSpinner').style.display = 'none';
-  }
-
-  // ── Fetch the stored temp password (no new password generated) ──
-  function fetchPassword() {
-    if (!currentUrl) return;
-    document.getElementById('pwSpinner').style.display = 'flex';
-    document.getElementById('pwText').textContent = '';
-
-    fetch(currentUrl, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': '{{ csrf_token }}',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      document.getElementById('pwSpinner').style.display = 'none';
-      if (data.success) {
-        currentPassword = data.access_code;
-        document.getElementById('pwText').textContent = currentPassword;
-        document.getElementById('pwText').style.color = '#0078d4';
-      } else {
-        document.getElementById('pwText').textContent = 'Not available';
-        document.getElementById('pwText').style.color = '#ef4444';
-        document.getElementById('errorFeedback').textContent = data.error || 'Unknown error';
-        document.getElementById('errorFeedback').style.display = 'block';
-      }
-    })
-    .catch(function(err) {
-      document.getElementById('pwSpinner').style.display = 'none';
-      document.getElementById('pwText').textContent = 'Error';
-      document.getElementById('pwText').style.color = '#ef4444';
-      document.getElementById('errorFeedback').textContent = 'Request failed — check console (F12)';
-      document.getElementById('errorFeedback').style.display = 'block';
-      console.error('Walk-in password fetch error:', err);
-    });
-  }
-
-  // ── Copy to clipboard ──
-  function copyPassword() {
-    if (!currentPassword) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(currentPassword).then(function() {
-        showCopied();
-      }).catch(function() { fallbackCopy(); });
-    } else {
-      fallbackCopy();
-    }
-  }
-
-  function fallbackCopy() {
-    var ta = document.createElement('textarea');
-    ta.value = currentPassword;
-    ta.style.position = 'fixed'; ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); showCopied(); } catch(e) {}
-    document.body.removeChild(ta);
-  }
-
-  function showCopied() {
-    var el = document.getElementById('copyFeedback');
-    el.style.display = 'block';
-    setTimeout(function() { el.style.display = 'none'; }, 2000);
-  }
-</script>
-
+{% block extra_js %}
+<script src="{% static 'accounts/js/temp_password.js' %}" defer></script>
 {% endblock %}

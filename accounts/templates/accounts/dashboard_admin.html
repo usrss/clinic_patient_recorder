@@ -19,137 +19,14 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
         onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // ── Patients by College (doughnut) ──
-  const ctx1 = document.getElementById('chart-college');
-  if (ctx1) {
-    new Chart(ctx1, {
-      type: 'doughnut',
-      data: {
-        labels: {{ college_labels|safe }},
-        datasets: [{
-          data: {{ college_data|safe }},
-          backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316'],
-          borderWidth: 2,
-          borderColor: '#ffffff',
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        cutout: '55%',
-        plugins: {
-          legend: {
-            display: true,
-            position: 'right',
-            labels: {
-              font: { size: 10, weight: '500' },
-              boxWidth: 14,
-              boxHeight: 14,
-              padding: 10,
-              usePointStyle: true,
-              pointStyle: 'rectRounded',
-              color: '#374151',
-            },
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                var val = context.parsed;
-                var pct = ((val / total) * 100).toFixed(1);
-                return context.label + ': ' + val + ' patients (' + pct + '%)';
-              }
-            }
-          }
-        },
-      }
-    });
-  }
 
-  // ── Diagnosis Analytics: Top Diagnoses (bar) ──
-  const ctx4 = document.getElementById('chart-dash-top-diag');
-  if (ctx4) {
-    new Chart(ctx4, {
-      type: 'bar',
-      data: {
-        labels: {{ dash_diag_labels|safe }},
-        datasets: [{
-          label: 'Cases',
-          data: {{ dash_diag_counts|safe }},
-          backgroundColor: '#ef4444',
-          borderRadius: 4,
-          borderSkipped: false,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'right',
-            labels: {
-              font: { size: 10, weight: '500' },
-              boxWidth: 14,
-              boxHeight: 14,
-              padding: 10,
-              usePointStyle: true,
-              pointStyle: 'rectRounded',
-              color: '#374151',
-            },
-          },
-        },
-        scales: {
-          x: { ticks: { font: { size: 9 } }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 9 } }, grid: { color: '#f0f0f0' } }
-        }
-      }
-    });
-  }
-
-  // ── Diagnosis Analytics: Diagnosis Distribution by College (stacked bar) ──
-  const ctx5 = document.getElementById('chart-dash-diag-college');
-  if (ctx5) {
-    new Chart(ctx5, {
-      type: 'bar',
-      data: {
-        labels: {{ dash_diag_college_labels|safe }},
-        datasets: {{ dash_diag_college_datasets|safe }},
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'right',
-            labels: {
-              font: { size: 10, weight: '500' },
-              boxWidth: 14,
-              boxHeight: 14,
-              padding: 10,
-              usePointStyle: true,
-              pointStyle: 'rectRounded',
-              color: '#374151',
-            },
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return context.dataset.label + ': ' + context.parsed.y + ' cases';
-              }
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true, ticks: { font: { size: 9 } }, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 9 } }, grid: { color: '#f0f0f0' } },
-        }
-      }
-    });
-  }
-
-});
-</script>
+{{ college_labels|json_script:"chart-data-college-labels" }}
+{{ college_data|json_script:"chart-data-college-values" }}
+{{ dash_diag_labels|json_script:"chart-data-top-diag-labels" }}
+{{ dash_diag_counts|json_script:"chart-data-top-diag-values" }}
+{{ dash_diag_college_labels|json_script:"chart-data-diag-college-labels" }}
+{{ dash_diag_college_datasets|json_script:"chart-data-diag-college-datasets" }}
+<script src="{% static 'accounts/js/dashboard_admin.js' %}" defer></script>
 {% endblock %}
 
 {% block extra_css %}

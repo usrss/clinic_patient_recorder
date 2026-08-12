@@ -578,3 +578,62 @@ class CertificateDoctorNameTest(TestCase):
             cert._build_placeholder_map()['doctor_name'],
             'Ana Reyes',
         )
+
+
+class AbsencesDocxComplaintsTest(TestCase):
+    """Complaint/s and Assessment/s on the absences certificate must show
+    different values: the patient's complaint (chief complaint, falling back
+    to symptoms) vs the doctor's diagnosis."""
+
+    def setUp(self):
+        self.patient = Patient.objects.create(
+            patient_id='DOCX-001',
+            first_name='Docx',
+            last_name='Patient',
+            sex='M',
+        )
+        self.doctor = User.objects.create_user(
+            username='dr_docx', password='testpass123', role='doctor',
+            first_name='Docx', last_name='Doctor',
+        )
+
+    def _render_absences_docx(self, chief_complaint, diagnosis='URTI'):
+        """Create a consultation + absences cert and return the rendered docx text."""
+        consultation = Consultation.objects.create(
+            patient=self.patient,
+            symptoms='Fever and cough',
+            chief_complaint=chief_complaint or '',
+            severity_description='Mild',
+            status=Consultation.Status.COMPLETED,
+        )
+        cert = MedicalCertificate.objects.create(
+            consultation=consultation,
+            patient=self.patient,
+            doctor=self.doctor,
+            certificate_type=MedicalCertificate.CertificateType.ABSENCES,
+            status=MedicalCertificate.Status.DRAFT,
+            diagnosis=diagnosis,
+        )
+        from certificates.services.docx_export import generate_certificate_docx_bytes
+        import io, re, zipfile
+        docx_bytes = generate_certificate_docx_bytes(cert)
+        with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
+            xml = z.read('word/document.xml').decode('utf-8')
+        return ''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', xml))
+
+    def test_complaints_and_assessment_render_different_values(self):
+        """Complaint/s shows the patient's complaint; Assessment/s shows the diagnosis."""
+        text = self._render_absences_docx(chief_complaint='Cough since yesterday')
+        complaint_region = text.split('Assessment/s:', 1)[0]
+        assessment_region = text.split('Assessment/s:', 1)[1].split('Remark/s:', 1)[0]
+        self.assertIn('Cough since yesterday', complaint_region)
+        self.assertNotIn('URTI', complaint_region)
+        self.assertIn('URTI', assessment_region)
+        self.assertNotIn('Cough since yesterday', assessment_region)
+
+    def test_complaints_falls_back_to_symptoms_when_no_chief_complaint(self):
+        """Walk-in consultations only capture symptoms; the certificate must
+        fall back to the patient's own words when no chief complaint exists."""
+        text = self._render_absences_docx(chief_complaint='')
+        complaint_region = text.split('Assessment/s:', 1)[0]
+        self.assertIn('Fever and cough', complaint_region)

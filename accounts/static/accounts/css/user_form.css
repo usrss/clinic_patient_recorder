@@ -1,0 +1,42 @@
+/* ═══════════════════════════════════════════
+   User Form — Admin "Add/Edit Staff" page
+   ═══════════════════════════════════════════ */
+
+.user-form input[type="text"],
+.user-form input[type="email"],
+.user-form input[type="number"],
+.user-form input[type="password"],
+.user-form select,
+.user-form textarea {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1a1a2e;
+  background: #fafbfc;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+.user-form input[type="text"]:focus,
+.user-form input[type="email"]:focus,
+.user-form input[type="number"]:focus,
+.user-form input[type="password"]:focus,
+.user-form select:focus,
+.user-form textarea:focus {
+  border-color: #0078d4;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
+}
+.user-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* ── Shared keyframes ── */
+@keyframes spin { to { transform: rotate(360deg); } }
