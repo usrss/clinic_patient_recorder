@@ -220,7 +220,7 @@ docker compose exec web python manage.py migrate   # if there are new migrations
 
 A backup script and detailed instructions are included in the repository:
 
-- **Script:** [`backup.sh`](backup.sh) — dumps the MySQL database and media files, copies to USB if mounted
+- **Script:** [`backup.sh`](backup.sh) — dumps the MySQL database and media files into human-readable `clinic_db_backup_MM-DD-YYYY.sql` + `media_backup_MM-DD-YYYY.tar.gz` pairs, with tiered retention (30 days daily, 8 weeks weekly, 12 months monthly) and USB copies
 - **Documentation:** [`BACKUP.md`](BACKUP.md) — full backup/restore guide and USB rotation instructions
 
 Run a backup manually:
@@ -236,6 +236,42 @@ crontab -e
 # Add:
 0 2 * * * cd /path/to/clinic-patient-recorder && ./backup.sh >> ./backups/backup.log 2>&1
 ```
+
+### Restore from a backup
+
+Backups live in `backups/daily/` (last 30 days), `backups/weekly/` (8 weeks) and
+`backups/monthly/` (12 months). Pick the snapshot you want, then run the following
+from the project directory (replacing `MM-DD-YYYY` with the backup's date):
+
+Restore the **database**:
+
+```bash
+source .env
+docker compose exec -T db mysql -u root -p"${DB_ROOT_PASSWORD}" clinic_db < backups/daily/clinic_db_backup_MM-DD-YYYY.sql
+```
+
+Restore **media files** (profile pictures, certificates):
+
+```bash
+docker run --rm -v cpr-media-data:/data -v $(pwd)/backups:/backup alpine \
+  tar xzf /backup/daily/media_backup_MM-DD-YYYY.tar.gz -C /data
+```
+
+⚠️ **Restoring overwrites the current database** — anything saved since that backup
+will be lost. Snapshot the current state first so you can undo the restore:
+
+```bash
+docker compose exec -T db mysqldump -u root -p"${DB_ROOT_PASSWORD}" clinic_db > backups/daily/PRERESTORE_$(date +%m-%d-%Y_%H%M).sql
+```
+
+Then restart the app so nothing serves stale data:
+
+```bash
+docker compose restart web
+```
+
+> 💡 **Always test a restore into a throwaway database before you need it for real**
+> — a backup that has never been test-restored is unverified (details in `BACKUP.md`).
 
 > ⚠️ **Before putting real patient data into production**, ensure off-server backups are in place (see `BACKUP.md` for details).
 
