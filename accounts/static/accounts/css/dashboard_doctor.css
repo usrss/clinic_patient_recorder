@@ -1,79 +1,58 @@
- .dash-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-  .dash-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 22px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: transform 0.18s, box-shadow 0.18s;
-  }
-  .dash-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0,0,0,.09);
-    color: inherit;
-  }
-  .dash-card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .dash-card-text strong { font-size: 14px; font-weight: 600; color: #1a1a2e; display: block; }
-  .dash-card-text span   { font-size: 12px; color: #94a3b8; }
+/* ═══════════════════════════════════════════
+   Doctor Dashboard — Doctor-specific styles
+   (loaded alongside dashboard_shared.css)
+   ═══════════════════════════════════════════ */
 
-  .resp-panel {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
-    overflow: hidden;
-    margin-bottom: 28px;
-  }
-  .resp-panel-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #f0f4f8;
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1a2e;
-  }
-  .resp-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    border-bottom: 1px solid #f8fafc;
-    font-size: 13px;
-    color: #374151;
-  }
-  .resp-item:last-child { border-bottom: none; }
-  .resp-item-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
+/* ── Role accent color for primary actions ── */
+.role-doctor {
+  --primary-action-bg: #7c3aed;
+  --primary-action-hover: #6d28d9;
+}
 
-  .sec-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 14px;
-  }
+/* ── Analytics chart grid ── */
+.doc-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+@media (max-width: 700px) {
+  .doc-chart-grid { grid-template-columns: 1fr; }
+}
+
+.doc-chart-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+.doc-chart-header {
+  padding: 14px 18px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+.doc-chart-body {
+  padding: 12px 14px 14px;
+  min-height: 180px;
+}
+.doc-chart-body canvas {
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* ── Urgent triage alert banner ── */
+.doc-urgent-banner {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: box-shadow 0.2s;
+}
+.doc-urgent-banner:hover {
+  box-shadow: 0 2px 12px rgba(239,68,68,0.15);
+}

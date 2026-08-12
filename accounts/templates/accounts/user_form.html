@@ -1,12 +1,17 @@
 {% extends 'core/base_admin.html' %}
+{% load static %}
 {% block title %}{{ action }} Staff — Patient Record System{% endblock %}
 {% block nav_staff %}active{% endblock %}
 {% block page_title %}{{ action }} Staff{% endblock %}
 {% block page_subtitle %}{% if target %}Editing {{ target.username }}{% else %}Fill in the details below{% endif %}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/user_form.css' %}">
+{% endblock %}
+
 {% block content %}
 
-  <div style="max-width:600px;margin:0 auto;">
+  <div class="user-form" style="max-width:600px;margin:0 auto;">
 
     {# ── Back ── #}
     <a href="{% url 'accounts:user_list' %}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#0078d4;text-decoration:none;margin-bottom:20px;">
@@ -138,39 +143,8 @@
     </div>
 
   </div>
+{% endblock %}
 
-  <style>
-    input[type="text"], input[type="email"], input[type="number"],
-    input[type="password"], select, textarea {
-      width:100%; padding:10px 13px; border:1.5px solid #e1e5eb;
-      border-radius:10px; font-size:14px; color:#1a1a2e;
-      background:#fafbfc; transition:all 0.2s; outline:none;
-      box-sizing:border-box; font-family:'Inter',sans-serif;
-    }
-    input[type="text"]:focus, input[type="email"]:focus,
-    input[type="number"]:focus, input[type="password"]:focus,
-    select:focus, textarea:focus {
-      border-color:#0078d4; background:#fff;
-      box-shadow:0 0 0 3px rgba(0,120,212,0.08);
-    }
-    select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-
-<script>
-  // ── Loading state on submit ──
-  document.addEventListener('DOMContentLoaded', function() {
-    var form = document.querySelector('form');
-    if (form) {
-      form.addEventListener('submit', function() {
-        var btn = document.getElementById('userFormSubmitBtn');
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Saving...';
-        }
-      });
-    }
-  });
-</script>
-
+{% block extra_js %}
+<script src="{% static 'accounts/js/user_form.js' %}" defer></script>
 {% endblock %}

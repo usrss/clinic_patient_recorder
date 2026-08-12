@@ -544,6 +544,29 @@ input[type="password"].reg-input { padding-right: 44px; }
   div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 
+/* ── Log out all other devices button ── */
+.btn-logout-devices {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: none;
+  border: 1px solid #e1e5eb;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+}
+.btn-logout-devices:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

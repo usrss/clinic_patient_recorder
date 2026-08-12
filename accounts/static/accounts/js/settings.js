@@ -90,9 +90,9 @@ function initPhotoModal() {
 
   var avatar = document.querySelector('.settings-avatar');
   if (!avatar) return;
-  // If the avatar already has an inline onclick (set by the Django template),
-  // skip adding a duplicate JS listener to avoid double-firing.
-  if (avatar.hasAttribute('onclick')) return;
+  // Remove any legacy inline onclick (previously set by the Django template)
+  // so the listener below is the single source of behavior.
+  if (avatar.hasAttribute('onclick')) avatar.removeAttribute('onclick');
 
   avatar.addEventListener('click', function() {
     var avatarImg = avatar.querySelector('img');
@@ -211,6 +211,8 @@ function initCollapsibleSections() {
       var state = localStorage.getItem(key);
       if (state === 'closed') header.parentElement.classList.add('collapsible-closed');
     }
+    // Previously inline onclick="toggleCollapsible(this)"
+    header.addEventListener('click', function() { toggleCollapsible(this); });
   });
 }
 
@@ -344,12 +346,29 @@ function loadProfileCourses() {
     .catch(function() {});
 }
 
+// ── Event bindings (previously inline onclick handlers) ──
+function initInlineHandlers() {
+  // Password visibility toggles
+  document.querySelectorAll('.pw-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function() { togglePw(this); });
+  });
+
+  // Photo modal dropdown items (Change / Remove photo)
+  document.querySelectorAll('.photo-modal-dropdown-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      if (item.getAttribute('data-action') === 'remove-photo') handleRemovePhoto();
+      else handleChangePhoto();
+    });
+  });
+}
+
 // ── Page init ──
 document.addEventListener('DOMContentLoaded', function() {
   initAvatarPreview();
   initCollapsibleSections();
   initPhotoModal();
   initPhotoDropdown();
+  initInlineHandlers();
 
   initLoadingState('profileForm', 'saveProfileBtn', 'Saving...');
   initLoadingState('passwordForm', 'changePwBtn', 'Changing...');

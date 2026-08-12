@@ -9,12 +9,26 @@ import re
 class PatientConsultationForm(forms.ModelForm):
     """Used by a logged-in patient to submit their own consultation request."""
 
+    # Patient's own words for why they came in — required at submission and
+    # saved as the consultation's chief complaint (shown on official documents).
+    complaints = forms.CharField(
+        required=True,
+        label='Complaints *',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'e.g. Headache, fever, cough — what brought you to the clinic...',
+        }),
+    )
+
     def __init__(self, *args, **kwargs):
         # The submitting patient is passed in so the single-active-consultation
         # rule can be enforced at form level (nice inline UX); the view still
         # re-checks atomically under a row lock as the source of truth.
         self.patient = kwargs.pop('patient', None)
         super().__init__(*args, **kwargs)
+        # Only Complaints is required — the detail fields are all optional.
+        for fname in ('symptoms', 'medical_history', 'severity_description', 'additional_notes'):
+            self.fields[fname].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -51,9 +65,9 @@ class PatientConsultationForm(forms.ModelForm):
             }),
         }
         labels = {
-            'symptoms': 'Symptoms *',
+            'symptoms': 'Symptoms',
             'medical_history': 'Medical History',
-            'severity_description': 'Severity Description *',
+            'severity_description': 'Severity Description',
             'additional_notes': 'Additional Notes',
         }
 
@@ -116,15 +130,26 @@ class ConsultationSubmitForm(forms.Form):
     )
 
     # ── Consultation fields ─────────────────────────────────────────────────
+    complaints = forms.CharField(
+        required=True,
+        label='Complaints *',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'e.g. Headache, fever, cough — what the patient says is wrong...',
+        }),
+        help_text='The doctor can reword this during triage.',
+    )
     symptoms = forms.CharField(
-        label='Symptoms *',
+        required=False,
+        label='Symptoms',
         widget=forms.Textarea(attrs={
             'class': 'form-control', 'rows': 4,
             'placeholder': 'Describe symptoms in detail...',
         }),
     )
     severity_description = forms.CharField(
-        label='Severity Description *',
+        required=False,
+        label='Severity Description',
         widget=forms.Textarea(attrs={
             'class': 'form-control', 'rows': 2,
             'placeholder': 'e.g. Mild headache since yesterday, moderate fever...',

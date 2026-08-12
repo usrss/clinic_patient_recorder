@@ -21,3 +21,4 @@ nul
 
 # Database & media backups (contain PHI — never commit to git)
 backups/
+

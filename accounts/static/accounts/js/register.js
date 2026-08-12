@@ -1,3 +1,9 @@
+// ── Endpoint URLs (injected by the template via data attributes) ───────
+var regFormEl = document.getElementById('reg-form');
+var REGISTER_SEND_OTP_URL = (regFormEl && regFormEl.getAttribute('data-send-otp-url')) || '';
+var REGISTER_VERIFY_OTP_URL = (regFormEl && regFormEl.getAttribute('data-verify-otp-url')) || '';
+var REGISTER_COURSES_URL = (regFormEl && regFormEl.getAttribute('data-courses-url')) || '';
+
 // ── State ──────────────────────────────────────────────────────────────
 let currentStep = 1;
 let otpTimerInterval = null;
@@ -165,6 +171,7 @@ function goNext(step) {
 
       var btn = document.querySelector('#step-1 .btn-next');
       btn.disabled = true;
+      hideStep1Error();
       btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending OTP…';
 
       fetch(REGISTER_SEND_OTP_URL, {
@@ -177,12 +184,15 @@ function goNext(step) {
         btn.disabled = false;
         btn.innerHTML = 'Send OTP &amp; Continue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
         if (data.success) {
+          hideStep1Error();
           document.getElementById('otp-email-display').textContent = email.value.trim();
           startOtpTimer();
           showStep(2);
         } else {
-          document.getElementById('otp-error').textContent = data.error || 'Failed to send OTP. Please try again.';
+          var errMsg = data.error || 'Failed to send OTP. Please try again.';
+          document.getElementById('otp-error').textContent = errMsg;
           document.getElementById('otp-error').style.display = 'block';
+          showStep1Error(errMsg);
         }
       })
       .catch(() => {
@@ -190,6 +200,7 @@ function goNext(step) {
         btn.innerHTML = 'Send OTP &amp; Continue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
         document.getElementById('otp-error').textContent = 'Network error. Please try again.';
         document.getElementById('otp-error').style.display = 'block';
+        showStep1Error('Network error. Please try again.');
       });
     }
   } else if (step === 3) {
@@ -271,6 +282,20 @@ function validateEmail(email) {
 function showErr(field, show) {
   const el = document.getElementById('err-' + field);
   if (el) el.classList.toggle('show', show);
+}
+
+// ── Step-1 error box ────────────────────────────────────────────────────
+// OTP send failures used to be written to #otp-error, which lives inside the
+// hidden step-2 panel — so a server-side rejection (already-registered email,
+// rate limit, SMTP failure) produced NO visible feedback on step 1.
+function showStep1Error(msg) {
+  var el = document.getElementById('step1-error');
+  if (el) { el.textContent = msg; el.classList.add('show'); }
+}
+
+function hideStep1Error() {
+  var el = document.getElementById('step1-error');
+  if (el) el.classList.remove('show');
 }
 
 // ── Password show/hide ─────────────────────────────────────────────────
@@ -534,3 +559,50 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 updateRoleFields();
+
+// ── Event bindings (previously inline onclick/onchange handlers) ───────
+document.addEventListener('DOMContentLoaded', function () {
+  // Dismiss restore-data banner
+  var dismissBtn = document.getElementById('regDismissBtn');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', function () {
+      clearSavedData();
+      location.reload();
+    });
+  }
+
+  // Role select → show/hide role-dependent fields
+  var roleEl = document.getElementById('id_role');
+  if (roleEl) roleEl.addEventListener('change', updateRoleFields);
+
+  // College select → load courses
+  var collegeEl = document.getElementById('id_college');
+  if (collegeEl) collegeEl.addEventListener('change', loadCourses);
+
+  // Password visibility toggles
+  document.querySelectorAll('#reg-form .pw-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var wrap = btn.parentElement;
+      var input = wrap ? wrap.querySelector('input') : null;
+      if (input) togglePw(input.id, btn);
+    });
+  });
+
+  // Step navigation buttons
+  document.querySelectorAll('#reg-form [data-step-next]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      goNext(parseInt(btn.getAttribute('data-step-next'), 10));
+    });
+  });
+  document.querySelectorAll('#reg-form [data-step-back]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      goBack(parseInt(btn.getAttribute('data-step-back'), 10));
+    });
+  });
+
+  // Resend OTP + verify OTP buttons
+  var resendBtn = document.getElementById('resend-btn');
+  if (resendBtn) resendBtn.addEventListener('click', resendOtp);
+  var verifyBtn = document.getElementById('verifyOtpBtnReg');
+  if (verifyBtn) verifyBtn.addEventListener('click', verifyOtp);
+});

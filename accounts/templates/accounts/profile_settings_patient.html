@@ -40,8 +40,7 @@
 
         {# ── Centered Profile Picture ── #}
         <div class="settings-avatar-wrap">
-          <div class="settings-avatar" id="avatarPreview"
-               onclick="{% if patient.profile_picture %}openPhotoModalView(){% endif %}">
+          <div class="settings-avatar" id="avatarPreview">
             {% if patient.profile_picture %}
               <img id="avatarImg" src="{{ patient.profile_picture.url }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
             {% else %}
@@ -67,7 +66,7 @@
 
         {# ── Collapsible: Contact (expanded by default) ── #}
         <div class="collapsible-section">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-contact">
+          <div class="collapsible-header" data-section="ps-contact">
             <span>Contact</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -84,7 +83,7 @@
 
         {# ── Collapsible: Demographics ── #}
         <div class="collapsible-section collapsible-closed">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-demographics">
+          <div class="collapsible-header" data-section="ps-demographics">
             <span>Demographics</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -103,7 +102,7 @@
 
         {# ── Collapsible: Academic Information ── #}
         <div class="collapsible-section collapsible-closed">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-academic">
+          <div class="collapsible-header" data-section="ps-academic">
             <span>Academic Information</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -119,7 +118,7 @@
 
         {# ── Collapsible: Medical History ── #}
         <div class="collapsible-section collapsible-closed">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-medical">
+          <div class="collapsible-header" data-section="ps-medical">
             <span>Medical History</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -138,7 +137,7 @@
 
         {# ── Collapsible: Immunization ── #}
         <div class="collapsible-section collapsible-closed">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-immunization">
+          <div class="collapsible-header" data-section="ps-immunization">
             <span>Immunization</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -156,7 +155,7 @@
 
         {# ── Collapsible: Medical Background ── #}
         <div class="collapsible-section collapsible-closed">
-          <div class="collapsible-header" onclick="toggleCollapsible(this)" data-section="ps-background">
+          <div class="collapsible-header" data-section="ps-background">
             <span>Medical Background</span>
             <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -195,7 +194,7 @@
             <div style="position:relative;display:flex;align-items:center;max-width:420px;">
               {{ field }}
               {% if field.field.widget.input_type == 'password' %}
-              <button type="button" aria-label="Toggle password" onclick="togglePw(this)" class="pw-toggle">
+              <button type="button" aria-label="Toggle password" class="pw-toggle">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="icon-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="icon-eye-off" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg>
               </button>
@@ -217,9 +216,7 @@
 
         <form method="post" action="{% url 'accounts:logout_all_devices' %}">
           {% csrf_token %}
-          <button type="submit" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;background:none;border:1px solid #e1e5eb;border-radius:10px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;white-space:nowrap;"
-                  onmouseover="this.style.borderColor='#d1d5db';this.style.background='#f9fafb'"
-                  onmouseout="this.style.borderColor='#e1e5eb';this.style.background='none'">
+          <button type="submit" class="btn-logout-devices">
             <ion-icon name="phone-portrait-outline"></ion-icon>
             Log out all other devices
           </button>
@@ -249,11 +246,11 @@
       </svg>
     </button>
     <div class="photo-modal-dropdown">
-      <button class="photo-modal-dropdown-item" onclick="handleChangePhoto()">
+      <button class="photo-modal-dropdown-item" data-action="change-photo">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Change Photo
       </button>
-      <button class="photo-modal-dropdown-item danger" onclick="handleRemovePhoto()">
+      <button class="photo-modal-dropdown-item danger" data-action="remove-photo">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         Remove Photo
       </button>

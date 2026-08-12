@@ -1,6 +1,11 @@
 {% extends 'core/base.html' %}
-
+{% load static %}
 {% block title %}Login — Patient Record System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+{% endblock %}
+
 {% block content %}
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 50%,#ffffff 100%);padding:24px;">
 
@@ -14,7 +19,7 @@
 
     {# Login Card #}
     <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="login-form">
         {% csrf_token %}
 
         <div style="margin-bottom:20px;">
@@ -41,11 +46,8 @@
           </label>
           <div style="position:relative;display:flex;align-items:center;">
             {{ form.password }}
-            <button type="button" id="pwToggle"
-              aria-label="Show password"
-              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;padding:4px;cursor:pointer;color:#94a3b8;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color 0.15s;"
-              onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'"
-              onfocus="this.style.color='#0078d4'" onblur="this.style.color='#94a3b8'">
+            <button type="button" id="pwToggle" class="pw-toggle-btn"
+              aria-label="Show password">
               <!-- Eye open -->
               <svg id="iconEye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -70,7 +72,7 @@
         <input type="checkbox" name="remember_me" id="id_remember_me" style="width:18px;height:18px;accent-color:#0078d4;cursor:pointer;flex-shrink:0;">
         <span style="font-weight:500;">Remember me</span>
       </label>
-      <a href="{% url 'accounts:forgot_password' %}" style="font-size:12px;color:#0078d4;text-decoration:none;font-weight:500;transition:color 0.15s;" onmouseover="this.style.color='#005a9e'" onmouseout="this.style.color='#0078d4'">
+      <a href="{% url 'accounts:forgot_password' %}" class="auth-link">
         Forgot password?
       </a>
     </div>
@@ -87,7 +89,7 @@
           </div>
         {% endif %}
 
-        <button type="submit" id="loginBtn" style="width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,120,212,0.2);display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.background='#006cbd';this.style.boxShadow='0 4px 12px rgba(0,120,212,0.3)'" onmouseout="this.style.background='#0078d4';this.style.boxShadow='0 2px 8px rgba(0,120,212,0.2)'">
+        <button type="submit" id="loginBtn" class="btn-auth-primary">
           Sign In
         </button>
 
@@ -105,71 +107,8 @@
 
   </div>
 </div>
+{% endblock %}
 
-<style>
-  #{{ form.username.id_for_label }},
-  #{{ form.password.id_for_label }} {
-    width: 100%;
-    padding: 11px 14px;
-    border: 1.5px solid #e1e5eb;
-    border-radius: 10px;
-    font-size: 14px;
-    color: #1a1a2e;
-    background: #fafbfc;
-    transition: all 0.2s;
-    outline: none;
-    box-sizing: border-box;
-  }
-  /* Extra right padding on password to not overlap the toggle button */
-  #{{ form.password.id_for_label }} {
-    padding-right: 44px;
-  }
-  #{{ form.username.id_for_label }}:focus,
-  #{{ form.password.id_for_label }}:focus {
-    border-color: #0078d4;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,120,212,0.08);
-  }
-  #{{ form.username.id_for_label }}::placeholder,
-  #{{ form.password.id_for_label }}::placeholder {
-    color: #c4c9d0;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
-<script>
-  (function () {
-    var toggle  = document.getElementById('pwToggle');
-    var eye     = document.getElementById('iconEye');
-    var eyeOff  = document.getElementById('iconEyeOff');
-    var pwField = document.getElementById('{{ form.password.id_for_label }}');
-
-    if (toggle && pwField) {
-      toggle.addEventListener('click', function () {
-        var show = pwField.type === 'password';
-        pwField.type         = show ? 'text'     : 'password';
-        eye.style.display    = show ? 'none'     : '';
-        eyeOff.style.display = show ? ''         : 'none';
-        toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-      });
-    }
-
-    // ── Loading state on submit ──
-    var loginForm = document.querySelector('form');
-    if (loginForm) {
-      loginForm.addEventListener('submit', function() {
-        // Client-side validation
-        var username = document.getElementById('{{ form.username.id_for_label }}');
-        var password = document.getElementById('{{ form.password.id_for_label }}');
-        if (!username.value.trim() || !password.value) {
-          // Let the server handle it
-          return;
-        }
-        var btn = document.getElementById('loginBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Signing in...';
-      });
-    }
-  })();
-</script>
+{% block extra_js %}
+<script src="{% static 'accounts/js/auth.js' %}" defer></script>
 {% endblock %}

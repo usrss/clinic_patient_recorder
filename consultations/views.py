@@ -208,7 +208,7 @@ def patient_submit(request):
     form = PatientConsultationForm(request.POST or None, patient=patient)
 
     consultation_fields = {
-        'symptoms', 'medical_history',
+        'complaints', 'symptoms', 'medical_history',
         'severity_description', 'additional_notes',
     }
     is_new_consultation_post = (
@@ -227,6 +227,7 @@ def patient_submit(request):
 
                     consultation = form.save(commit=False)
                     consultation.patient = patient
+                    consultation.chief_complaint = form.cleaned_data.get('complaints', '')
                     consultation.status = Consultation.Status.PENDING
                     consultation.is_original_case = True
                     consultation.save()
@@ -628,9 +629,10 @@ def consultation_create(request):
                     # Create Consultation
                     consultation = Consultation(
                         patient=patient,
-                        symptoms=cd['symptoms'],
+                        chief_complaint=cd.get('complaints', ''),
+                        symptoms=cd.get('symptoms', ''),
                         medical_history=cd.get('medical_history', ''),
-                        severity_description=cd['severity_description'],
+                        severity_description=cd.get('severity_description', ''),
                         additional_notes=cd.get('additional_notes', ''),
                         status=Consultation.Status.PENDING,
                         is_original_case=True,
