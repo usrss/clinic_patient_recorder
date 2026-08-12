@@ -23,10 +23,8 @@ It streamlines patient registration, consultation queues, medical records, inven
 ## Typical Clinic Workflow
 
 ### 1. Front Desk
-- Patient arrives and states purpose (e.g., "Fit to Play" medical certificate)
 - Front desk registers or retrieves patient record
 - Creates a new **consultation** in the system
-- Collects any required fees
 - Patient enters the **queue**
 
 ### 2. Triage & Queueing
