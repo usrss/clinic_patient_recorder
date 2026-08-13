@@ -1,0 +1,127 @@
+.stf-main {
+  padding: 0 28px 0 !important;
+}
+.cert-preview-page {
+  height: calc(100vh - var(--topbar-h));
+  background: #f0f4ff;
+  padding: 8px 24px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cert-preview-wrap {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Header bar */
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.preview-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.preview-header-left h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+.preview-header-left .cert-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.btn-primary {
+  background: #0078d4;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,120,212,0.2);
+}
+.btn-primary:hover {
+  background: #006cbe;
+  transform: translateY(-1px);
+}
+.btn-success {
+  background: #059669;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(5,150,105,0.2);
+}
+.btn-success:hover {
+  background: #047857;
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+.btn-secondary:hover {
+  background: #f9fafb;
+}
+
+/* PDF iframe */
+
+.pdf-container {
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+}
+.pdf-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Footer */
+.preview-footer {
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 6px 0;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .preview-header { flex-direction: column; align-items: flex-start; }
+}

@@ -3,41 +3,7 @@
 {% block title %}Edit Template — {{ slot.get_cert_type_label }}{% endblock %}
 
 {% block extra_css %}
-<style>
-  .edit-page { padding: 36px 28px; max-width: 900px; margin: 0 auto; }
-  .edit-page h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0 0 4px; }
-  .edit-page .subtitle { font-size: 13px; color: #6b7280; margin: 0 0 24px; }
-  .form-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
-  .form-group { margin-bottom: 20px; }
-  .form-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px; }
-  .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
-  .cert-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #0078d4; }
-  .btn-row { display: flex; gap: 10px; margin-top: 24px; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.15s; }
-  .btn-primary { background: #0078d4; color: #fff; }
-  .btn-primary:hover { background: #006bbf; }
-  .btn-secondary { background: #fff; border: 1px solid #d1d5db; color: #374151; }
-  .btn-secondary:hover { background: #f9fafb; }
-  .form-card textarea { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.7; padding: 16px; border: 1px solid #d1d5db; border-radius: 10px; width: 100%; min-height: 480px; resize: vertical; transition: border-color .15s; }
-  .form-card textarea:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,.12); }
-
-  /* Placeholder reference panel */
-  .ref-panel { background: #f8fafc; border: 1px solid #e8ecf1; border-radius: 12px; padding: 20px 24px; margin-top: 20px; }
-  .ref-panel h3 { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 12px; }
-  .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 12px; }
-  .ref-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
-  .ref-item code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; background: #e8ecf1; padding: 2px 6px; border-radius: 4px; color: #1a1a2e; white-space: nowrap; }
-  .ref-item span { color: #6b7280; }
-
-  /* Example section */
-  .example-section { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px 24px; margin-top: 20px; }
-  .example-section h3 { font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 8px; }
-  .example-section .example-body { font-size: 13px; color: #78350f; line-height: 1.7; white-space: pre-wrap; font-family: 'Inter', system-ui, sans-serif; background: #fff; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 18px; margin-top: 8px; }
-  .example-section .example-note { font-size: 11px; color: #92400e; margin-top: 8px; }
-
-  /* Character count */
-  .char-count { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 4px; }
-</style>
+<link rel="stylesheet" href="{% static 'certificates/css/template_text_edit.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -150,16 +116,8 @@ Remarks:
   </div>
 
 </div>
+{% endblock %}
 
-<script>
-  // Character counter
-  const textarea = document.querySelector('textarea');
-  const counter = document.getElementById('charCount');
-  if (textarea && counter) {
-    textarea.addEventListener('input', function() {
-      counter.textContent = this.value.length + ' characters';
-    });
-    counter.textContent = textarea.value.length + ' characters';
-  }
-</script>
+{% block extra_js %}
+<script src="{% static 'certificates/js/template_text_edit.js' %}" defer></script>
 {% endblock %}
