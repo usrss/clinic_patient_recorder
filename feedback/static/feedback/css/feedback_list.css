@@ -1,0 +1,122 @@
+.fb-page { width: 100%; max-width: 1100px; margin: 0 auto; }
+.fb-card {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.fb-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 20px; border-bottom: 1px solid #e8ecf1; flex-wrap: wrap;
+}
+.fb-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 300px; }
+.fb-search-wrap ion-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; color: #94a3b8; pointer-events: none;
+}
+.fb-search {
+  width: 100%; padding: 9px 12px 9px 34px; border: 1.5px solid #e1e5eb;
+  border-radius: 10px; font-size: 13px; color: #1a1a2e; background: #fafbfc;
+  outline: none; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.fb-search:focus { border-color: #0078d4; background: #fff; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+.fb-filter-select {
+  padding: 9px 32px 9px 12px; border: 1.5px solid #e1e5eb; border-radius: 10px;
+  font-size: 13px; color: #374151; background: #fafbfc; outline: none;
+  cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  appearance: none;
+  background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22%3E%3Cpolyline points=%226 9 12 15 18 9%22/%3E%3C/svg%3E');
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.fb-filter-select:focus { border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.08); }
+.fb-toolbar-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+.fb-toolbar-right { display: flex; align-items: center; gap: 8px; }
+.fb-btn-export {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px;
+  border-radius: 10px; font-size: 12px; font-weight: 500; border: 1px solid #e8ecf1;
+  background: #fff; color: #374151; cursor: pointer; transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.fb-btn-export:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+.fb-btn-export-dropdown { position: relative; display: inline-block; }
+.fb-export-menu {
+  display: none; position: absolute; top: 100%; right: 0; margin-top: 4px;
+  background: #fff; border-radius: 10px; border: 1px solid #e8ecf1;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 50; min-width: 130px; overflow: hidden;
+}
+.fb-export-menu.show { display: block; }
+.fb-export-menu a {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  font-size: 13px; color: #374151; text-decoration: none; transition: background 0.1s;
+}
+.fb-export-menu a:hover { background: #f5f8ff; color: #0078d4; }
+.fb-table { width: 100%; border-collapse: collapse; }
+.fb-table th {
+  padding: 12px 18px; background: #f8fafc; text-align: left; font-size: 10px;
+  font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px;
+  border-bottom: 1px solid #e8ecf1; white-space: nowrap;
+}
+.fb-table td {
+  padding: 14px 18px; font-size: 13px; color: #374151;
+  border-bottom: 1px solid #f5f7fa; vertical-align: middle;
+}
+.fb-table tbody tr:hover td { background: #f8fafc; }
+.fb-table tbody tr:last-child td { border-bottom: none; }
+.patient-name-cell { font-weight: 600; color: #1a1a2e; }
+.patient-id-cell { color: #6b7280; font-size: 12px; }
+.consult-no-cell { color: #6b7280; }
+.star-row { display: inline-flex; gap: 2px; color: #f59e0b; }
+.comment-cell { max-width: 260px; white-space: normal; line-height: 1.5; }
+.fb-date-cell { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+.fb-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-top: 1px solid #e8ecf1; flex-wrap: wrap; gap: 10px;
+}
+.fb-entry-count { font-size: 12px; color: #94a3b8; }
+.fb-pagination { display: flex; align-items: center; gap: 3px; }
+.fb-page-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px;
+  font-size: 12px; font-weight: 500; text-decoration: none;
+  border: 1px solid #e8ecf1; background: #fff; color: #374151; transition: all 0.15s;
+}
+.fb-page-btn:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+.fb-page-btn.active { background: #0078d4; border-color: #0078d4; color: #fff; }
+.fb-page-btn.disabled { opacity: 0.4; pointer-events: none; }
+.fb-empty { padding: 60px 24px; text-align: center; }
+.fb-empty-icon {
+  width: 56px; height: 56px; border-radius: 14px; background: #f3f4f6;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px; color: #9ca3af; font-size: 24px;
+}
+.fb-empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+.fb-empty-sub { font-size: 12px; color: #94a3b8; }
+.skeleton-row {
+  display: flex; padding: 14px 18px; border-bottom: 1px solid #f5f7fa;
+  gap: 16px; align-items: center;
+}
+.skeleton-cell {
+  height: 14px;
+  background: linear-gradient(90deg, #e8ecf1 25%, #f0f4ff 50%, #e8ecf1 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.review-modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  z-index: 1000; align-items: center; justify-content: center; padding: 24px;
+}
+.review-modal-overlay.open { display: flex; }
+.review-modal {
+  background: #fff; border-radius: 16px; padding: 28px 24px;
+  width: 100%; max-width: 480px; box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+.review-modal h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
+.review-modal .meta { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+.review-modal .content { font-size: 14px; color: #374151; line-height: 1.7; }
+.review-modal .close-btn {
+  margin-top: 20px; padding: 9px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; background: #f3f4f6;
+  color: #374151; border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.review-modal .close-btn:hover { background: #e5e7eb; }
