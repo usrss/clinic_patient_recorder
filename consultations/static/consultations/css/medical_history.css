@@ -1,0 +1,114 @@
+  .history-page { padding: 0; }
+  .history-wrap { width: 100%; max-width: 860px; }
+
+  .timeline-entry {
+    border-left: 3px solid #e8ecf1;
+    padding-left: 22px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -7px; top: 5px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #e8ecf1;
+  }
+  .timeline-entry.status-completed { border-left-color: #10b981; }
+  .timeline-entry.status-completed::before { border-color: #10b981; background: #10b981; }
+  .timeline-entry.status-cancelled { border-left-color: #ef4444; }
+  .timeline-entry.status-cancelled::before { border-color: #ef4444; }
+  .timeline-entry.status-triaged { border-left-color: #f97316; }
+  .timeline-entry.status-triaged::before { border-color: #f97316; background: #fff7ed; }
+
+  .medicine-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0fdf4; border: 0.5px solid #bbf7d0;
+    border-radius: 8px; padding: 6px 12px; font-size: 12px;
+    margin: 3px 3px 3px 0;
+  }
+
+  .yes-badge { background: #d1fae5; color: #065f46; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .no-badge { color: #94a3b8; font-size: 12px; }
+
+  .profile-section { margin-bottom: 20px; }
+  .profile-section:last-child { margin-bottom: 0; }
+  .profile-section-title {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 6px;
+  }
+  .profile-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 10px; background: #f8fafc;
+    border-radius: 8px; font-size: 13px;
+  }
+  .profile-item .label { color: #94a3b8; font-size: 12px; }
+  .profile-item .value { font-weight: 500; color: #1a1a2e; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff; border-radius: 14px; padding: 18px 16px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    text-align: center;
+  }
+
+  .filter-bar { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+
+  .card-panel {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    padding: 24px 28px; margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 14px;
+  }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: #fff; border: 1px solid #e8ecf1;
+    border-radius: 9px; font-size: 12px; font-weight: 500; color: #374151;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
+
+  .btn-primary-sm {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; background: #0078d4; color: #fff;
+    border: none; border-radius: 9px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    box-shadow: 0 2px 6px rgba(0,120,212,0.2);
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-primary-sm:hover { background: #006bbf; }
+
+  .vital-block {
+    padding: 12px 16px;
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    border-radius: 10px; margin-bottom: 10px;
+  }
+  .rx-block {
+    padding: 14px 18px; background: #fff;
+    border: 1px solid #e8ecf1; border-radius: 12px; margin-top: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; padding-bottom: 16px; }

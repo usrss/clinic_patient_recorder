@@ -1,0 +1,63 @@
+  .contact-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
+    padding: 36px 24px;
+  }
+  .contact-wrap { width: 100%; max-width: 620px; margin: 0 auto; }
+
+  .contact-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .contact-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  .patient-label-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 24px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .patient-icon { font-size: 32px; color: #3b82f6; flex-shrink: 0; }
+  .patient-name { font-weight: 700; color: #1a1a2e; font-size: 15px; }
+  .patient-id { font-size: 12px; color: #94a3b8; }
+
+  .sec-label {
+    font-size: 11px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
+  }
+  .form-card {
+    background: #fff; border-radius: 16px; padding: 28px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+  .help-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .form-error { font-size: 12px; color: #dc2626; margin-top: 4px; }
+
+  .details-summary {
+    cursor: pointer; font-size: 12px; font-weight: 700;
+    color: #94a3b8; text-transform: uppercase; letter-spacing: .06em;
+    padding: 10px 0; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+    border-top: 1px solid #e8ecf1; margin-top: 4px;
+  }
+  .details-summary::-webkit-details-marker { display: none; }
+  .details-arrow { margin-left: auto; transition: transform 0.15s; }
+  details[open] .details-arrow { transform: rotate(180deg); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
