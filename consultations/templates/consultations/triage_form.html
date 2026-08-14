@@ -63,6 +63,10 @@
   <div class="info-card">
     <div class="content-grid">
       <div>
+        <div class="lbl">Complaint</div>
+        <div class="val-muted">{{ consultation.chief_complaint }}</div>
+      </div>
+      <div>
         <div class="lbl">Symptoms</div>
         <div class="val-muted">{{ consultation.symptoms }}</div>
       </div>
@@ -171,18 +175,6 @@
           <label>{{ form.weight.label }}</label>
           {{ form.weight }}
           {% if form.weight.errors %}<div class="form-error" aria-live="polite">{{ form.weight.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
-
-      {# Urgency #}
-      <div class="form-group" style="margin-top:4px;">
-        <label>Urgency Level</label>
-        {{ form.urgency }}
-        {% if form.urgency.errors %}<div class="form-error" aria-live="polite">{{ form.urgency.errors.0 }}</div>{% endif %}
-        <div class="urgency-legend">
-          <span class="urgency-low"> Low</span>
-          <span class="urgency-med">Medium</span>
-          <span class="urgency-high">High</span>
         </div>
       </div>
 

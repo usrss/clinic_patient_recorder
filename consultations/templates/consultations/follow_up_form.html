@@ -23,7 +23,8 @@
   <div class="info-banner">
     <ion-icon name="information-circle-outline" style="font-size:18px;"></ion-icon>
     <div>
-      <strong>Original case:</strong> {{ consultation.symptoms|truncatechars:80 }}<br>
+      <strong>Original case:</strong> {{ consultation.chief_complaint|truncatechars:80 }}
+      {% if consultation.symptoms %}<br><span style="font-size:12px;">Symptoms: {{ consultation.symptoms|truncatechars:80 }}</span>{% endif %}<br>
       <span style="font-size:11px;">Created {{ consultation.created_at|date:"F d, Y" }} · {{ consultation.follow_up_count }} prior follow-up{{ consultation.follow_up_count|pluralize }}</span>
     </div>
   </div>

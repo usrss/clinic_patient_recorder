@@ -1256,7 +1256,6 @@ ALL_METRICS = [
     ('cases_per_college',     'Cases per College'),
     ('cases_by_sex',          'Cases by Sex'),
     ('cases_by_patient_type', 'Cases by Patient Type'),
-    ('urgency_breakdown',     'Urgency Breakdown (Triage)'),
     ('medicine_dispensed',    'Medicine Dispensing Summary'),
     ('low_stock',             'Low Stock Medicines'),
     ('new_patients',          'New Patients in Period'),
@@ -1425,15 +1424,6 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
             'instructors': instructors,
             'other':       max(0, total_count - classified),
         }
-
-    if 'urgency_breakdown' in metrics:
-        from consultations.models import Triage
-        results['urgency_breakdown'] = list(
-            Triage.objects.filter(consultation__in=base_qs)
-            .values('urgency')
-            .annotate(count=Count('consultation', distinct=True))
-            .order_by('-count')
-        )
 
     if 'medicine_dispensed' in metrics:
         results['medicine_dispensed'] = list(
@@ -1919,18 +1909,6 @@ def _report_pdf(results, date_from, date_to, user_name=None):
              ['Other', str(t['other'])]],
             col_widths=[10*cm, 7*cm],
             aligns=['left', 'right'],
-        ))
-        story.append(Spacer(1, 8))
-
-    # ── Urgency breakdown ──
-    if 'urgency_breakdown' in results and results['urgency_breakdown']:
-        story.append(Paragraph('Urgency Breakdown (Triage)', s['section_title']))
-        story.append(_pdf_make_table(
-            ['Urgency', 'Count'],
-            [[r['urgency'].capitalize(), str(r['count'])]
-             for r in results['urgency_breakdown']],
-            col_widths=[10*cm, 7*cm],
-            aligns=['left', 'center'],
         ))
         story.append(Spacer(1, 8))
 

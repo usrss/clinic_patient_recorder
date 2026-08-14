@@ -56,10 +56,6 @@
     </div>
     <div class="record-grid">
       <div>
-        <div class="lbl">Urgency</div>
-        <div class="val">{{ triage.get_urgency_display }}</div>
-      </div>
-      <div>
         <div class="lbl">Triaged by</div>
         <div class="val">{% if triage.triaged_by %}{{ triage.triaged_by.get_full_name|default:triage.triaged_by.username }}{% else %}Unknown{% endif %}</div>
       </div>
@@ -125,12 +121,6 @@
           {% if form.weight.help_text %}<div class="help-text">{{ form.weight.help_text }}</div>{% endif %}
           {% if form.weight.errors %}<div class="form-error" aria-live="polite">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
-      </div>
-
-      <div class="form-group" style="margin-top:4px;">
-        <label>Urgency Level</label>
-        {{ form.urgency }}
-        {% if form.urgency.errors %}<div class="form-error" aria-live="polite">{{ form.urgency.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">

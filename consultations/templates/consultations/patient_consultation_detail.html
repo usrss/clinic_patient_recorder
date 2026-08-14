@@ -69,7 +69,12 @@
       </span>
       <span style="font-size:11px;color:#94a3b8;">Severity: <strong style="color:#374151;">{{ consultation.severity_description }}</strong></span>
     </div>
-    <div class="content-text">{{ consultation.symptoms }}</div>
+    <div class="content-text">{{ consultation.chief_complaint }}</div>
+    {% if consultation.symptoms %}
+    <div class="divider"></div>
+    <div class="info-label">Symptoms</div>
+    <div class="content-text" style="margin-top:4px;">{{ consultation.symptoms }}</div>
+    {% endif %}
     {% if consultation.additional_notes %}
     <div class="divider"></div>
     <div class="info-label">Additional Notes</div>

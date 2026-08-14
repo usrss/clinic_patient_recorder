@@ -35,14 +35,6 @@
     display: inline-block; font-size: 11px; font-weight: 600;
     color: #6b7280; background: #f3f4f6; border-radius: 6px; padding: 2px 7px;
   }
-  .urgency-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-  }
-  .urgency-high { background: #fee2e2; color: #991b1b; }
-  .urgency-med  { background: #fef3c7; color: #92400e; }
-  .urgency-low  { background: #d1fae5; color: #065f46; }
-
   .prescribe-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 13px; border-radius: 8px;

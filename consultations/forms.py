@@ -278,7 +278,7 @@ class TriageForm(forms.ModelForm):
         fields = [
             'blood_pressure', 'temperature', 'pulse_rate',
             'respiratory_rate', 'oxygen_saturation', 'weight',
-            'urgency', 'notes',
+            'notes',
         ]
         widgets = {
             'blood_pressure': forms.TextInput(attrs={
@@ -318,7 +318,6 @@ class TriageForm(forms.ModelForm):
                 'min': '0',
                 'max': '500',
             }),
-            'urgency': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -408,7 +407,7 @@ class TriageEditForm(forms.ModelForm):
         fields = [
             'blood_pressure', 'temperature', 'pulse_rate',
             'respiratory_rate', 'oxygen_saturation', 'weight',
-            'urgency', 'notes',
+            'notes',
         ]
         widgets = {
             'blood_pressure': forms.TextInput(attrs={
@@ -443,7 +442,6 @@ class TriageEditForm(forms.ModelForm):
                 'min': '0',
                 'max': '500',
             }),
-            'urgency': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {

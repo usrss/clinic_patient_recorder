@@ -265,22 +265,6 @@
   </div>
   {% endif %}
 
-  {% if 'urgency_breakdown' in results and results.urgency_breakdown %}
-  <div class="panel">
-    <div class="panel-header">Urgency Breakdown (Triage)</div>
-    <table>
-      <thead><tr><th>Urgency</th><th>Count</th></tr></thead>
-      <tbody>
-        {% for row in results.urgency_breakdown %}
-        <tr>
-          <td style="font-weight:500;text-transform:capitalize;">{{ row.urgency }}</td>
-          <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
 
   {% if 'medicine_dispensed' in results and results.medicine_dispensed %}
   <div class="panel">

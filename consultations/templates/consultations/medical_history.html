@@ -144,7 +144,6 @@
           <span>SpO₂ <strong>{% if t.oxygen_saturation is not None %}{{ t.oxygen_saturation }}%{% else %}—{% endif %}</strong></span>
           <span>Wt <strong>{% if t.weight is not None %}{{ t.weight }} kg{% else %}—{% endif %}</strong></span>
         </div>
-        <div style="font-size:11px;margin-top:6px;">Urgency: {% if t.urgency == 'high' %}<span style="color:#ef4444;font-weight:600;">High</span>{% elif t.urgency == 'medium' %}<span style="color:#f97316;font-weight:600;">Medium</span>{% else %}<span style="color:#10b981;font-weight:600;">Low</span>{% endif %}</div>
       </div>
       {% endif %}{% endwith %}
 

@@ -176,15 +176,6 @@
       </div>
     </div>
 
-    <div class="vital-card" style="text-align:center;margin-bottom:14px;">
-      <div class="vital-val">
-        {% if t.urgency == 'high' %}<span style="color:#ef4444;"><ion-icon name="ellipse" style="font-size:10px;color:#ef4444;"></ion-icon> High</span>
-        {% elif t.urgency == 'medium' %}<span style="color:#f97316;"><ion-icon name="ellipse" style="font-size:10px;color:#f97316;"></ion-icon> Medium</span>
-        {% else %}<span style="color:#10b981;"><ion-icon name="ellipse" style="font-size:10px;color:#10b981;"></ion-icon> Low</span>{% endif %}
-      </div>
-      <div class="vital-lbl">Urgency</div>
-    </div>
-
     <div style="font-size:12px;color:#94a3b8;">
       Triaged by {% if t.triaged_by %}{{ t.triaged_by.get_full_name|default:t.triaged_by.username }}{% else %}Unknown{% endif %} at {{ t.triaged_at|date:"M d, Y H:i" }}
     </div>

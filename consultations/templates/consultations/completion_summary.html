@@ -90,12 +90,6 @@
         {% endif %}
       </div>
     </div>
-    <div class="doc-actions">
-      {% if prescription %}
-        <a href="{% url 'consultations:clinical_detail' consultation.pk %}?next={{ request.path|urlencode }}#prescription" class="btn-sm btn-outline">View</a>
-        <a href="{% url 'consultations:print_consultation' consultation.pk %}?next={{ request.path|urlencode }}" class="btn-sm btn-outline" target="_blank">Print</a>
-      {% endif %}
-    </div>
   </div>
 
   {# Card 3: Medical Certificate #}

@@ -25,9 +25,8 @@
           <th>#</th>
           <th>Patient</th>
           <th>Patient ID</th>
-          <th>Urgency</th>
           <th>Vitals</th>
-          <th>Symptoms</th>
+          <th>Complaint</th>
           <th>Triaged</th>
           <th>Action</th>
         </tr>
@@ -46,17 +45,6 @@
             {% endif %}
           </td>
           <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
-          <td>
-            {% with tc=c.triages.first %}{% if tc %}
-              {% if tc.urgency == 'high' %}
-                <span class="urgency-badge urgency-high"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> High</span>
-              {% elif tc.urgency == 'medium' %}
-                <span class="urgency-badge urgency-med"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> Medium</span>
-              {% else %}
-                <span class="urgency-badge urgency-low"><svg width="8" height="8" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg> Low</span>
-              {% endif %}
-            {% else %}—{% endif %}{% endwith %}
-          </td>
           <td class="vitals-cell">
             {% with tc=c.triages.first %}{% if tc %}
               BP: <strong>{{ tc.blood_pressure }}</strong><br>
@@ -65,7 +53,10 @@
             {% else %}—{% endif %}{% endwith %}
           </td>
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#374151;">
-            {{ c.symptoms|truncatechars:55 }}
+            {{ c.chief_complaint|truncatechars:55 }}
+            {% if c.symptoms %}
+            <div style="font-size:11px;color:#94a3b8;">{{ c.symptoms|truncatechars:40 }}</div>
+            {% endif %}
           </td>
           <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">
             {% with tc=c.triages.first %}{% if tc %}{{ tc.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}{% endwith %}

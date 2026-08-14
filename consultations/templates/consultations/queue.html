@@ -36,7 +36,7 @@
           <th>Type</th>
           <th>Patient</th>
           <th>Patient ID</th>
-          <th>Symptoms</th>
+          <th>Complaint</th>
           <th>Severity</th>
           <th>Submitted</th>
           <th>Queue Pos</th>
@@ -73,7 +73,12 @@
             </div>
           </td>
           <td><span class="id-badge">{{ c.patient.patient_id }}</span></td>
-          <td><div class="symptom-cell">{{ c.symptoms|truncatechars:55 }}</div></td>
+          <td>
+            <div class="symptom-cell">{{ c.chief_complaint|truncatechars:55 }}</div>
+            {% if c.symptoms %}
+            <div style="font-size:11px;color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.symptoms|truncatechars:40 }}</div>
+            {% endif %}
+          </td>
           <td style="font-size:12px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             {{ c.severity_description|truncatechars:40 }}
           </td>

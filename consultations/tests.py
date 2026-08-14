@@ -640,7 +640,6 @@ class TriageChiefComplaintTests(TestCase):
                 'blood_pressure': '120/80',
                 'temperature': '36.5',
                 'pulse_rate': '72',
-                'urgency': 'low',
                 'hypertension': 'on',
                 'diabetes': '',
                 'asthma': '',
@@ -703,7 +702,6 @@ class TriageChiefComplaintTests(TestCase):
             blood_pressure='120/80',
             temperature=36.5,
             pulse_rate=72,
-            urgency='low',
         )
         Prescription.objects.create(
             consultation=self.consultation,
@@ -733,7 +731,6 @@ class TriageChiefComplaintTests(TestCase):
             blood_pressure='120/80',
             temperature=36.5,
             pulse_rate=72,
-            urgency='low',
         )
 
         response = self.client.post(
@@ -742,7 +739,6 @@ class TriageChiefComplaintTests(TestCase):
                 'blood_pressure': '130/85',
                 'temperature': '36.6',
                 'pulse_rate': '74',
-                'urgency': 'low',
                 'notes': '',
                 'chief_complaint': 'abdominal pain',
                 'amendment_reason': 'Re-measured blood pressure',

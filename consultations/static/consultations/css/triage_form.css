@@ -147,18 +147,6 @@
   }
   .vitals-row + .vitals-row { margin-top: 4px; }
 
-  .urgency-legend {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    font-size: 12px;
-    flex-wrap: wrap;
-  }
-  .urgency-legend span { padding: 4px 12px; border-radius: 20px; font-weight: 600; }
-  .urgency-low { background: #d1fae5; color: #065f46; }
-  .urgency-med { background: #fef3c7; color: #92400e; }
-  .urgency-high { background: #fee2e2; color: #991b1b; }
-
   .btn-row { display: flex; gap: 10px; margin-top: 8px; }
 
   .footer-note {
