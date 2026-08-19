@@ -1,259 +1,11 @@
 {% extends base_template %}
+{% load static %}
 {% block title %}Process Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 {% block page_title %}Consultation #{{ consultation.pk }}{% endblock %}
 {% block page_subtitle %}Process consultation request{% endblock %}
 
 {% block extra_css %}
-<style>
-  /* ── Layout ── */
-  .process-wrap { max-width: 780px; }
-
-  /* ── Sec heading ── */
-  .sec-heading {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 12px;
-  }
-
-  /* ── Back link ── */
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280;
-    text-decoration: none;
-    margin-bottom: 20px;
-    padding: 6px 10px;
-    border-radius: 7px;
-    border: 1px solid #e8ecf1;
-    background: #fff;
-    transition: all 0.15s;
-  }
-  .back-link:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
-
-  /* ── Panel ── */
-  .panel {
-    background: #fff;
-    border-radius: 14px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .panel-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 20px;
-    border-bottom: 1px solid #f0f4f8;
-  }
-  .panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1a1a2e;
-  }
-  .panel-body { padding: 20px; }
-
-  /* ── Info grid ── */
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
-
-  .info-item-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
-  }
-  .info-item-value {
-    font-size: 13px;
-    font-weight: 500;
-    color: #1a1a2e;
-  }
-
-  /* ── Patient identity hero ── */
-  .identity-hero {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid #f0f4f8;
-  }
-  .identity-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 700;
-    color: #065f46;
-    flex-shrink: 0;
-  }
-  .identity-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 3px;
-  }
-  .identity-id {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    background: #f3f4f6;
-    border-radius: 6px;
-    padding: 2px 7px;
-  }
-
-  /* ── Detail block ── */
-  .detail-block {
-    padding: 14px 0;
-    border-bottom: 1px solid #f0f4f8;
-  }
-  .detail-block:first-child { padding-top: 0; }
-  .detail-block:last-child { border-bottom: none; padding-bottom: 0; }
-
-  /* ── Info banner ── */
-  .info-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 12px;
-    color: #065f46;
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-  .info-banner svg { flex-shrink: 0; margin-top: 1px; }
-
-  /* ── Form fields ── */
-  .field-wrap { margin-bottom: 16px; }
-  .field-wrap:last-of-type { margin-bottom: 0; }
-  .field-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: #374151;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    margin-bottom: 6px;
-  }
-  .field-label-note {
-    font-size: 11px;
-    font-weight: 400;
-    color: #94a3b8;
-    text-transform: none;
-    letter-spacing: 0;
-  }
-  .field-error {
-    font-size: 11px;
-    color: #ef4444;
-    margin-top: 4px;
-  }
-
-  /* ── Form actions ── */
-  .form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    align-items: center;
-  }
-  .submit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 18px;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    background: #0078d4;
-    border: none;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: background 0.15s;
-  }
-  .submit-btn:hover { background: #006bbf; }
-  .cancel-link {
-    display: inline-flex;
-    align-items: center;
-    padding: 9px 16px;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #374151;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    text-decoration: none;
-    transition: all 0.15s;
-  }
-  .cancel-link:hover { background: #e5e7eb; color: #374151; }
-
-  /* ── Danger panel ── */
-  .danger-panel {
-    background: #fff;
-    border-radius: 14px;
-    border: 1px solid #fca5a5;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .danger-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 20px;
-    border-bottom: 1px solid #fee2e2;
-    background: #fff5f5;
-  }
-  .danger-panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #991b1b;
-  }
-  .danger-panel-body { padding: 18px 20px; }
-  .danger-desc {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 16px;
-    line-height: 1.6;
-  }
-  .cancel-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #fff;
-    background: #ef4444;
-    border: none;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: background 0.15s;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .cancel-btn:hover { background: #dc2626; }
-</style>
+<link rel="stylesheet" href="{% static 'consultations/css/queue_detail.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -307,6 +59,10 @@
   <div class="sec-heading">Consultation Details</div>
   <div class="panel">
     <div class="panel-body" style="padding:0;">
+      <div class="detail-block" style="padding:18px 20px;">
+        <div class="info-item-label">Complaint</div>
+        <div class="info-item-value" style="margin-top:4px;line-height:1.6;">{{ consultation.chief_complaint }}</div>
+      </div>
       <div class="detail-block" style="padding:18px 20px;">
         <div class="info-item-label">Symptoms</div>
         <div class="info-item-value" style="margin-top:4px;line-height:1.6;">{{ consultation.symptoms }}</div>
@@ -417,14 +173,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.process-wrap form').forEach(function(form) {
-      form.addEventListener('submit', function() {
-        var btn = this.querySelector('button[type="submit"]');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Processing…'; }
-      });
-    });
-  });
-</script>
+<script src="{% static 'consultations/js/queue_detail.js' %}" defer></script>
 {% endblock %}

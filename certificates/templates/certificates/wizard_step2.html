@@ -91,18 +91,13 @@
       </div>
       {% endif %}
 
-      {# Activities — only shown if template body contains {activity_name} or {fitness_status} #}
+      {# Activities — only shown if template body contains {activity_name} #}
       {% if show_activities %}
       <div class="form-group">
         <label class="form-label">Activity / Event Name <span class="req">*</span></label>
         {{ form.activity_name }}
         {% if form.activity_name.errors %}<div class="form-error">{{ form.activity_name.errors.0 }}</div>{% endif %}
         <div class="form-hint">e.g. Basketball tournament, Intramurals</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Fitness Status <span class="req">*</span></label>
-        {{ form.fitness_status }}
-        {% if form.fitness_status.errors %}<div class="form-error">{{ form.fitness_status.errors.0 }}</div>{% endif %}
       </div>
       {% endif %}
 

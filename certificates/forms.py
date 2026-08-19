@@ -20,7 +20,7 @@ class CertificateDetailsForm(forms.ModelForm):
             'diagnosis',
             'rest_from', 'rest_to',
             'work_assessment', 'return_date', 'restrictions',
-            'activity_name', 'fitness_status',
+            'activity_name',
             'remarks',
             'place',
         ]
@@ -33,7 +33,6 @@ class CertificateDetailsForm(forms.ModelForm):
             'return_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'restrictions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Work restrictions...'}),
             'activity_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Basketball tournament'}),
-            'fitness_status': forms.Select(attrs={'class': 'form-control'}),
             'place': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. NORSU Clinic, Bayawan City'}),
         }
         labels = {
@@ -45,7 +44,6 @@ class CertificateDetailsForm(forms.ModelForm):
             'return_date': 'Recommended Return Date',
             'restrictions': 'Restrictions / Limitations',
             'activity_name': 'Activity / Event Name',
-            'fitness_status': 'Fitness Status',
             'place': 'Place of Issuance',
         }
 
@@ -58,7 +56,7 @@ class CertificateDetailsForm(forms.ModelForm):
         self.needs_remarks = kwargs.pop('needs_remarks', True)
         self.needs_diagnosis = kwargs.pop('needs_diagnosis', True)
         super().__init__(*args, **kwargs)
-        for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'fitness_status', 'place']:
+        for f in ['rest_from', 'rest_to', 'work_assessment', 'return_date', 'restrictions', 'activity_name', 'place']:
             self.fields[f].required = False
 
     def clean(self):
@@ -81,8 +79,6 @@ class CertificateDetailsForm(forms.ModelForm):
         if self.needs_activities:
             if not cleaned.get('activity_name', '').strip():
                 self.add_error('activity_name', 'Activity name is required.')
-            if not cleaned.get('fitness_status'):
-                self.add_error('fitness_status', 'Fitness status is required.')
 
         if rf and rt and rt < rf:
             self.add_error('rest_to', 'End date must be after start date.')

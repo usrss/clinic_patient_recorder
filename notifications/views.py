@@ -169,7 +169,6 @@ def notification_detail_api(request, pk):
                     'respiratory_rate': triage.respiratory_rate,
                     'oxygen_saturation': float(triage.oxygen_saturation) if triage.oxygen_saturation else None,
                     'weight': float(triage.weight) if triage.weight else None,
-                    'urgency': triage.get_urgency_display(),
                     'notes': triage.notes,
                     'triaged_at': triage.triaged_at.isoformat(),
                     'triaged_by': str(triage.triaged_by) if triage.triaged_by else None,

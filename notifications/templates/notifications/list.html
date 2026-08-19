@@ -578,10 +578,6 @@
         <div class="nm-value" id="nmWeight"></div>
       </div>
       <div class="nm-field">
-        <div class="nm-label">Urgency</div>
-        <div id="nmUrgency"></div>
-      </div>
-      <div class="nm-field">
         <div class="nm-label">Triaged By</div>
         <div class="nm-value" id="nmTriagedBy"></div>
       </div>
@@ -695,8 +691,6 @@ function openNotifDetail(pk) {
         clone2.querySelector('#nmSpO2').textContent = data.triage.oxygen_saturation != null ? data.triage.oxygen_saturation + '%' : '—';
         clone2.querySelector('#nmWeight').textContent = data.triage.weight != null ? data.triage.weight + ' kg' : '—';
 
-        var urg = (data.triage.urgency || '').toLowerCase();
-        clone2.querySelector('#nmUrgency').innerHTML = '<span class="nm-badge ' + urg + '">' + (data.triage.urgency || '—') + '</span>';
         clone2.querySelector('#nmTriagedBy').textContent = data.triage.triaged_by || '—';
         clone2.querySelector('#nmTriageNotes').textContent = data.triage.notes || 'No notes';
         if (!data.triage.notes) { clone2.querySelector('#nmTriageNotes').classList.add('empty'); }

@@ -1,147 +1,11 @@
 {% extends base_template %}
+{% load static %}
 {% block title %}Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 {% block page_title %}Consultation #{{ consultation.pk }}{% endblock %}
 {% block page_subtitle %}{{ consultation.get_status_display }}{% endblock %}
 
 {% block extra_css %}
-<style>
-  .sec-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
-  }
-  .detail-panel {
-    background: #fff;
-    border-radius: 14px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.04);
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .detail-panel-header {
-    padding: 14px 20px;
-    border-bottom: 1px solid #f0f4f8;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .detail-panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
-  .detail-panel-body { padding: 20px; }
-
-  .status-pill {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 14px;
-  }
-  .info-label {
-    font-size: 10px; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
-  }
-  .info-value { font-size: 13px; font-weight: 500; color: #1a1a2e; }
-
-  .vital-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .vital-card {
-    background: #f0f9f5;
-    border-radius: 10px;
-    padding: 14px;
-    text-align: center;
-  }
-  .vital-val { font-size: 17px; font-weight: 700; color: #1a1a2e; }
-  .vital-lbl { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-
-  .rx-item {
-    padding: 12px 16px;
-    background: #f0fdf4;
-    border: 0.5px solid #bbf7d0;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-  .rx-item-name { font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
-  .rx-item-meta { font-size: 12px; color: #6b7280; display: flex; flex-wrap: wrap; gap: 12px; }
-
-  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .tag {
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-  }
-
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #374151;
-    background: #fff;
-    border: 1px solid #e8ecf1;
-    text-decoration: none;
-    margin-bottom: 20px;
-    transition: all 0.15s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-  .back-btn:hover { background: #f5f8ff; border-color: #bfdbfe; color: #0078d4; }
-
-  .print-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #374151;
-    background: #fff;
-    border: 1px solid #e8ecf1;
-    text-decoration: none;
-    transition: all 0.15s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  }
-  .print-btn:hover { background: #f8fafc; color: #1a1a2e; }
-
-  .action-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-
-  .amend-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 14px;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #374151;
-    background: #fff;
-    border: 1px solid #e8ecf1;
-    text-decoration: none;
-    transition: all 0.15s;
-  }
-  .amend-btn:hover {
-    background: #f5f8ff;
-    border-color: #bfdbfe;
-    color: #0078d4;
-  }
-</style>
+<link rel="stylesheet" href="{% static 'consultations/css/clinical_detail.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -310,15 +174,6 @@
         <div class="vital-val">{% if t.weight is not None %}{{ t.weight }} kg{% else %}—{% endif %}</div>
         <div class="vital-lbl">Weight</div>
       </div>
-    </div>
-
-    <div class="vital-card" style="text-align:center;margin-bottom:14px;">
-      <div class="vital-val">
-        {% if t.urgency == 'high' %}<span style="color:#ef4444;"><ion-icon name="ellipse" style="font-size:10px;color:#ef4444;"></ion-icon> High</span>
-        {% elif t.urgency == 'medium' %}<span style="color:#f97316;"><ion-icon name="ellipse" style="font-size:10px;color:#f97316;"></ion-icon> Medium</span>
-        {% else %}<span style="color:#10b981;"><ion-icon name="ellipse" style="font-size:10px;color:#10b981;"></ion-icon> Low</span>{% endif %}
-      </div>
-      <div class="vital-lbl">Urgency</div>
     </div>
 
     <div style="font-size:12px;color:#94a3b8;">

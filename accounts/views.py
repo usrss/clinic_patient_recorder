@@ -604,14 +604,6 @@ def dashboard(request):
 
         if context is None:
             now = timezone.now()
-            thirty_days_ago = now - timedelta(days=30)
-
-            doctor_triages = Triage.objects.filter(
-                triaged_by=user,
-                triaged_at__gte=thirty_days_ago
-            )
-            urgency_counts = doctor_triages.values('urgency').annotate(count=Count('pk'))
-            urgency_data = {u['urgency']: u['count'] for u in urgency_counts}
 
             daily_activity = []
             for i in range(6, -1, -1):
@@ -628,26 +620,10 @@ def dashboard(request):
                 ).select_related('patient').distinct().order_by('-updated_at')[:5]
             )
 
-            urgent_triage_count = Consultation.objects.filter(
-                triages__triaged_by=user,
-                triages__urgency='high',
-                status__in=[
-                    Consultation.Status.QUEUED,
-                    Consultation.Status.SCHEDULED,
-                    Consultation.Status.TRIAGED,
-                ]
-            ).distinct().count()
-
             context = {
                 'user': user,
-                'urgency_data_json': {
-                    'Low': urgency_data.get('low', 0),
-                    'Medium': urgency_data.get('medium', 0),
-                    'High': urgency_data.get('high', 0),
-                },
                 'daily_activity_json': daily_activity,
                 'recent_consults': recent_consults,
-                'urgent_triage_count': urgent_triage_count,
             }
             cache.set(cache_key, context, 120)
 

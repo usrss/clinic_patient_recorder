@@ -155,7 +155,7 @@ def wizard_details(request, pk):
     # Only show fields whose placeholders actually exist in the .docx template
     show_rest_period = bool(docx_placeholders & {'rest_from', 'rest_to', 'rest_date'})
     show_ojt = bool(docx_placeholders & {'work_assessment', 'return_date', 'restrictions'})
-    show_activities = bool(docx_placeholders & {'activity_name', 'fitness_status'})
+    show_activities = 'activity_name' in docx_placeholders
     show_place = 'place' in docx_placeholders
     show_remarks = 'remarks' in docx_placeholders
     show_diagnosis = 'diagnosis' in docx_placeholders

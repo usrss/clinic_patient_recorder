@@ -1,49 +1,9 @@
 {% extends base_template %}
+{% load static %}
 {% block title %}Amend Triage — Consultation #{{ consultation.pk }} — Patient Record System{% endblock %}
 
 {% block extra_css %}
-<style>
-  .amend-page {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #ffffff 100%);
-    padding: 36px 24px;
-  }
-  .amend-wrap { width: 100%; max-width: 760px; margin: 0 auto; }
-  .amend-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
-  .amend-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; letter-spacing: -0.3px; }
-  .sec-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
-  }
-  .warning-banner {
-    background: #fff8e1; border-left: 4px solid #f59e0b;
-    padding: 14px 18px; border-radius: 12px; margin-bottom: 24px;
-    font-size: 13px; color: #92400e; display: flex; align-items: center; gap: 10px;
-  }
-  .info-card {
-    background: #fff; border-radius: 16px; padding: 24px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
-    margin-bottom: 24px;
-  }
-  .record-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px; font-size: 14px;
-  }
-  .record-grid + .record-grid { margin-top: 16px; }
-  .record-grid .lbl {
-    font-size: 11px; color: #94a3b8; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
-  }
-  .record-grid .val { font-weight: 700; color: #1a1a2e; }
-  .form-error { font-size: 11px; color: #ef4444; margin-top: 4px; }
-  .vitals-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .vitals-row + .vitals-row { margin-top: 4px; }
-  .btn-row { display: flex; gap: 10px; margin-top: 8px; }
-  .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
-  .help-text { font-size: 11px; color: #94a3b8; margin-top: 4px; }
-</style>
+<link rel="stylesheet" href="{% static 'consultations/css/triage_edit.css' %}">
 {% endblock %}
 
 {% block extra_js %}{% endblock %}
@@ -95,10 +55,6 @@
       </div>
     </div>
     <div class="record-grid">
-      <div>
-        <div class="lbl">Urgency</div>
-        <div class="val">{{ triage.get_urgency_display }}</div>
-      </div>
       <div>
         <div class="lbl">Triaged by</div>
         <div class="val">{% if triage.triaged_by %}{{ triage.triaged_by.get_full_name|default:triage.triaged_by.username }}{% else %}Unknown{% endif %}</div>
@@ -165,12 +121,6 @@
           {% if form.weight.help_text %}<div class="help-text">{{ form.weight.help_text }}</div>{% endif %}
           {% if form.weight.errors %}<div class="form-error" aria-live="polite">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
-      </div>
-
-      <div class="form-group" style="margin-top:4px;">
-        <label>Urgency Level</label>
-        {{ form.urgency }}
-        {% if form.urgency.errors %}<div class="form-error" aria-live="polite">{{ form.urgency.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">

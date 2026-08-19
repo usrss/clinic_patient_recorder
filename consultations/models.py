@@ -324,11 +324,6 @@ class FollowUpProgress(models.Model):
 
 
 class Triage(models.Model):
-    class Urgency(models.TextChoices):
-        LOW = 'low', 'Low'
-        MEDIUM = 'medium', 'Medium'
-        HIGH = 'high', 'High'
-
     consultation = models.ForeignKey(
         Consultation,
         on_delete=models.CASCADE,
@@ -374,7 +369,6 @@ class Triage(models.Model):
         blank=True,
         help_text='Weight in kilograms (e.g. 65.50)'
     )
-    urgency = models.CharField(max_length=10, choices=Urgency.choices)
     notes = models.TextField(blank=True)
     triaged_at = models.DateTimeField(auto_now_add=True)
 

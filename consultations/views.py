@@ -951,9 +951,11 @@ def triage_form(request, pk):
         'hepatitis_b': profile.hepatitis_b,
         'measles': profile.measles,
         'tt': profile.tt,
-        # Pre-fill the final chief complaint with the patient's own words so
-        # the doctor can review and reword it during triage.
-        'chief_complaint': consultation.symptoms,
+        # Pre-fill the final chief complaint with the patient's own words
+        # (the complaint entered at submission) so the doctor can review and
+        # reword it during triage. Falls back to symptoms for older records
+        # created before the complaints field existed.
+        'chief_complaint': consultation.chief_complaint or consultation.symptoms,
     }
 
     form = TriageForm(request.POST or None, initial=initial_profile)
@@ -991,11 +993,11 @@ def triage_form(request, pk):
         log_change(
             user=request.user,
             module='Consultations',
-            description=f'Triaged patient — {consultation.patient.get_full_name()} — {triage.get_urgency_display()} urgency',
+            description=f'Triaged patient — {consultation.patient.get_full_name()}',
             object_model='consultations.Consultation',
             object_id=consultation.pk,
             object_repr=str(consultation),
-            changes_after={'status': 'triaged', 'urgency': triage.urgency},
+            changes_after={'status': 'triaged'},
             request=request,
         )
 
@@ -1596,8 +1598,7 @@ def patient_medical_history_pdf(request, patient_pk):
             if t:
                 story.append(Paragraph(
                     f'<i>Vitals:</i> BP {t.blood_pressure} | '
-                    f'Temp {t.temperature}°C | Pulse {t.pulse_rate} bpm | '
-                    f'Urgency: {t.get_urgency_display()}',
+                    f'Temp {t.temperature}°C | Pulse {t.pulse_rate} bpm',
                     small_style
                 ))
 

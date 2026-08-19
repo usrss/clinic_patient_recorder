@@ -20,7 +20,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
         onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
 
-{{ urgency_data_json|json_script:"chart-data-urgency" }}
 {{ daily_activity_json|json_script:"chart-data-activity" }}
 <script src="{% static 'accounts/js/dashboard_doctor.js' %}" defer></script>
 {% endblock %}
@@ -31,22 +30,6 @@
 {% endblock %}
 
 {% block content %}
-
-{# ── Urgent Triage Alert ── #}
-{% if urgent_triage_count and urgent_triage_count > 0 %}
-<a href="{% url 'consultations:triage_list' %}" style="display:block;text-decoration:none;margin-bottom:20px;">
-  <div class="doc-urgent-banner">
-    <div style="width:36px;height:36px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-      <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    </div>
-    <div style="flex:1;">
-      <strong style="font-size:13px;color:#991b1b;">{{ urgent_triage_count }} urgent patient{{ urgent_triage_count|pluralize }} waiting</strong>
-      <span style="display:block;font-size:11px;color:#b91c1c;">High-urgency triages need immediate attention — click to view triage queue</span>
-    </div>
-    <svg width="16" height="16" fill="none" stroke="#991b1b" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-  </div>
-</a>
-{% endif %}
 
 {# ── Quick Actions ── #}
 <div class="sec-label">Quick Actions</div>
@@ -95,15 +78,9 @@
 </div>
 
 {# ── Analytics ── #}
-{% if urgency_data_json or daily_activity_json %}
+{% if daily_activity_json %}
 <div class="sec-label">Analytics</div>
 <div class="doc-chart-grid">
-  <div class="doc-chart-card">
-    <div class="doc-chart-header">Triage Urgency (Last 30 Days)</div>
-    <div class="doc-chart-body">
-      <canvas id="chart-urgency" height="180"></canvas>
-    </div>
-  </div>
   <div class="doc-chart-card">
     <div class="doc-chart-header">Daily Activity (Last 7 Days)</div>
     <div class="doc-chart-body">
@@ -151,13 +128,6 @@
       <svg width="15" height="15" fill="none" stroke="#0078d4" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
     </div>
     Record patient vitals (BP, temperature, pulse)
-  </div>
-
-  <div class="resp-item">
-    <div class="resp-item-icon" style="background:#fff7ed;">
-      <svg width="15" height="15" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    </div>
-    Assess condition severity: Low / Medium / High
   </div>
 
   <div class="resp-item">

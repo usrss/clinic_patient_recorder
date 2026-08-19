@@ -12,12 +12,9 @@
 /* ── Analytics chart grid ── */
 .doc-chart-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 28px;
-}
-@media (max-width: 700px) {
-  .doc-chart-grid { grid-template-columns: 1fr; }
 }
 
 .doc-chart-card {
@@ -42,17 +39,3 @@
   height: auto !important;
 }
 
-/* ── Urgent triage alert banner ── */
-.doc-urgent-banner {
-  background: linear-gradient(135deg, #fef2f2, #fee2e2);
-  border: 1px solid #fecaca;
-  border-radius: 14px;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  transition: box-shadow 0.2s;
-}
-.doc-urgent-banner:hover {
-  box-shadow: 0 2px 12px rgba(239,68,68,0.15);
-}
