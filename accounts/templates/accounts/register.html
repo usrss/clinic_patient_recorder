@@ -255,7 +255,7 @@
           <div class="form-group">
             <label for="id_blood_type">Blood Type</label>
             <select id="id_blood_type" name="blood_type" class="reg-input">
-              <option value="">— Unknown —</option>
+              <option value=""> Unknown </option>
               <option {% if form.blood_type.value == 'A+' %}selected{% endif %}>A+</option><option {% if form.blood_type.value == 'A-' %}selected{% endif %}>A-</option>
               <option {% if form.blood_type.value == 'B+' %}selected{% endif %}>B+</option><option {% if form.blood_type.value == 'B-' %}selected{% endif %}>B-</option>
               <option {% if form.blood_type.value == 'AB+' %}selected{% endif %}>AB+</option><option {% if form.blood_type.value == 'AB-' %}selected{% endif %}>AB-</option>

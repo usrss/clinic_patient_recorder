@@ -1281,17 +1281,23 @@ def report_builder(request):
     date_from = _parse_date(date_from_str)
     date_to   = _parse_date(date_to_str)
 
-    has_query  = bool(date_from_str and date_to_str)
-    date_error = None
-    results    = None
+    has_query   = bool(date_from_str or date_to_str)
+    date_error  = None
+    metric_error = None
+    results     = None
 
     if has_query:
-        if not date_from:
+        if not date_from_str or not date_to_str:
+            missing = 'start' if not date_from_str else 'end'
+            date_error = f'Please provide both a start and end date — the "{missing}" date is missing.'
+        elif not date_from:
             date_error = 'Invalid "Date From" value.'
         elif not date_to:
             date_error = 'Invalid "Date To" value.'
         elif date_from > date_to:
             date_error = '"Date From" must be before "Date To".'
+        elif not metrics:
+            metric_error = 'Select at least one metric to include.'
         else:
             results = _build_report_results(
                 date_from, date_to, college_id or None,
@@ -1304,7 +1310,7 @@ def report_builder(request):
             if export_fmt == 'pdf':
                 return _report_pdf(results, date_from, date_to, user_name)
 
-    if not metrics:
+    if not has_query and not metrics:
         metrics = [m[0] for m in ALL_METRICS]
 
     return render(request, 'reports/report_builder.html', {
@@ -1318,6 +1324,7 @@ def report_builder(request):
         'all_metrics':    ALL_METRICS,
         'has_query':      has_query,
         'date_error':     date_error,
+        'metric_error':   metric_error,
         'results':        results,
         'export_params':  _clean_export_params(request.GET.urlencode()),
     })

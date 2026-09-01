@@ -75,9 +75,10 @@
         <div class="sec-heading" style="margin-bottom:0;">Metrics to Include</div>
         <div style="display:flex;gap:10px;">
           <button type="button" onclick="checkAll(true)" style="font-size:11px;color:#0078d4;background:none;border:none;cursor:pointer;font-weight:600;padding:0;">Select all</button>
-          <button type="button" onclick="checkAll(false)" style="font-size:11px;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">Clear all</button>
+          <button type="button" onclick="checkAll(false)" style="font-size:11px;color:#64748b;background:none;border:none;cursor:pointer;padding:0;">Clear all</button>
         </div>
       </div>
+      {% if metric_error %}<p class="error-note">{{ metric_error }}</p>{% endif %}
       <div class="metrics-grid">
         {% for value, label in all_metrics %}
         <label class="metric-checkbox">
@@ -145,15 +146,15 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding:18px;">
     <div style="text-align:center;">
       <div style="font-size:24px;font-weight:700;color:#3b82f6;">{{ results.repeat_patients.new }}</div>
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">New (1 visit)</div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">New (1 visit)</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:24px;font-weight:700;color:#0078d4;">{{ results.repeat_patients.repeat }}</div>
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Visitors</div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">Repeat Visitors</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:24px;font-weight:700;color:#8b5cf6;">{{ results.repeat_patients.repeat_pct }}%</div>
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Repeat Rate</div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">Repeat Rate</div>
     </div>
   </div>
 </div>
@@ -179,7 +180,7 @@
       </tbody>
     </table>
     {% else %}
-    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No diagnosis data.</p>
+    <p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">No diagnosis data.</p>
     {% endif %}
   </div>
   {% endif %}
@@ -201,7 +202,7 @@
       </tbody>
     </table>
     {% else %}
-    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No prescription data.</p>
+    <p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">No prescription data.</p>
     {% endif %}
   </div>
   {% endif %}
@@ -223,7 +224,7 @@
       </tbody>
     </table>
     {% else %}
-    <p style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">No college data.</p>
+    <p style="color:#64748b;font-size:13px;text-align:center;padding:24px;">No college data.</p>
     {% endif %}
   </div>
   {% endif %}
@@ -275,7 +276,7 @@
         {% for row in results.medicine_dispensed %}
         <tr>
           <td>{{ row.medicine__name }}</td>
-          <td style="font-size:12px;color:#94a3b8;">{{ row.medicine__unit }}</td>
+          <td style="font-size:12px;color:#64748b;">{{ row.medicine__unit }}</td>
           <td style="font-weight:700;color:#0078d4;">{{ row.total_dispensed }}</td>
         </tr>
         {% endfor %}
@@ -328,7 +329,7 @@
       <tr>
         <td><span class="rank-chip">{{ forloop.counter }}</span></td>
         <td style="font-weight:600;color:#1a1a2e;">{{ p.patient__first_name }} {{ p.patient__last_name }}</td>
-        <td style="font-size:12px;color:#9ca3af;font-family:monospace;">{{ p.patient__patient_id|default:"—" }}</td>
+        <td style="font-size:12px;color:#64748b;font-family:monospace;">{{ p.patient__patient_id|default:"—" }}</td>
         <td style="font-size:12px;color:#6b7280;">{{ p.patient__college__abbreviation|default:"—" }}</td>
         <td style="font-weight:700;color:#0078d4;">{{ p.count }}</td>
       </tr>
@@ -391,7 +392,7 @@
       <tr>
         <td style="font-weight:500;">{{ row.name }}</td>
         <td style="font-weight:700;color:#ef4444;">{{ row.quantity }}</td>
-        <td style="font-size:12px;color:#94a3b8;">{{ row.low_stock_threshold }}</td>
+        <td style="font-size:12px;color:#64748b;">{{ row.low_stock_threshold }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -403,11 +404,11 @@
 <div class="empty-state">
   <svg width="48" height="48" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 16px;display:block;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
   <p style="font-weight:700;font-size:15px;color:#1a1a2e;margin-bottom:6px;">Set a date range to get started</p>
-  <p style="color:#9ca3af;font-size:13px;margin:0;">Select a start and end date above, choose your metrics, and click Generate Report.</p>
+  <p style="color:#64748b;font-size:13px;margin:0;">Select a start and end date above, choose your metrics, and click Generate Report.</p>
 </div>
 {% endif %}
 
-<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:28px;">
+<p style="text-align:center;font-size:11px;color:#64748b;margin-top:28px;">
   Negros Oriental State University — Medical Dental Clinic
 </p>
 

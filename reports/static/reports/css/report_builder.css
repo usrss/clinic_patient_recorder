@@ -26,7 +26,7 @@
 .sec-heading {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 12px;
@@ -37,7 +37,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
@@ -185,7 +185,7 @@
   box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
 }
 .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
-.stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+.stat-label { font-size: 11px; color: #64748b; margin-top: 6px; font-weight: 500; }
 
 /* ── Panel ── */
 .panel {
@@ -201,7 +201,7 @@
   border-bottom: 1px solid #f0f4f8;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   background: #fafbfc;
@@ -210,7 +210,7 @@
 .panel th {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 10px 16px;
@@ -243,7 +243,7 @@
   height: 100%;
   gap: 2px;
 }
-.bar-count { font-size: 9px; color: #94a3b8; min-height: 14px; text-align: center; }
+.bar-count { font-size: 9px; color: #64748b; min-height: 14px; text-align: center; }
 .bar-fill {
   width: 100%;
   background: #0078d4;
@@ -253,7 +253,7 @@
 }
 .bar-label {
   font-size: 9px;
-  color: #94a3b8;
+  color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -115,7 +115,7 @@
   <form method="get">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
       <span class="sec-heading" style="margin-bottom:0;">Report Filters</span>
-      <span style="font-size:11px;color:#9ca3af;">Apply filters to narrow the scope of the report.</span>
+      <span style="font-size:11px;color:#64748b;">Apply filters to narrow the scope of the report.</span>
     </div>
     <div class="filter-row">
       <div>
@@ -152,7 +152,7 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
   <div>
     <div class="sec-heading" style="margin-bottom:4px;">Summary</div>
-    <p style="font-size:12px;color:#94a3b8;margin:0;">Key metrics across all diagnoses.</p>
+    <p style="font-size:12px;color:#64748b;margin:0;">Key metrics across all diagnoses.</p>
   </div>
   <a href="?section=all&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}export=pdf" class="btn-pdf">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -181,7 +181,7 @@
   <div class="report-actions-row">
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">All Diagnoses</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+      <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
         Complete list of all diagnoses recorded in completed consultations, ranked by frequency.
       </p>
     </div>
@@ -215,7 +215,7 @@
   </div>
   {% else %}
   <div class="empty-state" style="padding:28px 24px;">
-    <p style="color:#94a3b8;font-size:13px;margin:0;">No diagnosis data available.</p>
+    <p style="color:#64748b;font-size:13px;margin:0;">No diagnosis data available.</p>
   </div>
   {% endif %}
 </div>
@@ -227,7 +227,7 @@
   <div class="report-actions-row">
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Diagnosis Distribution by College</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+      <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
         Complete cross-tabulation matrix showing diagnosis counts per college. The table shows all diagnoses as rows — scroll horizontally to view more.
       </p>
     </div>
@@ -275,7 +275,7 @@
   </div>
   {% else %}
   <div class="empty-state" style="padding:28px 24px;">
-    <p style="color:#94a3b8;font-size:13px;margin:0;">No college diagnosis data available.</p>
+    <p style="color:#64748b;font-size:13px;margin:0;">No college diagnosis data available.</p>
   </div>
   {% endif %}
 </div>
@@ -287,7 +287,7 @@
   <div class="report-actions-row">
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Patients by College</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px 0;">
+      <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
         Clinic utilization by college — counts unique patients seen (any consultation status).
       </p>
     </div>
@@ -321,13 +321,13 @@
   </div>
   {% else %}
   <div class="empty-state" style="padding:28px 24px;">
-    <p style="color:#94a3b8;font-size:13px;margin:0;">No patient data available.</p>
+    <p style="color:#64748b;font-size:13px;margin:0;">No patient data available.</p>
   </div>
   {% endif %}
 </div>
 {% endif %}
 
-<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:28px;">
+<p style="text-align:center;font-size:11px;color:#64748b;margin-top:28px;">
   Negros Oriental State University — Medical Dental Clinic
 </p>
 

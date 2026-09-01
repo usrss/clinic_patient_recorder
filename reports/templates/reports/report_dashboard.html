@@ -117,7 +117,7 @@
           <td style="font-weight:500;">{{ m.medicine__name }}</td>
           <td style="font-weight:700;color:#0078d4;">
             {{ m.total_dispensed }}
-            <span style="font-size:11px;color:#94a3b8;font-weight:400;">{{ m.medicine__unit }}</span>
+            <span style="font-size:11px;color:#64748b;font-weight:400;">{{ m.medicine__unit }}</span>
           </td>
         </tr>
         {% endfor %}
@@ -156,7 +156,7 @@
             <a href="{% url 'inventory:medicine_detail' m.pk %}" style="color:inherit;text-decoration:none;">{{ m.name }}</a>
           </td>
           <td style="font-weight:700;color:#ef4444;">{{ m.quantity }}</td>
-          <td style="font-size:12px;color:#94a3b8;">{{ m.low_stock_threshold }}</td>
+          <td style="font-size:12px;color:#64748b;">{{ m.low_stock_threshold }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -171,7 +171,7 @@
 
 </div>
 
-<p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:8px;">
+<p style="text-align:center;font-size:11px;color:#64748b;margin-top:8px;">
   Negros Oriental State University — Medical Dental Clinic
 </p>
 

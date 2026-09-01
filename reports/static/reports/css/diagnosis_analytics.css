@@ -31,7 +31,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
@@ -97,7 +97,7 @@
 .sec-heading {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 12px;
@@ -119,7 +119,7 @@
   box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
 }
 .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
-.stat-label { font-size: 11px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+.stat-label { font-size: 11px; color: #64748b; margin-top: 6px; font-weight: 500; }
 
 /* ── Analytics section divider ── */
 .section-divider {
@@ -149,7 +149,7 @@
 .panel th {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 10px 16px;
@@ -239,7 +239,7 @@
 .matrix-table th,
 .matrix-table td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #f0f4f8; }
 .matrix-table thead th {
-  font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
+  font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;
   letter-spacing: 0.04em; background: #fafbfc; border-bottom: 1px solid #e8ecf1;
   position: sticky; top: 0;
 }
