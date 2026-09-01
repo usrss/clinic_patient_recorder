@@ -96,6 +96,7 @@ class ConsultationSubmitForm(forms.Form):
     first_name = forms.CharField(
         max_length=150,
         label='First Name',
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'First name',
@@ -104,6 +105,7 @@ class ConsultationSubmitForm(forms.Form):
     last_name = forms.CharField(
         max_length=150,
         label='Last Name',
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Last name',
@@ -111,6 +113,7 @@ class ConsultationSubmitForm(forms.Form):
     )
     birthdate = forms.DateField(
         label='Birthdate',
+        required=False,
         widget=forms.DateInput(attrs={
             'class': 'form-control',
             'type': 'date',
@@ -201,6 +204,16 @@ class ConsultationSubmitForm(forms.Form):
             return cleaned
 
         # Patient NOT found — validate new patient fields
+        first_name = (cleaned.get('first_name') or '').strip()
+        last_name = (cleaned.get('last_name') or '').strip()
+        if not first_name:
+            self.add_error('first_name', 'First name is required for new patients.')
+        if not last_name:
+            self.add_error('last_name', 'Last name is required for new patients.')
+
+        if not cleaned.get('birthdate'):
+            self.add_error('birthdate', 'Birthdate is required for new patients.')
+
         sex = cleaned.get('sex', '')
         if not sex:
             self.add_error('sex', 'Sex is required for new patients.')

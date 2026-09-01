@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block content %}
+<a href="{% url 'patients:patient_list' %}" class="back-link">
+  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+  Back to Patients
+</a>
 <div class="history-page">
 <div class="history-wrap">
 
@@ -130,7 +134,7 @@
 
       <div style="margin-bottom:10px;padding:10px 14px;background:#f8fafc;border-radius:8px;">
         <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Chief Complaint</div>
-        <div style="font-size:13px;color:#374151;">{{ c.chief_complaint|default:c.symptoms }}</div>
+        <div style="font-size:13px;color:#374151;">{{ c.chief_complaint|default:"No complaint recorded" }}</div>
       </div>
 
       {% with t=c.triages.first %}{% if t %}

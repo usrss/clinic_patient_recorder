@@ -1547,22 +1547,56 @@ def patient_medical_history_pdf(request, patient_pk):
     )
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=16, spaceAfter=6)
-    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12, spaceAfter=4, spaceBefore=10)
-    body_style = styles['Normal']
-    small_style = ParagraphStyle('Small', parent=styles['Normal'], fontSize=9, textColor=colors.grey)
-    label_style = ParagraphStyle('Label', parent=styles['Normal'], fontSize=9,
-                                  textColor=colors.grey, spaceAfter=2)
+
+    # ── Custom styles ─────────────────────────────────────────────────────
+    title_style = ParagraphStyle(
+        'CustomTitle', parent=styles['Heading1'],
+        fontSize=18, spaceAfter=2, textColor=colors.HexColor('#1a1a2e'),
+    )
+    subtitle_style = ParagraphStyle(
+        'Subtitle', parent=styles['Normal'],
+        fontSize=11, textColor=colors.HexColor('#4b5563'), spaceAfter=8,
+    )
+    h2_style = ParagraphStyle(
+        'CustomH2', parent=styles['Heading2'],
+        fontSize=13, spaceAfter=6, spaceBefore=14,
+        textColor=colors.HexColor('#1a1a2e'),
+    )
+    body_style = ParagraphStyle(
+        'CustomBody', parent=styles['Normal'],
+        fontSize=10, leading=14, textColor=colors.HexColor('#1a1a2e'),
+    )
+    info_style = ParagraphStyle(
+        'Info', parent=styles['Normal'],
+        fontSize=9, leading=13, textColor=colors.HexColor('#374151'),
+    )
+    label_style = ParagraphStyle(
+        'Label', parent=styles['Normal'],
+        fontSize=8, textColor=colors.HexColor('#6b7280'), spaceAfter=1,
+    )
+    detail_style = ParagraphStyle(
+        'Detail', parent=styles['Normal'],
+        fontSize=9, leading=13, textColor=colors.HexColor('#1a1a2e'), spaceAfter=2,
+    )
+    medicine_style = ParagraphStyle(
+        'Medicine', parent=styles['Normal'],
+        fontSize=9, leading=13, textColor=colors.HexColor('#374151'),
+        leftIndent=12, spaceAfter=1,
+    )
+    footer_style = ParagraphStyle(
+        'Footer', parent=styles['Normal'],
+        fontSize=8, textColor=colors.HexColor('#9ca3af'), alignment=TA_CENTER,
+    )
 
     story = []
 
-    # Header
-    story.append(Paragraph('PATIENT RECORD SYSTEM', title_style))
-    story.append(Paragraph('Patient Medical History', styles['Heading2']))
-    story.append(HRFlowable(width='100%', thickness=1, color=colors.lightgrey))
-    story.append(Spacer(1, 0.3*cm))
+    # ── Header ────────────────────────────────────────────────────────────
+    story.append(Paragraph('PATIENT MEDICAL HISTORY', title_style))
+    story.append(Paragraph('Negros Oriental State University — Medical Clinic', subtitle_style))
+    story.append(HRFlowable(width='100%', thickness=1.5, color=colors.HexColor('#0078d4')))
+    story.append(Spacer(1, 0.4*cm))
 
-    # Patient info table
+    # ── Patient info table ────────────────────────────────────────────────
     all_c = Consultation.objects.filter(patient=patient)
     total = all_c.count()
     first_v = all_c.order_by('created_at').values_list('created_at', flat=True).first()
@@ -1572,86 +1606,125 @@ def patient_medical_history_pdf(request, patient_pk):
         ['Patient Name', patient.get_full_name(), 'Patient ID', patient.patient_id],
         ['Sex', patient.get_sex_display(), 'Age', str(patient.age or '—')],
         ['Phone', patient.phone or '—', 'Email', patient.email or '—'],
-        ['College/Dept',
+        ['College / Dept',
          patient.college.name if patient.college else (patient.department or '—'),
          'Total Visits', str(total)],
         ['First Visit', first_v.strftime('%B %d, %Y') if first_v else '—',
          'Last Visit', last_v.strftime('%B %d, %Y') if last_v else '—'],
     ]
-    info_table = Table(info_data, colWidths=[3.5*cm, 6*cm, 3*cm, 4*cm])
+    info_table = Table(info_data, colWidths=[3.2*cm, 6*cm, 3*cm, 4.3*cm])
     info_table.setStyle(TableStyle([
         ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('TEXTCOLOR', (0, 0), (0, -1), colors.grey),
-        ('TEXTCOLOR', (2, 0), (2, -1), colors.grey),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#6b7280')),
+        ('TEXTCOLOR', (2, 0), (2, -1), colors.HexColor('#6b7280')),
         ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
         ('FONTNAME', (3, 0), (3, -1), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('LINEBELOW', (0, -1), (-1, -1), 0.5, colors.HexColor('#e5e7eb')),
     ]))
     story.append(info_table)
-    story.append(Spacer(1, 0.5*cm))
-    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey))
-    story.append(Spacer(1, 0.3*cm))
+    story.append(Spacer(1, 0.4*cm))
 
-    # Timeline
+    # ── Consultation Timeline ──────────────────────────────────────────────
     story.append(Paragraph('Consultation Timeline', h2_style))
 
     if not consultations:
         story.append(Paragraph('No consultations on record.', body_style))
     else:
         for c in consultations:
-            story.append(Spacer(1, 0.2*cm))
+            story.append(Spacer(1, 0.15*cm))
+
+            # ── Consultation header ──
             status_txt = c.get_status_display()
             header_txt = (
-                f'<b>Consultation #{c.pk}</b> — '
-                f'{c.created_at.strftime("%B %d, %Y")} — {status_txt}'
+                f'<b>Consultation #{c.pk}</b>  —  '
+                f'{c.created_at.strftime("%B %d, %Y")}  —  {status_txt}'
             )
             story.append(Paragraph(header_txt, body_style))
-            # Show the doctor-reviewed chief complaint (fall back to the
-            # patient's own words). Escaped — raw patient text can contain
-            # XML-special characters that would otherwise break ReportLab.
-            cc = c.chief_complaint or c.symptoms
-            story.append(Paragraph(f'<i>Chief Complaint:</i> {html.escape(cc)}', small_style))
+            story.append(Spacer(1, 0.1*cm))
+
+            # ── Chief Complaint (doctor-reviewed final version) ──
+            cc = c.chief_complaint or 'No complaint recorded'
+            story.append(Paragraph(
+                f'<b>Chief Complaint:</b>  {html.escape(cc)}',
+                detail_style,
+            ))
             if c.severity_description:
-                # Patient-entered free text — escape so & / < can't crash ReportLab.
                 story.append(Paragraph(
-                    f'<i>Severity:</i> {html.escape(c.severity_description)}',
-                    small_style,
+                    f'<b>Severity:</b>  {html.escape(c.severity_description)}',
+                    detail_style,
+                ))
+            if c.medical_history:
+                story.append(Paragraph(
+                    f'<b>Medical History:</b>  {html.escape(c.medical_history)}',
+                    detail_style,
                 ))
 
+            # ── Vitals ──
             t = c.triages.first()
             if t:
+                vitals_parts = [f'BP {t.blood_pressure}']
+                vitals_parts.append(f'Temp {t.temperature}°C')
+                vitals_parts.append(f'Pulse {t.pulse_rate} bpm')
+                if t.respiratory_rate is not None:
+                    vitals_parts.append(f'RR {t.respiratory_rate}')
+                if t.oxygen_saturation is not None:
+                    vitals_parts.append(f'SpO₂ {t.oxygen_saturation}%')
+                if t.weight is not None:
+                    vitals_parts.append(f'Wt {t.weight} kg')
                 story.append(Paragraph(
-                    f'<i>Vitals:</i> BP {t.blood_pressure} | '
-                    f'Temp {t.temperature}°C | Pulse {t.pulse_rate} bpm',
-                    small_style
+                    f'<b>Vitals:</b>  {"  |  ".join(vitals_parts)}',
+                    detail_style,
                 ))
+                if t.notes:
+                    story.append(Paragraph(
+                        f'<b>Clinical Notes:</b>  {html.escape(t.notes)}',
+                        detail_style,
+                    ))
 
+            # ── Prescription ──
             rx = c.prescriptions.first()
             if rx:
-                story.append(Paragraph(f'<i>Diagnosis:</i> {rx.diagnosis}', small_style))
+                story.append(Paragraph(
+                    f'<b>Diagnosis:</b>  {html.escape(rx.diagnosis)}',
+                    detail_style,
+                ))
                 if rx.treatment_plan:
-                    story.append(Paragraph(f'<i>Treatment Plan:</i> {rx.treatment_plan}', small_style))
+                    story.append(Paragraph(
+                        f'<b>Treatment Plan:</b>  {html.escape(rx.treatment_plan)}',
+                        detail_style,
+                    ))
                 items = rx.items.all()
                 if items:
+                    story.append(Paragraph('<b>Medications:</b>', detail_style))
                     for item in items:
-                        line = f'• {item.get_display_name()}'
+                        line = f'•  {item.get_display_name()}'
                         if item.dosage:
-                            line += f' {item.dosage}'
+                            line += f'  {item.dosage}'
                         if item.frequency:
-                            line += f' — {item.frequency}'
+                            line += f'  —  {item.frequency}'
                         if item.duration:
-                            line += f' for {item.duration}'
+                            line += f'  for {item.duration}'
                         if item.instructions:
-                            line += f' ({item.instructions})'
-                        story.append(Paragraph(line, small_style))
+                            line += f'  ({item.instructions})'
+                        story.append(Paragraph(html.escape(line), medicine_style))
 
-            story.append(HRFlowable(width='100%', thickness=0.3, color=colors.lightgrey, spaceAfter=2))
+            story.append(Spacer(1, 0.1*cm))
+            story.append(HRFlowable(
+                width='100%', thickness=0.5,
+                color=colors.HexColor('#e5e7eb'), spaceAfter=2,
+            ))
 
+    # ── Footer ────────────────────────────────────────────────────────────
     story.append(Spacer(1, 0.5*cm))
+    story.append(HRFlowable(width='100%', thickness=0.5, color=colors.HexColor('#d1d5db')))
+    story.append(Spacer(1, 0.2*cm))
     story.append(Paragraph(
-        f'Generated: {date.today().strftime("%B %d, %Y")} | Patient Record System',
-        small_style
+        f'Generated on {date.today().strftime("%B %d, %Y")}  —  Patient Record System',
+        footer_style
     ))
 
     doc.build(story)
