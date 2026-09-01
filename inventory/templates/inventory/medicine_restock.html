@@ -44,7 +44,7 @@
     border:1px solid #e8ecf1; box-shadow:var(--shadow-sm); max-width:600px;
   }
   .form-section-label {
-    font-size:11px; font-weight:700; color:#94a3b8;
+    font-size:11px; font-weight:700; color:#64748b;
     text-transform:uppercase; letter-spacing:0.6px; margin-bottom:14px;
   }
   .field-label {
@@ -81,8 +81,8 @@
   {# Current Stock #}
   <div class="stock-banner">
     <div style="display:flex;align-items:center;gap:10px;">
-      <ion-icon name="layers-outline" style="font-size:20px;color:#94a3b8;"></ion-icon>
-      <span style="font-size:13px;color:#94a3b8;">Current Stock</span>
+      <ion-icon name="layers-outline" style="font-size:20px;color:#64748b;"></ion-icon>
+      <span style="font-size:13px;color:#64748b;">Current Stock</span>
     </div>
     <strong style="font-size:16px;{% if medicine.is_low_stock %}color:#ef4444;{% else %}color:#10b981;{% endif %}">
       {{ medicine.quantity }} {{ medicine.get_unit_display }}(s)
@@ -126,7 +126,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
         <div>
           <label class="field-label">
-            <ion-icon name="barcode-outline" style="font-size:14px;color:#94a3b8;"></ion-icon>
+            <ion-icon name="barcode-outline" style="font-size:14px;color:#64748b;"></ion-icon>
             Batch Number
           </label>
           {{ form.batch_number }}

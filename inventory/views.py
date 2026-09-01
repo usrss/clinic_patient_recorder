@@ -188,7 +188,7 @@ def medicine_deduct(request, pk):
             )
             return redirect('inventory:medicine_detail', pk=medicine.pk)
         except ValidationError as e:
-            messages.error(request, e.message)
+            form.add_error('quantity', e.message if hasattr(e, 'message') else str(e))
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
 
