@@ -1,4 +1,5 @@
 from django import forms
+from datetime import date
 from .models import Medicine, StockMovement
 
 
@@ -57,6 +58,7 @@ class MedicineRestockForm(forms.Form):
         label='Quantity to Add',
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
+            'min': 1,
             'placeholder': 'Enter quantity'
         })
     )
@@ -83,7 +85,8 @@ class MedicineRestockForm(forms.Form):
         label='Expiry Date (optional)',
         widget=forms.DateInput(attrs={
             'class': 'form-control',
-            'type': 'date'
+            'type': 'date',
+            'min': date.today().isoformat()
         })
     )
 
@@ -96,6 +99,7 @@ class MedicineDeductForm(forms.Form):
         label='Quantity',
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
+            'min': 1,
             'placeholder': 'Quantity to dispense'
         })
     )
