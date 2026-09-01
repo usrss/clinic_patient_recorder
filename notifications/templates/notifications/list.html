@@ -512,9 +512,26 @@
       </button>
     </div>
     <div class="notif-modal-body" id="nmBody">
-      <div class="nm-no-data" id="nmLoading">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-        <div style="margin-top:8px;">Loading details…</div>
+      <div id="nmLoading" style="padding:20px;">
+        <div style="margin-bottom:16px;">
+          <div class="sk sk-title" style="width:40%;margin-bottom:8px;"></div>
+          <div class="sk sk-text-sm" style="width:25%;"></div>
+        </div>
+        <div class="sk-section">
+          <div class="sk sk-heading" style="width:100px;margin-bottom:12px;"></div>
+          <div class="sk-grid">
+            <div><div class="sk sk-text-sm" style="width:60px;margin-bottom:6px;"></div><div class="sk sk-text" style="width:100%;"></div></div>
+            <div><div class="sk sk-text-sm" style="width:50px;margin-bottom:6px;"></div><div class="sk sk-text" style="width:100%;"></div></div>
+            <div><div class="sk sk-text-sm" style="width:55px;margin-bottom:6px;"></div><div class="sk sk-text" style="width:100%;"></div></div>
+            <div><div class="sk sk-text-sm" style="width:65px;margin-bottom:6px;"></div><div class="sk sk-text" style="width:100%;"></div></div>
+          </div>
+        </div>
+        <div class="sk-section">
+          <div class="sk sk-heading" style="width:80px;margin-bottom:12px;"></div>
+          <div class="sk sk-text" style="width:100%;margin-bottom:8px;"></div>
+          <div class="sk sk-text" style="width:85%;margin-bottom:8px;"></div>
+          <div class="sk sk-text" style="width:60%;"></div>
+        </div>
       </div>
       <div id="nmContent" style="display:none;"></div>
       <div class="nm-no-data" id="nmEmpty" style="display:none;">

@@ -1,0 +1,133 @@
+/* ═══════════════════════════════════════════════════════════
+   Skeleton Loading — Reusable Module
+   Include via base.css or individual page extra_css block.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Animation ── */
+@keyframes sk-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Base skeleton element ── */
+.sk {
+  background: linear-gradient(90deg, #e8ecf1 25%, #f0f4ff 50%, #e8ecf1 75%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  min-height: 12px;
+}
+
+/* ── Preset sizes ── */
+.sk-text       { height: 12px; width: 100%; }
+.sk-text-sm    { height: 10px; width: 70%; }
+.sk-text-lg    { height: 16px; width: 90%; }
+.sk-title      { height: 18px; width: 50%; }
+.sk-avatar     { height: 40px; width: 40px; border-radius: 50%; }
+.sk-badge      { height: 22px; width: 80px; border-radius: 12px; }
+.sk-button     { height: 36px; width: 120px; border-radius: 8px; }
+.sk-image      { height: 120px; width: 100%; border-radius: 8px; }
+
+/* ── Row layout (table row skeleton) ── */
+.sk-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f5f7fa;
+  gap: 16px;
+}
+
+/* ── Card layout ── */
+.sk-card {
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Grid layout ── */
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+/* ── Table header row ── */
+.sk-header-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 18px;
+  border-bottom: 1px solid #e8ecf1;
+  gap: 16px;
+}
+
+/* ── Section skeleton (heading + content) ── */
+.sk-section {
+  margin-bottom: 24px;
+}
+.sk-section .sk-heading {
+  height: 11px;
+  width: 120px;
+  margin-bottom: 12px;
+}
+
+/* ── Panel skeleton ── */
+.sk-panel {
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.sk-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f4f8;
+}
+.sk-panel-body {
+  padding: 20px;
+}
+
+/* ── Inline spinner (for buttons / small areas) ── */
+.sk-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #0078d4;
+  border-radius: 50%;
+  animation: sk-spin 0.7s linear infinite;
+}
+.sk-spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+@keyframes sk-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Loading overlay (covers a container) ── */
+.sk-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+}
+.sk-overlay-text {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 10px;
+}

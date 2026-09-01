@@ -91,17 +91,6 @@
 }
 .fb-empty-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
 .fb-empty-sub { font-size: 12px; color: #64748b; }
-.skeleton-row {
-  display: flex; padding: 14px 18px; border-bottom: 1px solid #f5f7fa;
-  gap: 16px; align-items: center;
-}
-.skeleton-cell {
-  height: 14px;
-  background: linear-gradient(90deg, #e8ecf1 25%, #f0f4ff 50%, #e8ecf1 75%);
-  background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: 6px;
-}
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .review-modal-overlay {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
   z-index: 1000; align-items: center; justify-content: center; padding: 24px;
