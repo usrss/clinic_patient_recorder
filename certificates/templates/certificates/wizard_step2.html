@@ -59,12 +59,12 @@
         <label class="form-label">Rest Period</label>
         <div class="field-row">
           <div>
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">From <span class="req">*</span></div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:5px;">From <span class="req">*</span></div>
             {{ form.rest_from }}
             {% if form.rest_from.errors %}<div class="form-error">{{ form.rest_from.errors.0 }}</div>{% endif %}
           </div>
           <div>
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:5px;">To <span class="req">*</span></div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:5px;">To <span class="req">*</span></div>
             {{ form.rest_to }}
             {% if form.rest_to.errors %}<div class="form-error">{{ form.rest_to.errors.0 }}</div>{% endif %}
           </div>
@@ -121,7 +121,7 @@
       {% endif %}
 
       <div class="btn-row">
-        <a href="{% url 'consultations:completion_summary' consultation.pk %}" class="btn btn-secondary">&larr; Back to Summary</a>
+        <a href="{% url 'certificates:wizard_type' consultation.pk %}" class="btn btn-secondary">&larr; Back</a>
         <button type="submit" class="btn btn-primary" id="submit-btn">Preview &rarr;</button>
       </div>
     </form>

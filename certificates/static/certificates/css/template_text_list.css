@@ -9,7 +9,7 @@
 .template-info { flex: 1; min-width: 0; }
 .template-body-preview { font-size: 13px; color: #374151; line-height: 1.6; margin-top: 6px; white-space: pre-line; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
 .template-body-preview.empty { color: #9ca3af; font-style: italic; }
-.template-meta { font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: monospace; display: flex; gap: 16px; }
+.template-meta { font-size: 11px; color: #64748b; margin-top: 8px; font-family: monospace; display: flex; gap: 16px; }
 .btn-edit { display: inline-flex; align-items: center; gap: 5px; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; background: #0078d4; text-decoration: none; white-space: nowrap; transition: background .15s; flex-shrink: 0; }
 .btn-edit:hover { background: #006bbf; color: #fff; }
 .empty-state { text-align: center; padding: 40px; color: #9ca3af; font-size: 13px; }
