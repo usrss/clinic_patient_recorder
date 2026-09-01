@@ -33,9 +33,13 @@
       </thead>
       <tbody>
         {% for c in consultations %}
-        <tr onclick="window.location='{% if c.prescriptions.exists %}{% url 'consultations:prescription_edit' c.pk %}{% else %}{% url 'consultations:prescribe' c.pk %}{% endif %}';
-            {% if c.prescriptions.exists %}style="cursor:pointer;background:#fbfdff;"{% else %}style="cursor:pointer;"{% endif %}">
-          <td style="color:#94a3b8;font-size:11px;font-weight:600;">{{ c.pk }}</td>
+        <tr class="row-link-row{% if c.prescriptions.exists %} row-has-rx{% endif %}">
+          <td class="row-link-cell" style="color:#64748b;font-size:11px;font-weight:600;">
+            <a class="row-link"
+               href="{% if c.prescriptions.exists %}{% url 'consultations:prescription_edit' c.pk %}{% else %}{% url 'consultations:prescribe' c.pk %}{% endif %}"
+               aria-label="Open consultation for {{ c.patient.get_full_name }}"></a>
+            {{ c.pk }}
+          </td>
           <td>
             <div class="patient-name">{{ c.patient.get_full_name }}</div>
             {% if c.patient.college %}
@@ -55,20 +59,20 @@
           <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#374151;">
             {{ c.chief_complaint|truncatechars:55 }}
             {% if c.symptoms %}
-            <div style="font-size:11px;color:#94a3b8;">{{ c.symptoms|truncatechars:40 }}</div>
+            <div style="font-size:11px;color:#64748b;">{{ c.symptoms|truncatechars:40 }}</div>
             {% endif %}
           </td>
-          <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">
+          <td style="font-size:11px;color:#64748b;white-space:nowrap;">
             {% with tc=c.triages.first %}{% if tc %}{{ tc.triaged_at|date:"M d, H:i" }}{% else %}—{% endif %}{% endwith %}
           </td>
           <td>
             {% if c.prescriptions.exists %}
-            <a href="{% url 'consultations:prescription_edit' c.pk %}" class="prescribe-btn" style="background:#059669;" onclick="event.stopPropagation();">
+            <a href="{% url 'consultations:prescription_edit' c.pk %}" class="prescribe-btn" style="background:#059669;">
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
               Edit Prescription
             </a>
             {% else %}
-            <a href="{% url 'consultations:prescribe' c.pk %}" class="prescribe-btn" onclick="event.stopPropagation();">
+            <a href="{% url 'consultations:prescribe' c.pk %}" class="prescribe-btn">
               Prescribe
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
             </a>

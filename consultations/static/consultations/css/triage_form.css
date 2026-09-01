@@ -24,7 +24,7 @@
   .sec-label {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     margin-bottom: 14px;
@@ -47,7 +47,7 @@
   }
   .info-grid .lbl {
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .05em;

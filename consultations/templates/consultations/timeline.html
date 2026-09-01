@@ -126,7 +126,7 @@
             <span class="tl-date">{{ entry.created_at|date:"F d, Y — h:i A" }}</span>
           </div>
           {% if entry.doctor %}
-          <div class="tl-doctor" style="margin-bottom:8px;">Doctor: Dr. {{ entry.doctor.get_full_name|default:entry.doctor.username }}</div>
+          <div class="tl-doctor" style="margin-bottom:8px;">Doctor: {{ entry.doctor.display_name }}</div>
           {% endif %}
           <div class="tl-content">
             <div class="tl-field">

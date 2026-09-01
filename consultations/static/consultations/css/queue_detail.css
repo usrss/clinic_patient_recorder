@@ -5,7 +5,7 @@
   .sec-heading {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     margin-bottom: 12px;
@@ -63,7 +63,7 @@
   .info-item-label {
     font-size: 10px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
@@ -151,7 +151,7 @@
   .field-label-note {
     font-size: 11px;
     font-weight: 400;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: none;
     letter-spacing: 0;
   }

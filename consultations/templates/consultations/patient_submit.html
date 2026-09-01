@@ -32,7 +32,7 @@
     </div>
     <div class="follow-up-symptoms">{{ c.chief_complaint|truncatechars:100 }}</div>
     {% if c.symptoms %}
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:4px;line-height:1.5;">{{ c.symptoms|truncatechars:100 }}</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:4px;line-height:1.5;">{{ c.symptoms|truncatechars:100 }}</div>
     {% endif %}
     {% if c.recommended_follow_up_date %}
     <div class="follow-up-date">
@@ -87,33 +87,33 @@
       <div class="form-group">
         <label>{{ form.complaints.label }}</label>
         {{ form.complaints }}
-        {% if form.complaints.help_text %}<div style="font-size:12px;color:#94a3b8;margin-top:4px;">{{ form.complaints.help_text }}</div>{% endif %}
+        {% if form.complaints.help_text %}<div style="font-size:12px;color:#64748b;margin-top:4px;">{{ form.complaints.help_text }}</div>{% endif %}
         {% if form.complaints.errors %}<div class="form-error">{{ form.complaints.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.symptoms.label }} <span style="font-weight:400;color:#94a3b8;font-size:11px;margin-left:6px;">Optional</span></label>
+        <label>{{ form.symptoms.label }} <span style="font-weight:400;color:#64748b;font-size:11px;margin-left:6px;">Optional</span></label>
         {{ form.symptoms }}
         {% if form.symptoms.errors %}<div class="form-error">{{ form.symptoms.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.severity_description.label }} <span style="font-weight:400;color:#94a3b8;font-size:11px;margin-left:6px;">Optional</span></label>
+        <label>{{ form.severity_description.label }} <span style="font-weight:400;color:#64748b;font-size:11px;margin-left:6px;">Optional</span></label>
         {{ form.severity_description }}
         {% if form.severity_description.errors %}<div class="form-error">{{ form.severity_description.errors.0 }}</div>{% endif %}
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">
           e.g. Mild headache since yesterday, moderate fever, severe chest pain…
         </div>
       </div>
 
       <div class="form-group">
-        <label>{{ form.medical_history.label }} <span style="font-weight:400;color:#94a3b8;font-size:11px;margin-left:6px;">Optional</span></label>
+        <label>{{ form.medical_history.label }} <span style="font-weight:400;color:#64748b;font-size:11px;margin-left:6px;">Optional</span></label>
         {{ form.medical_history }}
         {% if form.medical_history.errors %}<div class="form-error">{{ form.medical_history.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group">
-        <label>{{ form.additional_notes.label }} <span style="font-weight:400;color:#94a3b8;font-size:11px;margin-left:6px;">Optional</span></label>
+        <label>{{ form.additional_notes.label }} <span style="font-weight:400;color:#64748b;font-size:11px;margin-left:6px;">Optional</span></label>
         {{ form.additional_notes }}
         {% if form.additional_notes.errors %}<div class="form-error">{{ form.additional_notes.errors.0 }}</div>{% endif %}
       </div>

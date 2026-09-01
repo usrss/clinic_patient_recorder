@@ -303,7 +303,7 @@
               {% with rx=consultation.prescriptions.first %}
               {% if rx and rx.doctor %}
               <div class="sig-block">
-                <div class="sig-name">Dr. {{ rx.doctor.get_full_name|default:rx.doctor.username }}</div>
+                <div class="sig-name">{{ rx.doctor.display_name }}</div>
                 <div class="sig-sub">Signature over Printed Name</div>
               </div>
               {% endif %}
@@ -395,7 +395,7 @@
               <div style="flex:1;"></div>
               {% if entry.doctor %}
               <div class="sig-block">
-                <div class="sig-name">Dr. {{ entry.doctor.get_full_name|default:entry.doctor.username }}</div>
+                <div class="sig-name">{{ entry.doctor.display_name }}</div>
                 <div class="sig-sub">Signature over Printed Name</div>
               </div>
               {% endif %}

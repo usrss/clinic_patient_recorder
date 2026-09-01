@@ -31,13 +31,13 @@
   }
 
   .yes-badge { background: #d1fae5; color: #065f46; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-  .no-badge { color: #94a3b8; font-size: 12px; }
+  .no-badge { color: #64748b; font-size: 12px; }
 
   .profile-section { margin-bottom: 20px; }
   .profile-section:last-child { margin-bottom: 0; }
   .profile-section-title {
     display: flex; align-items: center; gap: 7px;
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: 0.6px;
     margin-bottom: 10px; padding-bottom: 8px;
     border-bottom: 1px solid #f1f5f9;
@@ -52,7 +52,7 @@
     padding: 7px 10px; background: #f8fafc;
     border-radius: 8px; font-size: 13px;
   }
-  .profile-item .label { color: #94a3b8; font-size: 12px; }
+  .profile-item .label { color: #64748b; font-size: 12px; }
   .profile-item .value { font-weight: 500; color: #1a1a2e; }
 
   .summary-grid {
@@ -77,7 +77,7 @@
   }
 
   .section-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: 0.6px;
     margin-bottom: 14px;
   }
