@@ -57,6 +57,28 @@
           </div>
         </div>
 
+        {# Title & Suffix row #}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Title <span style="color:#64748b;font-weight:400;">(optional)</span></label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+                <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.title.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Suffix <span style="color:#64748b;font-weight:400;">(optional)</span></label>
+            {{ form.suffix }}
+            {% if form.suffix.errors %}
+              <div style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
+                <ion-icon name="alert-circle-outline" style="font-size:12px;"></ion-icon>{{ form.suffix.errors.0 }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
         {# Username #}
         <div style="margin-bottom:20px;">
           <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Username <span style="color:#ef4444;">*</span></label>
