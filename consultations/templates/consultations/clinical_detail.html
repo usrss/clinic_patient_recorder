@@ -28,8 +28,8 @@
     {% endif %}
     {{ consultation.get_status_display }}
   </span>
-  <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank">
-    <ion-icon name="print-outline" style="font-size:14px;"></ion-icon> Print
+  <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" onclick="event.preventDefault();openPrintModal(this.href);">
+    <ion-icon name="print-outline" style="font-size:14px;"></ion-icon> Print Consultation Form
   </a>
   {% if consultation.status == 'triaged' and consultation.prescriptions.exists and user.role == 'doctor' %}
   <a href="{% url 'consultations:prescription_edit' consultation.pk %}" class="amend-btn" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46;">
@@ -84,7 +84,7 @@
       {% endif %}
     </div>
 
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin:12px 0 6px;">Medical History</div>
+    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin:12px 0 6px;">Medical History</div>
     <div class="tag-row">
       {% if profile.hypertension %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Hypertension</span>{% endif %}
       {% if profile.diabetes %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Diabetes</span>{% endif %}
@@ -92,11 +92,11 @@
       {% if profile.cardiac_problems %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Cardiac</span>{% endif %}
       {% if profile.arthritis %}<span class="tag" style="background:#fef2f2;color:#991b1b;">Arthritis</span>{% endif %}
       {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}
-        <span style="color:#94a3b8;font-size:12px;">None recorded</span>
+        <span style="color:#64748b;font-size:12px;">None recorded</span>
       {% endif %}
     </div>
 
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin:12px 0 6px;">Immunization</div>
+    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin:12px 0 6px;">Immunization</div>
     <div class="tag-row">
       {% if profile.bcg %}<span class="tag" style="background:#f0fdf4;color:#065f46;">BCG</span>{% endif %}
       {% if profile.dpt %}<span class="tag" style="background:#f0fdf4;color:#065f46;">DPT</span>{% endif %}
@@ -105,7 +105,7 @@
       {% if profile.measles %}<span class="tag" style="background:#f0fdf4;color:#065f46;">Measles</span>{% endif %}
       {% if profile.tt %}<span class="tag" style="background:#f0fdf4;color:#065f46;">TT</span>{% endif %}
       {% if not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}
-        <span style="color:#94a3b8;font-size:12px;">None recorded</span>
+        <span style="color:#64748b;font-size:12px;">None recorded</span>
       {% endif %}
     </div>
   </div>
@@ -138,7 +138,7 @@
         <div class="info-value" style="font-weight:400;color:#374151;">{{ consultation.additional_notes }}</div>
       </div>
       {% endif %}
-      <div style="font-size:11px;color:#94a3b8;">Submitted: {{ consultation.created_at|date:"F d, Y H:i" }}</div>
+      <div style="font-size:11px;color:#64748b;">Submitted: {{ consultation.created_at|date:"F d, Y H:i" }}</div>
     </div>
   </div>
 </div>
@@ -176,7 +176,7 @@
       </div>
     </div>
 
-    <div style="font-size:12px;color:#94a3b8;">
+    <div style="font-size:12px;color:#64748b;">
       Triaged by {% if t.triaged_by %}{{ t.triaged_by.get_full_name|default:t.triaged_by.username }}{% else %}Unknown{% endif %} at {{ t.triaged_at|date:"M d, Y H:i" }}
     </div>
     {% if t.notes %}
@@ -230,10 +230,10 @@
     </div>
     {% endfor %}
     {% else %}
-    <p style="font-size:13px;color:#94a3b8;">No medicines were prescribed.</p>
+    <p style="font-size:13px;color:#64748b;">No medicines were prescribed.</p>
     {% endif %}
-    <div style="font-size:12px;color:#94a3b8;margin-top:12px;">
-      Prescribed by Dr. {% if rx.doctor %}{{ rx.doctor.get_full_name|default:rx.doctor.username }}{% else %}Unknown{% endif %}
+    <div style="font-size:12px;color:#64748b;margin-top:12px;">
+      Prescribed by {% if rx.doctor %}{{ rx.doctor.display_name }}{% else %}Unknown{% endif %}
       on {{ rx.prescribed_at|date:"M d, Y H:i" }}
     </div>
   </div>
@@ -254,35 +254,20 @@
       <div style="width:36px;height:36px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="document-text-outline" style="font-size:18px;color:#3b82f6;"></ion-icon></div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Consultation Record</div>
-        <div style="font-size:11px;color:#94a3b8;">Generated {{ consultation.created_at|date:"M d, Y" }}</div>
+        <div style="font-size:11px;color:#64748b;">Generated {{ consultation.created_at|date:"M d, Y" }}</div>
       </div>
-      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank" style="padding:5px 12px;font-size:11px;margin:0;">
+      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" onclick="event.preventDefault();openPrintModal(this.href);" style="padding:5px 12px;font-size:11px;margin:0;">
         <ion-icon name="print-outline" style="font-size:12px;"></ion-icon> Print
       </a>
     </div>
 
-    {# Document: Prescription #}
-    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f4f8;">
-      <div style="width:36px;height:36px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="medkit-outline" style="font-size:18px;color:#16a34a;"></ion-icon></div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Prescription</div>
-        <div style="font-size:11px;color:#94a3b8;">
-          {% if consultation.prescriptions.exists %}Issued{% else %}Not issued{% endif %}
-        </div>
-      </div>
-      {% if consultation.prescriptions.exists %}
-      <a href="{% url 'consultations:print_consultation' consultation.pk %}" class="print-btn" target="_blank" style="padding:5px 12px;font-size:11px;margin:0;">
-        <ion-icon name="print-outline" style="font-size:12px;"></ion-icon> Print
-      </a>
-      {% endif %}
-    </div>
 
     {# Document: Medical Certificate #}
     <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
       <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><ion-icon name="document-outline" style="font-size:18px;color:#d97706;"></ion-icon></div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;color:#1a1a2e;">Certificate</div>
-        <div style="font-size:11px;color:#94a3b8;">
+        <div style="font-size:11px;color:#64748b;">
           {% if issued_cert %}
             {{ issued_cert.get_certificate_type_display }} &middot; #{{ issued_cert.certificate_number }} &middot; {{ issued_cert.issued_at|date:"M d, Y" }}
           {% else %}
@@ -326,5 +311,51 @@
   </div>
 </div>
 {% endif %}
+
+{# ═══════ PRINT PREVIEW MODAL ═══════ #}
+<div class="print-modal-overlay" id="printModalOverlay">
+  <div class="print-modal">
+    <div class="print-modal-header">
+      <span class="print-modal-title">Consultation Form — {{ consultation.patient.get_full_name }}</span>
+      <div class="print-modal-actions">
+        <button type="button" class="print-modal-btn print-modal-btn-print" onclick="document.getElementById('printModalFrame').contentWindow.print();">
+          <ion-icon name="print-outline" style="font-size:14px;"></ion-icon> Print
+        </button>
+        <button type="button" class="print-modal-btn print-modal-btn-close" id="printModalClose">
+          <ion-icon name="close-outline" style="font-size:16px;"></ion-icon>
+        </button>
+      </div>
+    </div>
+    <div class="print-modal-body">
+      <iframe id="printModalFrame" src="" title="Consultation Print Preview"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+function openPrintModal(url) {
+  var overlay = document.getElementById('printModalOverlay');
+  var frame = document.getElementById('printModalFrame');
+  frame.src = url;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePrintModal() {
+  var overlay = document.getElementById('printModalOverlay');
+  var frame = document.getElementById('printModalFrame');
+  overlay.classList.remove('open');
+  frame.src = '';
+  document.body.style.overflow = '';
+}
+document.getElementById('printModalClose').addEventListener('click', closePrintModal);
+document.getElementById('printModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closePrintModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('printModalOverlay').classList.contains('open')) {
+    closePrintModal();
+  }
+});
+</script>
 
 {% endblock %}

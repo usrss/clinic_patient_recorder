@@ -32,10 +32,10 @@
   }
   .patient-icon { font-size: 32px; color: #3b82f6; flex-shrink: 0; }
   .patient-name { font-weight: 700; color: #1a1a2e; font-size: 15px; }
-  .patient-id { font-size: 12px; color: #94a3b8; }
+  .patient-id { font-size: 12px; color: #64748b; }
 
   .sec-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
   }
   .form-card {
@@ -45,12 +45,12 @@
   }
   .form-group { margin-bottom: 16px; }
   .form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
-  .help-text { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .help-text { font-size: 12px; color: #64748b; margin-top: 4px; }
   .form-error { font-size: 12px; color: #dc2626; margin-top: 4px; }
 
   .details-summary {
     cursor: pointer; font-size: 12px; font-weight: 700;
-    color: #94a3b8; text-transform: uppercase; letter-spacing: .06em;
+    color: #64748b; text-transform: uppercase; letter-spacing: .06em;
     padding: 10px 0; list-style: none;
     display: flex; align-items: center; gap: 6px;
     border-top: 1px solid #e8ecf1; margin-top: 4px;

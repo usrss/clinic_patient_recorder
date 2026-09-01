@@ -34,8 +34,9 @@
       </thead>
       <tbody>
         {% for c in consultations %}
-        <tr onclick="window.location='{% url 'consultations:triage_form' c.pk %}';" style="cursor:pointer;">
-          <td>
+        <tr class="row-link-row">
+          <td class="row-link-cell">
+            <a class="row-link" href="{% url 'consultations:triage_form' c.pk %}" aria-label="Start triage for {{ c.patient.get_full_name }}"></a>
             {% if c.pk in follow_up_consultation_ids %}
             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
@@ -67,12 +68,12 @@
           <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             <div style="font-size:13px;color:#374151;">{{ c.chief_complaint|truncatechars:40 }}</div>
             {% if c.symptoms %}
-            <div style="font-size:11px;color:#94a3b8;">{{ c.symptoms|truncatechars:30 }}</div>
+            <div style="font-size:11px;color:#64748b;">{{ c.symptoms|truncatechars:30 }}</div>
             {% endif %}
           </td>
-          <td style="font-size:11px;color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
+          <td style="font-size:11px;color:#64748b;white-space:nowrap;">{{ c.created_at|date:"M d, H:i" }}</td>
           <td>
-            <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn" onclick="event.stopPropagation();">
+            <a href="{% url 'consultations:triage_form' c.pk %}" class="triage-btn">
               Triage
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
             </a>

@@ -37,7 +37,7 @@
         <div class="info-label">Attending Doctor</div>
         <div class="info-value">
           {% if prescription and prescription.doctor %}
-            Dr. {{ prescription.doctor.get_full_name|default:prescription.doctor.username }}
+            {{ prescription.doctor.display_name }}
           {% else %}—{% endif %}
         </div>
       </div>

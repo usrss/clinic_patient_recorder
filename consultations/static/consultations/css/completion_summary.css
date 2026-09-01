@@ -24,7 +24,7 @@
   .cs-header p { font-size: 13px; color: #6b7280; margin: 0; }
 
   .cs-section-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: 0.6px;
     margin-bottom: 12px;
   }
@@ -38,7 +38,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.04);
   }
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .info-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
+  .info-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
   .info-value { font-size: 13px; font-weight: 500; color: #1a1a2e; }
 
   .doc-card {

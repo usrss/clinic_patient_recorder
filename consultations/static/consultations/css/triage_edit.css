@@ -7,7 +7,7 @@
   .amend-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
   .amend-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin: 0; letter-spacing: -0.3px; }
   .sec-label {
-    font-size: 11px; font-weight: 700; color: #94a3b8;
+    font-size: 11px; font-weight: 700; color: #64748b;
     text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
   }
   .warning-banner {
@@ -28,7 +28,7 @@
   }
   .record-grid + .record-grid { margin-top: 16px; }
   .record-grid .lbl {
-    font-size: 11px; color: #94a3b8; font-weight: 600;
+    font-size: 11px; color: #64748b; font-weight: 600;
     text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
   }
   .record-grid .val { font-weight: 700; color: #1a1a2e; }
@@ -37,4 +37,4 @@
   .vitals-row + .vitals-row { margin-top: 4px; }
   .btn-row { display: flex; gap: 10px; margin-top: 8px; }
   .footer-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; }
-  .help-text { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .help-text { font-size: 11px; color: #64748b; margin-top: 4px; }

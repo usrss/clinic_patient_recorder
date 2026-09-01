@@ -57,16 +57,16 @@
       {% if profile.known_allergies and profile.known_allergies|lower != 'none' %}<span class="profile-tag tag-allergy">Allergies: {{ profile.known_allergies }}</span>{% endif %}
       {% if profile.current_medications and profile.current_medications|lower != 'none' %}<span class="profile-tag" style="background:#fff7ed;color:#c2410c;">Medications: {{ profile.current_medications }}</span>{% endif %}
     </div>
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Medical History</div>
+    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Medical History</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
       {% if profile.hypertension %}<span class="profile-tag tag-history">Hypertension</span>{% endif %}
       {% if profile.diabetes %}<span class="profile-tag tag-history">Diabetes</span>{% endif %}
       {% if profile.asthma %}<span class="profile-tag tag-history">Asthma</span>{% endif %}
       {% if profile.cardiac_problems %}<span class="profile-tag tag-history">Cardiac</span>{% endif %}
       {% if profile.arthritis %}<span class="profile-tag tag-history">Arthritis</span>{% endif %}
-      {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}<span style="color:#94a3b8;">None</span>{% endif %}
+      {% if not profile.hypertension and not profile.diabetes and not profile.asthma and not profile.cardiac_problems and not profile.arthritis %}<span style="color:#64748b;">None</span>{% endif %}
     </div>
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Immunization</div>
+    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Immunization</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px;">
       {% if profile.bcg %}<span class="profile-tag tag-immunization">BCG</span>{% endif %}
       {% if profile.dpt %}<span class="profile-tag tag-immunization">DPT</span>{% endif %}
@@ -74,7 +74,7 @@
       {% if profile.hepatitis_b %}<span class="profile-tag tag-immunization">Hepatitis B</span>{% endif %}
       {% if profile.measles %}<span class="profile-tag tag-immunization">Measles</span>{% endif %}
       {% if profile.tt %}<span class="profile-tag tag-immunization">TT</span>{% endif %}
-      {% if not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}<span style="color:#94a3b8;">None</span>{% endif %}
+      {% if not profile.bcg and not profile.dpt and not profile.opv and not profile.hepatitis_b and not profile.measles and not profile.tt %}<span style="color:#64748b;">None</span>{% endif %}
     </div>
   </div>
   {% endif %}
@@ -109,7 +109,7 @@
     <form method="post" novalidate id="prescription-form" data-track-changes="true">
       {% csrf_token %}
       <!-- Hidden field: shared instructions for "Apply to All" -->
-      <input type="hidden" name="apply_instructions" id="apply_instructions_hidden">
+      <input type="hidden" name="apply_instructions" id="apply_instructions_hidden" value="{{ apply_instructions|default:'' }}">
 
       <div class="sec-label">Diagnosis & Treatment</div>
 
@@ -118,7 +118,7 @@
         <label>Common Diagnosis</label>
         <select name="diagnosis_select" class="reg-input" id="diagnosis_select_field">
           <option value="">— Select or type below —</option>
-          {% for d in common_diagnoses %}<option value="{{ d.pk }}" {{ prescription_form.instance.diagnosis|option_selected:d.name }}>{{ d.name }}</option>{% endfor %}
+          {% for d in common_diagnoses %}<option value="{{ d.pk }}" {{ prescription_form.diagnosis.value|option_selected:d.name }}>{{ d.name }}</option>{% endfor %}
         </select>
       </div>
       {% endif %}
@@ -135,7 +135,7 @@
 
       <!-- ── MEDICINES SECTION ── -->
       <div class="sec-label sec-label-gap">Medicines Prescribed</div>
-      <p style="font-size:12px;color:#94a3b8;margin:0 0 16px 0;">
+      <p style="font-size:12px;color:#64748b;margin:0 0 16px 0;">
         Select from inventory or add a custom medicine. Use <strong>Apply to All</strong> to set shared dosage/frequency/duration/instructions across all rows at once.
       </p>
 
@@ -151,48 +151,48 @@
       <div class="apply-all-bar" id="apply-all-bar">
         <div class="apply-col">
           <label>Dosage</label>
-          <select id="ata-dosage" class="reg-input med-select">
+          <select id="ata-dosage" name="ata_dosage" class="reg-input med-select">
             <option value="">— keep —</option>
-            <option>500mg</option><option>250mg</option><option>200mg</option>
-            <option>100mg</option><option>50mg</option><option>25mg</option>
-            <option>10mg</option><option>5mg</option>
-            <option>10ml</option><option>5ml</option><option>2.5ml</option>
-            <option value="other">Other…</option>
+            <option {% if ata_dosage == '500mg' %}selected{% endif %}>500mg</option><option {% if ata_dosage == '250mg' %}selected{% endif %}>250mg</option><option {% if ata_dosage == '200mg' %}selected{% endif %}>200mg</option>
+            <option {% if ata_dosage == '100mg' %}selected{% endif %}>100mg</option><option {% if ata_dosage == '50mg' %}selected{% endif %}>50mg</option><option {% if ata_dosage == '25mg' %}selected{% endif %}>25mg</option>
+            <option {% if ata_dosage == '10mg' %}selected{% endif %}>10mg</option><option {% if ata_dosage == '5mg' %}selected{% endif %}>5mg</option>
+            <option {% if ata_dosage == '10ml' %}selected{% endif %}>10ml</option><option {% if ata_dosage == '5ml' %}selected{% endif %}>5ml</option><option {% if ata_dosage == '2.5ml' %}selected{% endif %}>2.5ml</option>
+            <option value="other" {% if ata_dosage == 'other' %}selected{% endif %}>Other…</option>
           </select>
-          <input type="text" id="ata-dosage-other" class="reg-input other-input" placeholder="e.g. 750mg">
+          <input type="text" id="ata-dosage-other" name="ata_dosage_other" class="reg-input other-input" placeholder="e.g. 750mg" value="{{ ata_dosage_other|default:'' }}">
         </div>
         <div class="apply-col">
           <label>Frequency</label>
-          <select id="ata-frequency" class="reg-input med-select">
+          <select id="ata-frequency" name="ata_frequency" class="reg-input med-select">
             <option value="">— keep —</option>
-            <option>Once daily</option><option>2x a day</option><option>3x a day</option>
-            <option>4x a day</option><option>Every 4 hours</option>
-            <option>Every 6 hours</option><option>Every 8 hours</option><option>As needed</option>
-            <option value="other">Other…</option>
+            <option {% if ata_frequency == 'Once daily' %}selected{% endif %}>Once daily</option><option {% if ata_frequency == '2x a day' %}selected{% endif %}>2x a day</option><option {% if ata_frequency == '3x a day' %}selected{% endif %}>3x a day</option>
+            <option {% if ata_frequency == '4x a day' %}selected{% endif %}>4x a day</option><option {% if ata_frequency == 'Every 4 hours' %}selected{% endif %}>Every 4 hours</option>
+            <option {% if ata_frequency == 'Every 6 hours' %}selected{% endif %}>Every 6 hours</option><option {% if ata_frequency == 'Every 8 hours' %}selected{% endif %}>Every 8 hours</option><option {% if ata_frequency == 'As needed' %}selected{% endif %}>As needed</option>
+            <option value="other" {% if ata_frequency == 'other' %}selected{% endif %}>Other…</option>
           </select>
-          <input type="text" id="ata-frequency-other" class="reg-input other-input" placeholder="e.g. Every 12 hours">
+          <input type="text" id="ata-frequency-other" name="ata_frequency_other" class="reg-input other-input" placeholder="e.g. Every 12 hours" value="{{ ata_frequency_other|default:'' }}">
         </div>
         <div class="apply-col">
           <label>Duration</label>
-          <select id="ata-duration" class="reg-input med-select">
+          <select id="ata-duration" name="ata_duration" class="reg-input med-select">
             <option value="">— keep —</option>
-            <option>1 day</option><option>3 days</option><option>5 days</option>
-            <option>7 days</option><option>10 days</option><option>14 days</option>
-            <option>1 month</option>
-            <option value="other">Other…</option>
+            <option {% if ata_duration == '1 day' %}selected{% endif %}>1 day</option><option {% if ata_duration == '3 days' %}selected{% endif %}>3 days</option><option {% if ata_duration == '5 days' %}selected{% endif %}>5 days</option>
+            <option {% if ata_duration == '7 days' %}selected{% endif %}>7 days</option><option {% if ata_duration == '10 days' %}selected{% endif %}>10 days</option><option {% if ata_duration == '14 days' %}selected{% endif %}>14 days</option>
+            <option {% if ata_duration == '1 month' %}selected{% endif %}>1 month</option>
+            <option value="other" {% if ata_duration == 'other' %}selected{% endif %}>Other…</option>
           </select>
-          <input type="text" id="ata-duration-other" class="reg-input other-input" placeholder="e.g. 3 weeks">
+          <input type="text" id="ata-duration-other" name="ata_duration_other" class="reg-input other-input" placeholder="e.g. 3 weeks" value="{{ ata_duration_other|default:'' }}">
         </div>
         <div class="apply-col" style="flex:1.5;">
           <label>Instructions <span style="font-size:9px;color:#6b7280;">(one shared for all — appears once on print)</span></label>
-          <select id="ata-instructions" class="reg-input med-select">
+          <select id="ata-instructions" name="ata_instructions" class="reg-input med-select">
             <option value="">— keep —</option>
-            <option>Take after meals</option><option>Take before meals</option>
-            <option>Take on empty stomach</option><option>Take with food</option>
-            <option>Apply topically</option><option>As directed</option>
-            <option value="other">Other…</option>
+            <option {% if ata_instructions == 'Take after meals' %}selected{% endif %}>Take after meals</option><option {% if ata_instructions == 'Take before meals' %}selected{% endif %}>Take before meals</option>
+            <option {% if ata_instructions == 'Take on empty stomach' %}selected{% endif %}>Take on empty stomach</option><option {% if ata_instructions == 'Take with food' %}selected{% endif %}>Take with food</option>
+            <option {% if ata_instructions == 'Apply topically' %}selected{% endif %}>Apply topically</option><option {% if ata_instructions == 'As directed' %}selected{% endif %}>As directed</option>
+            <option value="other" {% if ata_instructions == 'other' %}selected{% endif %}>Other…</option>
           </select>
-          <input type="text" id="ata-instructions-other" class="reg-input other-input" placeholder="e.g. Dissolve in water">
+          <input type="text" id="ata-instructions-other" name="ata_instructions_other" class="reg-input other-input" placeholder="e.g. Dissolve in water" value="{{ ata_instructions_other|default:'' }}">
         </div>
         <div>
           <button type="button" class="btn-apply-all" id="apply-all-btn"><ion-icon name="refresh-outline" style="font-size:14px;"></ion-icon> Apply to All</button>

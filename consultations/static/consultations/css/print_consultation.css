@@ -214,6 +214,8 @@
     .sig-name {
       font-weight: 700;
       font-size: 10pt;
+      white-space: nowrap;
+      overflow: hidden;
     }
     .sig-sub {
       font-size: 8pt;

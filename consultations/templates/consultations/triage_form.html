@@ -99,7 +99,7 @@
       <div class="form-group" style="margin-bottom:16px;">
         <label>{{ form.chief_complaint.label }}</label>
         {{ form.chief_complaint }}
-        {% if form.chief_complaint.help_text %}<div style="font-size:11px;color:#94a3b8;margin-top:4px;">{{ form.chief_complaint.help_text }}</div>{% endif %}
+        {% if form.chief_complaint.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.chief_complaint.help_text }}</div>{% endif %}
         {% if form.chief_complaint.errors %}<div class="form-error" aria-live="polite">{{ form.chief_complaint.errors.0 }}</div>{% endif %}
       </div>
 
@@ -118,7 +118,7 @@
         </div>
         {% endif %}
 
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="clipboard-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Medical History</div>
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="clipboard-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Medical History</div>
         <div class="checkbox-grid">
           <label>{{ form.hypertension }} Hypertension</label>
           <label>{{ form.diabetes }} Diabetes</label>
@@ -128,7 +128,7 @@
         </div>
         <div class="form-group" style="margin-bottom:14px;">{{ form.other_conditions }}</div>
 
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="medkit-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Immunization</div>
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;"><ion-icon name="medkit-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> Immunization</div>
         <div class="immunization-grid">
           <label>{{ form.bcg }} BCG</label>
           <label>{{ form.dpt }} DPT</label>
@@ -143,18 +143,21 @@
       {# Vitals Row 1 #}
       <div class="vitals-row">
         <div class="form-group">
-          <label>{{ form.blood_pressure.label }}</label>
+          <label>{{ form.blood_pressure.label }} <span style="color:#ef4444;">*</span></label>
           {{ form.blood_pressure }}
+          {% if form.blood_pressure.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.blood_pressure.help_text }}</div>{% endif %}
           {% if form.blood_pressure.errors %}<div class="form-error" aria-live="polite">{{ form.blood_pressure.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
-          <label>{{ form.temperature.label }}</label>
+          <label>{{ form.temperature.label }} <span style="color:#ef4444;">*</span></label>
           {{ form.temperature }}
+          {% if form.temperature.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.temperature.help_text }}</div>{% endif %}
           {% if form.temperature.errors %}<div class="form-error" aria-live="polite">{{ form.temperature.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
-          <label>{{ form.pulse_rate.label }}</label>
+          <label>{{ form.pulse_rate.label }} <span style="color:#ef4444;">*</span></label>
           {{ form.pulse_rate }}
+          {% if form.pulse_rate.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.pulse_rate.help_text }}</div>{% endif %}
           {% if form.pulse_rate.errors %}<div class="form-error" aria-live="polite">{{ form.pulse_rate.errors.0 }}</div>{% endif %}
         </div>
       </div>
@@ -164,23 +167,26 @@
         <div class="form-group">
           <label>{{ form.respiratory_rate.label }}</label>
           {{ form.respiratory_rate }}
+          {% if form.respiratory_rate.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.respiratory_rate.help_text }}</div>{% endif %}
           {% if form.respiratory_rate.errors %}<div class="form-error" aria-live="polite">{{ form.respiratory_rate.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.oxygen_saturation.label }}</label>
           {{ form.oxygen_saturation }}
+          {% if form.oxygen_saturation.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.oxygen_saturation.help_text }}</div>{% endif %}
           {% if form.oxygen_saturation.errors %}<div class="form-error" aria-live="polite">{{ form.oxygen_saturation.errors.0 }}</div>{% endif %}
         </div>
         <div class="form-group">
           <label>{{ form.weight.label }}</label>
           {{ form.weight }}
+          {% if form.weight.help_text %}<div style="font-size:11px;color:#64748b;margin-top:4px;">{{ form.weight.help_text }}</div>{% endif %}
           {% if form.weight.errors %}<div class="form-error" aria-live="polite">{{ form.weight.errors.0 }}</div>{% endif %}
         </div>
       </div>
 
       {# Notes #}
       <div class="form-group">
-        <label>Clinical Notes <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+        <label>Clinical Notes <span style="color:#64748b;font-weight:400;">(optional)</span></label>
         {{ form.notes }}
         {% if form.notes.errors %}<div class="form-error" aria-live="polite">{{ form.notes.errors.0 }}</div>{% endif %}
       </div>

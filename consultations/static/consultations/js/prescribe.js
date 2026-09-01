@@ -39,15 +39,17 @@
         if (sel.value === 'other') {
           other.classList.add('visible');
           other.style.display = '';
-          other.focus();
         } else {
           other.classList.remove('visible');
           other.style.display = 'none';
           other.value = '';
         }
       }
-      sel.addEventListener('change', sync);
-      sync(); // initial state
+      sel.addEventListener('change', function () {
+        sync();
+        if (sel.value === 'other') other.focus();
+      });
+      sync(); // initial state (no focus steal)
     });
   }
 

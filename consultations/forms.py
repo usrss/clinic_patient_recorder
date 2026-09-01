@@ -1,9 +1,14 @@
 from django import forms
 from django.forms import formset_factory
+from datetime import date
 
 from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpProgress, ACTIVE_STATUSES
 from inventory.models import Medicine
 import re
+
+
+def today_iso():
+    return date.today().isoformat()
 
 
 class PatientConsultationForm(forms.ModelForm):
@@ -90,7 +95,7 @@ class ConsultationSubmitForm(forms.Form):
     )
     first_name = forms.CharField(
         max_length=150,
-        label='First Name *',
+        label='First Name',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'First name',
@@ -98,14 +103,14 @@ class ConsultationSubmitForm(forms.Form):
     )
     last_name = forms.CharField(
         max_length=150,
-        label='Last Name *',
+        label='Last Name',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Last name',
         }),
     )
     birthdate = forms.DateField(
-        label='Birthdate *',
+        label='Birthdate',
         widget=forms.DateInput(attrs={
             'class': 'form-control',
             'type': 'date',
@@ -171,6 +176,10 @@ class ConsultationSubmitForm(forms.Form):
             'placeholder': 'Anything else the clinic should know... (optional)',
         }),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['birthdate'].widget.attrs['max'] = today_iso()
 
     def clean_patient_id(self):
         pid = self.cleaned_data['patient_id'].strip()
@@ -284,6 +293,8 @@ class TriageForm(forms.ModelForm):
             'blood_pressure': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '120/80',
+                'pattern': r'\d{2,3}/\d{2,3}',
+                'title': 'Format: systolic/diastolic, e.g. 120/80',
             }),
             'temperature': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -413,6 +424,8 @@ class TriageEditForm(forms.ModelForm):
             'blood_pressure': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '120/80',
+                'pattern': r'\d{2,3}/\d{2,3}',
+                'title': 'Format: systolic/diastolic, e.g. 120/80',
             }),
             'temperature': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -824,6 +837,10 @@ class FollowUpProgressForm(forms.ModelForm):
             'type': 'date',
         }),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['recommended_follow_up_date'].widget.attrs['min'] = today_iso()
 
     class Meta:
         model = FollowUpProgress

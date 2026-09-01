@@ -3,6 +3,7 @@ from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Prefetch, Q
@@ -640,7 +641,13 @@ def consultation_create(request):
                     consultation.save()
             except ActiveConsultationExists:
                 messages.error(request, ACTIVE_CONSULTATION_MESSAGE)
-                return redirect('consultations:consultation_create')
+                # Re-render with the bound form so no typed input is lost
+                return render(request, 'consultations/consultation_create.html', {
+                    'form': form,
+                    'base_template': _base_template(request.user),
+                    'looked_up_patient': cd.get('_patient'),
+                    'looked_up_has_active': True,
+                })
 
             # Notify front desk
             log_create(
@@ -1220,6 +1227,15 @@ def prescribe(request, pk):
         'inventory_medicines': inventory_medicines,
         'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
         'base_template': _base_template(request.user),
+        'ata_dosage': request.POST.get('ata_dosage', ''),
+        'ata_dosage_other': request.POST.get('ata_dosage_other', ''),
+        'ata_frequency': request.POST.get('ata_frequency', ''),
+        'ata_frequency_other': request.POST.get('ata_frequency_other', ''),
+        'ata_duration': request.POST.get('ata_duration', ''),
+        'ata_duration_other': request.POST.get('ata_duration_other', ''),
+        'ata_instructions': request.POST.get('ata_instructions', ''),
+        'ata_instructions_other': request.POST.get('ata_instructions_other', ''),
+        'apply_instructions': request.POST.get('apply_instructions', ''),
     })
 
 
@@ -1371,6 +1387,15 @@ def prescription_edit(request, pk):
         'common_diagnoses': CommonDiagnosis.objects.all().order_by('name'),
         'base_template': _base_template(request.user),
         'edit_mode': True,
+        'ata_dosage': request.POST.get('ata_dosage', ''),
+        'ata_dosage_other': request.POST.get('ata_dosage_other', ''),
+        'ata_frequency': request.POST.get('ata_frequency', ''),
+        'ata_frequency_other': request.POST.get('ata_frequency_other', ''),
+        'ata_duration': request.POST.get('ata_duration', ''),
+        'ata_duration_other': request.POST.get('ata_duration_other', ''),
+        'ata_instructions': request.POST.get('ata_instructions', ''),
+        'ata_instructions_other': request.POST.get('ata_instructions_other', ''),
+        'apply_instructions': request.POST.get('apply_instructions', ''),
     })
 
 
@@ -1845,6 +1870,7 @@ def completion_summary(request, pk):
 
 @login_required
 @clinical_staff_required
+@xframe_options_exempt
 def print_consultation(request, pk):
     """
     Printable/single-page view of a consultation with all vitals,

@@ -18,7 +18,7 @@
 
   <!-- Status Header -->
   <div class="card" style="text-align:center;padding:24px 28px 20px;">
-    <div style="font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Consultation #{{ consultation.pk }}</div>
+    <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Consultation #{{ consultation.pk }}</div>
     <span class="status-pill
 
       {% if consultation.status == 'completed' %}s-completed
@@ -35,7 +35,7 @@
       </svg>
       {{ consultation.get_status_display }}
     </span>
-    <div style="font-size:11px;color:#94a3b8;margin-top:10px;">
+    <div style="font-size:11px;color:#64748b;margin-top:10px;">
       {{ consultation.created_at|date:"F d, Y — h:i A" }}
     </div>
   </div>
@@ -67,7 +67,7 @@
         </span>
         Your Complaint
       </span>
-      <span style="font-size:11px;color:#94a3b8;">Severity: <strong style="color:#374151;">{{ consultation.severity_description }}</strong></span>
+      <span style="font-size:11px;color:#64748b;">Severity: <strong style="color:#374151;">{{ consultation.severity_description }}</strong></span>
     </div>
     <div class="content-text">{{ consultation.chief_complaint }}</div>
     {% if consultation.symptoms %}
@@ -180,7 +180,7 @@
     </div>
     {% endfor %}
     {% endif %}
-    <div class="signature">Prescribed by Dr. {% if rx.doctor %}{{ rx.doctor.get_full_name|default:rx.doctor.username }}{% else %}Unknown{% endif %} on {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
+    <div class="signature">Prescribed by {% if rx.doctor %}{{ rx.doctor.display_name }}{% else %}Unknown{% endif %} on {{ rx.prescribed_at|date:"M d, Y H:i" }}</div>
   </div>
   {% endif %}
   {% endwith %}
