@@ -52,6 +52,7 @@
             <option value="faculty" {% if form.role.value == 'faculty' %}selected{% endif %}>Faculty</option>
             <option value="staff" {% if form.role.value == 'staff' %}selected{% endif %}>Staff</option>
           </select>
+          {% if form.role.errors %}{% for error in form.role.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <!-- Full Name (readonly) -->
@@ -124,11 +125,13 @@
             <label for="id_height_cm">Height (cm)</label>
             <input type="number" id="id_height_cm" name="height_cm" class="reg-input" step="0.1" min="50" max="250"
                    placeholder="e.g. 165" value="{{ form.height_cm.value|default_if_none:'' }}">
+          {% if form.height_cm.errors %}{% for error in form.height_cm.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
           </div>
           <div class="form-group">
             <label for="id_weight_kg">Weight (kg)</label>
             <input type="number" id="id_weight_kg" name="weight_kg" class="reg-input" step="0.1" min="10" max="300"
                    placeholder="e.g. 60" value="{{ form.weight_kg.value|default_if_none:'' }}">
+          {% if form.weight_kg.errors %}{% for error in form.weight_kg.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
           </div>
         </div>
 
@@ -157,6 +160,7 @@
             <option value="{{ c.pk }}" {% if form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>
             {% endfor %}
           </select>
+          {% if form.college.errors %}{% for error in form.college.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <div class="form-group" id="field-course" style="display:none;">
@@ -164,6 +168,7 @@
           <select id="id_course" name="course" class="reg-input">
             <option value=""> Select Course </option>
           </select>
+          {% if form.course.errors %}{% for error in form.course.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <div class="form-group" id="field-year" {% if form.role.value != 'student' %}style="display:none;"{% endif %}>
@@ -175,25 +180,28 @@
             <option value="3rd Year" {% if form.year_level.value == '3rd Year' %}selected{% endif %}>3rd Year</option>
             <option value="4th Year" {% if form.year_level.value == '4th Year' %}selected{% endif %}>4th Year</option>
           </select>
+          {% if form.year_level.errors %}{% for error in form.year_level.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <div class="form-group" id="field-department" {% if form.role.value == 'student' %}style="display:none;"{% endif %}>
           <label for="id_department">Department <span class="req">*</span></label>
           <input type="text" id="id_department" name="department" class="reg-input" placeholder="e.g. Registrar, OSAS"
                  value="{{ form.department.value|default:'' }}">
+          {% if form.department.errors %}{% for error in form.department.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <div class="form-group" id="field-position" {% if form.role.value == 'student' %}style="display:none;"{% endif %}>
           <label for="id_position">Position / Designation</label>
           <input type="text" id="id_position" name="position" class="reg-input" placeholder="e.g. Department Head"
                  value="{{ form.position.value|default:'' }}">
+          {% if form.position.errors %}{% for error in form.position.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
         </div>
 
         <!-- Profile Picture -->
         <div class="sec-label sec-label-gap">Profile Picture</div>
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
           <div id="cpAvatar"
-               style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;">
+               style="position:relative;width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#d1fae5,#a7f3d0);display:flex;align-items:center;justify-content:center;transition:box-shadow 0.2s;">
             {% if patient.profile_picture %}
               <img src="{{ patient.profile_picture.url }}" alt="Profile" style="width:100%;height:100%;object-fit:cover;">
             {% else %}
@@ -219,6 +227,7 @@
             <label for="id_phone">Phone Number</label>
             <input type="text" id="id_phone" name="phone" class="reg-input" placeholder="09XXXXXXXXX"
                    value="{{ form.phone.value|default:'' }}">
+          {% if form.phone.errors %}{% for error in form.phone.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
           </div>
           <div class="form-group">
             <label for="id_email">Email Address <span class="req">*</span></label>
@@ -228,13 +237,13 @@
             </div>
             {% if form.email.errors %}
               {% for error in form.email.errors %}
-                <div class="email-error visible" id="emailError">
+                <div class="email-error visible" id="emailError" role="alert" aria-live="polite">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span id="emailErrorText">{{ error }}</span>
                 </div>
               {% endfor %}
             {% else %}
-              <div class="email-error" id="emailError">
+              <div class="email-error" id="emailError" aria-live="polite">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span id="emailErrorText"></span>
               </div>
@@ -246,11 +255,13 @@
             <label for="id_emergency_contact_name">Emergency Contact Name</label>
             <input type="text" id="id_emergency_contact_name" name="emergency_contact_name" class="reg-input"
                    value="{{ form.emergency_contact_name.value|default:'' }}">
+          {% if form.emergency_contact_name.errors %}{% for error in form.emergency_contact_name.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
           </div>
           <div class="form-group">
             <label for="id_emergency_contact_phone">Emergency Contact Phone</label>
             <input type="text" id="id_emergency_contact_phone" name="emergency_contact_phone" class="reg-input"
                    value="{{ form.emergency_contact_phone.value|default:'' }}">
+          {% if form.emergency_contact_phone.errors %}{% for error in form.emergency_contact_phone.errors %}<div class="field-error" style="display:block;" role="alert">{{ error }}</div>{% endfor %}{% endif %}
           </div>
         </div>
 

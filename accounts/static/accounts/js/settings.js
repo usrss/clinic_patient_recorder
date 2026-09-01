@@ -200,6 +200,7 @@ function initLoadingState(formId, btnId, loadingText) {
 function toggleCollapsible(header) {
   var section = header.parentElement;
   var isClosed = section.classList.toggle('collapsible-closed');
+  header.setAttribute('aria-expanded', isClosed ? 'false' : 'true');
   var key = header.getAttribute('data-section');
   if (key) localStorage.setItem(key, isClosed ? 'closed' : 'open');
 }
@@ -211,8 +212,18 @@ function initCollapsibleSections() {
       var state = localStorage.getItem(key);
       if (state === 'closed') header.parentElement.classList.add('collapsible-closed');
     }
+    // Make the collapsible header keyboard-operable
+    header.setAttribute('role', 'button');
+    header.setAttribute('tabindex', '0');
+    header.setAttribute('aria-expanded', header.parentElement.classList.contains('collapsible-closed') ? 'false' : 'true');
     // Previously inline onclick="toggleCollapsible(this)"
     header.addEventListener('click', function() { toggleCollapsible(this); });
+    header.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleCollapsible(this);
+      }
+    });
   });
 }
 

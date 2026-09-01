@@ -38,7 +38,7 @@
         {# Name row #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
           <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">First name</label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">First name <span style="color:#ef4444;">*</span></label>
             {{ form.first_name }}
             {% if form.first_name.errors %}
               <div id="uf-firstname-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -47,7 +47,7 @@
             {% endif %}
           </div>
           <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Last name</label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Last name <span style="color:#ef4444;">*</span></label>
             {{ form.last_name }}
             {% if form.last_name.errors %}
               <div id="uf-lastname-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -59,7 +59,7 @@
 
         {# Username #}
         <div style="margin-bottom:20px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Username</label>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Username <span style="color:#ef4444;">*</span></label>
           {{ form.username }}
           {% if form.username.errors %}
             <div id="uf-username-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -70,7 +70,7 @@
 
         {# Email #}
         <div style="margin-bottom:20px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Email</label>
+          <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Email <span style="color:#64748b;font-weight:400;">(optional)</span></label>
           {{ form.email }}
           {% if form.email.errors %}
             <div id="uf-email-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -82,7 +82,7 @@
         {# Role + Phone row #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
           <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Role</label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Role <span style="color:#ef4444;">*</span></label>
             {{ form.role }}
             {% if form.role.errors %}
               <div id="uf-role-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -91,7 +91,7 @@
             {% endif %}
           </div>
           <div>
-            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Phone</label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Phone <span style="color:#64748b;font-weight:400;">(optional)</span></label>
             {{ form.phone }}
             {% if form.phone.errors %}
               <div id="uf-phone-error" style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;color:#ef4444;">
@@ -111,7 +111,7 @@
         </div>
         {% endif %}
 
-        {% if form.role %}
+        {% if not target %}
         <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #dbeafe;margin-bottom:24px;">
           <ion-icon name="information-circle-outline" style="font-size:16px;color:#3b82f6;flex-shrink:0;margin-top:1px;"></ion-icon>
           <p style="font-size:12px;color:#1e40af;margin:0;line-height:1.6;">
@@ -132,7 +132,7 @@
       </form>
 
       {% if target and target != request.user %}
-      <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" style="margin-top:12px;">
+      <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" data-confirm="Reset the password for {{ target.username }}? A new temporary password will be set and they must change it on next login." style="margin-top:12px;">
         {% csrf_token %}
         <button type="submit" class="btn btn-sm btn-secondary" style="gap:4px;border-radius:10px;padding:10px 18px;font-size:13px;">
           <ion-icon name="key-outline" style="font-size:15px;"></ion-icon>

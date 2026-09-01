@@ -50,7 +50,7 @@
   <!-- Progress indicator -->
   <div class="progress-wrap">
     <div class="progress-steps">
-      <div class="step-item active" id="prog-1">
+      <div class="step-item active" id="prog-1" aria-current="step">
         <div class="step-circle"><span class="step-num">1</span></div>
         <div class="step-label">Account</div>
       </div>
@@ -88,11 +88,12 @@
 
         <div class="form-group">
           <label for="id_role">Role <span class="req">*</span></label>
-          <select id="id_role" name="role" class="reg-input">
+          <select id="id_role" name="role" class="reg-input" aria-describedby="err-role">
             <option value="student" {% if form.role.value == 'student' %}selected{% endif %}>Student</option>
             <option value="faculty" {% if form.role.value == 'faculty' %}selected{% endif %}>Faculty</option>
             <option value="staff" {% if form.role.value == 'staff' %}selected{% endif %}>Staff</option>
           </select>
+          <div class="field-error" id="err-role">Please select your role.</div>
         </div>
 
         <div class="form-group">
@@ -132,7 +133,7 @@
               </div>
               <div class="strength-text" id="strength-text">Too short</div>
             </div>
-            <div id="pw-requirements" style="font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.5;">
+            <div id="pw-requirements" style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.5;">
               Minimum 8 characters · Uppercase + lowercase · Number · Symbol
             </div>
             <div class="field-error" id="err-password1">{% if form.password1.errors %}{{ form.password1.errors.0 }}{% else %}Password must be at least 8 characters.{% endif %}</div>
@@ -175,19 +176,19 @@
           <div class="otp-icon">📧</div>
           <h2>Check your email</h2>
           <p>We sent a 6-digit code to<br><span class="otp-email" id="otp-email-display">your email</span></p>
-          <p style="font-size:12px;color:#f59e0b;margin:8px 0 0;background:#fffbeb;padding:8px 12px;border-radius:8px;border:1px solid #fde68a;display:flex;align-items:center;gap:6px;text-align:left;">
+          <p style="font-size:12px;color:#92400e;margin:8px 0 0;background:#fffbeb;padding:8px 12px;border-radius:8px;border:1px solid #fde68a;display:flex;align-items:center;gap:6px;text-align:left;">
             <ion-icon name="alert-circle-outline" style="font-size:14px;flex-shrink:0;"></ion-icon>
             <span>Didn't see it? Check your <strong>Spam</strong> or <strong>Promotions</strong> folder</span>
           </p>
         </div>
 
         <div class="otp-inputs">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-0" aria-label="OTP digit 1">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-1" aria-label="OTP digit 2">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-2" aria-label="OTP digit 3">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-3" aria-label="OTP digit 4">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-4" aria-label="OTP digit 5">
-          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" id="otp-5" aria-label="OTP digit 6">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-0" aria-label="OTP digit 1">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-1" aria-label="OTP digit 2">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-2" aria-label="OTP digit 3">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-3" aria-label="OTP digit 4">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-4" aria-label="OTP digit 5">
+          <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" id="otp-5" aria-label="OTP digit 6">
         </div>
         <input type="hidden" name="otp_code" id="otp-hidden">
 
@@ -245,7 +246,7 @@
           </div>
           <div class="form-group">
             <label for="id_birthday">Date of Birth <span class="req">*</span></label>
-            <input type="date" id="id_birthday" name="birthday" class="reg-input" required aria-describedby="err-birthday" value="{{ form.birthday.value|default:'' }}">
+            <input type="date" id="id_birthday" name="birthday" class="reg-input" required max="{% now 'Y-m-d' %}" aria-describedby="err-birthday" value="{{ form.birthday.value|default:'' }}">
             <div class="field-error" id="err-birthday">{% if form.birthday.errors %}{{ form.birthday.errors.0 }}{% else %}Required.{% endif %}</div>
           </div>
         </div>
@@ -374,8 +375,8 @@
       ══════════════════════════════════════════ -->
       <div class="step-panel" id="step-4">
 
-        <div class="sec-label">Medical History (Optional)</div>
-        <div class="check-panel">
+        <fieldset class="check-panel">
+          <legend class="sec-label">Medical History (Optional)</legend>
           <div class="check-grid">
             <label class="check-item"><input type="checkbox" name="hypertension" {% if form.hypertension.value %}checked{% endif %}> Hypertension</label>
             <label class="check-item"><input type="checkbox" name="diabetes" {% if form.diabetes.value %}checked{% endif %}> Diabetes</label>
@@ -383,7 +384,7 @@
             <label class="check-item"><input type="checkbox" name="cardiac_problems" {% if form.cardiac_problems.value %}checked{% endif %}> Cardiac Problems</label>
             <label class="check-item"><input type="checkbox" name="arthritis" {% if form.arthritis.value %}checked{% endif %}> Arthritis</label>
           </div>
-        </div>
+        </fieldset>
         <div class="form-group">
           <label for="id_other_conditions">Other Conditions</label>
           <textarea id="id_other_conditions" name="other_conditions" class="reg-input" rows="2" placeholder="List any other diagnosed conditions…">{{ form.other_conditions.value|default:'' }}</textarea>
@@ -393,8 +394,8 @@
           <textarea id="id_known_allergies" name="known_allergies" class="reg-input" rows="2" placeholder="e.g. Penicillin, shellfish, dust…">{{ form.known_allergies.value|default:'' }}</textarea>
         </div>
 
-        <div class="sec-label sec-label-gap">Immunization History</div>
-        <div class="check-panel imm">
+        <fieldset class="check-panel imm">
+          <legend class="sec-label">Immunization History</legend>
           <div class="check-grid">
             <label class="check-item"><input type="checkbox" name="bcg" {% if form.bcg.value %}checked{% endif %}> BCG</label>
             <label class="check-item"><input type="checkbox" name="dpt" {% if form.dpt.value %}checked{% endif %}> DPT</label>
@@ -403,7 +404,7 @@
             <label class="check-item"><input type="checkbox" name="measles" {% if form.measles.value %}checked{% endif %}> Measles</label>
             <label class="check-item"><input type="checkbox" name="tt" {% if form.tt.value %}checked{% endif %}> TT (Tetanus)</label>
           </div>
-        </div>
+        </fieldset>
         <div class="form-group">
           <label for="id_immunization_others">Other Immunizations</label>
           <textarea id="id_immunization_others" name="immunization_others" class="reg-input" rows="2" placeholder="e.g. COVID-19 vaccine, Flu shot…">{{ form.immunization_others.value|default:'' }}</textarea>

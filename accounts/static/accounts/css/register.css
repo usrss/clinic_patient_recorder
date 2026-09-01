@@ -78,7 +78,7 @@
     font-weight: 700;
     border: 2px solid #e8ecf1;
     background: #fff;
-    color: #94a3b8;
+    color: #64748b;
     position: relative;
     z-index: 1;
     transition: all .3s;
@@ -102,7 +102,7 @@
   .step-label {
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     margin-top: 6px;
     text-align: center;
     letter-spacing: .02em;
@@ -129,7 +129,7 @@
   .sec-label {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: .6px;
     margin: 0 0 16px;
@@ -183,7 +183,7 @@
   .field-error.show { display: block; }
   .field-hint {
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     margin-top: 4px;
   }
 
@@ -202,7 +202,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: #94a3b8;
+    color: #64748b;
     padding: 4px;
     display: flex;
     align-items: center;
@@ -228,7 +228,7 @@
   .strength-text {
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     transition: color .3s;
   }
 
@@ -303,7 +303,7 @@
     font-size: 13px;
     padding: 0;
   }
-  .otp-resend button:disabled { color: #94a3b8; cursor: not-allowed; }
+  .otp-resend button:disabled { color: #64748b; cursor: not-allowed; }
 
   .otp-error {
     text-align: center;
@@ -322,6 +322,12 @@
     padding: 16px;
     margin-bottom: 16px;
   }
+  .check-panel legend.sec-label {
+    float: left;
+    margin: 0 0 14px;
+    padding: 0;
+  }
+  .check-panel .check-grid { clear: both; }
   .check-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

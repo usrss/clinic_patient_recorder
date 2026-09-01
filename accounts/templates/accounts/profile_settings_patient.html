@@ -21,7 +21,7 @@
     {# ── Profile Information Card ── #}
     <div class="card-panel-settings" style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;margin-bottom:20px;">
 
-      <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;">
+      <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;">
         Profile Information
       </div>
 
@@ -109,7 +109,7 @@
           <div class="collapsible-body">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
             <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">College</label><select name="college" id="id_college" class="form-control"><option value="">Select College</option>{% for c in info_form.college.field.queryset %}<option value="{{ c.pk }}" {% if info_form.college.value|stringformat:'s' == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.abbreviation }} — {{ c.name }}</option>{% endfor %}</select>{% if info_form.college.errors %}{% for error in info_form.college.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
-            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Course</label><select name="course" id="id_course" class="form-control" data-courses-url="{% url 'accounts:courses_by_college' %}"><option value="">Select Course</option></select>{% if info_form.course.errors %}{% for error in info_form.course.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Course</label><select name="course" id="id_course" class="form-control" data-courses-url="{% url 'accounts:courses_by_college' %}" data-saved-course="{{ info_form.course.value|default:'' }}"><option value="">Select Course</option></select>{% if info_form.course.errors %}{% for error in info_form.course.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
             <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Department</label>{{ info_form.department }}{% if info_form.department.errors %}{% for error in info_form.department.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
             <div><label style="display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Position</label>{{ info_form.position }}{% if info_form.position.errors %}{% for error in info_form.position.errors %}<div class="field-error"><ion-icon name="alert-circle-outline" style="font-size:12px;vertical-align:middle;"></ion-icon> {{ error }}</div>{% endfor %}{% endif %}</div>
           </div>
@@ -181,7 +181,7 @@
     {# ── Change Password Card ── #}
     <div style="background:#fff;border-radius:16px;padding:32px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.06);border:1px solid #e8ecf1;margin-bottom:40px;">
 
-      <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;">
+      <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid #f1f5f9;">
         Change Password
       </div>
 
@@ -224,7 +224,7 @@
       </div>
     </div>
 
-    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:4px;padding-bottom:24px;">
+    <p style="text-align:center;font-size:11px;color:#64748b;margin-top:4px;padding-bottom:24px;">
       Negros Oriental State University — Medical Dental Clinic
     </p>
 

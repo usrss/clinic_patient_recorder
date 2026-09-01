@@ -35,6 +35,11 @@ def validate_profile_picture(file):
 
 
 class LoginForm(AuthenticationForm):
+    error_messages = {
+        'invalid_login': 'Invalid username or password.',
+        'inactive': 'This account is inactive.',
+    }
+
     username = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -64,7 +69,7 @@ class UserCreateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
-                  'role', 'phone']
+                  'role', 'phone', 'title', 'suffix']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -83,7 +88,7 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email',
-                  'role', 'phone', 'profile_picture', 'is_active']
+                  'role', 'phone', 'title', 'suffix', 'profile_picture', 'is_active']
         widgets = {
             'profile_picture': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -117,6 +122,9 @@ class StaffPasswordChangeForm(PasswordChangeForm):
         self.fields['old_password'].label = 'Current Password'
         self.fields['new_password1'].label = 'New Password'
         self.fields['new_password2'].label = 'Confirm New Password'
+        self.fields['old_password'].widget.attrs.setdefault('autocomplete', 'current-password')
+        self.fields['new_password1'].widget.attrs.setdefault('autocomplete', 'new-password')
+        self.fields['new_password2'].widget.attrs.setdefault('autocomplete', 'new-password')
         # Add right padding for eye toggle icon
         for name in ('old_password', 'new_password1', 'new_password2'):
             if name in self.fields:
@@ -137,6 +145,8 @@ class ForcePasswordChangeForm(SetPasswordForm):
             field.widget.attrs.setdefault('class', 'form-control')
         self.fields['new_password1'].label = 'New Password'
         self.fields['new_password2'].label = 'Confirm New Password'
+        self.fields['new_password1'].widget.attrs.setdefault('autocomplete', 'new-password')
+        self.fields['new_password2'].widget.attrs.setdefault('autocomplete', 'new-password')
 
 
 
@@ -168,7 +178,7 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         # FIX: 'profile_picture' removed — handled manually in the view
-        fields = ['first_name', 'last_name', 'email', 'phone']
+        fields = ['first_name', 'last_name', 'email', 'phone', 'title', 'suffix']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

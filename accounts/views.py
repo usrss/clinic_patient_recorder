@@ -130,7 +130,7 @@ def login_view(request):
                             user.locked_until = timezone.now() + LOCKOUT_DURATION
                             messages.error(request, f'Account locked for {LOCKOUT_DURATION.seconds // 60} minutes. Use Forgot Password to unlock sooner.')
                         else:
-                            messages.error(request, 'Invalid username or password.')
+                            # Generic message shown inline via form.non_field_errors
                             failed_attempts_remaining = remaining
                         user.save(update_fields=['failed_login_attempts', 'locked_until'])
                         log_auth_event(
@@ -141,8 +141,8 @@ def login_view(request):
                             request=request,
                         )
                 except User.DoesNotExist:
-                    # Generic message — don't reveal whether the user exists
-                    messages.error(request, 'Invalid username or password.')
+                    # Generic message — shown inline via form.non_field_errors (no enumeration)
+                    pass
     return render(request, 'accounts/login.html', {'form': form})
 
 
@@ -523,8 +523,12 @@ def verify_otp(request, user_id):
             return redirect('accounts:forgot_password')
 
         if not check_password(otp, user.reset_otp):
-            messages.error(request, 'Invalid OTP.')
-            return render(request, 'accounts/verify_otp.html', {'user_id': user_id})
+            remaining = max(0, int((user.reset_otp_expiry - timezone.now()).total_seconds()))
+            return render(request, 'accounts/verify_otp.html', {
+                'user_id': user_id,
+                'otp_error': 'Invalid OTP code. Please check and try again.',
+                'remaining': remaining,
+            })
 
         user.reset_otp = None
         user.reset_otp_expiry = None
@@ -532,7 +536,8 @@ def verify_otp(request, user_id):
         request.session['reset_user_id'] = user.pk
         return redirect('accounts:reset_password')
 
-    return render(request, 'accounts/verify_otp.html', {'user_id': user_id})
+    remaining = max(0, int((user.reset_otp_expiry - timezone.now()).total_seconds()))
+    return render(request, 'accounts/verify_otp.html', {'user_id': user_id, 'remaining': remaining})
 
 
 def reset_password(request):

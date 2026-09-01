@@ -28,13 +28,13 @@
           </label>
           {{ form.username }}
           {% if form.username.errors %}
-            <div id="login-username-error" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.username.errors.0 }}</div>
+            <div id="login-username-error" role="alert" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.username.errors.0 }}</div>
           {% endif %}
         </div>
 
         {# ── Failed attempts warning ── #}
         {% if failed_attempts_remaining is not None %}
-        <div style="margin-bottom:12px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;background:#fff8e1;color:#92400e;border:1px solid #fed7aa;">
+        <div role="alert" style="margin-bottom:12px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;background:#fff8e1;color:#92400e;border:1px solid #fed7aa;">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span>{{ failed_attempts_remaining }} attempt{{ failed_attempts_remaining|pluralize:"s" }} remaining before account lockout.</span>
         </div>
@@ -62,7 +62,7 @@
             </button>
           </div>
           {% if form.password.errors %}
-            <div id="login-password-error" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.password.errors.0 }}</div>
+            <div id="login-password-error" role="alert" style="font-size:11px;color:#dc2626;margin-top:4px;">{{ form.password.errors.0 }}</div>
           {% endif %}
         </div>
 
@@ -76,13 +76,13 @@
         Forgot password?
       </a>
     </div>
-    <div style="font-size:11px;color:#94a3b8;margin-top:2px;padding-left:26px;">
+    <div style="font-size:11px;color:#64748b;margin-top:2px;padding-left:26px;">
       Stay signed in on this device for up to 7 days. Uncheck for shared computers.
     </div>
   </div>
 
         {% if form.non_field_errors %}
-          <div style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
+          <div role="alert" style="margin-bottom:16px;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;">
             {% for error in form.non_field_errors %}
               <div style="font-size:12px;color:#991b1b;">{{ error }}</div>
             {% endfor %}
@@ -101,7 +101,7 @@
     </div>
 
     {# Footer #}
-    <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">
+    <p style="text-align:center;font-size:11px;color:#64748b;margin-top:24px;">
       Negros Oriental State University — Medical Clinic
     </p>
 
