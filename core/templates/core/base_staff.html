@@ -103,7 +103,7 @@
       font-weight: 700;
       letter-spacing: 0.7px;
       text-transform: uppercase;
-      color: #b0b8c8;
+      color: #64748b;
       padding: 0 10px;
       margin-bottom: 4px;
     }
@@ -113,12 +113,12 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 10px 4px; cursor: pointer; user-select: none;
     }
-    .stf-collapsible-header:hover .stf-nav-section-label { color: #94a3b8; }
+    .stf-collapsible-header:hover .stf-nav-section-label { color: #64748b; }
     .stf-collapsible-arrow {
-      font-size: 12px; color: #b0b8c8; transition: transform 0.2s;
+      font-size: 12px; color: #64748b; transition: transform 0.2s;
       flex-shrink: 0;
     }
-    .stf-collapsible-header:hover .stf-collapsible-arrow { color: #94a3b8; }
+    .stf-collapsible-header:hover .stf-collapsible-arrow { color: #64748b; }
     .stf-collapsible.collapsed .stf-collapsible-arrow { transform: rotate(-90deg); }
     .stf-collapsible-items { overflow: hidden; transition: max-height 0.25s ease; }
     .stf-collapsible.collapsed .stf-collapsible-items { max-height: 0 !important; }
@@ -377,6 +377,8 @@
 {# Add role class to body for scoped CSS accent colors #}
 <body class="role-{{ user.role }}">
 
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
   <!-- Sidebar overlay -->
   <div class="stf-sidebar-overlay" id="staffSidebarOverlay" onclick="stfCloseSidebar()"></div>
 
@@ -511,7 +513,7 @@
 
   <!-- ── Topbar ── -->
   <header class="stf-topbar">
-    <button class="stf-mobile-toggle" onclick="stfOpenSidebar()">
+    <button class="stf-mobile-toggle" aria-label="Open navigation menu" onclick="stfOpenSidebar()">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <div class="stf-topbar-title">
@@ -561,7 +563,7 @@
   {% endif %}
 
   <!-- Main content -->
-  <main class="stf-main">
+  <main class="stf-main" id="main-content">
     {% block content %}{% endblock %}
   </main>
 
@@ -580,6 +582,8 @@
     </div>
   </div>
 
+  {% include 'core/_confirm_modal.html' %}
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
   <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}" data-sidebar-counts-url="{% url 'consultations:sidebar_counts' %}"></script>
@@ -596,11 +600,24 @@
       document.getElementById('staffSidebarOverlay').classList.remove('open');
     }
 
+    // ── Escape closes the logout modal or mobile sidebar ──
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var logoutModal = document.getElementById('stfLogoutModal');
+      if (logoutModal && logoutModal.classList.contains('open')) {
+        logoutModal.classList.remove('open');
+        return;
+      }
+      var sidebar = document.getElementById('staffSidebar');
+      if (sidebar && sidebar.classList.contains('open')) stfCloseSidebar();
+    });
+
     // ── Collapsible sidebar sections ──
     function toggleStfSection(header) {
       var section = header.parentElement;
       var items = section.querySelector('.stf-collapsible-items');
       var isCollapsed = section.classList.toggle('collapsed');
+      header.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
       if (!isCollapsed) {
         items.style.maxHeight = items.scrollHeight + 'px';
       }
@@ -609,18 +626,36 @@
 
     // ── Restore section states from localStorage ──
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.stf-collapsible').forEach(function(section) {
+      document.querySelectorAll('.stf-collapsible').forEach(function(section, i) {
         var label = section.querySelector('.stf-nav-section-label');
+        var header = section.querySelector('.stf-collapsible-header');
+        var items = section.querySelector('.stf-collapsible-items');
+
+        // Make the collapsible header keyboard-operable
+        if (header && items) {
+          items.id = 'stf-collapsible-' + i;
+          header.setAttribute('role', 'button');
+          header.setAttribute('tabindex', '0');
+          header.setAttribute('aria-controls', items.id);
+          header.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleStfSection(header);
+            }
+          });
+        }
+
         if (label) {
           var key = 'stf-section-' + label.textContent.trim().toLowerCase();
           var state = localStorage.getItem(key);
           if (state === 'collapsed') {
             section.classList.add('collapsed');
-            var items = section.querySelector('.stf-collapsible-items');
             if (items) items.style.maxHeight = '0';
           } else {
-            var items = section.querySelector('.stf-collapsible-items');
             if (items) items.style.maxHeight = items.scrollHeight + 'px';
+          }
+          if (header) {
+            header.setAttribute('aria-expanded', section.classList.contains('collapsed') ? 'false' : 'true');
           }
         }
       });

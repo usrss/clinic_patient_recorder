@@ -83,7 +83,7 @@
     .adm-nav-section { padding: 16px 10px 4px; }
     .adm-nav-section-label {
       font-size: 9px; font-weight: 700; letter-spacing: 0.7px;
-      text-transform: uppercase; color: #b0b8c8;
+      text-transform: uppercase; color: #64748b;
       padding: 0 10px; margin-bottom: 4px;
     }
 
@@ -92,12 +92,12 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 10px 4px; cursor: pointer; user-select: none;
     }
-    .adm-collapsible-header:hover .adm-nav-section-label { color: #94a3b8; }
+    .adm-collapsible-header:hover .adm-nav-section-label { color: #64748b; }
     .adm-collapsible-arrow {
-      font-size: 12px; color: #b0b8c8; transition: transform 0.2s;
+      font-size: 12px; color: #64748b; transition: transform 0.2s;
       flex-shrink: 0;
     }
-    .adm-collapsible-header:hover .adm-collapsible-arrow { color: #94a3b8; }
+    .adm-collapsible-header:hover .adm-collapsible-arrow { color: #64748b; }
     .adm-collapsible.collapsed .adm-collapsible-arrow { transform: rotate(-90deg); }
     .adm-collapsible-items { overflow: hidden; transition: max-height 0.25s ease; }
     .adm-collapsible.collapsed .adm-collapsible-items { max-height: 0 !important; }
@@ -236,6 +236,8 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
   <div class="adm-sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -422,7 +424,7 @@
 
   <!-- ── Topbar ── -->
   <header class="adm-topbar">
-    <button class="adm-mobile-toggle" onclick="openSidebar()">
+    <button class="adm-mobile-toggle" aria-label="Open navigation menu" onclick="openSidebar()">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <div class="adm-topbar-title">
@@ -466,7 +468,7 @@
   {% endif %}
 
   <!-- Main content -->
-  <main class="adm-main">
+  <main class="adm-main" id="main-content">
     {% block content %}{% endblock %}
   </main>
 
@@ -485,6 +487,8 @@
     </div>
   </div>
 
+  {% include 'core/_confirm_modal.html' %}
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js';this.parentNode.insertBefore(s,this.nextSibling);"></script>
   <script src="{% static 'core/js/base.js' %}" data-unread-url="{% url 'notifications:unread_count' %}" data-sidebar-counts-url="{% url 'consultations:sidebar_counts' %}"></script>
@@ -501,11 +505,24 @@
       document.getElementById('sidebarOverlay').classList.remove('open');
     }
 
+    // ── Escape closes the logout modal or mobile sidebar ──
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var logoutModal = document.getElementById('logoutModal');
+      if (logoutModal && logoutModal.classList.contains('open')) {
+        logoutModal.classList.remove('open');
+        return;
+      }
+      var sidebar = document.getElementById('adminSidebar');
+      if (sidebar && sidebar.classList.contains('open')) closeSidebar();
+    });
+
     // ── Collapsible sidebar sections ──
     function toggleAdmSection(header) {
       var section = header.parentElement;
       var items = section.querySelector('.adm-collapsible-items');
       var isCollapsed = section.classList.toggle('collapsed');
+      header.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
       if (!isCollapsed) {
         items.style.maxHeight = items.scrollHeight + 'px';
       }
@@ -514,18 +531,36 @@
 
     // ── Restore section states from localStorage ──
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.adm-collapsible').forEach(function(section) {
+      document.querySelectorAll('.adm-collapsible').forEach(function(section, i) {
         var label = section.querySelector('.adm-nav-section-label');
+        var header = section.querySelector('.adm-collapsible-header');
+        var items = section.querySelector('.adm-collapsible-items');
+
+        // Make the collapsible header keyboard-operable
+        if (header && items) {
+          items.id = 'adm-collapsible-' + i;
+          header.setAttribute('role', 'button');
+          header.setAttribute('tabindex', '0');
+          header.setAttribute('aria-controls', items.id);
+          header.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleAdmSection(header);
+            }
+          });
+        }
+
         if (label) {
           var key = 'adm-section-' + label.textContent.trim().toLowerCase();
           var state = localStorage.getItem(key);
           if (state === 'collapsed') {
             section.classList.add('collapsed');
-            var items = section.querySelector('.adm-collapsible-items');
             if (items) items.style.maxHeight = '0';
           } else {
-            var items = section.querySelector('.adm-collapsible-items');
             if (items) items.style.maxHeight = items.scrollHeight + 'px';
+          }
+          if (header) {
+            header.setAttribute('aria-expanded', section.classList.contains('collapsed') ? 'false' : 'true');
           }
         }
       });
