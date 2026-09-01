@@ -13,13 +13,13 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px 24px 0;
+  padding: 8px 24px 0;
   min-height: 0;
 }
 
 /* Step indicator: 3-segment progress bar */
 .progress-wrap {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 .progress-bar {
@@ -50,8 +50,8 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 .wizard-header-left h1 {
@@ -137,7 +137,7 @@
   display: flex;
   gap: 10px;
   justify-content: center;
-  padding: 12px 0;
+  padding: 8px 0;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -177,7 +177,7 @@
   text-align: center;
   font-size: 11px;
   color: #9ca3af;
-  padding: 4px 0 8px;
+  padding: 2px 0 4px;
   flex-shrink: 0;
 }
 

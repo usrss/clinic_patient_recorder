@@ -8,6 +8,14 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 
+def ordinal_day(day):
+    """Return the day with its ordinal suffix (e.g. 1 → '1st', 2 → '2nd')."""
+    if 11 <= day <= 13:
+        return f'{day}th'
+    suffixes = {1: 'st', 2: 'nd', 3: 'rd'}
+    return f'{day}{suffixes.get(day % 10, "th")}'
+
+
 def strip_doctor_honorific(name):
     """
     Remove a leading 'Dr.' / 'Dr' / 'Dra.' honorific from a doctor's name so
@@ -254,7 +262,7 @@ class MedicalCertificate(models.Model):
             # ── New keys for .docx templates ───────────────────────────
             'remarks': self.remarks or '',
             'doctor_name': doctor_name,
-            'day': str(day_num),
+            'day': ordinal_day(day_num),
             'month': month_name,
             'year': str(year_num),
             'temperature': temperature,
