@@ -24,7 +24,7 @@
         <span class="ald-badge ald-badge-{{ log.action|lower }}">{{ log.action }}</span>
         <span style="margin-left:8px;" class="ald-badge ald-badge-{{ log.status|lower }}">{{ log.get_status_display }}</span>
       </div>
-      <span style="font-size:12px;color:#94a3b8;">#{{ log.pk }}</span>
+      <span style="font-size:12px;color:#64748b;">#{{ log.pk }}</span>
     </div>
 
     {# ── Core fields ── #}
@@ -55,10 +55,10 @@
           {% if log.object_model and log.object_id %}
           <span class="ald-object-link">{{ log.object_model }} #{{ log.object_id }}</span>
           {% if log.object_repr %}
-          <br><span style="font-size:11px;color:#94a3b8;">{{ log.object_repr }}</span>
+          <br><span style="font-size:11px;color:#64748b;">{{ log.object_repr }}</span>
           {% endif %}
           {% else %}
-          <span style="color:#94a3b8;">—</span>
+          <span style="color:#64748b;">—</span>
           {% endif %}
         </div>
       </div>
@@ -71,7 +71,7 @@
         {% if log.description %}
           {{ log.description|linebreaksbr }}
         {% else %}
-          <span style="color:#94a3b8;">No description provided.</span>
+          <span style="color:#64748b;">No description provided.</span>
         {% endif %}
       </div>
     </div>
