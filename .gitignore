@@ -14,6 +14,8 @@ media/
 
 # Log files
 *.log
+.freebuff
+UI-UX-Review-Patient-Portal.md
 
 # Windows
 NUL
