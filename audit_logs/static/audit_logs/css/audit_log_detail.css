@@ -50,7 +50,7 @@
 .ald-field-label {
   font-size: 10px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: .05em;
   margin-bottom: 4px;
@@ -126,7 +126,7 @@
 }
 .ald-change-empty {
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
   font-style: italic;
 }
 
