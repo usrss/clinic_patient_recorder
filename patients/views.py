@@ -215,6 +215,7 @@ def patient_contact_edit(request, pk):
     return render(request, 'patients/patient_contact_edit.html', {
         'patient': patient,
         'form': form,
+        'base_template': _base_template(request.user),
     })
 
 

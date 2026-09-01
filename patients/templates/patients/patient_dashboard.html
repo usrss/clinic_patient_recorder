@@ -43,7 +43,7 @@
   .sec-heading {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     margin: 32px 0 12px;
@@ -89,7 +89,7 @@
   .info-item-label {
     font-size: 10px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
@@ -175,7 +175,7 @@
   .action-card.primary .action-card-title { color: #fff; }
   .action-card-sub {
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     line-height: 1.5;
   }
   .action-card.primary .action-card-sub { color: rgba(255,255,255,0.75); }
@@ -188,7 +188,7 @@
     text-align: left;
     font-size: 10px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     border-bottom: 1px solid #e8ecf1;
@@ -250,7 +250,7 @@
     margin: 0 auto 12px;
   }
   .empty-title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
-  .empty-sub   { font-size: 12px; color: #94a3b8; }
+  .empty-sub   { font-size: 12px; color: #64748b; }
 
   /* ── Table scroll ── */
   .table-scroll { overflow-x: auto; }
@@ -291,7 +291,7 @@
   .consult-card-label {
     font-size: 10px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     flex-shrink: 0;
@@ -365,7 +365,7 @@
         </div>
         <div>
           <div class="info-item-label">Age</div>
-          <div class="info-item-value">{{ patient.age|default:"—" }}{% if patient.age %}<span style="font-size:12px;font-weight:400;color:#94a3b8;"> yrs</span>{% endif %}</div>
+          <div class="info-item-value">{{ patient.age|default:"—" }}{% if patient.age %}<span style="font-size:12px;font-weight:400;color:#64748b;"> yrs</span>{% endif %}</div>
         </div>
         <div>
           <div class="info-item-label">College</div>
@@ -434,7 +434,7 @@
         <tbody>
           {% for c in recent %}
           <tr>
-            <td style="color:#94a3b8;font-size:11px;">{{ c.pk }}</td>
+            <td style="color:#64748b;font-size:11px;">{{ c.pk }}</td>
             <td>
                      {% if c.status == 'pending' %}
           <span class="status-badge s-pending">
@@ -470,7 +470,7 @@
             <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
               {{ c.symptoms|truncatechars:60 }}
             </td>
-            <td style="color:#94a3b8;white-space:nowrap;">{{ c.created_at|date:"M d, Y" }}</td>
+            <td style="color:#64748b;white-space:nowrap;">{{ c.created_at|date:"M d, Y" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -537,7 +537,7 @@
   <div class="panel">
     <div class="empty-state">
       <div class="empty-icon">
-        <svg width="20" height="20" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg width="20" height="20" fill="none" stroke="#64748b" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       </div>
       <div class="empty-title">No consultations yet</div>
       <div class="empty-sub">You haven't submitted any consultation requests.</div>
@@ -547,7 +547,7 @@
   {% endwith %}
 
   {# Footer #}
-  <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:8px;">
+  <p style="text-align:center;font-size:11px;color:#64748b;margin-top:8px;">
     Negros Oriental State University — Medical Dental Clinic
   </p>
 
@@ -564,18 +564,20 @@
     <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">Consultation #{{ unreviewed_consultation.pk }}</p>
 
     <div id="starRating" style="display:flex;justify-content:center;gap:6px;margin-bottom:16px;font-size:28px;cursor:pointer;">
-      <span data-star="1">☆</span>
-      <span data-star="2">☆</span>
-      <span data-star="3">☆</span>
-      <span data-star="4">☆</span>
-      <span data-star="5">☆</span>
+      <span data-star="1" role="radio" tabindex="0" aria-label="Rate 1 star">☆</span>
+      <span data-star="2" role="radio" tabindex="-1" aria-label="Rate 2 stars">☆</span>
+      <span data-star="3" role="radio" tabindex="-1" aria-label="Rate 3 stars">☆</span>
+      <span data-star="4" role="radio" tabindex="-1" aria-label="Rate 4 stars">☆</span>
+      <span data-star="5" role="radio" tabindex="-1" aria-label="Rate 5 stars">☆</span>
     </div>
     <input type="hidden" id="selectedRating" value="0">
+    <div id="ratingError" style="display:none;font-size:12px;color:#dc2626;margin-bottom:8px;"></div>
 
     <textarea id="feedbackComment" class="reg-input" rows="2" placeholder="Your comments (optional)..."></textarea>
 
     <button onclick="submitFeedback({{ unreviewed_consultation.pk }})" class="btn-primary" style="width:100%;margin-top:14px;padding:11px;border-radius:10px;font-weight:600;">Submit Review</button>
-    <button type="button" onclick="closeFeedbackModal()" style="background:none;border:none;color:#94a3b8;margin-top:10px;cursor:pointer;font-size:13px;">Skip</button>
+    <button type="button" onclick="closeFeedbackModal({{ unreviewed_consultation.pk }})" style="background:none;border:none;color:#64748b;margin-top:10px;cursor:pointer;font-size:13px;">Skip</button>
+    <div id="feedbackError" style="display:none;font-size:12px;color:#dc2626;margin-top:8px;"></div>
   </div>
 </div>
 
@@ -598,35 +600,75 @@
 </style>
 
 <script>
-  // Show modal on load
+  // Show modal on load (unless skipped this session for this consultation)
   document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('feedbackModal').style.display = 'flex';
+    var skipKey = 'fb_skipped_{{ unreviewed_consultation.pk }}';
+    if (!sessionStorage.getItem(skipKey)) {
+      document.getElementById('feedbackModal').style.display = 'flex';
+    }
   });
 
-  // Star rating click
-  document.querySelectorAll('#starRating span').forEach(star => {
-    star.addEventListener('click', function() {
-      const val = parseInt(this.dataset.star);
-      document.getElementById('selectedRating').value = val;
-      document.querySelectorAll('#starRating span').forEach((s, i) => {
-        s.textContent = i < val ? '★' : '☆';
-        s.classList.toggle('active', i < val);
-      });
+  // ── Star rating: click + keyboard (radiogroup) ──
+  var stars = Array.prototype.slice.call(document.querySelectorAll('#starRating span'));
+  var ratingInput = document.getElementById('selectedRating');
+  var ratingErr = document.getElementById('ratingError');
+  var current = 0;
+
+  function setRating(val) {
+    current = val;
+    ratingInput.value = val;
+    stars.forEach(function (s, i) {
+      var on = i < val;
+      s.textContent = on ? '★' : '☆';
+      s.classList.toggle('active', on);
+      s.setAttribute('aria-checked', on ? 'true' : 'false');
+      s.tabIndex = (i === val - 1) ? 0 : -1;
+    });
+    if (ratingErr) { ratingErr.style.display = 'none'; ratingErr.textContent = ''; }
+  }
+
+  stars.forEach(function (star, i) {
+    star.addEventListener('click', function () { setRating(i + 1); });
+    star.addEventListener('keydown', function (e) {
+      var idx;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        idx = Math.min(i + 1, 4);
+        stars[idx].focus(); setRating(idx + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        idx = Math.max(i - 1, 0);
+        stars[idx].focus(); setRating(idx + 1);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault(); setRating(i + 1);
+      }
     });
   });
+  document.getElementById('starRating').setAttribute('role', 'radiogroup');
+  document.getElementById('starRating').setAttribute('aria-label', 'Rate your visit');
 
-  function closeFeedbackModal() {
+  function closeFeedbackModal(consultationId) {
     document.getElementById('feedbackModal').style.display = 'none';
+    if (consultationId) {
+      try { sessionStorage.setItem('fb_skipped_' + consultationId, '1'); } catch (e) {}
+    }
   }
 
   function submitFeedback(consultationId) {
     const rating = document.getElementById('selectedRating').value;
+    const feedbackErr = document.getElementById('feedbackError');
     if (rating === '0') {
-      alert('Please select a rating.');
+      if (ratingErr) {
+        ratingErr.textContent = 'Please select a rating.';
+        ratingErr.style.display = 'block';
+      }
+      stars[0].focus();
       return;
     }
     const comment = document.getElementById('feedbackComment').value;
     const btn = document.querySelector('button[onclick^="submitFeedback"]');
+
+    if (feedbackErr) { feedbackErr.style.display = 'none'; feedbackErr.textContent = ''; }
     
     // ── Loading state ──
     if (btn) {
@@ -648,9 +690,19 @@
     .then(data => {
       if (data.success) {
         closeFeedbackModal();
-        location.reload();
+        var container = document.getElementById('msgBannerContainer');
+        if (container) {
+          var banner = document.createElement('div');
+          banner.className = 'msg-banner msg-banner-success success-anim';
+          banner.setAttribute('role', 'alert');
+          banner.innerHTML = '<div class="msg-banner-icon"><ion-icon name="checkmark-circle-outline"></ion-icon></div>'
+            + '<span class="msg-banner-text">Feedback submitted successfully!</span>'
+            + '<button type="button" class="msg-banner-close" onclick="dismissBanner(this.parentElement);" aria-label="Close">\u00d7</button>';
+          container.appendChild(banner);
+        }
+        setTimeout(function() { location.reload(); }, 2000);
       } else {
-        alert(data.error || 'Error submitting feedback.');
+        if (feedbackErr) { feedbackErr.textContent = data.error || 'Error submitting feedback.'; feedbackErr.style.display = 'block'; }
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = 'Submit Review';
@@ -660,7 +712,7 @@
       }
     })
     .catch(function() {
-      alert('Network error. Please try again.');
+      if (feedbackErr) { feedbackErr.textContent = 'Network error. Please try again.'; feedbackErr.style.display = 'block'; }
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = 'Submit Review';
@@ -674,7 +726,7 @@
 
 {# ── Photo Lightbox Modal ── #}
 <div id="photoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out;padding:40px;" onclick="closePhotoModal(event)">
-  <button type="button" onclick="closePhotoModal()" style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background 0.2s;z-index:10;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+  <button type="button" aria-label="Close" onclick="closePhotoModal()" style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background 0.2s;z-index:10;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
     <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
   <div style="max-width:90vw;max-height:85vh;border-radius:12px;overflow:hidden;box-shadow:0 8px 60px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
