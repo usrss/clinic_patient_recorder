@@ -109,7 +109,7 @@
                  data-date="{{ f.created_at|date:"M d, Y" }}"
                  style="color:#0078d4;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;">View full</a>
             </td>
-            <td style="color:#94a3b8;font-size:12px;white-space:nowrap;">{{ f.created_at|date:"M d, Y" }}</td>
+            <td style="color:#64748b;font-size:12px;white-space:nowrap;">{{ f.created_at|date:"M d, Y" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -123,28 +123,28 @@
       </span>
       {% if page_obj.paginator.num_pages > 1 %}
       <div class="fb-pagination">
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn {% if page_obj.number == 1 %}disabled{% endif %}" aria-label="First page">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
         </a>
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}" class="fb-page-btn {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}" class="fb-page-btn {% if not page_obj.has_previous %}disabled{% endif %}" aria-label="Previous page">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </a>
         {% for p in page_obj.paginator.page_range %}
           {% if p == page_obj.number or p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" or p == 1 or p == page_obj.paginator.num_pages %}
             {% if p == 1 and page_obj.number > 4 %}
               <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page=1" class="fb-page-btn">1</a>
-              {% if page_obj.number > 5 %}<span style="color:#94a3b8;font-size:12px;padding:0 2px;">&hellip;</span>{% endif %}
+              {% if page_obj.number > 5 %}<span style="color:#64748b;font-size:12px;padding:0 2px;">&hellip;</span>{% endif %}
             {% endif %}
             <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ p }}" class="fb-page-btn {% if p == page_obj.number %}active{% endif %}">{{ p }}</a>
             {% if p == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
-              <span style="color:#94a3b8;font-size:12px;padding:0 2px;">&hellip;</span>
+              <span style="color:#64748b;font-size:12px;padding:0 2px;">&hellip;</span>
             {% endif %}
           {% endif %}
         {% endfor %}
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}" class="fb-page-btn {% if not page_obj.has_next %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}" class="fb-page-btn {% if not page_obj.has_next %}disabled{% endif %}" aria-label="Next page">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
-        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}">
+        <a href="?{% if search %}search={{ search }}&{% endif %}{% if rating_filter %}rating={{ rating_filter }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="fb-page-btn {% if page_obj.number == page_obj.paginator.num_pages %}disabled{% endif %}" aria-label="Last page">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
         </a>
       </div>
@@ -154,7 +154,7 @@
     {% else %}
     <div class="fb-empty">
       <div class="fb-empty-icon">
-        <svg width="22" height="22" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="22" height="22" fill="none" stroke="#64748b" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
       <div class="fb-empty-title">No feedback yet</div>
       <div class="fb-empty-sub">Patient reviews will appear here once submitted.</div>
