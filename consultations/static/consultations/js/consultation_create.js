@@ -1,16 +1,15 @@
 // ── Toggle visibility of new patient fields ──
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('consultation-form');
-  const newPatientFields = document.querySelector('.new-patient-fields');
   const patientFound = form ? form.getAttribute('data-patient-found') === 'true' : false;
 
-  if (newPatientFields) {
+  document.querySelectorAll('.new-patient-fields').forEach(function (el) {
     if (patientFound) {
-      newPatientFields.classList.remove('visible');
+      el.classList.remove('visible');
     } else {
-      newPatientFields.classList.add('visible');
+      el.classList.add('visible');
     }
-  }
+  });
 
   // ── Unsaved changes warning is handled by base.js via data-track-changes="true" ──
 

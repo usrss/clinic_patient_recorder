@@ -76,10 +76,14 @@
       {% if looked_up_patient %}
       <div class="patient-card">
         <div class="patient-card-avatar">
-          {{ looked_up_patient.first_name|first }}{{ looked_up_patient.last_name|first }}
+          {% if looked_up_patient.profile_picture %}
+            <img src="{{ looked_up_patient.profile_picture.url }}" alt="{{ looked_up_patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          {% else %}
+            {{ looked_up_patient.first_name|first }}{{ looked_up_patient.last_name|first }}
+          {% endif %}
         </div>
         <div class="patient-card-info">
-          <h3>{{ looked_up_patient.get_full_name }}</h3>
+          <h3><a href="{% url 'patients:patient_detail' pk=looked_up_patient.pk %}" style="color:inherit;text-decoration:none;">{{ looked_up_patient.get_full_name }}</a></h3>
           <p>ID: {{ looked_up_patient.patient_id }} · Sex: {{ looked_up_patient.get_sex_display }} · Age: {{ looked_up_patient.age|default:"—" }}</p>
         </div>
         <svg class="check-icon" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -94,25 +98,27 @@
       {% endif %}
       {% endif %}
 
-      {# ── Name fields (always visible) ── #}
-      <div class="form-row-2">
-        <div class="form-group">
-          <label>{{ form.first_name.label }}{% if not looked_up_patient %} <span style="color:#ef4444;">*</span>{% endif %}</label>
-          {{ form.first_name }}
-          {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+      {# ── Name fields & birthdate (hidden when patient is found) ── #}
+      <div class="new-patient-fields {% if not looked_up_patient %}visible{% endif %}">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>{{ form.first_name.label }} <span style="color:#ef4444;">*</span></label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>{{ form.last_name.label }} <span style="color:#ef4444;">*</span></label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
         </div>
-        <div class="form-group">
-          <label>{{ form.last_name.label }}{% if not looked_up_patient %} <span style="color:#ef4444;">*</span>{% endif %}</label>
-          {{ form.last_name }}
-          {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
-        </div>
-      </div>
 
-      {# ── Birthdate ── #}
-      <div class="form-group">
-        <label>{{ form.birthdate.label }}{% if not looked_up_patient %} <span style="color:#ef4444;">*</span>{% endif %}</label>
-        {{ form.birthdate }}
-        {% if form.birthdate.errors %}<div class="form-error">{{ form.birthdate.errors.0 }}</div>{% endif %}
+        {# ── Birthdate ── #}
+        <div class="form-group">
+          <label>{{ form.birthdate.label }} <span style="color:#ef4444;">*</span></label>
+          {{ form.birthdate }}
+          {% if form.birthdate.errors %}<div class="form-error">{{ form.birthdate.errors.0 }}</div>{% endif %}
+        </div>
       </div>
 
       {# ── New patient fields (visible only when no match) ── #}

@@ -134,8 +134,11 @@
     font-size: 16px;
     font-weight: 700;
     flex-shrink: 0;
+    overflow: hidden;
   }
   .patient-card-info h3 { margin: 0; font-size: 15px; color: #065f46; }
+  .patient-card-info h3 a { color: inherit; text-decoration: none; transition: color 0.15s; }
+  .patient-card-info h3 a:hover { color: #0078d4; text-decoration: underline; }
   .patient-card-info p { margin: 2px 0 0; font-size: 12px; color: #6b7280; }
   .patient-card .check-icon {
     color: #16a34a;

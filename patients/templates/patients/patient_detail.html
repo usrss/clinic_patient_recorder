@@ -16,7 +16,7 @@
   .panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 7px; }
   .panel-body { padding: 20px; }
   .identity-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f4f8; }
-  .identity-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #eff6ff, #bfdbfe); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #1e40af; flex-shrink: 0; }
+  .identity-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #eff6ff, #bfdbfe); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #1e40af; flex-shrink: 0; }
   .identity-name { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
   .identity-id { display: inline-block; font-size: 11px; font-weight: 600; color: #6b7280; background: #f3f4f6; border-radius: 6px; padding: 2px 8px; }
   .edit-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #374151; background: #f3f4f6; border: 1px solid #e5e7eb; text-decoration: none; transition: all 0.15s; flex-shrink: 0; }
@@ -68,9 +68,9 @@
            onclick="{% if patient.profile_picture %}openPhotoModal('{{ patient.profile_picture.url }}','{{ patient.get_full_name|escapejs }}'){% endif %}"
            title="{% if patient.profile_picture %}Click to view photo{% else %}No profile picture{% endif %}">
         {% if patient.profile_picture %}
-          <img src="{{ patient.profile_picture.url }}" alt="{{ patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+          <img src="{{ patient.profile_picture.url }}" alt="{{ patient.get_full_name }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
         {% else %}
-          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#1e40af;">{{ patient.get_full_name|first|upper }}</div>
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#bfdbfe);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#1e40af;">{{ patient.get_full_name|first|upper }}</div>
         {% endif %}
       </div>
       <div>
@@ -91,15 +91,7 @@
   </div>
 </div>
 
-<!-- Contact Information -->
-<div class="sec-heading" style="display:flex;align-items:center;justify-content:space-between;">
-  <span>Contact Information</span>
-  {% if request.user.role == 'admin' or request.user.role == 'frontdesk' %}
-  <a href="{% url 'patients:patient_contact_edit' patient.pk %}" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;">
-    <ion-icon name="create-outline" style="font-size:13px;"></ion-icon> Edit
-  </a>
-  {% endif %}
-</div>
+
 <div class="panel panel-full">
   <div class="panel-body">
     <div class="info-grid">
