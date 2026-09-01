@@ -239,6 +239,12 @@ document.addEventListener('DOMContentLoaded', function() {
           // Remove the data-confirm attribute to prevent loop
           form.removeAttribute('data-confirm');
           form.submit();
+        } else {
+          // Re-enable any buttons disabled by the global loading handler
+          form.querySelectorAll('[type="submit"]').forEach(function(btn) {
+            btn.classList.remove('btn-loading');
+            btn.disabled = false;
+          });
         }
       });
     });
@@ -311,5 +317,118 @@ window.initUnsavedChangesWarning = function(formOrId) {
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('form[data-track-changes="true"]').forEach(function(form) {
     window.initUnsavedChangesWarning(form);
+  });
+});
+
+// ── Combo widgets: ARIA + keyboard support ──
+// Enhances any .combo-wrap (input + .combo-dropdown + .combo-option) with
+// combobox semantics and arrow/Enter/Escape navigation. Idempotent via
+// data-combo-enhanced. Existing inline handlers keep doing open/filter/select;
+// this only adds accessibility + keyboard behavior on top.
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.combo-wrap').forEach(function(wrap) {
+    var input = wrap.querySelector('input');
+    var dd = wrap.querySelector('.combo-dropdown');
+    if (!input || !dd || wrap.getAttribute('data-combo-enhanced')) return;
+    wrap.setAttribute('data-combo-enhanced', 'true');
+
+    var opts = Array.prototype.slice.call(dd.querySelectorAll('.combo-option'));
+    var ddId = dd.id || ('combo-dd-' + Math.random().toString(36).slice(2, 8));
+    if (!dd.id) dd.id = ddId;
+    if (!input.id) input.id = ddId + '-input';
+
+    dd.setAttribute('role', 'listbox');
+    dd.setAttribute('id', ddId);
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-controls', ddId);
+    input.setAttribute('aria-expanded', 'false');
+
+    var activeIndex = -1;
+    var visibleOpts = [];
+
+    function setExpanded(open) {
+      input.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function refreshVisible() {
+      visibleOpts = opts.filter(function(o) { return o.style.display !== 'none'; });
+      if (activeIndex >= visibleOpts.length) activeIndex = visibleOpts.length - 1;
+      if (activeIndex < 0 && visibleOpts.length) activeIndex = 0;
+      highlight();
+    }
+
+    function highlight() {
+      opts.forEach(function(o, i) {
+        var active = o === visibleOpts[activeIndex];
+        o.classList.toggle('active', active);
+        if (active) {
+          o.setAttribute('id', ddId + '-opt-' + i);
+          input.setAttribute('aria-activedescendant', ddId + '-opt-' + i);
+          if (o.scrollIntoView) o.scrollIntoView({ block: 'nearest' });
+        }
+      });
+      if (!visibleOpts.length) input.removeAttribute('aria-activedescendant');
+    }
+
+    function selectActive() {
+      if (!visibleOpts.length || activeIndex < 0) return;
+      var o = visibleOpts[activeIndex];
+      input.value = o.getAttribute('data-val') || o.textContent.trim();
+      dd.classList.remove('open');
+      setExpanded(false);
+      input.focus();
+    }
+
+    // Give every option listbox semantics + a stable id.
+    opts.forEach(function(o, i) {
+      o.setAttribute('role', 'option');
+      o.setAttribute('id', ddId + '-opt-' + i);
+    });
+
+    // Sync aria-expanded with open/close driven by inline handlers.
+    input.addEventListener('focus', function() {
+      setExpanded(true);
+      refreshVisible();
+    });
+    input.addEventListener('input', function() {
+      setExpanded(true);
+      activeIndex = 0;
+      refreshVisible();
+    });
+    input.addEventListener('blur', function() {
+      setTimeout(function() {
+        if (!dd.classList.contains('open')) setExpanded(false);
+      }, 200);
+    });
+    dd.addEventListener('mouseleave', function() {
+      activeIndex = -1;
+      highlight();
+    });
+
+    // Keyboard navigation.
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!visibleOpts.length) { refreshVisible(); return; }
+        activeIndex = (activeIndex + 1) % visibleOpts.length;
+        highlight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!visibleOpts.length) { refreshVisible(); return; }
+        activeIndex = (activeIndex - 1 + visibleOpts.length) % visibleOpts.length;
+        highlight();
+      } else if (e.key === 'Enter') {
+        if (visibleOpts.length && activeIndex >= 0) {
+          e.preventDefault();
+          selectActive();
+        }
+      } else if (e.key === 'Escape') {
+        dd.classList.remove('open');
+        setExpanded(false);
+        activeIndex = -1;
+        highlight();
+      }
+    });
   });
 });

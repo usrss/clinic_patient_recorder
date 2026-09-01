@@ -20,7 +20,7 @@
     /* Neutrals */
     --text:              #0f172a;
     --text-secondary:    #475569;
-    --text-muted:        #94a3b8;
+    --text-muted:        #64748b;
     --surface:           #ffffff;
     --surface-alt:       #f8fafc;
     --surface-raised:    #ffffff;
@@ -85,6 +85,25 @@ a {
 a:hover { color: var(--primary-dark); }
 
 img { max-width: 100%; height: auto; }
+
+/* ── Skip link (accessibility) ── */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 9999;
+    background: var(--primary);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 0 0 var(--radius) 0;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.skip-link:focus {
+    left: 0;
+    color: #fff;
+}
 
 /* ── Authenticated Navbar ── */
 .cr-navbar {
@@ -303,7 +322,7 @@ main { flex: 1; }
     font-size: 12px;
     padding: 4px 10px;
     border-radius: 6px;
-    color: #94a3b8;
+    color: #64748b;
     transition: all 0.15s ease;
 }
 .footer-right a.developed-by:hover {
@@ -320,7 +339,7 @@ main { flex: 1; }
     margin-top: 6px;
     border-radius: 6px;
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     text-decoration: none;
     transition: all 0.15s ease;
 }
@@ -338,7 +357,7 @@ main { flex: 1; }
     border-radius: 5px;
     font-size: 11px;
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     transition: all 0.15s ease;
     cursor: default;
 }
@@ -672,7 +691,7 @@ main { flex: 1; }
     flex-shrink: 0;
 }
 .status-dot.active   { background: #16a34a; }
-.status-dot.inactive { background: #94a3b8; }
+.status-dot.inactive { background: #64748b; }
 
 /* ── Loading state for buttons ── */
 .btn-loading {
@@ -751,7 +770,7 @@ main { flex: 1; }
     text-align: left;
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.6px;
     white-space: nowrap;
@@ -834,6 +853,9 @@ main { flex: 1; }
     color: #991b1b;
 }
 .danger-panel-body { padding: 18px 20px; }
+
+/* ── Combo widget keyboard highlight (fallback if page CSS lacks it) ── */
+.combo-option.active { background: #f0f4ff; color: #0078d4; }
 
 /* ── Responsive ── */
 @media (max-width: 991.98px) {
