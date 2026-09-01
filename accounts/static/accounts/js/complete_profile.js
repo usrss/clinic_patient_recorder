@@ -213,8 +213,12 @@
         if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
           e.preventDefault();
           const step = parseInt(document.getElementById('current_step').value) || 1;
-          if (step === 1) goNext(1);
-          // Step 2 is the submit button — user presses Enter on an input to submit
+          if (step === 1) {
+            goNext(1);
+          } else {
+            // Step 2 — submit the form
+            form.requestSubmit();
+          }
         }
       });
     }

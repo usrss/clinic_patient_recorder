@@ -9,7 +9,7 @@
 
   {# ── Header row ── #}
   <div class="d-flex align-items-center justify-content-between flex-wrap" style="margin-bottom:16px;gap:12px;">
-    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.6px;">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;">
       {{ paginator.count }} staff member{{ paginator.count|pluralize }}
     </div>
     <a href="{% url 'accounts:user_create' %}" class="btn btn-primary" style="gap:6px;">
@@ -111,6 +111,7 @@
                 {% if u != request.user %}
                   {% if u.is_active %}
                     <button type="button" class="btn btn-sm btn-danger" style="gap:4px;padding:4px 10px;font-size:11px;"
+                            aria-haspopup="dialog"
                             data-deactivate-user="{{ u.get_full_name|default:u.username }}"
                             data-toggle-url="{% url 'accounts:user_toggle_active' u.pk %}">
                       Deactivate
@@ -129,7 +130,7 @@
           <tr>
             <td colspan="7" class="empty-state">
               <div class="empty-state-icon">
-                <ion-icon name="people-outline" style="font-size:22px;color:#9ca3af;"></ion-icon>
+                <ion-icon name="people-outline" style="font-size:22px;color:#64748b;"></ion-icon>
               </div>
               <div class="empty-state-title">No staff users yet</div>
               <p class="empty-state-sub" style="margin-top:8px;">
@@ -151,8 +152,8 @@
     {% if is_paginated %}
     <div class="d-flex align-items-center justify-content-center gap-1" style="padding:14px 16px;border-top:1px solid #e8ecf1;">
       {% if page_obj.has_previous %}
-      <a href="?page=1{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&laquo;</a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&lsaquo;</a>
+      <a href="?page=1{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;" aria-label="First page">&laquo;</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;" aria-label="Previous page">&lsaquo;</a>
       {% endif %}
       {% for i in paginator.page_range %}
         {% if i == page_obj.number %}
@@ -162,8 +163,8 @@
         {% endif %}
       {% endfor %}
       {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&rsaquo;</a>
-      <a href="?page={{ paginator.num_pages }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;">&raquo;</a>
+      <a href="?page={{ page_obj.next_page_number }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;" aria-label="Next page">&rsaquo;</a>
+      <a href="?page={{ paginator.num_pages }}{% if filter_search %}&search={{ filter_search }}{% endif %}{% if filter_role %}&role={{ filter_role }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary" style="border-radius:7px;min-width:30px;" aria-label="Last page">&raquo;</a>
       {% endif %}
     </div>
     {% endif %}

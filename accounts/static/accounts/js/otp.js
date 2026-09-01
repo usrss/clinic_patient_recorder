@@ -63,6 +63,10 @@
 
   // ── Countdown timer ──
   var totalSeconds = 180;
+  var formEl = document.getElementById('verify-otp-form');
+  if (formEl && formEl.getAttribute('data-remaining')) {
+    totalSeconds = Math.max(0, parseInt(formEl.getAttribute('data-remaining'), 10) || 0);
+  }
   var resendBtn = document.getElementById('resend-btn');
   var verifyBtn = document.getElementById('verifyOtpBtn');
 

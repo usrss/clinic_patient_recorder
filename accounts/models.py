@@ -23,6 +23,18 @@ class User(AbstractUser):
 
     phone = models.CharField(max_length=20, blank=True)
 
+    # ── Professional Title & Suffix ────────────────────────────────────────
+    title = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text='Title / prefix (e.g. Dr., Mr., Ms., Atty.)',
+    )
+    suffix = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text='Credentials / suffix (e.g. M.D., R.N., Ph.D.)',
+    )
+
     # ── Override AbstractUser.email to enforce uniqueness ──────────────────
     # null=True allows blank emails to be stored as NULL, which SQLite handles
     # gracefully with unique constraints (multiple NULLs are permitted).
@@ -51,6 +63,22 @@ class User(AbstractUser):
     reset_otp_expiry = models.DateTimeField(null=True, blank=True)
 
     # ── convenience properties ──────────────────────────────────────────
+    @property
+    def display_name(self):
+        """Return the full display name including title and suffix.
+
+        Examples:
+            'Dr. EDALIN L. DACULA, M.D., R.N.'
+            'EDALIN L. DACULA'  (no title or suffix)
+        """
+        parts = []
+        if self.title:
+            parts.append(self.title)
+        parts.append(self.get_full_name() or self.username)
+        if self.suffix:
+            parts.append(self.suffix)
+        return ' '.join(parts)
+
     @property
     def is_patient(self):
         return self.role == self.Role.PATIENT

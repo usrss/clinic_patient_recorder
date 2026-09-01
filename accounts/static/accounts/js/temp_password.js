@@ -117,4 +117,11 @@
 
   var copyBtn = byId('copyBtn');
   if (copyBtn) copyBtn.addEventListener('click', copyPassword);
+
+  // ── Escape closes the modal ──
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && byId('pwModal').classList.contains('open')) {
+      closePwModal();
+    }
+  });
 })();

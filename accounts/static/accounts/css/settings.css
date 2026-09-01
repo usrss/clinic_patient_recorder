@@ -24,7 +24,7 @@
 .section-label {
   font-size: 12px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 20px;
@@ -66,7 +66,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .settings-generic-input::placeholder,
-input::placeholder, textarea::placeholder { color: #c4c9d0; }
+input::placeholder, textarea::placeholder { color: #9ca3af; }
 
 textarea { resize: vertical; min-height: 80px; }
 
@@ -213,7 +213,7 @@ input[type="password"].reg-input { padding-right: 44px; }
   border: none;
   padding: 6px;
   cursor: pointer;
-  color: #94a3b8;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -517,7 +517,7 @@ input[type="password"].reg-input { padding-right: 44px; }
 .collapsible-header:hover { background: #f3f6fc; }
 
 .cs-chevron {
-  color: #94a3b8;
+  color: #64748b;
   transition: transform 0.25s ease;
   flex-shrink: 0;
 }

@@ -20,7 +20,7 @@ function saveFormState() {
       data[el.name] = el.checked ? 'on' : '';
     } else if (el.type === 'radio') {
       if (el.checked) data[el.name] = el.value;
-    } else if (el.name && el.type !== 'hidden') {
+    } else if (el.name && el.type !== 'hidden' && el.type !== 'password') {
       data[el.name] = el.value;
     }
   });
@@ -37,7 +37,7 @@ function restoreSavedData() {
     for (var key in data) {
       if (key === '_step') continue;
       var el = document.querySelector('[name="' + key + '"]');
-      if (!el) continue;
+      if (!el || el.type === 'password') continue;
       if (el.type === 'checkbox') {
         el.checked = data[key] === 'on';
       } else {
@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         if (currentStep === 1) goNext(1);
         else if (currentStep === 3) goNext(3);
+        else if (currentStep === 4) form.requestSubmit();
       }
     });
   }
@@ -116,8 +117,9 @@ function showStep(n) {
   for (let i = 1; i <= 4; i++) {
     const prog = document.getElementById('prog-' + i);
     prog.classList.remove('active', 'done');
+    prog.removeAttribute('aria-current');
     if (i < n) prog.classList.add('done');
-    else if (i === n) prog.classList.add('active');
+    else if (i === n) { prog.classList.add('active'); prog.setAttribute('aria-current', 'step'); }
   }
   currentStep = n;
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -131,6 +133,13 @@ function goNext(step) {
     const id = document.getElementById('id_patient_id');
     if (!id.value.trim()) { showErr('patient_id', true); id.classList.add('error'); valid = false; }
     else { showErr('patient_id', false); id.classList.remove('error'); }
+
+    const role = document.getElementById('id_role');
+    if (role && !role.value) {
+      showErr('role', true); role.classList.add('error'); valid = false;
+    } else if (role) {
+      showErr('role', false); role.classList.remove('error');
+    }
 
     const email = document.getElementById('id_email');
     var emailVal = email.value.trim();
@@ -308,15 +317,16 @@ function togglePw(inputId, btn) {
   document.getElementById('eye-' + num + '-show').style.display = isHidden ? 'none' : '';
   document.getElementById('eye-' + num + '-hide').style.display = isHidden ? '' : 'none';
   btn.style.color = isHidden ? '#0078d4' : '#94a3b8';
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
 }  // ── Password strength & match ───────────────────────────────────────────
 function updatePasswordUI() {
   const pw1 = document.getElementById('id_password1');
   const pw2 = document.getElementById('id_password2');
   if (!pw1) return;
 
-  // ── Hide requirements hint when user starts typing ──
+  // ── Keep requirements hint visible while typing (it is informative) ──
   const reqEl = document.getElementById('pw-requirements');
-  if (reqEl) reqEl.style.display = pw1.value.length > 0 ? 'none' : '';
+  if (reqEl) reqEl.style.display = 'block';
 
   // ── Strength meter ──
   const val = pw1.value;
@@ -396,6 +406,8 @@ function startOtpTimer() {
   otpSecondsLeft = 180;
   clearInterval(otpTimerInterval);
   document.getElementById('resend-btn').disabled = true;
+  var verifyBtn = document.getElementById('verifyOtpBtnReg');
+  if (verifyBtn) verifyBtn.disabled = false;
   tickTimer();
   otpTimerInterval = setInterval(tickTimer, 1000);
 }
@@ -441,6 +453,9 @@ function resendOtp() {
     } else {
       document.getElementById('otp-error').textContent = data.error || 'Failed to resend OTP.';
     }
+  })
+  .catch(function () {
+    document.getElementById('otp-error').textContent = 'Failed to resend OTP. Please try again.';
   });
 }
 
@@ -453,6 +468,20 @@ function verifyOtp() {
     return;
   }
 
+  var verifyBtn = document.getElementById('verifyOtpBtnReg');
+  var verifyOriginal = verifyBtn ? verifyBtn.innerHTML : '';
+  if (verifyBtn) {
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Verifying...';
+  }
+
+  function restoreVerifyBtn() {
+    if (verifyBtn) {
+      verifyBtn.disabled = false;
+      verifyBtn.innerHTML = verifyOriginal;
+    }
+  }
+
   var formData = new FormData();
   formData.append('otp', code);
 
@@ -463,12 +492,17 @@ function verifyOtp() {
   })
   .then(response => response.json())
   .then(data => {
+    restoreVerifyBtn();
     if (data.success) {
       showStep(3);
     } else {
       document.getElementById('otp-error').textContent = data.error;
       otpBoxes.forEach(b => b.classList.add('error-otp'));
     }
+  })
+  .catch(function () {
+    restoreVerifyBtn();
+    document.getElementById('otp-error').textContent = 'Verification failed — please try again.';
   });
 }
 

@@ -27,6 +27,7 @@
     input.type = show ? 'text' : 'password';
     if (eye) eye.style.display = show ? 'none' : '';
     if (eyeOff) eyeOff.style.display = show ? '' : 'none';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
   }
 
   // ── Generic password toggle buttons (.pw-toggle / .pw-toggle-btn) ──
@@ -78,10 +79,17 @@
   if (fpForm) {
     fpForm.addEventListener('submit', function (e) {
       var input = document.getElementById('id_patient_id');
+      var errEl = document.getElementById('fp-id-error');
       if (!input || !input.value.trim()) {
         e.preventDefault();
+        if (errEl) {
+          errEl.style.display = 'block';
+          errEl.textContent = 'Please enter your ID number.';
+        }
+        if (input) input.focus();
         return;
       }
+      if (errEl) errEl.style.display = 'none';
       var btn = document.getElementById('sendOtpBtn');
       if (btn) {
         btn.disabled = true;
