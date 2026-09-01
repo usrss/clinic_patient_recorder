@@ -76,7 +76,7 @@
                   {% endif %}
                 </div>
                 <div>
-                  <div class="cr-name">{{ u.get_full_name|default:"—" }}
+                  <div class="cr-name">{{ u.display_name|default:"—" }}
                     {% if u.force_password_change %}
                       <span class="s-badge" style="background:#fffbeb;color:#92400e;margin-left:8px;font-size:9px;">TEMP PW</span>
                     {% endif %}
