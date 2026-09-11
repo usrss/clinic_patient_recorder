@@ -1,5 +1,6 @@
 import re
 from django.db import models
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from accounts.models import User
@@ -16,7 +17,7 @@ def validate_phone(value):
 
 class Patient(models.Model):
     """
-    Unified patient model for all clinic patients — students, staff, instructors.
+    Unified patient model for all clinic patients — students, staff, faculty.
     Deliberately NOT tied to Django auth users; patients are independent identities.
     """
 
@@ -28,7 +29,7 @@ class Patient(models.Model):
         max_length=30,
         unique=True,
         db_index=True,
-        help_text='Student ID / Employee ID / Instructor ID',
+        help_text='Student ID / Employee ID / Faculty ID',
     )
     first_name = models.CharField(max_length=150)
     middle_name = models.CharField(max_length=100, blank=True)
@@ -74,9 +75,51 @@ class Patient(models.Model):
         related_name='patients',
     )
 
-    # Optional — staff / instructor use
+    # Optional — staff / faculty use
     department = models.CharField(max_length=150, blank=True)
     position = models.CharField(max_length=150, blank=True)
+
+    # ── Canonical patient classification ────────────────────────────────────
+    # Partition on (college, department) so every patient falls into exactly
+    # ONE category:
+    #   college + department     → faculty (registration requires both)
+    #   college + no department  → student
+    #   no college + department  → staff (registration clears college)
+    #   no college + no dept     → other
+    # Position is deliberately ignored — faculty and staff may both list one,
+    # so keying on it double-counted patients across categories.
+    class PatientType(models.TextChoices):
+        STUDENT    = 'student',    'Student'
+        FACULTY = 'faculty', 'Faculty'
+        STAFF      = 'staff',      'Staff'
+        OTHER      = 'other',      'Other'
+
+    @property
+    def patient_type(self):
+        """Canonical, mutually exclusive patient category (PatientType)."""
+        if self.college_id:
+            return self.PatientType.FACULTY if self.department else self.PatientType.STUDENT
+        return self.PatientType.STAFF if self.department else self.PatientType.OTHER
+
+    @classmethod
+    def type_filter(cls, patient_type, prefix=''):
+        """Q object matching exactly one canonical patient type.
+
+        `prefix` targets a relation path, e.g. 'patient__' when filtering
+        Consultation querysets. Unknown types raise ValueError; callers
+        should check membership in PatientType.values first.
+        """
+        college = f'{prefix}college'
+        department = f'{prefix}department'
+        if patient_type == cls.PatientType.STUDENT:
+            return Q(**{f'{college}__isnull': False}) & Q(**{department: ''})
+        if patient_type == cls.PatientType.FACULTY:
+            return Q(**{f'{college}__isnull': False}) & ~Q(**{department: ''})
+        if patient_type == cls.PatientType.STAFF:
+            return Q(**{f'{college}__isnull': True}) & ~Q(**{department: ''})
+        if patient_type == cls.PatientType.OTHER:
+            return Q(**{f'{college}__isnull': True}) & Q(**{department: ''})
+        raise ValueError(f'Unknown patient type: {patient_type!r}')
 
     is_active = models.BooleanField(default=True)
 
