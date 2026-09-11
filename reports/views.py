@@ -101,12 +101,11 @@ def _build_diagnosis_queryset(keyword, date_from, date_to, patient_type, college
     if date_to:
         qs = qs.filter(created_at__lte=_make_aware_dt(date_to, 23, 59, 59))
 
-    if patient_type == 'student':
-        qs = qs.filter(patient__college__isnull=False)
-    elif patient_type == 'staff':
-        qs = qs.filter(patient__college__isnull=True, patient__department__gt='')
-    elif patient_type == 'instructor':
-        qs = qs.filter(patient__college__isnull=True, patient__position__gt='')
+    # Canonical, mutually exclusive classification — see Patient.type_filter.
+    # 'instructor' is accepted as a legacy alias for 'faculty'.
+    canonical_type = {'instructor': 'faculty'}.get(patient_type, patient_type)
+    if canonical_type in Patient.PatientType.values:
+        qs = qs.filter(Patient.type_filter(canonical_type, prefix='patient__'))
 
     if college_id:
         qs = qs.filter(patient__college_id=college_id)
@@ -275,17 +274,13 @@ def diagnosis_analytics(request):
     total_affected = consultations.values('patient').distinct().count()
     consultations_count = consultations.count()
 
+    # Canonical classification — categories are mutually exclusive and
+    # exhaustive, so by_type sums to total_affected.
     by_type = {
-        'student':    consultations.filter(patient__college__isnull=False)
-                                   .values('patient').distinct().count(),
-        'staff':      consultations.filter(patient__college__isnull=True,
-                                           patient__department__gt='')
-                                   .values('patient').distinct().count(),
-        'instructor': consultations.filter(patient__college__isnull=True,
-                                           patient__position__gt='')
-                                   .values('patient').distinct().count(),
+        t: consultations.filter(Patient.type_filter(t, prefix='patient__'))
+                        .values('patient').distinct().count()
+        for t in ('student', 'faculty', 'staff', 'other')
     }
-    by_type['other'] = max(0, total_affected - sum(by_type.values()))
 
     by_college = (
         consultations
@@ -691,6 +686,21 @@ def _patients_pdf(patients_by_college, date_from, date_to,
     )
 
 
+def _classify_patient(patient):
+    """Return (type_label, college_or_department) for CSV/Excel exports.
+
+    Mirrors Patient.patient_type so exports classify each patient exactly once.
+    """
+    p_type = patient.patient_type
+    if p_type == Patient.PatientType.STUDENT:
+        return 'Student', patient.college.abbreviation
+    if p_type == Patient.PatientType.FACULTY:
+        return 'Faculty', patient.college.abbreviation
+    if p_type == Patient.PatientType.STAFF:
+        return 'Staff', patient.department
+    return 'Other', patient.position or '—'
+
+
 def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient_type, college_id, user_name=None):
     """Generate a professional PDF for the diagnosis analytics report."""
     s = _pdf_styles()
@@ -700,15 +710,11 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
     # ── Compute summary stats ──
     total_affected = consultations.values('patient').distinct().count()
 
-    student_count = consultations.filter(
-        patient__college__isnull=False
-    ).values('patient').distinct().count()
-    staff_count = consultations.filter(
-        patient__college__isnull=True, patient__department__gt=''
-    ).values('patient').distinct().count()
-    instructor_count = consultations.filter(
-        patient__college__isnull=True, patient__position__gt=''
-    ).values('patient').distinct().count()
+    type_counts = {
+        t: consultations.filter(Patient.type_filter(t, prefix='patient__'))
+                        .values('patient').distinct().count()
+        for t in ('student', 'faculty', 'staff', 'other')
+    }
 
     total_consultations = consultations.count()
 
@@ -741,9 +747,10 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
         [
             ['Patients Diagnosed', str(total_affected)],
             ['Total Consultations', str(total_consultations)],
-            ['Student Patients', str(student_count)],
-            ['Instructor Patients', str(instructor_count)],
-            ['Staff Patients', str(staff_count)],
+            ['Student Patients', str(type_counts['student'])],
+            ['Faculty Patients', str(type_counts['faculty'])],
+            ['Staff Patients', str(type_counts['staff'])],
+            ['Other Patients', str(type_counts['other'])],
         ],
         col_widths=[12*cm, 5*cm],
         aligns=['left', 'right'],
@@ -789,8 +796,10 @@ def _diagnosis_analytics_csv(consultations):
     )
 
     # Annotate each consultation row with the first prescription's diagnosis
-    # and treatment_plan via subquery, avoiding N+1 queries that would occur
-    # if we relied on prefetch_related (which .iterator() silently drops).
+    # and treatment_plan via subquery, avoiding N+1 queries. (Also lets us use
+    # .iterator() below — since Django 6.0 that requires chunk_size after
+    # prefetch_related, which this queryset inherits, so the subquery
+    # approach is the simplest correct path.)
     first_rx = Prescription.objects.filter(
         consultation=OuterRef('pk'),
     ).order_by('prescribed_at').values('diagnosis', 'treatment_plan')[:1]
@@ -802,22 +811,19 @@ def _diagnosis_analytics_csv(consultations):
 
     writer = csv.writer(response)
     writer.writerow([
-        'Consultation #', 'Date', 'Patient Name', 'Patient ID',
+        'Consultation #', 'Date', 'Patient Name', 'Patient ID', 'Sex',
         'Type', 'College / Department', 'Diagnosis', 'Treatment Plan',
     ])
-    for c in consultations.iterator():
-        p  = c.patient
-        if p.college:
-            p_type, p_org = 'Student', p.college.abbreviation
-        elif p.department:
-            p_type, p_org = 'Staff', p.department
-        else:
-            p_type, p_org = 'Instructor', p.position or '—'
+    for c in consultations.iterator(chunk_size=2000):
+        p = c.patient
+        p_type, p_org = _classify_patient(p)
+        sex = {'M': 'Male', 'F': 'Female'}.get(p.sex, '—')
         writer.writerow([
             c.pk,
             c.created_at.strftime('%Y-%m-%d'),
             p.get_full_name(),
             p.patient_id,
+            sex,
             p_type,
             p_org,
             c._first_diagnosis or '—',
@@ -868,14 +874,9 @@ def _diagnosis_analytics_excel(consultations):
         cell.alignment = Alignment(horizontal='center')
 
     # Data rows
-    for row_idx, c in enumerate(consultations.iterator(), start=4):
+    for row_idx, c in enumerate(consultations.iterator(chunk_size=2000), start=4):
         p = c.patient
-        if p.college:
-            p_type, p_org = 'Student', p.college.abbreviation
-        elif p.department:
-            p_type, p_org = 'Staff', p.department
-        else:
-            p_type, p_org = 'Instructor', p.position or '—'
+        p_type, p_org = _classify_patient(p)
 
         sex = {'M': 'Male', 'F': 'Female'}.get(p.sex, '—')
 
@@ -1205,26 +1206,22 @@ def _feedback_pdf(feedbacks, search, rating, user_name=None):
         for r in range(5, 0, -1):
             rating_qs = feedbacks.filter(rating=r)
             cnt = rating_qs.count()
-            students = rating_qs.filter(
-                consultation__patient__college__isnull=False
-            ).count()
-            instructor_rating = rating_qs.filter(
-                consultation__patient__college__isnull=True,
-                consultation__patient__position__gt='',
-            ).count()
-            staff = rating_qs.filter(
-                consultation__patient__college__isnull=True,
-                consultation__patient__position='',
-                consultation__patient__department__gt='',
-            ).count()
+            # Canonical classification — same partition as diagnosis analytics.
+            type_counts = {
+                t: rating_qs.filter(
+                    Patient.type_filter(t, prefix='consultation__patient__')
+                ).count()
+                for t in ('student', 'faculty', 'staff')
+            }
             pct = round(cnt / total * 100, 1) if total else 0
             dist_rows.append([
                 f'{r} Star' + ('s' if r > 1 else ''),
-                str(students), str(instructor_rating), str(staff),
+                str(type_counts['student']), str(type_counts['faculty']),
+                str(type_counts['staff']),
                 str(cnt), f'{pct}%',
             ])
         story.append(_pdf_make_table(
-            ['Rating', 'Students', 'Instructor', 'Staff', 'Total', '%'],
+            ['Rating', 'Students', 'Faculty', 'Staff', 'Total', '%'],
             dist_rows,
             col_widths=[3*cm, 3*cm, 3*cm, 3*cm, 3*cm, 2*cm],
             aligns=['left', 'right', 'right', 'right', 'right', 'right'],
@@ -1419,17 +1416,14 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
         )
 
     if 'cases_by_patient_type' in metrics:
-        students    = base_qs.filter(patient__college__isnull=False).count()
-        staff       = base_qs.filter(patient__college__isnull=True,
-                                     patient__department__gt='').count()
-        instructors = base_qs.filter(patient__college__isnull=True,
-                                     patient__position__gt='').count()
-        classified  = students + staff + instructors
+        # Canonical classification — mutually exclusive, so the categories
+        # sum to the total (no double counting, no remainder guesswork).
         results['cases_by_patient_type'] = {
-            'students':    students,
-            'staff':       staff,
-            'instructors': instructors,
-            'other':       max(0, total_count - classified),
+            label: base_qs.filter(
+                Patient.type_filter(t, prefix='patient__')
+            ).count()
+            for label, t in (('students', 'student'), ('staff', 'staff'),
+                             ('faculty', 'faculty'), ('other', 'other'))
         }
 
     if 'medicine_dispensed' in metrics:
@@ -1911,8 +1905,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
         story.append(_pdf_make_table(
             ['Type', 'Cases'],
             [['Students', str(t['students'])],
-             ['Staff', str(t['staff'])],
-             ['Instructors', str(t['instructors'])],
+             ['Staff', str(t['staff'])],              ['Faculty', str(t['faculty'])],
              ['Other', str(t['other'])]],
             col_widths=[10*cm, 7*cm],
             aligns=['left', 'right'],

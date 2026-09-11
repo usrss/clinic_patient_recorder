@@ -45,7 +45,8 @@
           <option value="all"        {% if patient_type == 'all' %}selected{% endif %}>All types</option>
           <option value="student"    {% if patient_type == 'student' %}selected{% endif %}>Students</option>
           <option value="staff"      {% if patient_type == 'staff' %}selected{% endif %}>Staff</option>
-          <option value="instructor" {% if patient_type == 'instructor' %}selected{% endif %}>Instructors</option>
+          <option value="faculty" {% if patient_type == 'faculty' %}selected{% endif %}>Faculty</option>
+          <option value="other"      {% if patient_type == 'other' %}selected{% endif %}>Other</option>
         </select>
       </div>
       <div>
@@ -95,8 +96,12 @@
     <div class="stat-label">Staff</div>
   </div>
   <div class="stat-card">
-    <div class="stat-value" style="color:#f97316;">{{ by_type.instructor }}</div>
-    <div class="stat-label">Instructors</div>
+    <div class="stat-value" style="color:#f97316;">{{ by_type.faculty }}</div>
+    <div class="stat-label">Faculty</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:#6b7280;">{{ by_type.other }}</div>
+    <div class="stat-label">Other</div>
   </div>
   <div class="stat-card">
     <div class="stat-value" style="color:#1a1a2e;">{{ consultations_count }}</div>
@@ -177,12 +182,14 @@
           {% endif %}
         </td>
         <td>
-          {% if c.patient.college %}
+          {% if c.patient.college and c.patient.department %}
+            <span class="badge badge-faculty">Faculty</span>
+          {% elif c.patient.college %}
             <span class="badge badge-student">Student</span>
           {% elif c.patient.department %}
             <span class="badge badge-staff">Staff</span>
           {% else %}
-            <span class="badge badge-instructor">Instructor</span>
+            <span class="badge badge-other">Other</span>
           {% endif %}
         </td>
         <td style="font-size:12px;color:#6b7280;">
