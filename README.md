@@ -344,3 +344,5 @@ Internet / LAN
 ## License
 
 This project is developed for the NORSU Medical Dental Clinic. All rights reserved.
+---
+Developed By: https://bradicarcasona.vercel.app
