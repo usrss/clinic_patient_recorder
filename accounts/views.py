@@ -148,6 +148,9 @@ def login_view(request):
 
 # ── REGISTRATION ──────────────────────────────────────────────────────
 
+MAX_OTP_VERIFY_ATTEMPTS = 5  # Guesses allowed before the OTP is invalidated
+
+
 def register(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
@@ -163,6 +166,24 @@ def register(request):
             form.fields['course'].queryset = Course.objects.filter(college_id=college_id).order_by('name')
 
     if request.method == 'POST' and form.is_valid():
+        # ── Enforce email verification ──
+        # The OTP endpoint marks the session as verified; the final POST must
+        # confirm that (and match) before creating the account, otherwise the
+        # verification step could be bypassed with a crafted request.
+        if not request.session.get('registration_otp_verified'):
+            form.add_error(None, 'Please verify your email with the OTP code before completing registration.')
+            current_step = '2'
+            return render(request, 'accounts/register.html', {
+                'form': form,
+                'current_step': current_step,
+            })
+        if request.session.get('registration_email') != form.cleaned_data['email']:
+            form.add_error(None, 'The email address does not match the one you verified. Please verify your email again.')
+            return render(request, 'accounts/register.html', {
+                'form': form,
+                'current_step': '2',
+            })
+
         password = form.cleaned_data['password1']
         data = form.cleaned_data
 
@@ -310,6 +331,9 @@ def send_registration_otp(request):
     request.session['registration_email'] = email
     request.session['registration_otp_pending'] = True
     request.session['registration_otp_sent_at'] = timezone.now().isoformat()
+    # A new code invalidates any previous verification state and guess counter
+    request.session['registration_otp_attempts'] = 0
+    request.session['registration_otp_verified'] = False
 
     plain_body, html_body = otp_email(otp, 'registration')
     try:
@@ -345,8 +369,18 @@ def verify_registration_otp(request):
         return JsonResponse({'success': False, 'error': 'OTP expired.'})
 
     if not check_password(otp, stored_otp_hash):
-        return JsonResponse({'success': False, 'error': 'Invalid OTP.'})
+        # Limit guessing: invalidate the OTP after too many failed attempts
+        attempts = request.session.get('registration_otp_attempts', 0) + 1
+        if attempts >= MAX_OTP_VERIFY_ATTEMPTS:
+            for key in ('registration_otp', 'registration_otp_expiry',
+                        'registration_otp_pending', 'registration_otp_attempts'):
+                request.session.pop(key, None)
+            return JsonResponse({'success': False, 'error': 'Too many incorrect attempts. Please request a new code.'})
+        request.session['registration_otp_attempts'] = attempts
+        remaining = MAX_OTP_VERIFY_ATTEMPTS - attempts
+        return JsonResponse({'success': False, 'error': f'Invalid OTP. {remaining} attempt(s) remaining.'})
 
+    request.session['registration_otp_attempts'] = 0
     request.session['registration_otp_verified'] = True
     return JsonResponse({'success': True})
 
@@ -356,6 +390,7 @@ def _clear_registration_session(request):
         'registration_data', 'registration_password', 'registration_email',
         'registration_otp', 'registration_otp_expiry', 'registration_otp_pending',
         'registration_otp_verified', 'registration_otp_sent_at',
+        'registration_otp_attempts',
     ]
     for key in keys:
         request.session.pop(key, None)

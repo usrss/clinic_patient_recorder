@@ -4,6 +4,7 @@ from datetime import date
 
 from .models import Consultation, Triage, Prescription, PrescriptionItem, CommonDiagnosis, FollowUpProgress, ACTIVE_STATUSES
 from inventory.models import Medicine
+from core.validators import normalize_phone
 import re
 
 
@@ -133,9 +134,14 @@ class ConsultationSubmitForm(forms.Form):
         label='Contact Number',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
+            'inputmode': 'tel',
             'placeholder': 'e.g. 09171234567',
         }),
     )
+
+    def clean_contact_number(self):
+        phone = (self.cleaned_data.get('contact_number') or '').strip()
+        return normalize_phone(phone) if phone else ''
 
     # ── Consultation fields ─────────────────────────────────────────────────
     complaints = forms.CharField(

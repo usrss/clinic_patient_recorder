@@ -29,7 +29,7 @@
 {# ── Search Form ── #}
 <div class="filter-card">
   <form method="get">
-    {#── Preserve shared date range and college in search form ──#}
+    {#── Shared filters: date range + college scope Sections 1–3 above and the search below. ──#}
     <input type="hidden" name="date_from" value="{{ date_from|default:'' }}">
     <input type="hidden" name="date_to" value="{{ date_to|default:'' }}">
     <input type="hidden" name="college_id" value="{{ college_id|default:'' }}">
@@ -83,7 +83,7 @@
 {# ── Summary Stat Cards ── #}
 <div class="sec-heading">Search Results</div>
 <div class="stat-grid">
-  <div class="stat-card">
+  <div class="stat-card" title="Unique patients with a completed, diagnosed consultation matching the current filters.">
     <div class="stat-value" style="color:#0078d4;">{{ total_affected }}</div>
     <div class="stat-label">Affected Patients</div>
   </div>
@@ -103,7 +103,7 @@
     <div class="stat-value" style="color:#6b7280;">{{ by_type.other }}</div>
     <div class="stat-label">Other</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" title="Completed consultations with a recorded diagnosis matching the current filters.">
     <div class="stat-value" style="color:#1a1a2e;">{{ consultations_count }}</div>
     <div class="stat-label">Consultations</div>
   </div>
@@ -198,7 +198,7 @@
           {% else %}—{% endif %}
         </td>
         <td style="font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          {% with rx=c.prescriptions.first %}{% if rx %}{{ rx.diagnosis|truncatechars:60 }}{% else %}<span style="color:#d1d5db;">—</span>{% endif %}{% endwith %}
+          {% if c.matched_diagnosis %}<span title="{{ c.matched_diagnosis }}">{{ c.matched_diagnosis|truncatechars:60 }}</span>{% else %}<span style="color:#d1d5db;">—</span>{% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -234,7 +234,8 @@
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Top Diagnoses</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
-        The most frequent diagnoses recorded in completed consultations{% if date_from or date_to %} for the selected period{% endif %}.
+        Most frequent diagnoses in completed consultations — counts distinct cases
+        (one consultation = one case per diagnosis){% if date_from or date_to %} for the selected period{% endif %}.
       </p>
     </div>
     <a href="{% url 'reports:diagnosis_full_report' %}?section=diagnoses&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
@@ -250,7 +251,7 @@
         {% for d in top_diagnoses|slice:":5" %}
         <tr>
           <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-          <td style="font-weight:500;">{{ d.diagnosis|truncatechars:70 }}</td>
+          <td style="font-weight:500;" title="{{ d.diagnosis }}">{{ d.display_diagnosis|default:d.diagnosis|truncatechars:70 }}</td>
           <td style="font-weight:700;color:#0078d4;">{{ d.count }}</td>
         </tr>
         {% endfor %}
@@ -279,7 +280,9 @@
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Diagnosis Distribution by College</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
-        Compare diagnosis trends across academic units{% if date_from or date_to %} for the selected period{% endif %}.
+        Compare diagnosis trends across academic units — counts distinct cases.
+        "{{ reporting_na_label|default:'N/A' }}" = patients without a college; each row's
+        total matches Top Diagnoses{% if date_from or date_to %} for the selected period{% endif %}.
       </p>
     </div>
     <a href="{% url 'reports:diagnosis_full_report' %}?section=matrix&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
@@ -294,14 +297,14 @@
         <tr>
           <th>Diagnosis</th>
           {% for col_name in diag_col_names %}
-          <th style="text-align:right;min-width:70px;">{{ col_name }}</th>
+          <th style="text-align:right;min-width:70px;" {% if col_name == 'N/A' %}title="Patients without a college (staff / unclassified)"{% endif %}>{{ col_name }}</th>
           {% endfor %}
         </tr>
       </thead>
       <tbody>
         {% for row in diag_matrix_rows %}
         <tr>
-          <td style="font-weight:700;color:#1a1a2e;">{{ row.diagnosis }}</td>
+          <td style="font-weight:700;color:#1a1a2e;" title="{{ row.diagnosis }}">{{ row.display_diagnosis|default:row.diagnosis }}</td>
           {% for val in row.col_data %}
           <td style="text-align:right;font-weight:{% if val %}600{% else %}400{% endif %};color:{% if val %}#0078d4{% else %}#e5e7eb{% endif %};">
             {% if val %}{{ val }}{% else %}0{% endif %}
@@ -330,7 +333,8 @@
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Number of Patients by College</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
-        Clinic utilization by college — counts unique patients seen{% if date_from or date_to %} in the selected period{% endif %} (any consultation status).
+        Clinic utilization by college — unique patients seen (any consultation status; not limited to diagnosed cases). Honours the shared date range and college filter only.
+        "{{ reporting_na_label|default:'N/A' }}" = patients without a college.{% if date_from or date_to %} Period: selected dates.{% endif %}
       </p>
     </div>
     <a href="{% url 'reports:diagnosis_full_report' %}?section=patients&{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}{% if college_id %}college_id={{ college_id }}&{% endif %}" class="view-all-btn">
@@ -346,7 +350,7 @@
         {% for row in patients_by_college %}
         <tr>
           <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-          <td style="font-weight:600;color:#1a1a2e;">{{ row.patient__college__abbreviation|default:"—" }}</td>
+          <td style="font-weight:600;color:#1a1a2e;" {% if row.patient__college__abbreviation == 'N/A' %}title="Patients without a college (staff / unclassified)"{% endif %}>{{ row.patient__college__abbreviation|default:"—" }}</td>
           <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
         </tr>
         {% endfor %}

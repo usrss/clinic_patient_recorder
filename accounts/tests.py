@@ -1,8 +1,11 @@
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from core.validators import normalize_phone, validate_phone
 from patients.models import Patient, PatientProfile
 
+from colleges.models import Course
+from .forms import RegistrationForm
 from .models import User
 
 
@@ -95,7 +98,7 @@ class ProfileSettingsTests(TestCase):
             first_name='Old',
             last_name='Name',
             email='old@example.com',
-            phone='111',
+            phone='+639171234567',
         )
         self.client.force_login(user)
 
@@ -103,7 +106,7 @@ class ProfileSettingsTests(TestCase):
             'first_name': 'New',
             'last_name': 'Doctor',
             'email': 'new@example.com',
-            'phone': '222',
+            'phone': '0917 123-4567',
         })
 
         self.assertRedirects(
@@ -115,7 +118,7 @@ class ProfileSettingsTests(TestCase):
         self.assertEqual(user.first_name, 'New')
         self.assertEqual(user.last_name, 'Doctor')
         self.assertEqual(user.email, 'new@example.com')
-        self.assertEqual(user.phone, '222')
+        self.assertEqual(user.phone, '+639171234567')  # normalized from 0917 123-4567
 
     def test_patient_profile_save_works_without_submit_button_name(self):
         user = User.objects.create_user(
@@ -160,11 +163,193 @@ class ProfileSettingsTests(TestCase):
         )
         patient.refresh_from_db()
         profile.refresh_from_db()
-        self.assertEqual(patient.phone, '09171234567')
+        self.assertEqual(patient.phone, '+639171234567')  # normalized
         self.assertEqual(patient.email, 'patient@example.com')
         self.assertEqual(patient.emergency_contact_name, 'Contact One')
-        self.assertEqual(patient.emergency_contact_phone, '09176543210')
+        self.assertEqual(patient.emergency_contact_phone, '+639176543210')  # normalized
         self.assertEqual(profile.address, 'Updated address')
         self.assertEqual(profile.year_level, '2nd Year')
         self.assertTrue(profile.hypertension)
         self.assertEqual(profile.known_allergies, 'Dust')
+
+
+class PhilippinePhoneValidatorTests(TestCase):
+    """Unit tests for the shared PH mobile validator and +63 normalizer."""
+
+    def test_valid_formats_pass(self):
+        for value in ('09171234567', '+639171234567', '9171234567',
+                      '0917 123-4567', '+63 (917) 123-4567',
+                      '0917.123.4567'):
+            with self.subTest(value=value):
+                self.assertEqual(normalize_phone(value), '+639171234567')
+
+    def test_invalid_values_rejected(self):
+        for value in ('12345', 'abc-!!!', '08171234567',  # landline prefix 8
+                      '0917123456',                        # 9 digits after 0
+                      '091712345678',                      # too long
+                      '+6391712345678',                    # too long intl
+                      '639171234567',                      # no +, no leading 0
+                      '+63-917-abc-def',
+                      '0917+1234567',                      # stray +
+                      ''):
+            with self.subTest(value=value):
+                with self.assertRaises(Exception):
+                    normalize_phone(value)
+
+    def test_validate_phone_model_validator(self):
+        validate_phone('09171234567')  # must not raise
+        with self.assertRaises(Exception):
+            validate_phone('not-a-phone')
+
+
+class RegistrationFormPhoneTests(TestCase):
+    """RegistrationForm rejects non-PH phone values and normalizes valid ones."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from colleges.models import College, Course
+        cls.college = College.objects.create(name='Test College', abbreviation='TC')
+        cls.course = Course.objects.create(name='Test Course', college=cls.college)
+
+    def _base_data(self, **overrides):
+        data = {
+            'role': 'student',
+            'patient_id': '20250001',
+            'first_name': 'Juan',
+            'last_name': 'Dela Cruz',
+            'sex': 'M',
+            'email': 'juan@test.clinic',
+            'password1': 'Str0ng!Pass9',
+            'password2': 'Str0ng!Pass9',
+            'birthday': '2005-05-10',
+            'college': str(self.college.pk),
+            'course': str(self.course.pk),
+            'year_level': '1st Year',
+            'phone': '09171234567',
+            'emergency_contact_name': 'Maria Dela Cruz',
+            'emergency_contact_phone': '09181234567',
+            'current_step': '4',
+        }
+        data.update(overrides)
+        return data
+
+    def test_valid_phones_normalized(self):
+        form = RegistrationForm(self._base_data())
+        # The register view re-scopes the course queryset from the POSTed
+        # college before validation — replicate that here.
+        form.fields['course'].queryset = Course.objects.filter(college=self.college)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['phone'], '+639171234567')
+        self.assertEqual(form.cleaned_data['emergency_contact_phone'], '+639181234567')
+
+    def test_letters_rejected(self):
+        form = RegistrationForm(self._base_data(phone='0917abc4567'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_special_characters_rejected(self):
+        form = RegistrationForm(self._base_data(phone='0917@#$4567'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_non_ph_digits_rejected(self):
+        form = RegistrationForm(self._base_data(phone='1234567890'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
+    def test_emergency_phone_letters_rejected(self):
+        form = RegistrationForm(self._base_data(emergency_contact_phone='hello'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('emergency_contact_phone', form.errors)
+
+    def test_future_birthday_rejected(self):
+        from datetime import date, timedelta
+        future = (date.today() + timedelta(days=30)).isoformat()
+        form = RegistrationForm(self._base_data(birthday=future))
+        self.assertFalse(form.is_valid())
+        self.assertIn('birthday', form.errors)
+
+
+class RegistrationOtpEnforcementTests(TestCase):
+    """Final registration POST must come from an OTP-verified session with
+    the same email that was verified."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from colleges.models import College, Course
+        cls.college = College.objects.create(name='OTP College', abbreviation='OC')
+        cls.course = Course.objects.create(name='OTP Course', college=cls.college)
+
+    def _post_registration(self, email='otp@test.clinic'):
+        return self.client.post(reverse('accounts:register'), {
+            'role': 'student',
+            'patient_id': '20250002',
+            'first_name': 'Juan',
+            'last_name': 'Dela Cruz',
+            'sex': 'M',
+            'email': email,
+            'password1': 'Str0ng!Pass9',
+            'password2': 'Str0ng!Pass9',
+            'birthday': '2005-05-10',
+            'college': str(self.college.pk),
+            'course': str(self.course.pk),
+            'year_level': '1st Year',
+            'phone': '09171234567',
+            'emergency_contact_name': 'Maria Dela Cruz',
+            'emergency_contact_phone': '09181234567',
+            'current_step': '4',
+        })
+
+    def test_rejected_without_otp_verification(self):
+        response = self._post_registration()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'verify your email with the OTP code')
+        self.assertFalse(User.objects.filter(username='20250002').exists())
+
+    def test_rejected_when_email_differs_from_verified(self):
+        session = self.client.session
+        session['registration_otp_verified'] = True
+        session['registration_email'] = 'other@test.clinic'
+        session.save()
+
+        response = self._post_registration(email='otp@test.clinic')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'does not match the one you verified')
+        self.assertFalse(User.objects.filter(username='20250002').exists())
+
+    def test_verify_endpoint_limits_guesses(self):
+        from datetime import timedelta
+
+        from django.contrib.auth.hashers import make_password
+        from django.utils import timezone
+
+        session = self.client.session
+        session['registration_otp'] = make_password('123456')
+        session['registration_otp_expiry'] = (timezone.now() + timedelta(minutes=3)).isoformat()
+        session.save()
+
+        response = None
+        for _ in range(5):
+            response = self.client.post(reverse('accounts:verify_registration_otp'), {'otp': '000000'})
+            self.assertFalse(response.json()['success'])
+
+        # 5 wrong attempts → OTP invalidated, message asks for a new code
+        self.assertIn('Too many incorrect attempts', response.json()['error'])
+
+    def test_successful_verify_sets_flag_and_matches_email(self):
+        from django.contrib.auth.hashers import make_password
+        from django.utils import timezone
+        session = self.client.session
+        session['registration_otp'] = make_password('654321')
+        session['registration_otp_expiry'] = (timezone.now() + timezone.timedelta(minutes=3)).isoformat()
+        session['registration_email'] = 'otp@test.clinic'
+        session.save()
+
+        response = self.client.post(reverse('accounts:verify_registration_otp'), {'otp': '654321'})
+        self.assertTrue(response.json()['success'])
+
+        # Verified session + matching email → registration succeeds
+        response = self._post_registration()
+        self.assertRedirects(response, reverse('accounts:dashboard'), fetch_redirect_response=False)
+        user = User.objects.get(username='20250002')
+        self.assertEqual(user.phone, '+639171234567')

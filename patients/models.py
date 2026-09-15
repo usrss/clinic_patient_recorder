@@ -1,18 +1,19 @@
-import re
 from django.db import models
 from django.db.models import Q
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 from accounts.models import User
 
 
-def validate_phone(value):
-    """Accept Philippine mobile numbers and common formats."""
-    cleaned = re.sub(r'[\s\-\(\)\+]', '', value)
-    if not re.match(r'^\d{7,15}$', cleaned):
-        raise ValidationError(
-            'Enter a valid phone number (7–15 digits, spaces/dashes allowed).'
-        )
+# ── Philippine mobile number validation / normalization ────────────────────
+# Shared implementation lives in core.validators (neutral app, no circular
+# imports). Re-exported here because historical migrations reference
+# patients.models.validate_phone by path.
+from core.validators import (  # noqa: F401
+    PH_MOBILE_RE,
+    PHONE_ERROR_MESSAGE,
+    normalize_phone,
+    validate_phone,
+)
 
 
 class Patient(models.Model):

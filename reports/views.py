@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, F, Count, Q, Avg, OuterRef, Subquery, FloatField, ExpressionWrapper
+from django.db.models import Sum, F, Count, Q, Avg, OuterRef, Subquery, FloatField, ExpressionWrapper, Exists
 from django.db.models.functions import ExtractYear, ExtractMonth
 from django.utils import timezone
 import datetime
@@ -20,6 +20,8 @@ from inventory.models import Medicine, StockMovement
 from patients.models import Patient
 from colleges.models import College
 from feedback.models import ConsultationFeedback
+from reports import reporting
+from reports.reporting import NONEMPTY_DIAGNOSIS_RE
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -86,29 +88,78 @@ def _make_aware_dt(d, hour=0, minute=0, second=0):
     return timezone.make_aware(datetime.datetime.combine(d, datetime.time(hour, minute, second)))
 
 
-def _build_diagnosis_queryset(keyword, date_from, date_to, patient_type, college_id):
+VALID_PATIENT_TYPES = frozenset(Patient.PatientType.values)
+VALID_SEXES = frozenset(Patient.Sex.values)
+VALID_YEAR_LEVELS = ('1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year')
+
+# Shared subquery: prescriptions of a consultation that carry a usable
+# diagnosis (non-empty, not whitespace-only).
+_diagnosed_rx = Prescription.objects.filter(
+    consultation=OuterRef('pk'),
+    diagnosis__regex=NONEMPTY_DIAGNOSIS_RE,
+)
+
+
+def _build_diagnosis_queryset(keyword, date_from, date_to, patient_type,
+                              college_id, sex='', year_level='',
+                              require_diagnosis=False):
+    """Shared, filter-consistent consultation queryset for diagnosis reports.
+
+    All report sections and every export derive their populations from this
+    builder, so the same parameters always yield the same numbers.
+
+    Population: COMPLETED consultations, optionally restricted to those
+    carrying a usable diagnosis (require_diagnosis=True — used by every
+    "diagnosed patients" figure). Keyword matches only diagnosed
+    prescriptions, so an undiagnosed consultation can never surface through
+    search.
+
+    Invalid filter values are treated as if not provided (see #9) — the
+    caller receives back only the values that were actually applied.
+    """
+    # ── Validate filters first so applied-state is always truthful ──
+    # 'instructor' is accepted as a legacy alias for 'faculty'.
+    patient_type = {'instructor': 'faculty'}.get(patient_type, patient_type)
+    if patient_type not in VALID_PATIENT_TYPES:
+        patient_type = 'all'
+    if sex not in VALID_SEXES:
+        sex = ''
+    if year_level not in VALID_YEAR_LEVELS:
+        year_level = ''
+
     qs = (
         Consultation.objects
         .filter(status=Consultation.Status.COMPLETED)
-                .select_related('patient', 'patient__college')
+        .select_related('patient', 'patient__college')
         .prefetch_related('prescriptions')
     )
 
     if keyword:
-        qs = qs.filter(prescriptions__diagnosis__icontains=keyword).distinct()
+        qs = qs.filter(
+            prescriptions__diagnosis__icontains=keyword,
+        ).distinct()
+        if require_diagnosis:
+            # A keyword match already implies a diagnosis, but keep the
+            # population contract explicit and self-contained.
+            qs = qs.filter(Exists(_diagnosed_rx))
+    elif require_diagnosis:
+        qs = qs.filter(Exists(_diagnosed_rx))
+
     if date_from:
         qs = qs.filter(created_at__gte=_make_aware_dt(date_from))
     if date_to:
         qs = qs.filter(created_at__lte=_make_aware_dt(date_to, 23, 59, 59))
 
     # Canonical, mutually exclusive classification — see Patient.type_filter.
-    # 'instructor' is accepted as a legacy alias for 'faculty'.
-    canonical_type = {'instructor': 'faculty'}.get(patient_type, patient_type)
-    if canonical_type in Patient.PatientType.values:
-        qs = qs.filter(Patient.type_filter(canonical_type, prefix='patient__'))
+    if patient_type != 'all':
+        qs = qs.filter(Patient.type_filter(patient_type, prefix='patient__'))
 
     if college_id:
         qs = qs.filter(patient__college_id=college_id)
+    if sex:
+        qs = qs.filter(patient__sex=sex)
+    if year_level:
+        qs = qs.filter(patient__profile__year_level=year_level)
 
     return qs.order_by('-created_at')
 
@@ -121,125 +172,75 @@ def diagnosis_analytics(request):
     colleges = College.objects.all().order_by('name')
     user_name = request.user.get_full_name() or request.user.username
 
-    keyword       = request.GET.get('keyword', '').strip()
-    date_from_str = request.GET.get('date_from', '').strip()
-    date_to_str   = request.GET.get('date_to', '').strip()
-    patient_type  = request.GET.get('patient_type', 'all')
-    college_id    = request.GET.get('college_id', '').strip()
-    sex           = request.GET.get('sex', '').strip()
-    year_level    = request.GET.get('year_level', '').strip()
+    keyword_raw    = request.GET.get('keyword', '').strip()
+    date_from_str  = request.GET.get('date_from', '').strip()
+    date_to_str    = request.GET.get('date_to', '').strip()
+    patient_type   = request.GET.get('patient_type', 'all')
+    college_id     = request.GET.get('college_id', '').strip()
+    sex_raw        = request.GET.get('sex', '').strip()
+    year_level_raw = request.GET.get('year_level', '').strip()
 
     date_from = _parse_date(date_from_str)
     date_to   = _parse_date(date_to_str)
 
-    # ── Build base querysets for analytics (Sections 1-3) ──
-    # Section 3 uses any consultation status (clinic utilization)
-    base_any = Consultation.objects.all()
-    # Sections 1-2 use only completed consultations (diagnosis-based)
-    base_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+    # ── Validate filters up front so 'applied filter' state is always truthful ──
+    # Invalid values are normalized to their neutral form (see requirement:
+    # invalid filters must not trigger the filtered UI state).
+    patient_type = {'instructor': 'faculty'}.get(patient_type, patient_type)
+    if patient_type not in VALID_PATIENT_TYPES:
+        patient_type = 'all'
+    sex = sex_raw if sex_raw in VALID_SEXES else ''
+    year_level = year_level_raw if year_level_raw in VALID_YEAR_LEVELS else ''
 
+    # ── Shared filter application ──
+    # Sections 1–2 (diagnosis tables) and Section 4 (search + stats) run on
+    # the same population: COMPLETED consultations that carry a usable
+    # diagnosis. Section 3 is clinic utilization (any status) and only
+    # honours the shared date/college scope — the UI states this explicitly.
+    _completed_base = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
+    _all_base = Consultation.objects.all()
     if date_from:
         dt = _make_aware_dt(date_from)
-        base_completed = base_completed.filter(created_at__gte=dt)
-        base_any = base_any.filter(created_at__gte=dt)
+        _completed_base = _completed_base.filter(created_at__gte=dt)
+        _all_base = _all_base.filter(created_at__gte=dt)
     if date_to:
         dt = _make_aware_dt(date_to, 23, 59, 59)
-        base_completed = base_completed.filter(created_at__lte=dt)
-        base_any = base_any.filter(created_at__lte=dt)
+        _completed_base = _completed_base.filter(created_at__lte=dt)
+        _all_base = _all_base.filter(created_at__lte=dt)
     if college_id:
-        base_completed = base_completed.filter(patient__college_id=college_id)
-        base_any = base_any.filter(patient__college_id=college_id)
+        _completed_base = _completed_base.filter(patient__college_id=college_id)
+        _all_base = _all_base.filter(patient__college_id=college_id)
 
-    # ── Section 1: Top Diagnoses ──
-    top_diagnoses = list(
-        Prescription.objects
-        .filter(consultation__in=base_completed)
-        .values('diagnosis')
-        .annotate(count=Count('id'))
-        .order_by('-count')[:10]
-    )
-
-    # ── Section 2: Diagnosis Distribution by College (matrix format) ──
-    # Build a college × diagnosis cross-tabulation matrix
-    _diag_all_rows = (
-        Prescription.objects
-        .filter(
-            consultation__in=base_completed,
-            consultation__patient__college__isnull=False,
-        )
-        .values(
-            'consultation__patient__college__abbreviation',
-            'diagnosis',
-        )
-        .annotate(count=Count('id'))
-        .order_by('consultation__patient__college__abbreviation', '-count')
-    )
-
-    # Top 10 diagnosis names = row headers
-    diag_short_names = [d['diagnosis'][:30] for d in top_diagnoses]
-
-    # College names (ordered) = column headers (all colleges, even with zero counts)
-    diag_college_names = list(
-        College.objects
-        .distinct()
-        .values_list('abbreviation', flat=True)
-    )
-
-    # Build matrix: {college: {diagnosis: count}}, then transpose
-    _matrix = defaultdict(lambda: defaultdict(int))
-    for row in _diag_all_rows:
-        c_name = row['consultation__patient__college__abbreviation']
-        diag = row['diagnosis'][:30]
-        _matrix[c_name][diag] = row['count']
-
-    # Transpose: make diagnoses the rows, colleges the columns
-    # Include all diagnoses even if counts are zero across all colleges
-    diag_matrix_rows = []
-    for diag_name in diag_short_names:
-        col_data = [_matrix.get(c_name, {}).get(diag_name, 0) for c_name in diag_college_names]
-        diag_matrix_rows.append({
-            'diagnosis': diag_name,
-            'col_data': col_data,
-        })
-
-    # Also build the flat list for backward compatibility
-    diagnosis_by_college = []
-    for row in diag_matrix_rows:
-        for i, cnt in enumerate(row['col_data']):
-            if cnt:
-                diagnosis_by_college.append({
-                    'college': diag_college_names[i],
-                    'diagnosis': row['diagnosis'],
-                    'count': cnt,
-                })
-
-    # ── Section 3: Number of Patients by College (unique patients, any status) ──
-    # Include all colleges, even those with zero patients
-    _all_college_abbrs = list(College.objects.values_list('abbreviation', flat=True))
-    _patient_counts_qs = (
-        base_any
-        .filter(patient__college__isnull=False)
-        .values('patient__college__abbreviation')
-        .annotate(count=Count('patient', distinct=True))
-    )
-    _counts_dict = {r['patient__college__abbreviation']: r['count'] for r in _patient_counts_qs}
-    patients_by_college = sorted(
-        [{'patient__college__abbreviation': abbr, 'count': _counts_dict.get(abbr, 0)}
-         for abbr in _all_college_abbrs],
-        key=lambda x: x['count'],
-        reverse=True,
-    )
-
-    # ── Section 4: Build search queryset (diagnosis-based, completed only) ──
+    # Search-scope consultations (patient type/sex/year apply here, and the
+    # exports use the very same queryset).
     consultations = _build_diagnosis_queryset(
-        keyword, date_from, date_to, patient_type, college_id or None,
+        keyword_raw, date_from, date_to, patient_type, college_id or None,
+        sex=sex_raw, year_level=year_level_raw, require_diagnosis=True,
+    )
+    keyword = keyword_raw
+
+    # The diagnosis that caused each row to match, for display and exports.
+    consultations = consultations.annotate(
+        matched_diagnosis=Subquery(
+            _matched_diagnosis_subquery(keyword).values('diagnosis')
+        ),
     )
 
-    if sex:
-        consultations = consultations.filter(patient__sex=sex)
+    # ── Section 1: Top Diagnoses (diagnosis cases = distinct consultations) ──
+    top_diagnoses = reporting.diagnosis_case_counts(_completed_base, limit=10)
 
-    if year_level:
-        consultations = consultations.filter(patient__profile__year_level=year_level)
+    # ── Section 2: Diagnosis Distribution by College (full-population matrix) ──
+    diag_col_names, diag_matrix_rows = reporting.diagnosis_college_matrix(
+        _completed_base, colleges,
+    )
+    # Display labels are presentation-only; full text stays in 'diagnosis'.
+    for row in diag_matrix_rows[:10]:
+        row['display_diagnosis'] = reporting.truncate_label(row['diagnosis'])
+
+    # ── Section 3: Patients Seen by College (unique patients, any status) ──
+    # Clinic utilization — deliberately ANY consultation status, and limited
+    # to the shared date/college scope only (see template note).
+    patients_by_college = reporting.patients_seen_by_college(_all_base, colleges)
 
     # ── Handle exports ──
     export_fmt = request.GET.get('export', '')
@@ -251,7 +252,7 @@ def diagnosis_analytics(request):
             description=f'Exported diagnosis analytics as CSV{" — " + keyword if keyword else ""}',
             request=request,
         )
-        return _diagnosis_analytics_csv(consultations)
+        return _diagnosis_analytics_csv(consultations, keyword=keyword)
     if export_fmt == 'pdf':
         log_export(
             user=request.user,
@@ -260,7 +261,8 @@ def diagnosis_analytics(request):
             request=request,
         )
         return _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to,
-                                        patient_type, college_id, user_name)
+                                        patient_type, college_id, sex, year_level,
+                                        user_name)
     if export_fmt == 'excel':
         log_export(
             user=request.user,
@@ -268,9 +270,11 @@ def diagnosis_analytics(request):
             description=f'Exported diagnosis analytics as Excel{" — " + keyword if keyword else ""}',
             request=request,
         )
-        return _diagnosis_analytics_excel(consultations)
+        return _diagnosis_analytics_excel(consultations, keyword=keyword)
 
     # ── Compute stats for Section 4 ──
+    # "Affected patients": unique patients with a diagnosed, COMPLETED
+    # consultation — same population as `consultations` (require_diagnosis).
     total_affected = consultations.values('patient').distinct().count()
     consultations_count = consultations.count()
 
@@ -282,13 +286,7 @@ def diagnosis_analytics(request):
         for t in ('student', 'faculty', 'staff', 'other')
     }
 
-    by_college = (
-        consultations
-        .filter(patient__college__isnull=False)
-        .values('patient__college__abbreviation', 'patient__college__name')
-        .annotate(count=Count('patient', distinct=True))
-        .order_by('-count')
-    )
+    by_college = reporting.diagnosed_patients_by_college(consultations)
 
     return render(request, 'reports/diagnosis_analytics.html', {
         'consultations':         consultations,
@@ -307,11 +305,11 @@ def diagnosis_analytics(request):
         'export_params':         export_params,
         # Analytics sections
         'top_diagnoses':         top_diagnoses,
-        'diagnosis_by_college':  diagnosis_by_college,
-        'diag_col_names':        diag_college_names,
-        'diag_matrix_rows':      diag_matrix_rows,
+        'diag_col_names':        diag_col_names,
+        'diag_matrix_rows':      diag_matrix_rows[:10],
         'patients_by_college':   patients_by_college,
-        'has_filters':           any([keyword, date_from_str, date_to_str,
+        'reporting_na_label':    reporting.NA_LABEL,
+        'has_filters':           any([keyword, bool(date_from or date_to),
                                       patient_type != 'all', college_id,
                                       sex, year_level]),
     })
@@ -322,7 +320,11 @@ def diagnosis_analytics(request):
 @login_required
 @admin_required
 def diagnosis_full_report(request):
-    """Full diagnosis report page with all diagnoses, filters, and PDF export."""
+    """Full diagnosis report page with all diagnoses, filters, and PDF export.
+
+    Shares the population, counting units, and aggregation helpers with
+    diagnosis_analytics — the two pages always agree on the same filters.
+    """
     colleges = College.objects.all().order_by('name')
     user_name = request.user.get_full_name() or request.user.username
 
@@ -334,95 +336,40 @@ def diagnosis_full_report(request):
     date_from = _parse_date(date_from_str)
     date_to   = _parse_date(date_to_str)
 
-    has_filters = bool(date_from_str or date_to_str or college_id)
+    # Parsed dates, not raw strings — invalid dates must not flip the state.
+    has_filters = bool(date_from or date_to or college_id)
 
-    # ── Build base querysets ──
+    # ── Shared population (same rules as diagnosis_analytics) ──
     base_completed = Consultation.objects.filter(status=Consultation.Status.COMPLETED)
-
+    base_any = Consultation.objects.all()
     if date_from:
         dt = _make_aware_dt(date_from)
         base_completed = base_completed.filter(created_at__gte=dt)
+        base_any = base_any.filter(created_at__gte=dt)
     if date_to:
         dt = _make_aware_dt(date_to, 23, 59, 59)
         base_completed = base_completed.filter(created_at__lte=dt)
+        base_any = base_any.filter(created_at__lte=dt)
     if college_id:
         base_completed = base_completed.filter(patient__college_id=college_id)
-
-    # ── ALL Diagnoses (ranked, no limit) ──
-    all_diagnoses = list(
-        Prescription.objects
-        .filter(consultation__in=base_completed)
-        .values('diagnosis')
-        .annotate(count=Count('id'))
-        .order_by('-count')
-    )
-
-    # ── Diagnosis Distribution by College (full matrix with ALL diagnoses) ──
-    _diag_all_rows = (
-        Prescription.objects
-        .filter(
-            consultation__in=base_completed,
-            consultation__patient__college__isnull=False,
-        )
-        .values(
-            'consultation__patient__college__abbreviation',
-            'diagnosis',
-        )
-        .annotate(count=Count('id'))
-        .order_by('consultation__patient__college__abbreviation', '-count')
-    )
-
-    # All diagnosis names = row headers
-    full_diag_names = [d['diagnosis'][:40] for d in all_diagnoses]
-
-    # College names (ordered) = column headers (all colleges, even with zero counts)
-    full_college_names = list(
-        College.objects
-        .distinct()
-        .values_list('abbreviation', flat=True)
-    )
-
-    # Build matrix: {college: {diagnosis: count}}, then transpose
-    _matrix = defaultdict(lambda: defaultdict(int))
-    for row in _diag_all_rows:
-        c_name = row['consultation__patient__college__abbreviation']
-        diag = row['diagnosis'][:40]
-        _matrix[c_name][diag] = row['count']
-
-    # Transpose: make diagnoses the rows, colleges the columns
-    # Include all diagnoses even if counts are zero across all colleges
-    full_matrix_rows = []
-    for diag_name in full_diag_names:
-        col_data = [_matrix.get(c_name, {}).get(diag_name, 0) for c_name in full_college_names]
-        full_matrix_rows.append({
-            'diagnosis': diag_name,
-            'col_data': col_data,
-        })
-
-    # ── Patients by College (any status) ──
-    base_any = Consultation.objects.all()
-    if date_from:
-        base_any = base_any.filter(created_at__gte=_make_aware_dt(date_from))
-    if date_to:
-        base_any = base_any.filter(created_at__lte=_make_aware_dt(date_to, 23, 59, 59))
-    if college_id:
         base_any = base_any.filter(patient__college_id=college_id)
 
-    # Include all colleges, even those with zero patients
-    _all_college_abbrs = list(College.objects.values_list('abbreviation', flat=True))
-    _patient_counts_qs = (
-        base_any
-        .filter(patient__college__isnull=False)
-        .values('patient__college__abbreviation')
-        .annotate(count=Count('patient', distinct=True))
+    # ── ALL Diagnoses (ranked, no limit) — full text, case counting ──
+    all_diagnoses = reporting.diagnosis_case_counts(base_completed)
+
+    # Add presentation-only labels; full text stays untouched.
+    for d in all_diagnoses:
+        d['display_diagnosis'] = reporting.truncate_label(d['diagnosis'], 60)
+
+    # ── Diagnosis Distribution by College (full matrix with ALL diagnoses) ──
+    full_college_names, full_matrix_rows = reporting.diagnosis_college_matrix(
+        base_completed, colleges,
     )
-    _counts_dict = {r['patient__college__abbreviation']: r['count'] for r in _patient_counts_qs}
-    patients_by_college = sorted(
-        [{'patient__college__abbreviation': abbr, 'count': _counts_dict.get(abbr, 0)}
-         for abbr in _all_college_abbrs],
-        key=lambda x: x['count'],
-        reverse=True,
-    )
+    for row in full_matrix_rows:
+        row['display_diagnosis'] = reporting.truncate_label(row['diagnosis'], 60)
+
+    # ── Patients by College (any status — clinic utilization) ──
+    patients_by_college = reporting.patients_seen_by_college(base_any, colleges)
 
     # ── Summary stats ──
     total_all_diagnoses = len(all_diagnoses)
@@ -472,6 +419,7 @@ def diagnosis_full_report(request):
         'full_col_names':      full_college_names,
         'full_matrix_rows':    full_matrix_rows,
         'patients_by_college': patients_by_college,
+        'reporting_na_label':  reporting.NA_LABEL,
     })
 
 
@@ -511,6 +459,11 @@ def _diagnosis_full_report_pdf(all_diagnoses, full_matrix_rows, full_college_nam
     # ── Diagnosis Distribution by College (transposed: diagnoses as rows) ──
     if full_matrix_rows:
         story.append(Paragraph('Diagnosis Distribution by College', s['section_title']))
+        story.append(Paragraph(
+            'Cases = distinct completed consultations carrying the diagnosis. '
+            f'"{reporting.NA_LABEL}" = patients without a college.',
+            s['report_meta'],
+        ))
         # Build table with diagnosis + all college columns
         n = len(full_college_names)
         matrix_headers = ['Diagnosis'] + [name[:16] for name in full_college_names]
@@ -535,6 +488,11 @@ def _diagnosis_full_report_pdf(all_diagnoses, full_matrix_rows, full_college_nam
     # ── Patients by College ──
     if patients_by_college:
         story.append(Paragraph('Patients by College', s['section_title']))
+        story.append(Paragraph(
+            'Unique patients seen at the clinic (any consultation status). '
+            f'"{reporting.NA_LABEL}" = patients without a college.',
+            s['report_meta'],
+        ))
         story.append(_pdf_make_table(
             ['College', 'Patients'],
             [[r['patient__college__abbreviation'], str(r['count'])]
@@ -577,6 +535,10 @@ def _diagnoses_pdf(all_diagnoses, date_from, date_to,
     story.extend(_pdf_header_block('Diagnoses', meta))
 
     story.append(Paragraph('All Diagnoses', s['section_title']))
+    story.append(Paragraph(
+        'Cases = distinct completed consultations carrying the diagnosis.',
+        s['report_meta'],
+    ))
     story.append(_pdf_make_table(
         ['Rank', 'Diagnosis', 'Cases'],
         [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
@@ -618,6 +580,11 @@ def _matrix_pdf(full_matrix_rows, full_college_names, date_from, date_to,
 
     if full_matrix_rows:
         story.append(Paragraph('Diagnosis Distribution by College', s['section_title']))
+        story.append(Paragraph(
+            'Cases = distinct completed consultations carrying the diagnosis. '
+            f'"{reporting.NA_LABEL}" = patients without a college.',
+            s['report_meta'],
+        ))
         n = len(full_college_names)
         matrix_headers = ['Diagnosis'] + [name[:16] for name in full_college_names]
         matrix_rows = []
@@ -667,6 +634,11 @@ def _patients_pdf(patients_by_college, date_from, date_to,
 
     if patients_by_college:
         story.append(Paragraph('Patients by College', s['section_title']))
+        story.append(Paragraph(
+            'Unique patients seen at the clinic (any consultation status). '
+            f'"{reporting.NA_LABEL}" = patients without a college.',
+            s['report_meta'],
+        ))
         story.append(_pdf_make_table(
             ['College', 'Patients'],
             [[r['patient__college__abbreviation'], str(r['count'])]
@@ -701,13 +673,19 @@ def _classify_patient(patient):
     return 'Other', patient.position or '—'
 
 
-def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient_type, college_id, user_name=None):
-    """Generate a professional PDF for the diagnosis analytics report."""
+def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to,
+                             patient_type, college_id, sex='', year_level='',
+                             user_name=None):
+    """Generate a professional PDF for the diagnosis analytics report.
+
+    `consultations` is the same filtered queryset the web page renders, so
+    PDF totals always match the page. Metadata lists every applied filter.
+    """
     s = _pdf_styles()
     buf, doc = _pdf_build_doc()
     footer = _make_pdf_footer(user_name)
 
-    # ── Compute summary stats ──
+    # ── Compute summary stats (same definitions as the page) ──
     total_affected = consultations.values('patient').distinct().count()
 
     type_counts = {
@@ -719,23 +697,27 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
     total_consultations = consultations.count()
 
     by_college = list(
-        consultations
-        .filter(patient__college__isnull=False)
-        .values('patient__college__abbreviation', 'patient__college__name')
-        .annotate(count=Count('patient', distinct=True))
-        .order_by('-count')
+        reporting.diagnosed_patients_by_college(consultations)
     )
 
-    # ── Structured metadata ──
+    # ── Structured metadata: every applied filter is listed ──
     meta = [f'<b>Generated Date:</b>  {date.today().strftime("%B %d, %Y")}']
     if date_from or date_to:
         period_from = date_from.strftime('%B %d, %Y') if date_from else '—'
         period_to = date_to.strftime('%B %d, %Y') if date_to else '—'
         meta.append(f'<b>Report Period:</b>  {period_from} &mdash; {period_to}')
-    if keyword:
-        meta.append(f'<b>Search Keyword:</b>  {keyword}')
+    if college_id:
+        college = College.objects.filter(pk=college_id).first()
+        if college:
+            meta.append(f'<b>College:</b>  {college.abbreviation} &mdash; {college.name}')
     if patient_type and patient_type != 'all':
         meta.append(f'<b>Patient Category:</b>  {patient_type.capitalize()}')
+    if sex:
+        meta.append(f'<b>Sex:</b>  {"Male" if sex == "M" else "Female"}')
+    if year_level:
+        meta.append(f'<b>Year Level:</b>  {year_level}')
+    if keyword:
+        meta.append(f'<b>Search Keyword:</b>  {keyword}')
 
     story = []
     story.extend(_pdf_header_block('Disease Summary Report', meta))
@@ -745,8 +727,8 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
     story.append(_pdf_make_table(
         ['Metric', 'Count'],
         [
-            ['Patients Diagnosed', str(total_affected)],
-            ['Total Consultations', str(total_consultations)],
+            ['Diagnosed Patients', str(total_affected)],
+            ['Diagnosed Consultations', str(total_consultations)],
             ['Student Patients', str(type_counts['student'])],
             ['Faculty Patients', str(type_counts['faculty'])],
             ['Staff Patients', str(type_counts['staff'])],
@@ -758,25 +740,30 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
     ))
     story.append(Spacer(1, 8))
 
+    # ── Top Diagnoses (matched against the same filtered population) ──
+    top_diagnoses = reporting.diagnosis_case_counts(consultations, limit=10)
+    if top_diagnoses:
+        story.append(Paragraph('Top Diagnoses', s['section_title']))
+        story.append(_pdf_make_table(
+            ['Rank', 'Diagnosis', 'Cases'],
+            [[str(i + 1), d['diagnosis'][:90], str(d['count'])]
+             for i, d in enumerate(top_diagnoses)],
+            col_widths=[1.5*cm, 11*cm, 4.5*cm],
+            aligns=['center', 'left', 'right'],
+        ))
+        story.append(Spacer(1, 8))
+
     # ── Distribution by College ──
     if by_college:
         story.append(Paragraph('Distribution by College', s['section_title']))
         story.append(_pdf_make_table(
-            ['College', 'Patients Diagnosed'],
+            ['College', 'Diagnosed Patients'],
             [[f"{r['patient__college__abbreviation']} &mdash; {r['patient__college__name']}",
               str(r['count'])]
              for r in by_college],
             col_widths=[12*cm, 5*cm],
             aligns=['left', 'right'],
         ))
-
-        if total_consultations > 100:
-            story.append(Spacer(1, 6))
-            story.append(Paragraph(
-                f'Showing the first 100 of {total_consultations} records. '
-                f'Apply date filters to narrow the range.',
-                s['report_meta'],
-            ))
 
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     pdf = buf.getvalue()
@@ -789,24 +776,36 @@ def _diagnosis_analytics_pdf(consultations, keyword, date_from, date_to, patient
     )
 
 
-def _diagnosis_analytics_csv(consultations):
+def _matched_diagnosis_subquery(keyword):
+    """Subquery selecting the prescription that actually matched the keyword.
+
+    Mirrors the search filter in _build_diagnosis_queryset (any prescription
+    of the consultation whose diagnosis contains the keyword, earliest
+    match wins). When no keyword is given, the consultation's earliest
+    diagnosed prescription is used as the representative diagnosis.
+    """
+    rx = Prescription.objects.filter(consultation=OuterRef('pk'))
+    if keyword:
+        rx = rx.filter(diagnosis__icontains=keyword)
+    else:
+        rx = rx.filter(diagnosis__regex=NONEMPTY_DIAGNOSIS_RE)
+    return rx.order_by('prescribed_at', 'pk').values('diagnosis', 'treatment_plan')[:1]
+
+
+def _diagnosis_analytics_csv(consultations, keyword=''):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = (
         f'attachment; filename="diagnosis_analytics_{date.today()}.csv"'
     )
 
-    # Annotate each consultation row with the first prescription's diagnosis
-    # and treatment_plan via subquery, avoiding N+1 queries. (Also lets us use
-    # .iterator() below — since Django 6.0 that requires chunk_size after
-    # prefetch_related, which this queryset inherits, so the subquery
-    # approach is the simplest correct path.)
-    first_rx = Prescription.objects.filter(
-        consultation=OuterRef('pk'),
-    ).order_by('prescribed_at').values('diagnosis', 'treatment_plan')[:1]
-
+    # Annotate each consultation row with the diagnosis that actually caused
+    # the record to match (keyword match when searching), avoiding N+1
+    # queries. (Also lets us use .iterator() below — since Django 6.0 that
+    # requires chunk_size after prefetch_related, which this queryset
+    # inherits, so the subquery approach is the simplest correct path.)
     consultations = consultations.annotate(
-        _first_diagnosis=Subquery(first_rx.values('diagnosis')),
-        _first_treatment=Subquery(first_rx.values('treatment_plan')),
+        _matched_diagnosis=Subquery(_matched_diagnosis_subquery(keyword).values('diagnosis')),
+        _matched_treatment=Subquery(_matched_diagnosis_subquery(keyword).values('treatment_plan')),
     )
 
     writer = csv.writer(response)
@@ -826,13 +825,13 @@ def _diagnosis_analytics_csv(consultations):
             sex,
             p_type,
             p_org,
-            c._first_diagnosis or '—',
-            c._first_treatment or '—',
+            c._matched_diagnosis or '—',
+            c._matched_treatment or '—',
         ])
     return response
 
 
-def _diagnosis_analytics_excel(consultations):
+def _diagnosis_analytics_excel(consultations, keyword=''):
     """Generate an Excel (.xlsx) export for diagnosis analytics search results."""
     try:
         import openpyxl
@@ -841,15 +840,12 @@ def _diagnosis_analytics_excel(consultations):
     except ImportError:
         return HttpResponse('openpyxl not installed.', status=500)
 
-    # Annotate each consultation row with the first prescription's diagnosis
-    # and treatment_plan via subquery, matching the CSV approach.
-    first_rx = Prescription.objects.filter(
-        consultation=OuterRef('pk'),
-    ).order_by('prescribed_at').values('diagnosis', 'treatment_plan')[:1]
-
+    # Annotate each consultation row with the diagnosis that actually caused
+    # the record to match (keyword match when searching), matching the CSV
+    # approach.
     consultations = consultations.annotate(
-        _first_diagnosis=Subquery(first_rx.values('diagnosis')),
-        _first_treatment=Subquery(first_rx.values('treatment_plan')),
+        _matched_diagnosis=Subquery(_matched_diagnosis_subquery(keyword).values('diagnosis')),
+        _matched_treatment=Subquery(_matched_diagnosis_subquery(keyword).values('treatment_plan')),
     )
 
     wb = openpyxl.Workbook()
@@ -859,14 +855,16 @@ def _diagnosis_analytics_excel(consultations):
     header_font = Font(bold=True, color='FFFFFF')
     header_fill = PatternFill(fill_type='solid', fgColor='0078d4')
 
-    # Title row
-    ws.merge_cells('A1:H1')
+    headers = ['#', 'Date', 'Patient Name', 'Patient ID', 'Sex',
+               'Type', 'College / Department', 'Diagnosis', 'Treatment Plan']
+    last_col = get_column_letter(len(headers))  # derived, never hardcoded
+
+    # Title row — merged range spans the actual column count
+    ws.merge_cells(f'A1:{last_col}1')
     ws.cell(row=1, column=1, value='Diagnosis Analytics — Search Results').font = Font(bold=True, size=14)
     ws.cell(row=1, column=1).alignment = Alignment(horizontal='center')
 
     # Header row
-    headers = ['#', 'Date', 'Patient Name', 'Patient ID', 'Sex',
-               'Type', 'College / Department', 'Diagnosis', 'Treatment Plan']
     for col_idx, col in enumerate(headers, start=1):
         cell = ws.cell(row=3, column=col_idx, value=col)
         cell.font = header_font
@@ -887,8 +885,8 @@ def _diagnosis_analytics_excel(consultations):
         ws.cell(row=row_idx, column=5, value=sex)
         ws.cell(row=row_idx, column=6, value=p_type)
         ws.cell(row=row_idx, column=7, value=p_org)
-        ws.cell(row=row_idx, column=8, value=c._first_diagnosis or '—')
-        ws.cell(row=row_idx, column=9, value=c._first_treatment or '—')
+        ws.cell(row=row_idx, column=8, value=c._matched_diagnosis or '—')
+        ws.cell(row=row_idx, column=9, value=c._matched_treatment or '—')
 
     # Auto-fit column widths
     for col in ws.columns:
@@ -1383,13 +1381,8 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
         results['avg_per_day'] = round(total_count / days, 1)
 
     if 'top_diagnoses' in metrics:
-        results['top_diagnoses'] = list(
-            Prescription.objects
-            .filter(consultation__in=completed_qs)
-            .values('diagnosis')
-            .annotate(count=Count('id'))
-            .order_by('-count')[:10]
-        )
+        # Diagnosis cases = distinct consultations (shared counting unit).
+        results['top_diagnoses'] = reporting.diagnosis_case_counts(completed_qs, limit=10)
 
     if 'top_medicines' in metrics:
         results['top_medicines'] = list(
@@ -1528,9 +1521,10 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
                     consultation__in=completed_qs,
                     consultation__patient__college=college,
                 )
+                .filter(diagnosis__regex=NONEMPTY_DIAGNOSIS_RE)
                 .values('diagnosis')
-                .annotate(count=Count('id'))
-                .order_by('-count')
+                .annotate(count=Count('consultation', distinct=True))
+                .order_by('-count', 'diagnosis')
                 .first()
             )
             if top:
@@ -1553,10 +1547,9 @@ def _build_report_results(date_from, date_to, college_id, keyword, grouping, met
             .annotate(count=Count('id')).order_by('-count')
         )
     elif grouping == 'diagnosis':
-        results['grouped'] = list(
-            completed_qs.values('prescriptions__diagnosis')
-            .annotate(count=Count('id')).order_by('-count')[:20]
-        )
+        # Shared helper: full-text grouping, non-empty diagnoses only,
+        # counted as distinct completed consultations (one unit everywhere).
+        results['grouped'] = reporting.diagnosis_case_counts(completed_qs, limit=20)
     elif grouping == 'date':
         days = (date_to - date_from).days
         if days <= 31:
@@ -1675,6 +1668,16 @@ def _report_csv(results, date_from, date_to):
             writer.writerow([row.get('label', '—'), row['count']])
         writer.writerow([])
 
+    if results.get('grouped'):
+        group_label = (results.get('grouping') or 'group').capitalize()
+        writer.writerow([f'Grouped Summary by {group_label}', ''])
+        writer.writerow([group_label, 'Consultations'])
+        for row in results['grouped']:
+            value = (row.get('label') or row.get('patient__college__abbreviation')
+                     or row.get('diagnosis') or '—')
+            writer.writerow([value, row['count']])
+        writer.writerow([])
+
     return response
 
 
@@ -1772,6 +1775,15 @@ def _report_excel(results, date_from, date_to):
         add_table(
             ['Period', 'Consultations'],
             [[r.get('label', '—'), r['count']] for r in results['trend']]
+        )
+
+    if results.get('grouped'):
+        group_label = (results.get('grouping') or 'group').capitalize()
+        add_table(
+            [group_label, 'Consultations'],
+            [[(r.get('label') or r.get('patient__college__abbreviation')
+               or r.get('diagnosis') or '—'), r['count']]
+             for r in results['grouped']]
         )
 
     for col in ws.columns:
@@ -1944,7 +1956,7 @@ def _report_pdf(results, date_from, date_to, user_name=None):
         story.append(_pdf_make_table(
             [group_header, 'Consultations'],
             [[(r.get('label') or r.get('patient__college__abbreviation') or
-               r.get('prescriptions__diagnosis') or '&mdash;'),
+               r.get('diagnosis') or '&mdash;'),
               str(r['count'])]
              for r in results['grouped']],
             col_widths=[12*cm, 5*cm],

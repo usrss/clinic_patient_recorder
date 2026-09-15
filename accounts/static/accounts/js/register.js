@@ -225,17 +225,32 @@ function goNext(step) {
       }
     });
 
-    // Validate phone format (Philippine number)
+    // ── Validate phone formats (Philippine mobile numbers) ──────────────
+    // Mirrors core.validators PH_MOBILE_RE: 09XXXXXXXXX or +639XXXXXXXXX
+    // (separators ignored).
+    var PH_MOBILE_RE = /^(?:\+63|0)?9\d{9}$/;
+    function isValidPhMobile(value) {
+      var cleaned = value.trim().replace(/[\s\-\(\)\.]/g, '');
+      if (cleaned.indexOf('+', 1) !== -1) return false;  // stray '+'
+      return PH_MOBILE_RE.test(cleaned);
+    }
+
     const phone = document.getElementById('id_phone');
-    if (phone.value.trim()) {
-      var phoneClean = phone.value.trim().replace(/[\s\-\(\)\+]/g, '');
-      if (!/^\d{7,15}$/.test(phoneClean)) {
-        showErr('phone', true); phone.classList.add('error');
-        document.getElementById('err-phone').textContent = 'Enter a valid phone number (7-15 digits).';
-        valid = false;
-      } else {
-        document.getElementById('err-phone').textContent = 'Please enter a valid phone number.';
-      }
+    if (phone.value.trim() && !isValidPhMobile(phone.value)) {
+      showErr('phone', true); phone.classList.add('error');
+      document.getElementById('err-phone').textContent = 'Enter a valid Philippine mobile number (09XXXXXXXXX or +639XXXXXXXXX).';
+      valid = false;
+    } else {
+      document.getElementById('err-phone').textContent = 'Please enter a valid Philippine mobile number.';
+    }
+
+    const ecp = document.getElementById('id_emergency_contact_phone');
+    if (ecp.value.trim() && !isValidPhMobile(ecp.value)) {
+      showErr('emergency_contact_phone', true); ecp.classList.add('error');
+      document.getElementById('err-emergency_contact_phone').textContent = 'Enter a valid Philippine mobile number (09XXXXXXXXX or +639XXXXXXXXX).';
+      valid = false;
+    } else {
+      document.getElementById('err-emergency_contact_phone').textContent = 'Enter a valid Philippine mobile number.';
     }
 
     const role = document.getElementById('id_role').value;
@@ -608,6 +623,18 @@ document.addEventListener('DOMContentLoaded', function () {
   // Role select → show/hide role-dependent fields
   var roleEl = document.getElementById('id_role');
   if (roleEl) roleEl.addEventListener('change', updateRoleFields);
+
+  // ── Phone inputs: strip characters that can never appear in a PH number ──
+  // Digits, leading +, and common separators only — prevents letters/symbols
+  // from being typed or pasted in.
+  ['id_phone', 'id_emergency_contact_phone'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      var cleaned = this.value.replace(/[^0-9\+\s\-\(\)\.]/g, '');
+      if (cleaned !== this.value) this.value = cleaned;
+    });
+  });
 
   // College select → load courses
   var collegeEl = document.getElementById('id_college');

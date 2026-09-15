@@ -1,8 +1,11 @@
+from datetime import date
+
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, SetPasswordForm
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
+from core.validators import normalize_phone
 from .models import User
 from .utils import calculate_graduation_year
 from patients.models import Patient, PatientProfile
@@ -34,6 +37,14 @@ def validate_profile_picture(file):
         )
 
 
+class StaffPhoneMixin:
+    """Normalizes the optional User.phone field to +63XXXXXXXXXX format."""
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
+
+
 class LoginForm(AuthenticationForm):
     error_messages = {
         'invalid_login': 'Invalid username or password.',
@@ -59,7 +70,7 @@ class LoginForm(AuthenticationForm):
     )
 
 
-class UserCreateForm(forms.ModelForm):
+class UserCreateForm(StaffPhoneMixin, forms.ModelForm):
     """Admin creates a staff user account.
 
     Password is auto-generated (4-digit temp password), not set by admin.
@@ -82,7 +93,7 @@ class UserCreateForm(forms.ModelForm):
         ]
 
 
-class UserEditForm(forms.ModelForm):
+class UserEditForm(StaffPhoneMixin, forms.ModelForm):
     """Admin edits an existing staff user."""
 
     class Meta:
@@ -150,7 +161,7 @@ class ForcePasswordChangeForm(SetPasswordForm):
 
 
 
-class UserProfileForm(forms.ModelForm):
+class UserProfileForm(StaffPhoneMixin, forms.ModelForm):
     """
     Staff user edits their own profile info.
 
@@ -330,6 +341,14 @@ class PatientProfileEditForm(forms.ModelForm):
                 raise forms.ValidationError('This email is already registered to another account.')
         return email
 
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
+
+    def clean_emergency_contact_phone(self):
+        phone = (self.cleaned_data.get('emergency_contact_phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
+
     def clean_profile_picture(self):
         file = self.cleaned_data.get('profile_picture')
         if file:
@@ -357,13 +376,25 @@ class ProfileCompletionForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=True)
     sex = forms.ChoiceField(choices=[('M', 'Male'), ('F', 'Female')], required=True)
     birthday = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}), required=False
+        widget=forms.DateInput(attrs={'type': 'date'}), required=False,
+        validators=[MaxValueValidator(date.today)],
     )
 
     # ── Editable fields ──
     role = forms.ChoiceField(choices=ROLE_CHOICES, label='Role')
-    phone = forms.CharField(max_length=30, required=False, label='Phone Number')
+
     email = forms.EmailField(required=True, label='Email Address')
+
+    # FIX: this field was previously missing from the form even though the
+    # template posts it and the view reads cleaned_data['phone'] — the value
+    # was silently dropped for walk-in patients.
+    phone = forms.CharField(
+        max_length=30, required=False, label='Phone Number',
+        widget=forms.TextInput(attrs={
+            'inputmode': 'tel', 'autocomplete': 'tel',
+            'placeholder': '09XXXXXXXXX',
+        }),
+    )
 
     # ── Personal Info ──
     address = forms.CharField(max_length=300, required=False)
@@ -478,6 +509,14 @@ class ProfileCompletionForm(forms.Form):
             if qs.exists():
                 raise forms.ValidationError('This email is already registered to another account.')
         return email
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
+
+    def clean_emergency_contact_phone(self):
+        phone = (self.cleaned_data.get('emergency_contact_phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
 
     def clean(self):
         cleaned = super().clean()
@@ -600,7 +639,12 @@ class RegistrationForm(forms.Form):
     )
 
     # ── Personal Info ──
-    birthday = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    birthday = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        # Callable limit → always evaluated as "today" (blocks future dates,
+        # which the client-side max attribute alone cannot guarantee)
+        validators=[MaxValueValidator(date.today)],
+    )
     address = forms.CharField(max_length=300, required=False)
     blood_type = forms.ChoiceField(
         choices=[
@@ -651,9 +695,22 @@ class RegistrationForm(forms.Form):
     position = forms.CharField(max_length=200, required=False, label='Position / Designation')
 
     # ── Contact & Emergency ──
-    phone = forms.CharField(max_length=30)
+    # (validated + normalized to +63 in clean_phone / clean_emergency_contact_phone)
+    phone = forms.CharField(max_length=30, label='Phone Number')
     emergency_contact_name = forms.CharField(max_length=200)
     emergency_contact_phone = forms.CharField(max_length=30)
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '')
+        if not phone:
+            raise forms.ValidationError('Phone number is required.')
+        return normalize_phone(phone)
+
+    def clean_emergency_contact_phone(self):
+        phone = self.cleaned_data.get('emergency_contact_phone', '')
+        if not phone:
+            raise forms.ValidationError('Emergency contact phone is required.')
+        return normalize_phone(phone)
 
     # ── Medical History ──
     hypertension = forms.BooleanField(required=False)

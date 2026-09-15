@@ -230,11 +230,11 @@ class SingleActiveConsultationFrontDeskTests(TestCase):
             is_original_case=True,
         )
         response = self._post_create()
-        self.assertRedirects(
-            response,
-            reverse('consultations:consultation_create'),
-            fetch_redirect_response=False,
-        )
+        # The view intentionally re-renders the page (200) with the bound form        # so no typed input is lost — NOT a redirect (PRG is only for success).
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'consultations/consultation_create.html')
+        self.assertContains(response, 'already have an active consultation')
+        # No second consultation may be created for this patient
         self.assertEqual(Consultation.objects.filter(patient=self.patient).count(), 1)
 
     def test_frontdesk_allowed_when_patient_has_no_active_consultation(self):

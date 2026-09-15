@@ -370,7 +370,7 @@
       <tr>
         <td>
           {% if results.grouping == 'college' %}{{ row.patient__college__abbreviation|default:"—" }}
-          {% elif results.grouping == 'diagnosis' %}{{ row.prescriptions__diagnosis|truncatechars:70|default:"—" }}
+          {% elif results.grouping == 'diagnosis' %}<span title="{{ row.diagnosis }}">{{ row.diagnosis|truncatechars:70|default:"—" }}</span>
           {% elif results.grouping == 'date' %}{{ row.label|default:"—" }}
           {% endif %}
         </td>

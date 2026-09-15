@@ -16,6 +16,7 @@ media/
 *.log
 .freebuff
 UI-UX-Review-Patient-Portal.md
+test_settings.py
 
 # Windows
 NUL

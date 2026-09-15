@@ -1,4 +1,5 @@
 from django import forms
+from core.validators import normalize_phone
 from .models import PatientProfile, Patient, AcademicYearSettings
 
 
@@ -54,19 +55,14 @@ class PatientContactForm(forms.ModelForm):
         }
 
     def clean_phone(self):
-        phone = self.cleaned_data.get('phone', '').strip()
+        phone = (self.cleaned_data.get('phone') or '').strip()
         if not phone:
             raise forms.ValidationError('Phone number is required.')
-        return phone
+        return normalize_phone(phone)
 
     def clean_emergency_contact_phone(self):
-        phone = self.cleaned_data.get('emergency_contact_phone', '').strip()
-        if phone:
-            import re
-            cleaned = re.sub(r'[\s\-\(\)\+]', '', phone)
-            if not re.match(r'^\d{7,15}$', cleaned):
-                raise forms.ValidationError('Enter a valid phone number (7–15 digits).')
-        return phone
+        phone = (self.cleaned_data.get('emergency_contact_phone') or '').strip()
+        return normalize_phone(phone) if phone else ''
 
 
 # ─── ACADEMIC YEAR SETTINGS FORM ───────────────────────────────────────────────

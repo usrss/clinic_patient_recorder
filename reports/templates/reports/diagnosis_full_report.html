@@ -14,9 +14,9 @@
 {% else %}Full Diagnosis Report{% endif %}
 {% endblock %}
 {% block page_subtitle %}
-{% if section == 'diagnoses' %}Complete list of all diagnoses recorded in completed consultations, ranked by frequency.
-{% elif section == 'matrix' %}Complete cross-tabulation matrix showing diagnosis counts per college.
-{% elif section == 'patients' %}Clinic utilization by college — counts unique patients seen.
+{% if section == 'diagnoses' %}All diagnoses in completed consultations, ranked by frequency — counts distinct cases.
+{% elif section == 'matrix' %}Cross-tabulation matrix showing diagnosis cases per college — row totals match the All Diagnoses list.
+{% elif section == 'patients' %}Clinic utilization by college — unique patients seen (any consultation status).
 {% else %}Complete list of all diagnoses with filters and PDF export{% endif %}
 {% endblock %}
 
@@ -166,9 +166,9 @@
     <div class="stat-value" style="color:#0078d4;">{{ total_all_diagnoses }}</div>
     <div class="stat-label">Distinct Diagnoses</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" title="Sum of diagnosis cases across all diagnoses (one consultation = one case per diagnosis).">
     <div class="stat-value" style="color:#8b5cf6;">{{ total_diagnosis_count }}</div>
-    <div class="stat-label">Total Prescriptions</div>
+    <div class="stat-label">Total Cases</div>
   </div>
   <div class="stat-card">
     <div class="stat-value" style="color:#10b981;">{{ full_matrix_rows|length }}</div>
@@ -183,6 +183,7 @@
       <div class="sec-heading" style="margin-bottom:4px;">All Diagnoses</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
         Complete list of all diagnoses recorded in completed consultations, ranked by frequency.
+        Cases = distinct consultations carrying the diagnosis.
       </p>
     </div>
     {% if section == 'diagnoses' %}
@@ -206,7 +207,7 @@
         {% for d in all_diagnoses %}
         <tr>
           <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-          <td style="font-weight:500;">{{ d.diagnosis|truncatechars:100 }}</td>
+          <td style="font-weight:500;" title="{{ d.diagnosis }}">{{ d.display_diagnosis|default:d.diagnosis }}</td>
           <td style="font-weight:700;color:#0078d4;">{{ d.count }}</td>
         </tr>
         {% endfor %}
@@ -228,7 +229,8 @@
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Diagnosis Distribution by College</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
-        Complete cross-tabulation matrix showing diagnosis counts per college. The table shows all diagnoses as rows — scroll horizontally to view more.
+        Complete cross-tabulation matrix showing diagnosis cases per college. "{{ reporting_na_label|default:'N/A' }}" = patients without a college.
+        Each row's total matches the All Diagnoses list — scroll horizontally to view more.
       </p>
     </div>
     {% if section == 'matrix' %}
@@ -252,14 +254,14 @@
           <tr>
             <th>Diagnosis</th>
             {% for col_name in full_col_names %}
-            <th title="{{ col_name }}">{{ col_name|truncatechars:20 }}</th>
+            <th title="{% if col_name == 'N/A' %}Patients without a college (staff / unclassified){% else %}{{ col_name }}{% endif %}">{{ col_name|truncatechars:20 }}</th>
             {% endfor %}
           </tr>
         </thead>
         <tbody>
           {% for row in full_matrix_rows %}
           <tr>
-            <td style="font-weight:700;color:#1a1a2e;">{{ row.diagnosis }}</td>
+            <td style="font-weight:700;color:#1a1a2e;" title="{{ row.diagnosis }}">{{ row.display_diagnosis|default:row.diagnosis }}</td>
             {% for val in row.col_data %}
             <td>
               <span class="matrix-count-chip {% if val %}has-data{% else %}no-data{% endif %}">
@@ -288,7 +290,8 @@
     <div>
       <div class="sec-heading" style="margin-bottom:4px;">Patients by College</div>
       <p style="font-size:12px;color:#64748b;margin:0 0 12px 0;">
-        Clinic utilization by college — counts unique patients seen (any consultation status).
+        Clinic utilization by college — unique patients seen (any consultation status; not limited to diagnosed cases).
+        "{{ reporting_na_label|default:'N/A' }}" = patients without a college.
       </p>
     </div>
     {% if section == 'patients' %}
@@ -312,7 +315,7 @@
         {% for row in patients_by_college %}
         <tr>
           <td><span class="rank-chip">{{ forloop.counter }}</span></td>
-          <td style="font-weight:600;color:#1a1a2e;">{{ row.patient__college__abbreviation|default:"—" }}</td>
+          <td style="font-weight:600;color:#1a1a2e;" {% if row.patient__college__abbreviation == 'N/A' %}title="Patients without a college (staff / unclassified)"{% endif %}>{{ row.patient__college__abbreviation|default:"—" }}</td>
           <td style="font-weight:700;color:#0078d4;">{{ row.count }}</td>
         </tr>
         {% endfor %}
